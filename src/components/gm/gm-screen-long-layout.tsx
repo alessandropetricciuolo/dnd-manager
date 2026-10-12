@@ -76,14 +76,17 @@ function LongWorkspace({
     refreshSessions,
     refreshCharacters,
     updateCharacterCoinsLocally,
+    setDraftPaused,
     clearSelectedSessionState,
     selectedSessionLabel,
     hasActiveSession,
     hasUnsavedLocalState,
+    concludeFight,
   } = useGmScreenLongState();
 
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [debriefOpen, setDebriefOpen] = useState(Boolean(selectedSessionId && autoOpenDebrief));
+  useEffect(() => { setDraftPaused(debriefOpen); return () => setDraftPaused(false); }, [debriefOpen,setDraftPaused]);
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
@@ -398,6 +401,7 @@ function LongWorkspace({
                       availableCharacters={sessionCharacters}
                       value={initiativeState}
                       onChange={setInitiativeState}
+                      onConcludeFight={concludeFight}
                     />
                   </div>
                   <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-900/30 p-3 md:p-4">
@@ -495,15 +499,7 @@ function LongWorkspace({
                     initiativeEntries={initiativeState.entries}
                     value={xpState}
                     onChange={setXpState}
-                    onCloseFight={() =>
-                      setInitiativeState({
-                        entries: [],
-                        currentTurnIndex: 0,
-                        roundNumber: 1,
-                        turnElapsedSeconds: 0,
-                        isTurnTimerRunning: false,
-                      })
-                    }
+                    onCloseFight={concludeFight}
                   />
                 </div>
               ) : (

@@ -30,11 +30,10 @@ import {
 import {
   addSessionSignupForGm,
   getApprovedSignupsForSession,
-  getSessionWizardMeta,
-  preCloseSessionAction,
 } from "@/app/campaigns/actions";
 import { getCampaignCharacters, type CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
+import {getSessionXpDraftAction,saveSessionXpDraftAction} from "@/app/campaigns/session-xp-actions";
 import { cn } from "@/lib/utils";
 
 const XP_STEP = 50;
@@ -51,6 +50,7 @@ type SessionSignup = {
 };
 
 type StoredDraft = {
+  revision?: number;
   version: 1;
   attendance: Attendance;
   xpByPlayer: XpByPlayer;
@@ -81,6 +81,7 @@ function readDraft(campaignId: string, sessionId: string): StoredDraft | null {
     const parsed = JSON.parse(raw) as Partial<StoredDraft>;
     if (parsed.version !== 1) return null;
     return {
+      revision:parsed.revision,
       version: 1,
       attendance: parsed.attendance ?? {},
       xpByPlayer: parsed.xpByPlayer ?? {},
@@ -117,6 +118,10 @@ export function MobileXpTracker({
   const [addingPlayers, setAddingPlayers] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const hydratedSessionRef = useRef("");
+  const revisions = useRef<Record<string,number>>({});
+  const saveQueue = useRef(Promise.resolve());
+  const selectedSessionRef = useRef(selectedSessionId);
+  selectedSessionRef.current = selectedSessionId;
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftRef = useRef({ attendance, xpByPlayer });
 
@@ -150,24 +155,29 @@ export function MobileXpTracker({
       return;
     }
 
+    hydratedSessionRef.current = "";
     setLoadingSession(true);
     setSaveStatus("idle");
     const [signupResult, metaResult] = await Promise.all([
       getApprovedSignupsForSession(selectedSessionId),
-      getSessionWizardMeta(selectedSessionId),
+      getSessionXpDraftAction(selectedSessionId),
     ]);
+    if (selectedSessionRef.current !== selectedSessionId) return;
+    revisions.current[selectedSessionId] = metaResult.success ? metaResult.data.revision : 0;
     const nextSignups = signupResult.success ? signupResult.data ?? [] : [];
-    const local = readDraft(campaignId, selectedSessionId);
-    const serverAwards = metaResult.success ? metaResult.data?.pre_closed_xp_awards ?? [] : [];
+    const recovered = readDraft(campaignId, selectedSessionId);
+    const local = !metaResult.success || !metaResult.data.draft || recovered?.revision === metaResult.data.revision ? recovered : null;
+    const serverAwards = metaResult.success ? metaResult.data.draft?.perPlayerXpAwards ?? [] : [];
     const serverXp = Object.fromEntries(serverAwards.map((award) => [award.playerId, clampXp(award.xp)]));
     const defaultAttendance = Object.fromEntries(
       nextSignups.map((signup) => [signup.player_id, signup.status === "absent" ? "absent" : "attended"])
     ) as Attendance;
 
     setSignups(nextSignups);
-    setAttendance({ ...defaultAttendance, ...(local?.attendance ?? {}) });
+    setAttendance({ ...defaultAttendance, ...(metaResult.success ? metaResult.data.draft?.attendance : {}), ...(local?.attendance ?? {}) });
     setXpByPlayer({ ...serverXp, ...(local?.xpByPlayer ?? {}) });
-    hydratedSessionRef.current = selectedSessionId;
+    hydratedSessionRef.current = metaResult.success ? selectedSessionId : "";
+    if (!metaResult.success) toast.error(metaResult.error);
     setLoadingSession(false);
     if (!signupResult.success) toast.error(signupResult.error ?? "Impossibile caricare i partecipanti.");
   }, [campaignId, selectedSessionId]);
@@ -218,27 +228,29 @@ export function MobileXpTracker({
         .map((signup) => ({ playerId: signup.player_id, xp: clampXp(current.xpByPlayer[signup.player_id]) }));
 
       setSaveStatus("saving");
-      const result = await preCloseSessionAction(selectedSessionId, {
+      const result = await saveSessionXpDraftAction(selectedSessionId, {
         attendance: nextAttendance,
         xpGained: 0,
         perPlayerXpAwards: awards,
-      });
+      }, revisions.current[selectedSessionId]);
       if (result.success) {
+        revisions.current[selectedSessionId] = result.data.revision;
+        try { localStorage.setItem(storageKey(campaignId,selectedSessionId),JSON.stringify({version:1,revision:result.data.revision,attendance:nextAttendance,xpByPlayer:current.xpByPlayer})); } catch { /* Keep server save. */ }
         setSaveStatus("saved");
         if (!silent) toast.success("EXP salvata. Potrai chiudere la sessione dal PC.");
         return true;
       }
       setSaveStatus(typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "error");
-      if (!silent) toast.error(result.message);
+      if (!silent) toast.error(result.error);
       return false;
     },
-    [selectedSessionId, signups]
+    [campaignId,selectedSessionId, signups]
   );
 
   useEffect(() => {
     if (!selectedSessionId || hydratedSessionRef.current !== selectedSessionId) return;
     try {
-      const payload: StoredDraft = { version: 1, attendance, xpByPlayer };
+      const payload: StoredDraft = { revision:revisions.current[selectedSessionId], version: 1, attendance, xpByPlayer };
       localStorage.setItem(storageKey(campaignId, selectedSessionId), JSON.stringify(payload));
     } catch {
       // Il salvataggio server rimane disponibile anche se lo storage del browser è disabilitato.
@@ -246,7 +258,7 @@ export function MobileXpTracker({
     if (signups.length === 0) return;
     setSaveStatus(typeof navigator !== "undefined" && !navigator.onLine ? "offline" : "idle");
     if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    saveTimerRef.current = setTimeout(() => void saveDraft(true), 1200);
+    saveTimerRef.current = setTimeout(() => { saveQueue.current = saveQueue.current.then(async () => { await saveDraft(true); }); }, 1200);
     return () => {
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
     };

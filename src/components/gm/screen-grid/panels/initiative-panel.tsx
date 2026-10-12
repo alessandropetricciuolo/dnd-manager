@@ -20,10 +20,11 @@ export function InitiativePanel() {
       <div className="h-full min-h-0">
         <InitiativeTracker
           campaignId={long.campaignId}
-          campaignType="long"
+          campaignType={board.campaignType ?? "long"}
           availableCharacters={long.sessionCharacters}
           value={long.initiativeState}
           onChange={long.setInitiativeState}
+          onConcludeFight={long.concludeFight}
           onOpenMonsterStat={onOpenMonsterStat}
         />
       </div>

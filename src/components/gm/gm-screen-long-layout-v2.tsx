@@ -66,6 +66,8 @@ function LongWorkspace({
     calendarConfig,
     refreshSessions,
     refreshCharacters,
+    draftMessage,
+    setDraftPaused,
     clearSelectedSessionState,
     selectedSessionLabel,
     hasActiveSession,
@@ -73,6 +75,7 @@ function LongWorkspace({
   } = useGmScreenLongState();
 
   const [debriefOpen, setDebriefOpen] = useState(Boolean(selectedSessionId && autoOpenDebrief));
+  useEffect(() => { setDraftPaused(debriefOpen); return () => setDraftPaused(false); }, [debriefOpen,setDraftPaused]);
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
@@ -466,6 +469,8 @@ function LongWorkspace({
             {sessionCharactersMissingSheet.map((signup) => signup.player_name).join(", ")}.
           </div>
         )}
+
+        <p className="px-2 text-xs text-muted-foreground" role="status">{draftMessage}</p>
 
         {selectedSessionId && (
           <EndSessionWizard

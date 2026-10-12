@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Calendar, Dices, Flag, MessageCircle, Images, Headphones, LayoutGrid, Swords } from "lucide-react";
 import { GmScreenMapRegia } from "./gm-screen-map-regia";
 import { SecretWhispersSheet } from "./secret-whispers-sheet";
@@ -8,7 +8,7 @@ import { GmGallerySheet } from "./gm-gallery-sheet";
 import { GmAudioForgeSheet } from "./gm-audio-forge-sheet";
 import { GmRemoteIntegration } from "./gm-remote-integration";
 import { Button } from "@/components/ui/button";
-import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
+import { type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import { EndSessionWizard } from "@/components/sessions/end-session-wizard";
 import {
   Select,
@@ -26,6 +26,8 @@ import { GmScreenView } from "./gm-screen-view";
 
 const GmTacticalScreen = dynamic(() => import("./screen-tactical/gm-tactical-screen").then((m) => m.GmTacticalScreen));
 const GmScreenBoard = dynamic(() => import("./screen-grid/gm-screen-board").then((m) => m.GmScreenBoard));
+import {GmScreenLongStateProvider,useGmScreenLongState} from "./gm-screen-long-state";
+import {computeSessionXpAwards} from "@/lib/gm/session-xp";
 import { cn } from "@/lib/utils";
 
 type GmScreenLegacyLayoutV2Props = {
@@ -41,15 +43,20 @@ function formatSessionLabel(session: CampaignSessionOption): string {
   return session.title?.trim() ? `${session.title} — ${dateStr}` : dateStr;
 }
 
-export function GmScreenLegacyLayoutV2({
+export function GmScreenLegacyLayoutV2(props: GmScreenLegacyLayoutV2Props) {
+  return <GmScreenLongStateProvider campaignId={props.campaignId} initialSessionId={props.initialSessionId}><LegacyWorkspace {...props}/></GmScreenLongStateProvider>;
+}
+
+function LegacyWorkspace({
   campaignId,
   campaignType,
   currentUserId,
   initialSessionId,
   autoOpenDebrief,
 }: GmScreenLegacyLayoutV2Props) {
-  const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
-  const [selectedSessionId, setSelectedSessionId] = useState<string | null>(initialSessionId ?? null);
+  const shared = useGmScreenLongState();
+  const {sessions,selectedSessionId,setSelectedSessionId,refreshSessions:loadSessions,setDraftPaused} = shared;
+  const xp = computeSessionXpAwards({characters:shared.sessionCharacters,attendance:shared.attendance,xpState:shared.xpState,initiativeEntries:shared.initiativeState.entries});
   const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -78,16 +85,7 @@ export function GmScreenLegacyLayoutV2({
     } catch {}
   };
 
-  const loadSessions = useCallback(async () => {
-    const result = await getCampaignSessionsForGm(campaignId);
-    if (result.success && result.data) {
-      setSessions(result.data);
-    }
-  }, [campaignId]);
-
-  useEffect(() => {
-    void loadSessions();
-  }, [loadSessions]);
+  useEffect(() => {setDraftPaused(debriefOpen); return () => setDraftPaused(false);},[debriefOpen,setDraftPaused]);
 
   const selectedSession = sessions.find((session) => session.id === selectedSessionId);
   const sessionLabel = selectedSession ? formatSessionLabel(selectedSession) : undefined;
@@ -245,6 +243,10 @@ export function GmScreenLegacyLayoutV2({
             campaignId={campaignId}
             campaignType={campaignType}
             sessionLabel={sessionLabel}
+            initialApprovedSignups={shared.signups}
+            initialAttendance={shared.attendance}
+            initialXpGained={xp.basePerPlayer}
+            perPlayerXpAwards={xp.awards}
             onSuccess={loadSessions}
           />
         )}

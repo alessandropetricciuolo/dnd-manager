@@ -15,19 +15,10 @@ const INITIATIVE_STORAGE_PREFIX = "gm-screen-initiative-";
 const XP_STORAGE_PREFIX = "gm-screen-session-xp-";
 const XP_STEP = 50;
 
-type PerCharacterState = {
-  present?: boolean;
-  plus: number;
-  minus: number;
-  customXp: number | null;
-};
-
-export type StoredXpState = {
-  version: 2;
-  extraXpManual: number;
-  bankedMonsterXp: number;
-  perCharacter: Record<string, PerCharacterState>;
-};
+import { computeSessionXpAwards } from "@/lib/gm/session-xp";
+import type { PerCharacterState, StoredXpState } from "@/lib/gm/session-xp";
+export { computeSessionXpAwards } from "@/lib/gm/session-xp";
+export type { StoredXpState } from "@/lib/gm/session-xp";
 
 type InitiativeStorageEntry = Pick<InitiativeEntry, "entityId" | "type" | "hp" | "exp" | "isDead">;
 
@@ -43,6 +34,10 @@ type PlayerSessionTrackerProps = {
   onChange?: (state: StoredXpState) => void;
   onCloseFight?: () => void;
 };
+
+function isMonsterDead(entry: InitiativeStorageEntry | InitiativeEntry) {
+  return (entry.type === "monster" || entry.type === "custom") && (entry.isDead === true || entry.hp <= 0);
+}
 
 function defaultPerCharacterState(): PerCharacterState {
   return {
@@ -103,72 +98,6 @@ function areXpStatesEqual(a: StoredXpState, b: StoredXpState) {
   return true;
 }
 
-function isMonsterDead(entry: InitiativeStorageEntry | InitiativeEntry) {
-  if (entry.type !== "monster" && entry.type !== "custom") return false;
-  return entry.isDead === true || entry.hp === 0;
-}
-
-export function computeSessionXpAwards({
-  characters,
-  attendance,
-  xpState,
-  initiativeEntries,
-}: {
-  characters: CampaignCharacterRow[];
-  attendance?: AttendanceMap;
-  xpState: StoredXpState;
-  initiativeEntries?: InitiativeEntry[];
-}) {
-  const deadMonsterXp = (initiativeEntries ?? []).reduce((sum, entry) => {
-    if (!isMonsterDead(entry)) return sum;
-    return sum + (typeof entry.exp === "number" ? entry.exp : 0);
-  }, 0);
-
-  const totalBaseXp =
-    deadMonsterXp +
-    Math.max(0, Math.trunc(xpState.extraXpManual || 0)) +
-    Math.max(0, Math.trunc(xpState.bankedMonsterXp || 0));
-  const presentCharacters = characters.filter((character) => {
-    if (attendance && character.assigned_to) {
-      return attendance[character.assigned_to] !== "absent";
-    }
-    return (xpState.perCharacter[character.id]?.present ?? true) === true;
-  });
-
-  const basePerPlayer = presentCharacters.length > 0 ? Math.floor(totalBaseXp / presentCharacters.length) : 0;
-  const finalXpByCharacterId: Record<string, number> = {};
-
-  for (const character of characters) {
-    const state = xpState.perCharacter[character.id] ?? defaultPerCharacterState();
-    const isPresent = attendance && character.assigned_to
-      ? attendance[character.assigned_to] !== "absent"
-      : (state.present ?? true);
-    if (!isPresent) {
-      finalXpByCharacterId[character.id] = 0;
-      continue;
-    }
-    const delta = (state.plus - state.minus) * XP_STEP;
-    const computed = Math.max(0, basePerPlayer + delta);
-    finalXpByCharacterId[character.id] =
-      state.customXp != null && Number.isFinite(state.customXp)
-        ? Math.max(0, Math.trunc(state.customXp))
-        : computed;
-  }
-
-  return {
-    deadMonsterXp,
-    totalBaseXp,
-    basePerPlayer,
-    finalXpByCharacterId,
-    awards: characters
-      .filter((character) => character.assigned_to)
-      .map((character) => ({
-        playerId: character.assigned_to as string,
-        xp: finalXpByCharacterId[character.id] ?? 0,
-      }))
-      .filter((award) => award.xp > 0),
-  };
-}
 
 export function PlayerSessionTracker({
   campaignId,
@@ -190,6 +119,8 @@ export function PlayerSessionTracker({
   const lastLegacyKeyRef = useRef("");
   const xpStateRef = useRef(xpState);
   const skipControlledEchoRef = useRef(false);
+  const [localHydrated, setLocalHydrated] = useState(false);
+  const [storageRevision, setStorageRevision] = useState(0);
   const storageKey = `${XP_STORAGE_PREFIX}${campaignId}`;
   const initiativeStorageKey = `${INITIATIVE_STORAGE_PREFIX}${campaignId}`;
 
@@ -234,7 +165,8 @@ export function PlayerSessionTracker({
   }, [campaignId, sessionMode]);
 
   useEffect(() => {
-    if (sessionMode || isControlled) return;
+    if (sessionMode || isControlled || loadingCharacters) return;
+    setLocalHydrated(true);
     try {
       const raw = localStorage.getItem(storageKey);
       if (!raw) return;
@@ -255,7 +187,7 @@ export function PlayerSessionTracker({
     } catch {
       // ignore
     }
-  }, [characters, isControlled, sessionMode, storageKey]);
+  }, [loadingCharacters, storageRevision, characters, isControlled, sessionMode, storageKey]);
 
   useEffect(() => {
     const validCharacterIds = characters.map((character) => character.id);
@@ -274,13 +206,19 @@ export function PlayerSessionTracker({
       onChange?.(xpState);
       return;
     }
-    if (sessionMode) return;
+    if (sessionMode || !localHydrated) return;
     try {
       localStorage.setItem(storageKey, JSON.stringify(xpState));
     } catch {
       // ignore
     }
-  }, [isControlled, onChange, sessionMode, storageKey, xpState]);
+  }, [localHydrated, isControlled, onChange, sessionMode, storageKey, xpState]);
+
+  useEffect(() => {
+    const changed = () => setStorageRevision(r => r + 1);
+    window.addEventListener("gm-session-xp-changed", changed);
+    return () => window.removeEventListener("gm-session-xp-changed", changed);
+  }, []);
 
   const setCharacterState = useCallback(
     (characterId: string, updater: (prev: PerCharacterState) => PerCharacterState) => {
@@ -413,14 +351,18 @@ export function PlayerSessionTracker({
       toast.error("Nessun PE mostro da salvare per questo fight.");
       return;
     }
+    if (onCloseFight) {
+      onCloseFight();
+      return;
+    }
     setXpState((current) => ({
       ...current,
       bankedMonsterXp: Math.max(0, Math.trunc(current.bankedMonsterXp || 0)) + effectiveMonsterXp,
     }));
-    onCloseFight?.();
+    localStorage.removeItem(initiativeStorageKey);
     setDeadMonsterXp(0);
     toast.success(`Fight chiuso: ${effectiveMonsterXp} PE mostro salvati.`);
-  }, [effectiveMonsterXp, onCloseFight]);
+  }, [effectiveMonsterXp, onCloseFight, initiativeStorageKey]);
 
   const computedXpByCharacterId = useMemo(() => {
     const map: Record<string, number> = {};
@@ -470,9 +412,9 @@ export function PlayerSessionTracker({
         <div className="flex items-center gap-2">
           <Swords className="h-4 w-4 text-amber-300" />
           <div className="leading-tight">
-            <h2 className="text-sm font-semibold text-amber-200">Tracker XP Sessione</h2>
+            <h2 className="text-sm font-semibold text-amber-200">EXP sessione</h2>
             <p className="text-[11px] text-zinc-400">
-              Distribuisce i PE ai presenti.
+              Bozza: i PE verranno accreditati solo alla chiusura della sessione.
             </p>
           </div>
         </div>
@@ -484,9 +426,9 @@ export function PlayerSessionTracker({
             className="h-7 border-emerald-600/35 px-2.5 text-[11px] text-emerald-200 hover:bg-emerald-600/15"
             onClick={closeCurrentFight}
             disabled={effectiveMonsterXp <= 0}
-            title="Chiudi fight e salva i PE mostri nel totale sessione"
+            title="Trasferisci i PE al totale sessione senza accreditarli alle schede"
           >
-            Chiudi fight
+            Concludi scontro
           </Button>
           <Button
             type="button"
@@ -503,21 +445,21 @@ export function PlayerSessionTracker({
 
       <div className="mb-3 grid grid-cols-2 gap-2 md:grid-cols-4">
         <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
-          <p className="text-[10px] uppercase tracking-wide text-zinc-400">PE mostri morti</p>
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">Scontro corrente</p>
           <p className="mt-0.5 text-base font-semibold text-amber-200">
             {effectiveMonsterXp}
             <span className="ml-1 text-[10px] font-normal text-zinc-400">PE</span>
           </p>
         </div>
         <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
-          <p className="text-[10px] uppercase tracking-wide text-zinc-400">PE fight chiusi</p>
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">Scontri conclusi</p>
           <p className="mt-0.5 text-base font-semibold text-amber-200">
             {xpState.bankedMonsterXp || 0}
             <span className="ml-1 text-[10px] font-normal text-zinc-400">PE</span>
           </p>
         </div>
         <div className="rounded-md border border-amber-600/20 bg-zinc-950/40 px-2.5 py-2">
-          <label className="text-[10px] uppercase tracking-wide text-zinc-400">PE extra manuali</label>
+          <label className="text-[10px] uppercase tracking-wide text-zinc-400">Extra di gruppo</label>
           <Input
             type="number"
             min={0}
@@ -647,6 +589,7 @@ export function PlayerSessionTracker({
                             setCharacterState(character.id, (previous) => ({
                               ...previous,
                               plus: previous.plus + 1,
+                              customXp: null,
                             }))
                           }
                           disabled={!isPresent}
@@ -666,6 +609,7 @@ export function PlayerSessionTracker({
                             setCharacterState(character.id, (previous) => ({
                               ...previous,
                               minus: previous.minus + 1,
+                              customXp: null,
                             }))
                           }
                           disabled={!isPresent}
@@ -702,7 +646,7 @@ export function PlayerSessionTracker({
                           {isOverridden ? (
                             <>
                               {" "}
-                              · <span className="font-semibold text-emerald-300">{finalValue}</span>
+                              · Finale manuale: <span className="font-semibold text-emerald-300">{finalValue}</span>
                             </>
                           ) : null}
                         </p>

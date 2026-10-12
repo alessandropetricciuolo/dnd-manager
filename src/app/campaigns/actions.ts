@@ -1,5 +1,7 @@
 "use server";
 
+import { resolveXpPayload } from "@/lib/gm/session-xp-draft";
+import { readSessionXpDraft, writeSessionXpDraft } from "@/lib/gm/session-xp-draft-server";
 import { revalidatePath } from "next/cache";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -2081,17 +2083,18 @@ async function saveSessionPrecloseWithRpc(
   actorId: string,
   attendance: Record<string, "attended" | "absent">,
   xpGained: number,
-  perPlayerXpAwards: { playerId: string; xp: number }[] | undefined
+  perPlayerXpAwards: { playerId: string; xp: number }[] | undefined,
+  expectedRevision?: number
 ): Promise<{ success: true } | { success: false; error: string }> {
-  const { error } = await admin.rpc("save_session_preclose" as never, {
-    p_session_id: sessionId,
-    p_actor_id: actorId,
-    p_attendance: attendance as unknown as Json,
-    p_xp_gained: Math.max(0, Math.floor(xpGained)),
-    p_per_player_xp_awards: (perPlayerXpAwards ?? []) as unknown as Json,
-  } as never);
-  if (error) return { success: false, error: error.message ?? "Errore nel salvataggio in bozza." };
-  return { success: true };
+  try {
+    const existing = await readSessionXpDraft(actorId, sessionId);
+    await writeSessionXpDraft(actorId, sessionId, {
+      attendance, xpGained:Math.max(0,Math.floor(xpGained)), perPlayerXpAwards:perPlayerXpAwards ?? [],
+    }, expectedRevision ?? existing.revision);
+    return {success:true};
+  } catch(error) {
+    return {success:false,error:error instanceof Error ? error.message : "Bozza non salvata."};
+  }
 }
 
 async function closeSessionWithXpRpc(
@@ -2099,18 +2102,11 @@ async function closeSessionWithXpRpc(
   sessionId: string,
   actorId: string,
   payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards" | "summary" | "gm_private_notes">,
-  persisted?: { xpGained?: number | null; perPlayerXpAwards?: unknown }
+  persisted?: { xpGained?: number | null; perPlayerXpAwards?: unknown },
+  expectedRevision?: number
 ): Promise<{ success: true; data: SessionXpRpcResult | null } | { success: false; error: string }> {
-  const persistedAwards = Array.isArray(persisted?.perPlayerXpAwards)
-    ? persisted.perPlayerXpAwards
-    : [];
-  const xpGained =
-    persisted?.xpGained != null && payload.xpGained <= 0
-      ? persisted.xpGained
-      : Math.max(0, Math.floor(payload.xpGained));
-  const perPlayerXpAwards =
-    payload.perPlayerXpAwards?.length ? payload.perPlayerXpAwards : persistedAwards;
-  const { data, error } = await admin.rpc("close_session_with_xp_persisted" as never, {
+  const {xpGained, perPlayerXpAwards} = resolveXpPayload(payload, persisted);
+  const { data, error } = await admin.rpc((expectedRevision == null ? "close_session_with_xp_persisted" : "close_session_with_reviewed_xp") as never, {
     p_session_id: sessionId,
     p_actor_id: actorId,
     p_attendance: payload.attendance as unknown as Json,
@@ -2118,6 +2114,7 @@ async function closeSessionWithXpRpc(
     p_per_player_xp_awards: perPlayerXpAwards as unknown as Json,
     p_summary: payload.summary?.trim() || null,
     p_gm_private_notes: payload.gm_private_notes?.trim() || null,
+    ...(expectedRevision == null ? {} : {p_expected_revision:expectedRevision,p_elapsed_hours:0,p_hour_updates:[],p_calendar_config:null,p_calendar_base_date:null}),
   } as never);
   if (error) return { success: false, error: error.message ?? "Errore durante la chiusura." };
   const result = Array.isArray(data) ? (data[0] as SessionXpRpcResult | undefined) ?? null : null;
@@ -2132,13 +2129,7 @@ async function closeSessionWithXpAndHoursRpc(
   payload: CloseSessionActionPayload,
   persisted: { xpGained?: number | null; perPlayerXpAwards?: unknown }
 ): Promise<{ success: true } | { success: false; error: string }> {
-  const persistedAwards = Array.isArray(persisted.perPlayerXpAwards) ? persisted.perPlayerXpAwards : [];
-  const xpGained = persisted.xpGained != null && payload.xpGained <= 0
-    ? persisted.xpGained
-    : Math.max(0, Math.floor(payload.xpGained));
-  const perPlayerXpAwards = payload.perPlayerXpAwards?.length
-    ? payload.perPlayerXpAwards
-    : persistedAwards;
+  const {xpGained, perPlayerXpAwards} = resolveXpPayload(payload, persisted);
   let plan: Awaited<ReturnType<typeof buildSessionHourPlan>>;
   try {
     plan = await buildSessionHourPlan(admin, campaignId, payload.attendance, payload.elapsedHours);
@@ -2147,7 +2138,7 @@ async function closeSessionWithXpAndHoursRpc(
   }
   const { error } = await admin.rpc((payload.resetOneshotAssignments
     ? "close_oneshot_session_and_reset_assignments"
-    : "close_session_with_xp_and_hours") as never, {
+    : payload.expectedXpDraftRevision != null ? "close_session_with_reviewed_xp" : "close_session_with_xp_and_hours") as never, {
     p_session_id: sessionId,
     p_actor_id: actorId,
     p_attendance: payload.attendance as unknown as Json,
@@ -2159,8 +2150,9 @@ async function closeSessionWithXpAndHoursRpc(
     p_hour_updates: plan.updates as unknown as Json,
     p_calendar_config: plan.calendarConfig,
     p_calendar_base_date: plan.calendarBaseDate,
+    ...(!payload.resetOneshotAssignments && payload.expectedXpDraftRevision != null ? {p_expected_revision:payload.expectedXpDraftRevision} : {}),
   } as never);
-  if (error) return { success: false, error: error.message ?? "Chiusura atomica non riuscita." };
+  if (error) return { success: false, error: error.message?.includes("xp_draft_conflict") ? "La bozza è cambiata su un altro dispositivo. Riapri il riepilogo prima di chiudere." : error.message ?? "Chiusura atomica non riuscita." };
   const { data: closedSession, error: sessionReadError } = await admin
     .from("sessions")
     .select("status,elapsed_hours")
@@ -2285,6 +2277,7 @@ function formatSessionXpConfirmation(awards: SessionXpConfirmation[]): string {
 
 /** Payload unificato per chiusura sessione (EndSessionWizard). */
 export type CloseSessionActionPayload = {
+  expectedXpDraftRevision?: number;
   /** player_id -> attended | absent */
   attendance: Record<string, "attended" | "absent">;
   /** XP da assegnare a tutti i presenti (numero >= 0). */
@@ -2484,7 +2477,7 @@ export async function closeSessionAction(
   }
 }
 
-type PreCloseSessionPayload = Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards">;
+type PreCloseSessionPayload = Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards" | "expectedXpDraftRevision">;
 
 /** Pre-chiusura sessione: registra presenze e XP, marca la sessione come salvata in bozza (is_pre_closed = true). */
 export async function preCloseSessionAction(
@@ -2525,7 +2518,8 @@ export async function preCloseSessionAction(
       user.id,
       payload.attendance,
       payload.xpGained,
-      payload.perPlayerXpAwards
+      payload.perPlayerXpAwards,
+      payload.expectedXpDraftRevision
     );
     if (!preCloseResult.success) {
       console.error("[preCloseSessionAction] attendance", preCloseResult.error);
@@ -2557,6 +2551,8 @@ export async function getSessionWizardMeta(
   data?: {
     id: string;
     campaign_id: string;
+    attendance: Record<string,"attended"|"absent">;
+    xp_draft_revision: number;
     is_pre_closed: boolean;
     pre_closed_xp_gained: number | null;
     pre_closed_xp_awards: { playerId: string; xp: number }[];
@@ -2581,6 +2577,9 @@ export async function getSessionWizardMeta(
     if (!data) {
       return { success: false, error: "Sessione non trovata." };
     }
+    const {data:{user}} = await supabase.auth.getUser();
+    if (!user) return {success:false,error:"Devi essere autenticato."};
+    const shared = await readSessionXpDraft(user.id,sessionId);
     const row = data as { id: string; campaign_id: string; is_pre_closed?: boolean | null; status: string };
     if (row.status !== "scheduled" && row.status !== "completed") {
       // Per sicurezza, ma il wizard è usato solo su sessioni schedulate o appena chiuse.
@@ -2590,6 +2589,8 @@ export async function getSessionWizardMeta(
       data: {
         id: row.id,
         campaign_id: row.campaign_id,
+        attendance:shared.draft?.attendance ?? {},
+        xp_draft_revision:shared.revision,
         is_pre_closed: row.is_pre_closed === true,
         pre_closed_xp_gained:
           typeof (row as unknown as { pre_closed_xp_gained?: unknown }).pre_closed_xp_gained === "number"
@@ -2656,13 +2657,14 @@ export async function closeSession(
       }
       return { success: false, message: "La sessione è già chiusa." };
     }
+    const sharedXp = await readSessionXpDraft(user.id,sessionId);
     const closeResult = await closeSessionWithXpRpc(admin, sessionId, user.id, {
-      attendance: attendanceData,
-      xpGained: 0,
-      perPlayerXpAwards: [],
+      attendance: {...attendanceData,...sharedXp.draft?.attendance},
+      xpGained: sharedXp.draft?.xpGained ?? 0,
+      perPlayerXpAwards: sharedXp.draft?.perPlayerXpAwards ?? [],
       summary: "",
       gm_private_notes: null,
-    });
+    }, undefined, sharedXp.revision);
     if (!closeResult.success) {
       console.error("[closeSession]", closeResult.error);
       return { success: false, message: closeResult.error ?? "Errore durante la chiusura." };
@@ -2754,7 +2756,8 @@ export async function closeSessionQuestOrOneshot(
       .from("session_signups")
       .select("id, player_id, status")
       .eq("session_id", sessionId);
-    const list = (signups ?? []) as { id: string; player_id: string; status: string }[];
+    const sharedXp = await readSessionXpDraft(user.id,sessionId);
+    const list = ((signups ?? []) as { id: string; player_id: string; status: string }[]).map(signup => ({...signup,status:sharedXp.draft?.attendance[signup.player_id] ?? signup.status}));
     if (list.length === 0) {
       // Permettiamo la chiusura anche senza iscritti; la RPC gestisce comunque
       // transazionalmente il passaggio della sessione a completed.
@@ -2772,11 +2775,11 @@ export async function closeSessionQuestOrOneshot(
       attendance: Object.fromEntries(
         list.map((signup) => [signup.player_id, signup.status === "attended" ? "attended" : "absent"])
       ),
-      xpGained: 0,
-      perPlayerXpAwards: [],
+      xpGained: sharedXp.draft?.xpGained ?? 0,
+      perPlayerXpAwards: sharedXp.draft?.perPlayerXpAwards ?? [],
       summary: "",
       gm_private_notes: null,
-    });
+    }, undefined, sharedXp.revision);
     if (!closeResult.success) {
       console.error("[closeSessionQuestOrOneshot]", closeResult.error);
       return { success: false, message: closeResult.error ?? "Errore durante la chiusura." };

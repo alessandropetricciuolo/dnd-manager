@@ -34,19 +34,6 @@ export function GmTacticalScreen({
   const initiativeRef = useRef<InitiativeTrackerHandle>(null);
   const [activeCombatant, setActiveCombatant] = useState<InitiativeEntry | null>(null);
 
-  // Accredito EXP al click di 'Chiudi Fight' nella sessione attiva (campagne Long)
-  const handleBankExp = useCallback(
-    async (exp: number) => {
-      if (long?.xpState && long.setXpState) {
-        long.setXpState({
-          ...long.xpState,
-          bankedMonsterXp: (long.xpState.bankedMonsterXp ?? 0) + exp,
-        });
-      }
-    },
-    [long]
-  );
-
   const handleEnrichMonster = useCallback((id: string, body: string) => {
     initiativeRef.current?.enrichMonster?.(id, body);
   }, []);
@@ -67,13 +54,13 @@ export function GmTacticalScreen({
             <InitiativeTracker
               ref={initiativeRef}
               campaignId={long.campaignId}
-              campaignType="long"
+              campaignType={campaignType ?? "long"}
               availableCharacters={long.sessionCharacters}
               value={long.initiativeState}
               onChange={long.setInitiativeState}
               defaultDisplay="table"
               onActiveCombatantChange={setActiveCombatant}
-              onBankExp={handleBankExp}
+              onConcludeFight={long.concludeFight}
             />
           ) : (
             <InitiativeTracker
@@ -82,7 +69,6 @@ export function GmTacticalScreen({
               campaignType={campaignType}
               defaultDisplay="table"
               onActiveCombatantChange={setActiveCombatant}
-              onBankExp={handleBankExp}
             />
           )}
         </div>

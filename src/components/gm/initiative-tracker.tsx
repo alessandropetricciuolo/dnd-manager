@@ -338,6 +338,7 @@ type InitiativeTrackerProps = {
   /** Apri lo statblock mostro come pannello (GM Screen griglia). */
   onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
   /** FIGHT MODE: accredito automatico EXP al click di 'Chiudi Fight' (campagne long). */
+  onConcludeFight?: () => boolean | void | Promise<boolean | void>;
   onBankExp?: (exp: number) => void | Promise<void>;
   /** FIGHT MODE: notifica al parent del combattente attivo per la card spotlight */
   onActiveCombatantChange?: (entry: InitiativeEntry | null) => void;
@@ -377,6 +378,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       torneoMegatimer = null,
       onOpenMonsterStat,
       onBankExp,
+      onConcludeFight,
       onActiveCombatantChange,
       defaultDisplay = "tactical",
     },
@@ -940,6 +942,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     if (entries.length > 0) {
       setLastResetState({ ...buildTrackerState(), at: Date.now() });
     }
+    if (isControlled) onChange?.(emptyInitiativeTrackerState());
     setEntries([]);
     setCurrentTurnIndex(0);
     setRoundNumber(1);
@@ -950,9 +953,13 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     } catch {
       // ignore
     }
-  }, [buildTrackerState, storageKey, entries.length, turnTimer]);
+  }, [buildTrackerState, storageKey, entries.length, turnTimer, isControlled, onChange]);
 
+  const concludingFightRef = useRef(false);
   const handleCloseFight = useCallback(async () => {
+    if (concludingFightRef.current) return;
+    concludingFightRef.current = true;
+    try {
     if (entries.length === 0) {
       toast.error("Nessun combattimento attivo da chiudere.");
       return;
@@ -964,7 +971,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
     const totalExp = deadMonsters.reduce((acc, m) => acc + (m.exp ?? 0), 0);
 
-    if (campaignType === "long" && onBankExp) {
+    if (onConcludeFight) {
+      if (await onConcludeFight() === false) return;
+    } else if (campaignType === "long" && onBankExp) {
       await onBankExp(totalExp);
       if (totalExp > 0) {
         toast.success(`Combattimento chiuso! ${totalExp} EXP bancati per la sessione.`);
@@ -972,13 +981,22 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         toast.info("Combattimento chiuso! Nessun mostro sconfitto con valore EXP.");
       }
     } else if (totalExp > 0) {
+      const key = `gm-screen-session-xp-${campaignId}`;
+      let previous;
+      try { previous = JSON.parse(localStorage.getItem(key) ?? '{"version":2,"extraXpManual":0,"bankedMonsterXp":0,"perCharacter":{}}');
+      localStorage.setItem(key, JSON.stringify({...previous, bankedMonsterXp: (previous.bankedMonsterXp ?? 0) + totalExp}));
+      } catch { toast.error("EXP non salvata. Il combattimento resta disponibile."); return; }
+      window.dispatchEvent(new Event("gm-session-xp-changed"));
       toast.success(`Combattimento chiuso! Totale mostri sconfitti: ${totalExp} EXP.`);
     } else {
       toast.info("Combattimento chiuso!");
     }
 
     resetTracker();
-  }, [entries, campaignType, onBankExp, resetTracker]);
+    setLastResetState(null);
+    } catch { toast.error("Scontro non concluso: riprova il salvataggio."); }
+    finally { concludingFightRef.current = false; }
+  }, [entries, campaignType, campaignId, onBankExp, onConcludeFight, resetTracker]);
 
   const updateConditions = useCallback((entryId: string, conditions: CombatConditionId[]) => {
     setEntries((prev) =>
@@ -1496,10 +1514,10 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             className="h-7 border-emerald-500/40 px-2 text-xs text-emerald-300 hover:bg-emerald-500/20"
             onClick={() => void handleCloseFight()}
             disabled={entries.length === 0}
-            title="Chiudi scontro e accredita l'esperienza dei mostri sconfitti (campagne Long)"
+            title="Trasferisci i PE dei mostri alla bozza sessione"
           >
             <CheckCircle2 className="mr-1 h-3 w-3" />
-            Chiudi Fight
+            Concludi scontro
           </Button>
           <Button
             variant="outline"

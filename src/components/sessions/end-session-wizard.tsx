@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import {
   getLongCampaignEconomySnapshot,
   type EconomyCharacterSnapshot,
@@ -148,6 +148,8 @@ export function EndSessionWizard({
   const [signups, setSignups] = useState<ApprovedSignupForWizard[]>([]);
 
   const [attendance, setAttendance] = useState<Record<string, "attended" | "absent">>({});
+  const [expectedXpDraftRevision, setExpectedXpDraftRevision] = useState<number | undefined>(undefined);
+  const [xpReviewCharacters, setXpReviewCharacters] = useState<CampaignCharacterRow[]>([]);
   const [xpGained, setXpGained] = useState(0);
   const [resolvedPerPlayerXpAwards, setResolvedPerPlayerXpAwards] = useState<
     { playerId: string; xp: number }[] | undefined
@@ -243,8 +245,12 @@ export function EndSessionWizard({
     }
   }, [campaignId]);
 
+  const initializedWizardRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!open) return;
+    if (!open) { initializedWizardRef.current = null; return; }
+    if (initializedWizardRef.current === sessionId) return;
+    initializedWizardRef.current = sessionId;
+    setExpectedXpDraftRevision(undefined);
     setStep(1);
     setIsPreClosed(false);
     setSummary("");
@@ -264,17 +270,19 @@ export function EndSessionWizard({
     setXpGained(Math.max(0, Math.floor(initialXpGained ?? 0)));
     setResolvedPerPlayerXpAwards(perPlayerXpAwards);
     (async () => {
-      // Metadati sessione: se è in pre-chiusura, salta direttamente allo step 2
-      const meta = await getSessionWizardMeta(sessionId);
+      // Recupera gli importi salvati soltanto quando il chiamante non li ha forniti.
+      const [meta, xpCharacters] = await Promise.all([getSessionWizardMeta(sessionId),getCampaignCharacters(campaignId)]);
+      setXpReviewCharacters(xpCharacters.success ? xpCharacters.data ?? [] : []);
+      if (meta.success && meta.data) setExpectedXpDraftRevision(meta.data.xp_draft_revision);
       if (meta.success && meta.data?.is_pre_closed) {
         setIsPreClosed(true);
-        if (meta.data.pre_closed_xp_gained != null) {
+        if (initialXpGained == null && meta.data.pre_closed_xp_gained != null) {
           setXpGained(Math.max(0, Math.floor(meta.data.pre_closed_xp_gained)));
         }
-        if (meta.data.pre_closed_xp_awards.length > 0) {
+        if (perPlayerXpAwards == null && meta.data.pre_closed_xp_awards.length > 0) {
           setResolvedPerPlayerXpAwards(meta.data.pre_closed_xp_awards);
         }
-        setStep(2 as StepId);
+        // La bozza resta modificabile: EXP e presenze vanno sempre riviste.
       }
 
       if (initialApprovedSignups?.length) {
@@ -285,7 +293,7 @@ export function EndSessionWizard({
             (acc, s) => {
               const st = (s.status ?? "").toLowerCase();
               const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-              acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
+              acc[s.player_id] = initialAttendance?.[s.player_id] ?? meta.data?.attendance[s.player_id] ?? value;
               return acc;
             },
             {} as Record<string, "attended" | "absent">
@@ -302,7 +310,7 @@ export function EndSessionWizard({
               (acc, s) => {
                 const st = (s.status ?? "").toLowerCase();
                 const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-                acc[s.player_id] = initialAttendance?.[s.player_id] ?? value;
+                acc[s.player_id] = initialAttendance?.[s.player_id] ?? meta.data?.attendance[s.player_id] ?? value;
                 return acc;
               },
               {} as Record<string, "attended" | "absent">
@@ -314,8 +322,8 @@ export function EndSessionWizard({
       }
 
       if (
-        (initialXpGained == null || initialXpGained <= 0) &&
-        (!perPlayerXpAwards || perPlayerXpAwards.length === 0)
+        initialXpGained == null &&
+        perPlayerXpAwards == null
       ) {
         const draft = readSessionCloseDraft(campaignId, sessionId);
         if (draft?.xpState) {
@@ -540,7 +548,9 @@ export function EndSessionWizard({
       }
     }
 
+    if (expectedXpDraftRevision == null) { toast.error("Bozza non caricata. Riapri il riepilogo prima di chiudere."); setSubmitting(false); return; }
     const payload: CloseSessionActionPayload = {
+      expectedXpDraftRevision,
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
       perPlayerXpAwards: resolvedPerPlayerXpAwards?.filter(
@@ -579,7 +589,8 @@ export function EndSessionWizard({
       return;
     }
     setPreClosing(true);
-    const payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards"> = {
+    const payload: Pick<CloseSessionActionPayload, "attendance" | "xpGained" | "perPlayerXpAwards" | "expectedXpDraftRevision"> = {
+      expectedXpDraftRevision,
       attendance,
       xpGained: Math.max(0, Math.floor(xpGained)),
       perPlayerXpAwards: resolvedPerPlayerXpAwards?.filter(
@@ -591,7 +602,6 @@ export function EndSessionWizard({
     if (res.success) {
       toast.success("Sessione salvata in bozza. Puoi completare il debrief più tardi.");
       onOpenChange(false);
-      onSuccess?.();
       // Esci dal GM Screen verso la dashboard campagna
       router.push(`/campaigns/${campaignId}`);
       router.refresh();
@@ -670,7 +680,7 @@ export function EndSessionWizard({
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
           {/* Step 1: Logistica & Presenze (saltato se la sessione è già in pre-chiusura) */}
-          {step === 1 && !isPreClosed && (
+          {step === 1 && (
             <>
               {loadingSignups ? (
                 <div className="flex items-center justify-center py-8">
@@ -728,11 +738,31 @@ export function EndSessionWizard({
                       type="number"
                       min={0}
                       value={xpGained || ""}
-                      onChange={(e) => setXpGained(parseInt(e.target.value, 10) || 0)}
+                      onChange={(e) => {
+                        const xp = Math.max(0,parseInt(e.target.value, 10) || 0);
+                        setXpGained(xp);
+                        setResolvedPerPlayerXpAwards(signups.filter(s => attendance[s.player_id] !== "absent").map(s => ({playerId:s.player_id,xp})));
+                      }}
                       className="border-barber-gold/30 bg-barber-dark text-barber-paper"
                       placeholder="0"
                     />
                   </div>
+                  {resolvedPerPlayerXpAwards && <div className="space-y-2">
+                    <p className="text-sm">EXP definitive per giocatore (zero è valido)</p>
+                    {signups.filter(s => attendance[s.player_id] !== "absent").map(signup => {
+                      const award = resolvedPerPlayerXpAwards.find(a => a.playerId === signup.player_id);
+                      return <label key={signup.player_id} className="flex items-center justify-between gap-3 text-sm">
+                        <span>{signup.player_name}{(() => {
+                          const character = xpReviewCharacters.find(c => c.assigned_to === signup.player_id);
+                          return character ? <span className="block text-xs text-barber-paper/60">Totale: {character.current_xp ?? 0} → {(character.current_xp ?? 0) + (award?.xp ?? xpGained)}</span> : null;
+                        })()}</span><Input type="number" min={0} className="w-28" value={award?.xp ?? xpGained}
+                          onChange={event => {
+                            const xp = Math.max(0,parseInt(event.target.value,10) || 0);
+                            setResolvedPerPlayerXpAwards(current => [...(current ?? []).filter(a => a.playerId !== signup.player_id),{playerId:signup.player_id,xp}]);
+                          }} />
+                      </label>;
+                    })}
+                  </div>}
                   <div className="space-y-2">
                     <Label htmlFor="wizard-epoch-hours" className="text-barber-paper/90">
                       Ore di gioco trascorse (es. viaggio + esplorazione)
@@ -1310,7 +1340,7 @@ export function EndSessionWizard({
           </Button>
           {step < confirmStep ? (
             <>
-              {step === 1 && !isPreClosed && (
+              {step === 1 && (
                 <Button
                   type="button"
                   variant="outline"

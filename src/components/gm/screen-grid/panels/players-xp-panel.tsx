@@ -10,7 +10,7 @@ export function PlayersXpPanel() {
 
   if (long) {
     return (
-      <PlayerSessionTracker
+      <div><p className="px-3 text-xs text-muted-foreground">{long.draftMessage}</p><PlayerSessionTracker
         campaignId={long.campaignId}
         characters={long.sessionCharacters}
         attendance={long.attendance}
@@ -18,16 +18,8 @@ export function PlayersXpPanel() {
         initiativeEntries={long.initiativeState.entries}
         value={long.xpState}
         onChange={long.setXpState}
-        onCloseFight={() =>
-          long.setInitiativeState({
-            entries: [],
-            currentTurnIndex: 0,
-            roundNumber: 1,
-            turnElapsedSeconds: 0,
-            isTurnTimerRunning: false,
-          })
-        }
-      />
+        onCloseFight={long.concludeFight}
+      /></div>
     );
   }
 

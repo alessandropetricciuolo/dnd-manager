@@ -16,6 +16,9 @@ import {
   getLongCampaignCalendarState,
   saveLongCampaignCalendarBaseDate,
 } from "@/app/campaigns/actions";
+import {toast} from "sonner";
+import { getSessionXpDraftAction, saveSessionXpDraftAction } from "@/app/campaigns/session-xp-actions";
+import { computeSessionXpAwards, monsterXp } from "@/lib/gm/session-xp";
 import { getCampaignSessionsForGm, type CampaignSessionOption } from "@/app/campaigns/gm-actions";
 import {
   type InitiativeEntry,
@@ -67,6 +70,8 @@ export type LongSessionMissionSelection = {
 type InitiativeState = InitiativeTrackerState;
 
 type StoredLongSessionState = {
+  importedLegacy?: boolean;
+  revision?: number;
   version: 2;
   attendance: Record<string, LongSessionAttendanceStatus>;
   initiative: InitiativeState;
@@ -78,6 +83,9 @@ type StoredLongSessionState = {
 
 type LongSessionContextValue = {
   campaignId: string;
+  setDraftPaused: (paused: boolean) => void;
+  concludeFight: () => boolean;
+  draftMessage: string;
   sessions: CampaignSessionOption[];
   loadingSessions: boolean;
   selectedSessionId: string | null;
@@ -161,8 +169,17 @@ function formatSessionLabel(session: CampaignSessionOption): string {
 function readStoredSessionState(campaignId: string, sessionId: string): StoredLongSessionState | null {
   try {
     const raw = localStorage.getItem(sessionStateKey(campaignId, sessionId));
-    if (!raw) return null;
+    if (!raw) {
+      if (localStorage.getItem(`gm-screen-legacy-xp-imported-${campaignId}`)) return null;
+      const oldXp = localStorage.getItem(`gm-screen-session-xp-${campaignId}`);
+      const oldInitiative = localStorage.getItem(`gm-screen-initiative-${campaignId}`);
+      if (!oldXp && !oldInitiative) return null;
+      return {version:2,importedLegacy:true,attendance:{},xp:oldXp ? JSON.parse(oldXp) : emptyXpState,
+        initiative:sanitizeInitiativeState(oldInitiative ? JSON.parse(oldInitiative) : null),elapsedHours:0,
+        economyDraft:emptyEconomyDraft,missionSelection:emptyMissionSelection};
+    }
     const parsed = JSON.parse(raw) as {
+      revision?: number;
       version?: number;
       attendance?: Record<string, LongSessionAttendanceStatus>;
       initiative?: InitiativeState;
@@ -173,6 +190,7 @@ function readStoredSessionState(campaignId: string, sessionId: string): StoredLo
     };
     if (parsed?.version !== 1 && parsed?.version !== 2) return null;
     return {
+      revision: parsed.revision,
       version: 2,
       attendance: parsed.attendance ?? {},
       initiative: sanitizeInitiativeState(parsed.initiative),
@@ -306,6 +324,24 @@ export function GmScreenLongStateProvider({
   const [economyDraft, setEconomyDraftState] = useState<LongSessionEconomyDraft>(emptyEconomyDraft);
   const [missionSelection, setMissionSelectionState] = useState<LongSessionMissionSelection>(emptyMissionSelection);
   const restoreRef = useRef(false);
+  const [hydratedSessionId, setHydratedSessionId] = useState<string | null>(null);
+  const [draftPaused, setDraftPaused] = useState(false);
+  const [draftMessage, setDraftMessage] = useState("");
+  const hydratedSessionRef = useRef<string | null>(null);
+  const revisionRef = useRef<Record<string, number>>({});
+  const lastSavedRef = useRef<Record<string,string>>({});
+  const readableSessionsRef = useRef(new Set<string>());
+  const saveQueueRef = useRef(Promise.resolve());
+  const initiativeRef = useRef(initiativeState);
+  initiativeRef.current = initiativeState;
+  const concludeFight = useCallback(() => {
+    if (!selectedSessionId || hydratedSessionId !== selectedSessionId) { toast.error("Seleziona una sessione e attendi il caricamento della bozza."); return false; }
+    const xp = monsterXp(initiativeRef.current.entries);
+    initiativeRef.current = emptyInitiativeTrackerState();
+    setXpState(current => ({...current, bankedMonsterXp: current.bankedMonsterXp + xp}));
+    setInitiativeState(initiativeRef.current);
+    return true;
+  }, [selectedSessionId, hydratedSessionId]);
 
   const refreshSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -378,6 +414,8 @@ export function GmScreenLongStateProvider({
   }, [campaignId, selectedSessionId]);
 
   useEffect(() => {
+    if (selectedSessionId && hydratedSessionRef.current === selectedSessionId) return;
+    setHydratedSessionId(null);
     if (!selectedSessionId) {
       setSignups([]);
       setAttendanceState({});
@@ -389,11 +427,13 @@ export function GmScreenLongStateProvider({
       return;
     }
 
+    if (loadingCharacters) return;
     let cancelled = false;
+    const localDraft = readStoredSessionState(campaignId, selectedSessionId);
 
     const loadSignups = async () => {
       setLoadingSignups(true);
-      const result = await getApprovedSignupsForSession(selectedSessionId);
+      const [result, shared] = await Promise.all([getApprovedSignupsForSession(selectedSessionId), getSessionXpDraftAction(selectedSessionId)]);
       if (cancelled) return;
       setLoadingSignups(false);
       const nextSignups = result.success && result.data ? result.data : [];
@@ -405,11 +445,36 @@ export function GmScreenLongStateProvider({
           nextSignups.some((signup) => signup.player_id === character.assigned_to)
         )
         .map((character) => character.id);
-      const stored = readStoredSessionState(campaignId, selectedSessionId);
+      revisionRef.current[selectedSessionId] = shared.success ? shared.data.revision : 0;
+      if (shared.success && shared.data.status === "scheduled") readableSessionsRef.current.add(selectedSessionId);
+      else readableSessionsRef.current.delete(selectedSessionId);
+      const serverDraft = shared.success ? shared.data.draft : null;
+      const stored = serverDraft
+        ? (localDraft?.revision === revisionRef.current[selectedSessionId] ? localDraft : serverDraft.snapshot as unknown as StoredLongSessionState | undefined)
+        : localDraft;
+      const restoredXp = sanitizeXpState(stored?.xp, validCharacterIds);
+      if (serverDraft && !serverDraft.snapshot) {
+        for (const award of serverDraft.perPlayerXpAwards) {
+          const character = allCharacters.find(c => c.assigned_to === award.playerId);
+          if (character) restoredXp.perCharacter[character.id] = {plus:0,minus:0,customXp:award.xp};
+        }
+        if (serverDraft.perPlayerXpAwards.length === 0) {
+          for (const id of validCharacterIds) restoredXp.perCharacter[id] = {plus:0,minus:0,customXp:serverDraft.xpGained};
+        }
+      }
+      setDraftMessage(shared.success ? "Bozza condivisa caricata" : "Bozza locale: " + shared.error);
+      lastSavedRef.current[selectedSessionId] = "";
 
-      setAttendanceState({ ...defaults, ...(stored?.attendance ?? {}) });
+      if (stored?.importedLegacy) {
+        for (const character of allCharacters) {
+          const old = stored.xp.perCharacter[character.id] as LongSessionXpCharacterState & {present?:boolean};
+          if (character.assigned_to && old?.present === false) defaults[character.assigned_to] = "absent";
+        }
+        try {localStorage.setItem(`gm-screen-legacy-xp-imported-${campaignId}`,selectedSessionId);} catch { /* Keep existing copy. */ }
+      }
+      setAttendanceState({ ...defaults, ...(serverDraft?.attendance ?? {}), ...(stored?.attendance ?? {}) });
       setInitiativeState(sanitizeInitiativeState(stored?.initiative));
-      setXpState(sanitizeXpState(stored?.xp, validCharacterIds));
+      setXpState(restoredXp);
       setElapsedHoursState(
         stored?.elapsedHours != null && Number.isFinite(stored.elapsedHours)
           ? Math.max(0, Math.trunc(stored.elapsedHours))
@@ -417,13 +482,15 @@ export function GmScreenLongStateProvider({
       );
       setEconomyDraftState(sanitizeEconomyDraft(stored?.economyDraft, validCharacterIds));
       setMissionSelectionState(sanitizeMissionSelection(stored?.missionSelection));
+      hydratedSessionRef.current = selectedSessionId;
+      setHydratedSessionId(selectedSessionId);
     };
 
     void loadSignups();
     return () => {
       cancelled = true;
     };
-  }, [allCharacters, campaignId, selectedSessionId]);
+  }, [allCharacters, loadingCharacters, campaignId, selectedSessionId]);
 
   const sessionCharacters = useMemo(() => {
     if (!signups.length) return [];
@@ -446,7 +513,7 @@ export function GmScreenLongStateProvider({
   }, [sessionCharacters, signups]);
 
   useEffect(() => {
-    if (!selectedSessionId) return;
+    if (!selectedSessionId || hydratedSessionId !== selectedSessionId || loadingCharacters) return;
     const validCharacterIds = sessionCharacters.map((character) => character.id);
     setXpState((current) => sanitizeXpState(current, validCharacterIds));
     setEconomyDraftState((current) => sanitizeEconomyDraft(current, validCharacterIds));
@@ -454,12 +521,13 @@ export function GmScreenLongStateProvider({
       const defaults = buildDefaultAttendance(signups);
       return { ...defaults, ...current };
     });
-  }, [selectedSessionId, sessionCharacters, signups]);
+  }, [hydratedSessionId, loadingCharacters, selectedSessionId, sessionCharacters, signups]);
 
   useEffect(() => {
-    if (!selectedSessionId || typeof window === "undefined") return;
+    if (!selectedSessionId || hydratedSessionId !== selectedSessionId || typeof window === "undefined") return;
     try {
       const payload: StoredLongSessionState = {
+        revision: revisionRef.current[selectedSessionId],
         version: 2,
         attendance,
         initiative: initiativeState,
@@ -472,9 +540,37 @@ export function GmScreenLongStateProvider({
     } catch {
       // ignore
     }
-  }, [attendance, campaignId, economyDraft, elapsedHours, initiativeState, missionSelection, selectedSessionId, xpState]);
+  }, [hydratedSessionId, attendance, campaignId, economyDraft, elapsedHours, initiativeState, missionSelection, selectedSessionId, xpState]);
+
+  const initiativeDraftState = useMemo(() => ({entries:initiativeState.entries,currentTurnIndex:initiativeState.currentTurnIndex,roundNumber:initiativeState.roundNumber,isTurnTimerRunning:initiativeState.isTurnTimerRunning,turnElapsedSeconds:0}), [initiativeState.entries,initiativeState.currentTurnIndex,initiativeState.roundNumber,initiativeState.isTurnTimerRunning]);
+  useEffect(() => {
+    if (draftPaused || !selectedSessionId || hydratedSessionId !== selectedSessionId || !readableSessionsRef.current.has(selectedSessionId)) return;
+    const computed = computeSessionXpAwards({characters:sessionCharacters, attendance, xpState, initiativeEntries:initiativeDraftState.entries});
+    const draft = {attendance, xpGained:computed.basePerPlayer, perPlayerXpAwards:computed.awards,
+      snapshot:{version:2,attendance,initiative:initiativeDraftState,xp:xpState,elapsedHours,economyDraft,missionSelection}};
+    const signature = JSON.stringify(draft);
+    if (signature === lastSavedRef.current[selectedSessionId]) return;
+    const timer = setTimeout(() => {
+      saveQueueRef.current = saveQueueRef.current.then(async () => {
+        setDraftMessage("Salvataggio bozza…");
+        const result = await saveSessionXpDraftAction(selectedSessionId, draft, revisionRef.current[selectedSessionId]);
+        if (result.success) {
+          revisionRef.current[selectedSessionId] = result.data.revision;
+          lastSavedRef.current[selectedSessionId] = signature;
+          try {
+            const raw = localStorage.getItem(sessionStateKey(campaignId,selectedSessionId));
+            if (raw) localStorage.setItem(sessionStateKey(campaignId,selectedSessionId),JSON.stringify({...JSON.parse(raw),revision:result.data.revision}));
+          } catch { /* Local recovery remains available when storage is full. */ }
+          setDraftMessage("Bozza condivisa salvata");
+        } else setDraftMessage("Bozza locale: " + result.error);
+      });
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [draftPaused,campaignId,selectedSessionId,hydratedSessionId,sessionCharacters,attendance,xpState,initiativeDraftState,elapsedHours,economyDraft,missionSelection]);
 
   const setSelectedSessionId = useCallback((sessionId: string | null) => {
+    hydratedSessionRef.current = null;
+    setHydratedSessionId(null);
     setSelectedSessionIdState(sessionId);
   }, []);
 
@@ -601,6 +697,9 @@ export function GmScreenLongStateProvider({
   const value = useMemo<LongSessionContextValue>(
     () => ({
       campaignId,
+      setDraftPaused,
+      concludeFight,
+      draftMessage,
       sessions,
       loadingSessions,
       selectedSessionId,
@@ -637,6 +736,8 @@ export function GmScreenLongStateProvider({
       hasUnsavedLocalState,
     }),
     [
+      concludeFight,
+      draftMessage,
       allCharacters,
       attendance,
       campaignId,
