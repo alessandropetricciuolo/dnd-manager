@@ -1,6 +1,6 @@
 # Release mobile Android e iOS
 
-Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1c5a-482a-49fd-bf41-cb5f86592eb7`). Firebase Android/FCM V1, firma Android e ambiente preview configurati. Build APK cloud avviata: `962faf0b-7568-400d-9613-8b73288d259b`. Backend e scheduler distribuiti dopo approvazione. Nessuna pubblicazione store.
+Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1c5a-482a-49fd-bf41-cb5f86592eb7`). Firebase Android/FCM V1, firma Android e ambiente preview configurati. Build APK cloud completata con successo: `962faf0b-7568-400d-9613-8b73288d259b`. Backend e scheduler distribuiti dopo approvazione. Nessuna pubblicazione store.
 
 ## Configurazione presente
 
@@ -61,10 +61,16 @@ Prima del beta chiudere la matrice su almeno un dispositivo fisico per piattafor
 
 - [ ] Account Apple Developer e Google Play Console del titolare; identificativi di team e package verificati.
 - [x] Progetto Expo reale collegato.
-- [ ] Ambiente EAS compilato senza segreti client.
+- [x] Ambiente EAS configurato con sole variabili pubbliche client.
 - [ ] Firma iOS/Android, APNs e FCM configurati e conservati negli account del titolare.
 - [ ] Beta Android e iOS installata e verificata sulla matrice sopra; difetti bloccanti chiusi.
 - [ ] Informativa privacy accessibile, contatto assistenza, istruzioni di cancellazione account e gestione segnalazioni operativi.
 - [ ] Screenshot, descrizione, classificazione età, schede privacy e credenziali account review pronte.
 - [ ] Requisiti Google Play applicabili all'account completati; distribuzione e rollout approvati dal titolare.
 - [ ] Endpoint di dispatch protetto da `CRON_SECRET` schedulato ogni cinque minuti tramite Supabase Cron dopo deploy e verifica del segreto.
+
+## Beta Android disponibile — 13 ottobre 2026
+
+Build Expo completata: https://expo.dev/accounts/alexiit33/projects/barber-and-dragons-mobile/builds/962faf0b-7568-400d-9613-8b73288d259b
+
+APK versione 1.0.0, distribuzione interna. Installazione e verifica su telefono ancora da eseguire; compilazione riuscita non prova login, salvataggi o consegna push sul dispositivo.

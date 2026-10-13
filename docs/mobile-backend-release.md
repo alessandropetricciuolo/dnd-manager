@@ -10,7 +10,7 @@ Rilascio approvato dal proprietario e applicato il 13 ottobre 2026. Le sezioni s
 - `CRON_SECRET` configurato in Vercel e Vault senza valori nel repository. Supabase Cron job `mobile-push-dispatch` attivo ogni cinque minuti.
 - Dispatcher pubblico verificato con autenticazione: HTTP 200, zero lavori in coda e zero invii. Richieste senza autenticazione: 401.
 - Privacy/assistenza/cancellazione rispondono 200. Nessun test di salvataggio autenticato su personaggi reali eseguito.
-- Firma Android e variabili pubbliche preview configurate. Build APK `962faf0b-7568-400d-9613-8b73288d259b` avviata da una copia autonoma dell'app. Primo tentativo, con archivio troppo ampio, annullato; nuovo archivio circa 1,5 MB.
+- Firma Android e variabili pubbliche preview configurate. Build APK `962faf0b-7568-400d-9613-8b73288d259b` completata con successo da una copia autonoma dell'app. Primo tentativo, con archivio troppo ampio, annullato e cancellato da Expo; nuovo archivio circa 1,5 MB.
 - `.easignore` include esclusivamente l'app mobile ed esclude dipendenze, file locali, credenziali e materiali estranei nelle build future.
 
 Advisor: le tre tabelle server-only mobile senza policy sono intenzionalmente inaccessibili ad anon/authenticated; grant verificati. Restano segnalazioni preesistenti su organizzazioni (RLS disabilitata), funzioni esistenti e Auth, da trattare con audit separato. Riferimento: https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public .
@@ -19,7 +19,7 @@ Advisor: le tre tabelle server-only mobile senza policy sono intenzionalmente in
 
 - Vercel: progetto `barberanddragons.com`, ID `prj_VWIycW1AAAEpC6r5ApySXmp9yCW6`, team `team_U5mIM0YyqRgF8Xz51STyBFFH`. Produzione corrente READY: `dpl_FUBsYTn5HwgGWKkbtvfdLjcwwqHn`.
 - Supabase: `dnd-campaign-manager`, ID `wgygueccztselxysletl`, PostgreSQL 17.6. Schema delle tabelle necessarie verificato in sola lettura. Nessuna delle nuove tabelle mobile è già presente.
-- Expo: `@alexiit33/barber-and-dragons-mobile`. Firebase Android e FCM V1 già collegati; build APK ancora da generare.
+- Expo: `@alexiit33/barber-and-dragons-mobile`. Firebase Android e FCM V1 già collegati; build APK preview disponibile.
 
 ## Cosa cambia in produzione
 
@@ -59,3 +59,9 @@ Advisor: le tre tabelle server-only mobile senza policy sono intenzionalmente in
 - Se i nuovi trigger bloccano scritture esistenti, rimuovere soltanto `mobile_whisper_push` e `mobile_session_push`, conservando la coda e investigando l'errore. I trigger, come gli altri trigger PostgreSQL, partecipano alla transazione che li attiva.
 
 La conferma richiesta riguarda modifiche esterne al sito/database e l'attivazione degli invii automatici. Non include pubblicazione sugli store, acquisto di piani o completamento legale della privacy.
+
+## Verifica finale
+
+Codice runtime in produzione: commit `f41674c13dfced105cb724f453f4f4b6c38ff23e`, deployment `dpl_EFTKcNqXPVPViSJfKev3tCdpU7zC` Ready. Le route push/device, characters/[id]/state e push/dispatch restituiscono HTTP 401 senza credenziali. Il middleware non tenta il rinnovo della sessione web sulle route mobile, che mantengono la propria autenticazione. Dopo la correzione: 10 test di sicurezza, 29 test mobile e TypeScript web superati; nessun errore mobile nei log consultati.
+
+Scheduler verificato anche alla prima esecuzione automatica: HTTP 200, coda vuota. Restano da provare salvataggi e push reali su Android.

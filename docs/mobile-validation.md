@@ -1,6 +1,6 @@
 # Consegna mobile — 13 ottobre 2026
 
-Le correzioni sono state salvate e inviate a GitHub. Dopo approvazione del proprietario, backend e migrazioni sono stati distribuiti in produzione e il dispatcher push attivato. La prima build APK è in preparazione su Expo; nessun invio agli store. Tre worker GPT-6-Luna hanno seguito scheda, autenticazione/privacy e release; la revisione principale ha integrato notifiche e verifiche.
+Le correzioni sono state salvate e inviate a GitHub. Dopo approvazione del proprietario, backend e migrazioni sono stati distribuiti in produzione e il dispatcher push attivato. La build APK Android è completata con successo su Expo; nessun invio agli store. Tre worker GPT-6-Luna hanno seguito scheda, autenticazione/privacy e release; la revisione principale ha integrato notifiche e verifiche.
 
 ## Stato dei cinque punti
 
