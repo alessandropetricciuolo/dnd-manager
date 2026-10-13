@@ -17,6 +17,11 @@ test("bardo L5 torneo: tre trucchetti in scheda", async () => {
     level: 5,
     torneoMode: true,
     powerPlayer: true,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
 
   const cantrips = sheet.spells.filter((s) => s.level === 0);

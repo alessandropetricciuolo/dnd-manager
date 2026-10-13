@@ -24,6 +24,7 @@ test("chierico L5 torneo: include sempre Cura ferite", async () => {
     height: null,
     weight: null,
     sex: null,
+    subraceSlug: null,
   });
   const leveled = res.sheet.spells.filter((s) => s.level >= 1);
   assert.ok(
@@ -47,6 +48,7 @@ test("chierico L3 senza torneo: include sempre Cura ferite", async () => {
     height: null,
     weight: null,
     sex: null,
+    subraceSlug: null,
   });
   const leveled = res.sheet.spells.filter((s) => s.level >= 1);
   assert.ok(leveled.some((s) => isCureWoundsSpell(s.name)));

@@ -41,6 +41,11 @@ test("warlock torneo: manuale rapido con suppliche testo integrale", async () =>
     level: 5,
     torneoMode: true,
     powerPlayer: true,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
 
   const manualBody = buildWarlockInvocationsManualBody(sheet.classFeaturesMd);

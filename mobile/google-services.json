@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "732709013593",
+    "project_id": "barber-and-dragons-1a483",
+    "storage_bucket": "barber-and-dragons-1a483.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:732709013593:android:62077dcb268e4ce48d0948",
+        "android_client_info": {
+          "package_name": "com.barberanddragons.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBI9ogKjPf1BDX-vMRH3otifrp1z_xv97Y"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -26,9 +26,9 @@ test("M6 migration smoke: Admin audit and revision trigger are transactional", a
     assert.equal(inserted.mcp_revision, 1);
     assert.equal((await db.query("SELECT entity_id,action FROM mcp_write_audit")).rows.length, 1);
     await db.query(`UPDATE wiki_entities SET name='Secret 2' WHERE id=$1 AND mcp_revision=1`, [inserted.id]);
-    assert.equal((await db.query("SELECT mcp_revision FROM wiki_entities WHERE id=$1", [inserted.id])).rows[0].mcp_revision, 2);
+    assert.equal((await db.query<{ mcp_revision: number }>("SELECT mcp_revision FROM wiki_entities WHERE id=$1", [inserted.id])).rows[0].mcp_revision, 2);
     await db.exec("RESET ROLE; ALTER TABLE mcp_write_audit ADD CONSTRAINT m6_reject CHECK (false) NOT VALID;");
     await assert.rejects(db.query(`UPDATE wiki_entities SET name='must rollback' WHERE id=$1`, [inserted.id]), /m6_reject/);
-    assert.equal((await db.query("SELECT name FROM wiki_entities WHERE id=$1", [inserted.id])).rows[0].name, "Secret 2");
+    assert.equal((await db.query<{ name: string }>("SELECT name FROM wiki_entities WHERE id=$1", [inserted.id])).rows[0].name, "Secret 2");
   } finally { await db.close(); }
 });

@@ -33,6 +33,20 @@ npm install
 npm run dev
 ```
 
+### App mobile Android/iOS
+
+L'app Expo nativa si trova in `mobile/`. Per avviarla in locale:
+
+```bash
+cd mobile
+npm install
+cp .env.example .env
+# Compila EXPO_PUBLIC_SUPABASE_URL e EXPO_PUBLIC_SUPABASE_ANON_KEY con i valori pubblici del progetto
+npm run start
+```
+
+Le build installabili si preparano con EAS Build: prima il proprietario deve associare il progetto Expo reale e configurare credenziali e variabili d'ambiente. Profili, comandi e checklist beta/store sono in [docs/mobile-release.md](docs/mobile-release.md). Nessuna build o pubblicazione è stata eseguita.
+
 ## Struttura
 
 - `src/app/` — App Router (pagine, layout)

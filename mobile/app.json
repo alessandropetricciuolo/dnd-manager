@@ -1,0 +1,59 @@
+{
+  "expo": {
+    "name": "Barber & Dragons Mobile",
+    "slug": "barber-and-dragons-mobile",
+    "version": "1.0.0",
+    "platforms": [
+      "ios",
+      "android"
+    ],
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#0B0D10"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "userInterfaceStyle": "dark",
+      "bundleIdentifier": "com.barberanddragons.mobile",
+      "buildNumber": "1"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#0B0D10"
+      },
+      "userInterfaceStyle": "dark",
+      "package": "com.barberanddragons.mobile",
+      "versionCode": 1,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-dev-client",
+      "expo-secure-store",
+      "expo-asset",
+      "expo-font",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Consenti a Barber & Dragons di utilizzare la fotocamera per scansionare il QR code del Telecomando."
+        }
+      ],
+      "expo-notifications"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "20cc1c5a-482a-49fd-bf41-cb5f86592eb7"
+      }
+    },
+    "owner": "alexiit33"
+  }
+}

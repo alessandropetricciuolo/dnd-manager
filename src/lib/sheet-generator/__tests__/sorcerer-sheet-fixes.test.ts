@@ -46,6 +46,7 @@ test("stregone livello 5: privilegi classe indicano punti stregoneria", async ()
     height: "1,70 m",
     weight: "70 kg",
     sex: "M",
+    subraceSlug: null,
   });
   const cls = res.sheet.classFeaturesMd.toLowerCase();
   assert.match(cls, /punti stregoneria.*\b5\b/);

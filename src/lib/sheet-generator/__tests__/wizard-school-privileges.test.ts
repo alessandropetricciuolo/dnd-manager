@@ -12,6 +12,11 @@ test("mago invocazione L5: privilegi solo scuola invocazione, non necromanzia", 
     backgroundSlug: "sapiente",
     level: 5,
     torneoMode: false,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
 
   const sub = (res.sheet.subclassFeaturesMd ?? "").toLowerCase();

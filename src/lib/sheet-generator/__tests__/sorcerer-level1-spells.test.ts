@@ -41,6 +41,7 @@ test("stregone L5: almeno 2 incantesimi di 1° livello", async () => {
     height: null,
     weight: null,
     sex: null,
+    subraceSlug: null,
   });
   const l1 = res.sheet.spells.filter((s) => s.level === 1);
   assert.ok(
@@ -64,6 +65,7 @@ test("stregone L2: almeno 2 incantesimi di 1° livello", async () => {
     height: null,
     weight: null,
     sex: null,
+    subraceSlug: null,
   });
   const l1 = res.sheet.spells.filter((s) => s.level === 1);
   assert.ok(l1.length >= SORCERER_MIN_LEVEL1_SPELLS);

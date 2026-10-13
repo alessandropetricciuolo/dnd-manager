@@ -3,10 +3,10 @@ import assert from "node:assert/strict";
 import { finalizeWikiRevision, findOfficialStatblockContext, resolveMissionReference, resolveNpcStatblockClass } from "../wiki-turn-resolution";
 import type { AiAssistantArtifact } from "../contracts";
 
-const previous: AiAssistantArtifact = {
+const previous = {
   id: "draft-1", threadId: "thread-1", campaignId: "campaign-1", kind: "wiki", status: "draft", revision: 1, parentArtifactId: null,
   payload: { title: "Paolo", content: "La storia completa di Paolo.", actionName: "wiki.entity.create", actionInput: { type: "npc", title: "Paolo", content: "La storia completa di Paolo.", visibility: "secret", tags: ["Portico"], attributes: { race: "Umano", combat_stats: { hp: "12", ac: "11" } } } }, sourceRefs: [], policyVersion: null, savedEntity: null,
-};
+} satisfies AiAssistantArtifact;
 
 test("resolves an exact campaign mission and rejects a missing one", async () => {
   const db = { from: () => ({ select: () => ({ eq: async () => ({ data: [{ id: "m-1", title: "Coccatrice Scomparsa" }], error: null }) }) }) };
@@ -47,8 +47,10 @@ test("asks the GM to select a supported class when the stored profession is not 
 test("a recognized class replaces an obsolete profession in the wiki attributes", () => {
   const withProfession = { ...previous, payload: { ...previous.payload, actionInput: { ...previous.payload.actionInput, attributes: { class: "Artigiano" } } } };
   const result = finalizeWikiRevision({ message: "genera lo statblock di Paolo, è un popolano di livello 1", previous: withProfession, context: "FONTE REGOLISTICA UFFICIALE — Guida del DM", mission: { requested: false }, output: { intent: "revise", message: "Fatto", content: "Contenuto", patch: { path: "/content", value: "Contenuto" }, actionName: "wiki.entity.create", actionInput: { attributes: { statblock: "Statblock ufficiale" } } } });
-  assert.equal(result.actionInput?.attributes?.class, "Popolano");
-  assert.equal(result.actionInput?.attributes?.statblock, "Statblock ufficiale");
+  const attributes = result.actionInput?.attributes;
+  assert.ok(attributes && typeof attributes === "object" && !Array.isArray(attributes));
+  assert.equal((attributes as Record<string, unknown>).class, "Popolano");
+  assert.equal((attributes as Record<string, unknown>).statblock, "Statblock ufficiale");
 });
 
 test("mission link uses the server-resolved ID and feedback never duplicates the narrative", () => {

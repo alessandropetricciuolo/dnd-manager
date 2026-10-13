@@ -76,6 +76,11 @@ test("monaco L5: manuale rapido con sezione privilegi del ki", async () => {
     backgroundSlug: "soldato",
     level: 5,
     torneoMode: true,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
   const sections = await buildQuickManualSections(res.sheet);
   const kiSec = sections.find((s) => s.title === "Privilegi del Ki");

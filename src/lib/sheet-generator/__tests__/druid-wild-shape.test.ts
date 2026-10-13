@@ -102,6 +102,11 @@ test("Selene Moonbrook L5: manuale rapido con forme bestiali Appendice D", async
     backgroundSlug: "eremita",
     level: 5,
     torneoMode: true,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
   assert.match(res.sheet.classFeaturesMd.toLowerCase(), /forma selvatica/);
   const sections = await buildQuickManualSections(res.sheet);

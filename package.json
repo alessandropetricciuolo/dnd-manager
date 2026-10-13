@@ -26,7 +26,8 @@
     "test:r2-env": "tsx scripts/test-r2-env.ts",
     "export:dungeonedraghi": "node scripts/export-dungeonedraghi-compendio.mjs",
     "catalog:import": "tsx scripts/import-character-catalog.ts",
-    "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts"
+    "mm:chunks": "tsx scripts/delimit-manuale-mostri.ts",
+    "test:mobile": "tsx --test src/lib/__tests__/mobile-character-state.test.ts src/lib/mobile/__tests__/*.test.ts src/lib/mobile-auth/__tests__/*.test.ts mobile/src/lib/__tests__/*.test.ts supabase/tests/mobile_account_whisper_safety.test.ts && node scripts/test-mobile-migrations.cjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1045.0",
@@ -79,6 +80,7 @@
     "zod": "3.25.76"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.9",
     "@playwright/test": "^1.60.0",
     "@types/archiver": "^7.0.0",
     "@types/dagre": "^0.7.54",
