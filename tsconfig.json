@@ -29,5 +29,5 @@
     "**/*.tsx",
     ".next/types/**/*.ts"
   ],
-  "exclude": ["node_modules", "dnd-manager", "scripts", "tests", "playwright.config.ts"]
+  "exclude": ["node_modules", "mobile", "dnd-manager", "scripts", "tests", "playwright.config.ts"]
 }
