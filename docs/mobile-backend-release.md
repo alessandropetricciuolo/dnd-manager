@@ -1,6 +1,19 @@
-# Backend beta mobile: rilascio da approvare
+# Backend beta mobile: rilascio approvato e applicato
 
-Preparazione verificata il 13 ottobre 2026. Nessuna modifica al sito o al database di produzione è stata applicata.
+Rilascio approvato dal proprietario e applicato il 13 ottobre 2026. Le sezioni successive conservano il piano approvato; questo blocco riporta il risultato effettivo.
+
+## Risultato effettivo
+
+- Deployment `dpl_9r2d6QG1Ub5c5tykMeW1UaBkYBub`, preparato dal commit `7435a9e0`, promosso sul dominio pubblico dopo verifiche della build protetta.
+- Migrazioni remote: `20261013190912_mobile_push_notifications`, `20261013190915_mobile_account_and_whisper_safety`. Il setup del dispatcher è registrato come `20261013191043_mobile_push_dispatch_schedule` ed esegue `scripts/mobile-push-scheduler.sql`.
+- Grant, RLS, trigger, policy sussurri e permessi RPC riletti: accessi delle nuove tabelle corretti e blocchi reciproci attivi.
+- `CRON_SECRET` configurato in Vercel e Vault senza valori nel repository. Supabase Cron job `mobile-push-dispatch` attivo ogni cinque minuti.
+- Dispatcher pubblico verificato con autenticazione: HTTP 200, zero lavori in coda e zero invii. Richieste senza autenticazione: 401.
+- Privacy/assistenza/cancellazione rispondono 200. Nessun test di salvataggio autenticato su personaggi reali eseguito.
+- Firma Android e variabili pubbliche preview configurate. Build APK `962faf0b-7568-400d-9613-8b73288d259b` avviata da una copia autonoma dell'app. Primo tentativo, con archivio troppo ampio, annullato; nuovo archivio circa 1,5 MB.
+- `.easignore` include esclusivamente l'app mobile ed esclude dipendenze, file locali, credenziali e materiali estranei nelle build future.
+
+Advisor: le tre tabelle server-only mobile senza policy sono intenzionalmente inaccessibili ad anon/authenticated; grant verificati. Restano segnalazioni preesistenti su organizzazioni (RLS disabilitata), funzioni esistenti e Auth, da trattare con audit separato. Riferimento: https://supabase.com/docs/guides/database/database-linter?lint=0013_rls_disabled_in_public .
 
 ## Destinazioni verificate
 

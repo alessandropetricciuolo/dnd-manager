@@ -1,6 +1,6 @@
 # Release mobile Android e iOS
 
-Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1c5a-482a-49fd-bf41-cb5f86592eb7`). Configurazione Firebase Android verificata e chiave FCM V1 caricata e associata su EAS. Nessuna build cloud o pubblicazione store eseguita.
+Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1c5a-482a-49fd-bf41-cb5f86592eb7`). Firebase Android/FCM V1, firma Android e ambiente preview configurati. Build APK cloud avviata: `962faf0b-7568-400d-9613-8b73288d259b`. Backend e scheduler distribuiti dopo approvazione. Nessuna pubblicazione store.
 
 ## Configurazione presente
 
@@ -30,9 +30,9 @@ La chiave anon di Supabase è una chiave pubblica destinata al client e non sost
 3. Per iPhone fisici, usare un account Apple Developer attivo e configurare la firma EAS. La distribuzione interna ad hoc richiede UDID registrati; TestFlight usa la build `production` e il flusso di App Store Connect.
 4. Per Android, configurare la firma del package `com.barberanddragons.mobile`. L'APK preview può essere installato direttamente; la produzione genera un artefatto store, ma non lo invia.
 5. Firebase Cloud Messaging Android configurato su EAS; APNs iOS ancora da configurare. La consegna delle notifiche deve essere provata su telefono.
-6. Il dispatch server è `GET /api/mobile/push/dispatch`, protetto da `CRON_SECRET`, ogni cinque minuti. Lo script `scripts/mobile-push-scheduler.sql` prepara Supabase Cron e pg_net con segreto nel Vault. È da eseguire solo dopo il deploy approvato e la configurazione del segreto; non è attivo.
+6. Dispatch server `GET /api/mobile/push/dispatch`, protetto da `CRON_SECRET`, attivo ogni cinque minuti tramite Supabase Cron/pg_net con segreto nel Vault. Script operativo: `scripts/mobile-push-scheduler.sql`. Prima verifica autenticata HTTP 200 con coda vuota; consegna reale ancora da provare sul telefono.
 
-Il file Firebase pubblico `mobile/google-services.json` è incluso nella configurazione Android. La chiave privata del service account resta fuori dal repository. La firma Android e l'ambiente EAS della build sono ancora da completare.
+Il file Firebase pubblico `mobile/google-services.json` è incluso nella configurazione Android. La chiave privata del service account resta fuori dal repository. Firma Android e ambiente EAS preview completati. `.easignore` limita gli archivi EAS alla sola app mobile.
 
 ## Comandi EAS
 

@@ -1,6 +1,6 @@
 # Consegna mobile — 13 ottobre 2026
 
-Le correzioni sono locali. Non sono stati eseguiti commit, push, deploy, migrazioni in produzione o invii agli store. Tre worker GPT-6-Luna hanno seguito scheda, autenticazione/privacy e release; la revisione principale ha integrato notifiche e verifiche.
+Le correzioni sono state salvate e inviate a GitHub. Dopo approvazione del proprietario, backend e migrazioni sono stati distribuiti in produzione e il dispatcher push attivato. La prima build APK è in preparazione su Expo; nessun invio agli store. Tre worker GPT-6-Luna hanno seguito scheda, autenticazione/privacy e release; la revisione principale ha integrato notifiche e verifiche.
 
 ## Stato dei cinque punti
 
@@ -19,7 +19,7 @@ Le correzioni sono locali. Non sono stati eseguiti commit, push, deploy, migrazi
 - Pagine pubbliche privacy, assistenza e cancellazione verificate nel browser locale con larghezza mobile. La cancellazione senza login richiede l'accesso. I quattro endpoint sensibili rifiutano richieste senza autenticazione (401).
 - Aggiornamento durante la preparazione backend: corretti i campi mancanti delle fixture Sheet Generator e i tipi di due test Command Center/M6, senza cambiare logica prodotto. TypeScript globale e build web completa di produzione ora superati; 101 test Sheet Generator e 11 test Wiki/M6 superati. Restano soltanto warning lint preesistenti non bloccanti.
 
-Queste prove non equivalgono a una build firmata, a un'app installata, a verifiche autenticate in produzione o all'approvazione degli store. Nessun dato di produzione è stato modificato.
+Aggiornamento produzione: endpoint non autenticati verificati (401), pagine pubbliche (200), dispatcher autenticato (200 con coda vuota), nuovi grant/RLS/trigger/policy riletti. Schema e configurazioni di produzione sono stati modificati con approvazione; nessun personaggio/campagna modificato per simulare test. Resta da verificare la build installata sul telefono e i salvataggi autenticati end-to-end.
 
 ## Passaggi prima della beta e della pubblicazione
 

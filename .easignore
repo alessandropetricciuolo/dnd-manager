@@ -1,0 +1,18 @@
+# Android/iOS builds need only the standalone mobile application.
+/*
+!/mobile/
+/mobile/node_modules/
+/mobile/.expo/
+/mobile/.eas/
+/mobile/dist/
+/mobile/ios/
+/mobile/android/
+.env*
+*.keystore
+*.jks
+*.p8
+*.p12
+*.mobileprovision
+credentials.json
+*firebase-adminsdk*.json
+*service-account*.json
