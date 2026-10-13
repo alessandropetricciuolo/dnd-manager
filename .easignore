@@ -1,6 +1,7 @@
 # Android/iOS builds need only the standalone mobile application.
 /*
-!/mobile/
+!/mobile
+!/mobile/**
 /mobile/node_modules/
 /mobile/.expo/
 /mobile/.eas/
