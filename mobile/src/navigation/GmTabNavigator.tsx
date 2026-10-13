@@ -10,13 +10,12 @@ import {
   Repeat,
   LogOut,
   Crown,
-  User,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { GmCampaignProvider } from '../contexts/GmCampaignContext';
 import { CampaignHeaderBar } from '../components/common/CampaignHeaderBar';
-import { GmHomeScreen } from '../screens/gm/GmHomeScreen';
+import { GuildHomeScreen } from '../screens/home/GuildHomeScreen';
 import { GmXpAttendanceScreen } from '../screens/gm/GmXpAttendanceScreen';
 import { GmCombatTrackerScreen } from '../screens/gm/GmCombatTrackerScreen';
 import { GmAudioRemoteScreen } from '../screens/gm/GmAudioRemoteScreen';
@@ -25,11 +24,11 @@ import { AccountScreen } from '../screens/account/AccountScreen';
 
 export type GmTabParamList = {
   GmHome: undefined;
-  GmXpAttendance: { notificationSessionId?: string } | undefined;
   GmCombat: undefined;
   GmAudioRemote: undefined;
   GmWhispers: undefined;
   Account: undefined;
+  GmXpAttendance: { notificationSessionId?: string } | undefined;
 };
 
 const Tab = createBottomTabNavigator<GmTabParamList>();
@@ -55,104 +54,113 @@ export const GmTabNavigator: React.FC = () => {
             </View>
           ),
           headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            {role === 'admin' && (
-              <TouchableOpacity
-                style={styles.playerSwitchButton}
-                onPress={() => switchMode('player')}
-                activeOpacity={0.8}
-              >
-                <Repeat size={13} color={colors.void} />
-                <Text style={styles.playerSwitchButtonText}>Vista Player</Text>
-              </TouchableOpacity>
-            )}
+            <View style={styles.headerRightContainer}>
+              {role === 'admin' && (
+                <TouchableOpacity
+                  style={styles.playerSwitchButton}
+                  onPress={() => switchMode('player')}
+                  activeOpacity={0.8}
+                >
+                  <Repeat size={13} color={colors.void} />
+                  <Text style={styles.playerSwitchButtonText}>Vista Player</Text>
+                </TouchableOpacity>
+              )}
 
-            <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={async () => {
-                const result = await signOut();
-                if (result.error) Alert.alert('Impossibile uscire', result.error);
-              }}
-              activeOpacity={0.7}
-            >
-              <LogOut size={16} color={colors.parchmentMuted} />
-            </TouchableOpacity>
-          </View>
-        ),
-      }}
-    >
-      <Tab.Screen
-        name="GmHome"
-        component={GmHomeScreen}
-        options={{
-          title: 'Regia',
-          tabBarLabel: 'Regia',
-          headerTitle: 'Quartier Generale GM',
-          tabBarIcon: ({ color, size }) => (
-            <LayoutDashboard size={size ?? 22} color={color} />
+              <TouchableOpacity
+                style={styles.signOutButton}
+                onPress={async () => {
+                  const result = await signOut();
+                  if (result.error) Alert.alert('Impossibile uscire', result.error);
+                }}
+                activeOpacity={0.7}
+              >
+                <LogOut size={16} color={colors.parchmentMuted} />
+              </TouchableOpacity>
+            </View>
           ),
         }}
-      />
-      <Tab.Screen
-        name="GmXpAttendance"
-        component={GmXpAttendanceScreen}
-        options={{
-          title: 'Presenze & XP',
-          tabBarLabel: 'Presenze & XP',
-          headerTitle: 'Registro Sessione & XP',
-          tabBarIcon: ({ color, size }) => (
-            <Award size={size ?? 22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="GmCombat"
-        component={GmCombatTrackerScreen}
-        options={{
-          title: 'Iniziativa',
-          tabBarLabel: 'Iniziativa',
-          headerTitle: 'Tracker di Combattimento',
-          tabBarIcon: ({ color, size }) => (
-            <Swords size={size ?? 22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="GmAudioRemote"
-        component={GmAudioRemoteScreen}
-        options={{
-          title: 'Telecomando',
-          tabBarLabel: 'Audio',
-          headerTitle: 'Telecomando Sonoro',
-          tabBarIcon: ({ color, size }) => (
-            <Radio size={size ?? 22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="GmWhispers"
-        component={GmWhispersInboxScreen}
-        options={{
-          title: 'Whispers',
-          tabBarLabel: 'Whispers',
-          headerTitle: 'Inbox Sussurri Segreti',
-          tabBarIcon: ({ color, size }) => (
-            <MessageSquare size={size ?? 22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Account"
-        component={AccountScreen}
-        options={{
-          title: 'Account',
-          tabBarLabel: 'Account',
-          headerTitle: 'Account e privacy',
-          tabBarIcon: ({ color, size }) => <User size={size ?? 22} color={color} />,
-        }}
-      />
-    </Tab.Navigator>
-  </GmCampaignProvider>
+      >
+        {/* 1. HOME - Calendario Sessioni + Panoramica Campagne */}
+        <Tab.Screen
+          name="GmHome"
+          component={GuildHomeScreen}
+          options={{
+            title: 'Home',
+            tabBarLabel: 'Home',
+            headerTitle: 'Plancia di Gilda',
+            tabBarIcon: ({ color, size }) => (
+              <LayoutDashboard size={size ?? 22} color={color} />
+            ),
+          }}
+        />
+
+        {/* 2. INIZIATIVA - Combat Tracker */}
+        <Tab.Screen
+          name="GmCombat"
+          component={GmCombatTrackerScreen}
+          options={{
+            title: 'Iniziativa',
+            tabBarLabel: 'Iniziativa',
+            headerTitle: 'Tracker di Combattimento',
+            tabBarIcon: ({ color, size }) => (
+              <Swords size={size ?? 22} color={color} />
+            ),
+          }}
+        />
+
+        {/* 3. AUDIO - Telecomando Sonoro con QR pairing */}
+        <Tab.Screen
+          name="GmAudioRemote"
+          component={GmAudioRemoteScreen}
+          options={{
+            title: 'Telecomando',
+            tabBarLabel: 'Audio',
+            headerTitle: 'Telecomando Sonoro',
+            tabBarIcon: ({ color, size }) => (
+              <Radio size={size ?? 22} color={color} />
+            ),
+          }}
+        />
+
+        {/* 4. WHISPERS - Inbox Sussurri Segreti */}
+        <Tab.Screen
+          name="GmWhispers"
+          component={GmWhispersInboxScreen}
+          options={{
+            title: 'Whispers',
+            tabBarLabel: 'Whispers',
+            headerTitle: 'Inbox Sussurri Segreti',
+            tabBarIcon: ({ color, size }) => (
+              <MessageSquare size={size ?? 22} color={color} />
+            ),
+          }}
+        />
+
+        {/* 5. PROFILO GM - Profilo Master, Presenze & XP, Impostazioni */}
+        <Tab.Screen
+          name="Account"
+          component={AccountScreen}
+          options={{
+            title: 'Profilo GM',
+            tabBarLabel: 'Profilo GM',
+            headerTitle: 'Profilo Game Master',
+            tabBarIcon: ({ color, size }) => <Crown size={size ?? 22} color={color} />,
+          }}
+        />
+
+        {/* SCHERMATA PRESENZE & XP (Accessibile via Profilo GM o push notification, nascosta dalla barra principale a 5 tasti) */}
+        <Tab.Screen
+          name="GmXpAttendance"
+          component={GmXpAttendanceScreen}
+          options={{
+            title: 'Presenze & XP',
+            headerTitle: 'Registro Sessione & XP',
+            tabBarButton: () => null,
+            tabBarItemStyle: { display: 'none' },
+          }}
+        />
+      </Tab.Navigator>
+    </GmCampaignProvider>
   );
 };
 
@@ -174,30 +182,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#0E1117',
     borderBottomWidth: 1.5,
     borderBottomColor: colors.brassDark,
-  },
-  headerTitle: {
-    fontSize: 15,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    letterSpacing: 0.8,
-  },
-  gmBadgeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    marginLeft: 14,
-    backgroundColor: colors.stoneSurface,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    paddingHorizontal: 7,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  gmBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.brassLight,
-    letterSpacing: 0.5,
   },
   headerLeftContainer: {
     marginLeft: 12,

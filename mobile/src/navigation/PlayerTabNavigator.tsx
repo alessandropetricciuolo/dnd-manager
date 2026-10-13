@@ -4,7 +4,6 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import {
   Compass,
   Shield,
-  Calendar,
   BookOpen,
   MessageSquare,
   Crown,
@@ -14,7 +13,7 @@ import {
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { CampaignHeaderBar } from '../components/common/CampaignHeaderBar';
-import { PlayerHomeScreen } from '../screens/player/PlayerHomeScreen';
+import { GuildHomeScreen } from '../screens/home/GuildHomeScreen';
 import { CharacterSheetScreen } from '../screens/player/CharacterSheetScreen';
 import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen';
 import { CampaignLoreScreen } from '../screens/player/CampaignLoreScreen';
@@ -24,10 +23,10 @@ import { AccountScreen } from '../screens/account/AccountScreen';
 export type PlayerTabParamList = {
   PlayerHome: undefined;
   CharacterSheet: undefined;
-  Sessions: undefined;
   LoreMissions: undefined;
   PlayerWhisper: undefined;
   Account: undefined;
+  Sessions: undefined;
 };
 
 const Tab = createBottomTabNavigator<PlayerTabParamList>();
@@ -66,10 +65,10 @@ export const PlayerTabNavigator: React.FC = () => {
             )}
             <TouchableOpacity
               style={styles.signOutButton}
-                onPress={async () => {
-                  const result = await signOut();
-                  if (result.error) Alert.alert('Impossibile uscire', result.error);
-                }}
+              onPress={async () => {
+                const result = await signOut();
+                if (result.error) Alert.alert('Impossibile uscire', result.error);
+              }}
               activeOpacity={0.7}
             >
               <LogOut size={16} color={colors.parchmentMuted} />
@@ -78,15 +77,19 @@ export const PlayerTabNavigator: React.FC = () => {
         ),
       }}
     >
+      {/* 1. HOME - Calendario Sessioni + Panoramica Campagne */}
       <Tab.Screen
         name="PlayerHome"
-        component={PlayerHomeScreen}
+        component={GuildHomeScreen}
         options={{
-          title: 'Dashboard',
-          tabBarLabel: 'Dashboard',
+          title: 'Home',
+          tabBarLabel: 'Home',
+          headerTitle: 'Plancia di Gilda',
           tabBarIcon: ({ color, size }) => <Compass size={size ?? 22} color={color} />,
         }}
       />
+
+      {/* 2. SCHEDA PERSONAGGIO */}
       <Tab.Screen
         name="CharacterSheet"
         component={CharacterSheetScreen}
@@ -97,26 +100,20 @@ export const PlayerTabNavigator: React.FC = () => {
           tabBarIcon: ({ color, size }) => <Shield size={size ?? 22} color={color} />,
         }}
       />
-      <Tab.Screen
-        name="Sessions"
-        component={SessionsCalendarScreen}
-        options={{
-          title: 'Sessioni',
-          tabBarLabel: 'Sessioni',
-          headerTitle: 'Tavoli di Gioco',
-          tabBarIcon: ({ color, size }) => <Calendar size={size ?? 22} color={color} />,
-        }}
-      />
+
+      {/* 3. LORE & MISSIONI */}
       <Tab.Screen
         name="LoreMissions"
         component={CampaignLoreScreen}
         options={{
-          title: 'Lore & Bacheca',
-          tabBarLabel: 'Bacheca',
+          title: 'Bacheca',
+          tabBarLabel: 'Diario & Lore',
           headerTitle: 'Archivio & Missioni',
           tabBarIcon: ({ color, size }) => <BookOpen size={size ?? 22} color={color} />,
         }}
       />
+
+      {/* 4. SUSSURRI SEGRETI */}
       <Tab.Screen
         name="PlayerWhisper"
         component={PlayerWhisperScreen}
@@ -127,14 +124,28 @@ export const PlayerTabNavigator: React.FC = () => {
           tabBarIcon: ({ color, size }) => <MessageSquare size={size ?? 22} color={color} />,
         }}
       />
+
+      {/* 5. PROFILO GIOCATORE / ACCOUNT */}
       <Tab.Screen
         name="Account"
         component={AccountScreen}
         options={{
-          title: 'Account',
-          tabBarLabel: 'Account',
-          headerTitle: 'Account e privacy',
+          title: 'Profilo',
+          tabBarLabel: 'Profilo',
+          headerTitle: 'Profilo Giocatore',
           tabBarIcon: ({ color, size }) => <User size={size ?? 22} color={color} />,
+        }}
+      />
+
+      {/* SCHERMATA SESSIONI (Accessibile via deep link o push, nascosta dalla barra principale a 5 tasti) */}
+      <Tab.Screen
+        name="Sessions"
+        component={SessionsCalendarScreen}
+        options={{
+          title: 'Sessioni',
+          headerTitle: 'Tavoli di Gioco',
+          tabBarButton: () => null,
+          tabBarItemStyle: { display: 'none' },
         }}
       />
     </Tab.Navigator>
@@ -159,12 +170,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone,
     borderBottomWidth: 1,
     borderBottomColor: colors.stoneBorder,
-  },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    letterSpacing: 0.8,
   },
   headerLeftContainer: {
     marginLeft: 12,
