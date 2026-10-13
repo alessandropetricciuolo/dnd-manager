@@ -35,6 +35,13 @@ export function isPublicMediaProxyPath(pathname: string): boolean {
   return pathname === "/api/tg-image" || pathname.startsWith("/api/tg-image/");
 }
 
+/** Mobile routes verify their own bearer token (or dispatcher secret).
+ * A browser-cookie refresh here cannot authenticate a native request.
+ */
+export function isMobileBearerApiPath(pathname: string): boolean {
+  return pathname === "/api/mobile" || pathname.startsWith("/api/mobile/");
+}
+
 /**
  * Un errore del servizio Auth non equivale a una sessione assente.
  * Le rotte protette ripetono comunque il controllo sul server: il middleware
@@ -57,7 +64,7 @@ function redirectWithSupabaseCookies(redirectUrl: URL, supabaseResponse: NextRes
 export async function updateSession(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (isPublicMediaProxyPath(pathname)) {
+  if (isPublicMediaProxyPath(pathname) || isMobileBearerApiPath(pathname)) {
     return NextResponse.next({ request });
   }
 
