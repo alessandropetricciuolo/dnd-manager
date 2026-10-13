@@ -137,12 +137,12 @@ export async function readSiteImages(auth: McpAuthContext, operation: string, ar
       const image = imageBlock(bytes);
       totalBytes += bytes.length;
       images.push(image);
-      references.push({ ...source, image_index: images.length - 1, status: "available" });
+      references.push({ ...source, image_index: images.length - 1, status: "available", retrieval_path: source.asset_id ? "attachment" : source.url?.startsWith("/api/tg-image/") ? "telegram_direct" : "external_url" });
     } catch {
       references.push({ ...source, status: "unavailable", reason: "Image could not be read (unsupported, oversized or inaccessible)" });
     }
   }
-  return { source: { id: parent.id, name: parent.name, domain: isMap ? "atlas" : "wiki" }, body: parent.body ?? parent.description ?? "", references, total: sources.length, offset, next_offset: offset + limit < sources.length ? offset + limit : null, images };
+  return { source: { id: parent.id, name: parent.name, domain: isMap ? "atlas" : "wiki" }, body: parent.body ?? parent.description ?? "", site_display_verified: false, references, total: sources.length, offset, next_offset: offset + limit < sources.length ? offset + limit : null, images };
 }
 
 export function imageToolResult(result: Awaited<ReturnType<typeof readSiteImages>>) {

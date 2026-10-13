@@ -26,3 +26,11 @@ Verifiche locali: `npx tsx --test src/lib/mcp-api/__tests__/*.test.ts` e `node -
 ## Caricamento nella galleria Wiki
 
 `upload_entity_image(..., mode: "gallery", title?)` aggiunge un’immagine visibile al carosello senza modificare copertina, immagini precedenti o altri attributi. Restituisce la voce aggiornata e `image` con ID, URL e titolo. Per più immagini, ripetere usando la revisione restituita dal caricamento precedente. Rileggere con `get_entity` o `read_entity_images` per verificare. Omettere `mode` mantiene il comportamento precedente di sostituzione copertina; usare `mode: "primary"` solo per una sostituzione richiesta.
+
+## Sostituire l’immagine di una mappa esistente
+
+`upload_map_image` carica PNG, JPEG o WebP fino a 3 MiB. Leggere prima `get_map`, poi passare `campaign_id`, `map_id`, `expected_updated_at` (valore esatto restituito), `filename`, `mime_type` e `data_base64`. Per una mappa Solo Admin usare `admin_only: true`.
+
+La scrittura aggiorna soltanto `image_url` e `updated_at`: conserva ID, gerarchia, descrizione, collegamenti e visibilità. Restituisce la mappa aggiornata e `previous_image_url`. Un conflitto restituisce 409 prima del caricamento, oppure dopo se la mappa cambia durante il caricamento; in quest’ultimo caso il nuovo file può esistere su Telegram, ma la mappa non viene sostituita. Nessuna cancellazione automatica dell’originale.
+
+Rileggere `get_map` e verificare l’immagine nel browser dopo la sostituzione. Le letture immagini riportano `site_display_verified: false` e il `retrieval_path`: `telegram_direct` recupera l’originale senza passare da `/api/tg-image`, quindi `status: available` certifica il recupero MCP, non la visualizzazione nel sito.

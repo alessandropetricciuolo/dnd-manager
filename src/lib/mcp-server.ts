@@ -71,7 +71,7 @@ export function createBdMcpServer(auth: McpAuthContext) {
     admin_only: adminOnly,
   }, true);
   register("read_entity_images", "See actual primary, gallery and attached Wiki images before generating coherent artwork. Returns native image blocks plus source metadata; pass received images as visual references to the image generator. Paginate up to 3 images per call. PDFs are excluded. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, entity_id: entityId, admin_only: adminOnly, offset: z.number().int().min(0).max(10000).optional(), limit: z.number().int().min(1).max(3).optional() }, true);
-  register("read_map_image", "See the actual scoped Atlas map as a visual reference for coherent artwork. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, map_id: entityId, admin_only: adminOnly }, true);
+  register("read_map_image", "Retrieve the original scoped Atlas image as a visual reference. Telegram images are read directly from storage; availability does not verify browser display. Admin-only content requires explicit opt-in.", { campaign_id: campaignId, map_id: entityId, admin_only: adminOnly }, true);
   register("list_wiki_relationships", "List real Wiki-to-Wiki and Wiki-to-map relationship rows with endpoint metadata. Admin-only endpoints require explicit opt-in.", {
     campaign_id: campaignId,
     limit: z.number().int().min(1).max(100).optional(),
@@ -134,6 +134,15 @@ export function createBdMcpServer(auth: McpAuthContext) {
     data_base64: z.string().max(4_194_304),
     mode: z.enum(["primary", "gallery"]).optional(),
     title: z.string().max(200).optional(),
+  }, false);
+  register("upload_map_image", "Replace an existing Atlas map image with a PNG, JPEG or WebP up to 3 MiB. Requires expected_updated_at from get_map; preserves identity, hierarchy, links and visibility. Protected maps require admin_only=true. Returns the updated map and previous image reference; verify site display separately.", {
+    campaign_id: campaignId,
+    map_id: entityId,
+    expected_updated_at: z.string().datetime({ offset: true }),
+    admin_only: adminOnly,
+    filename: z.string().min(1).max(120),
+    mime_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
+    data_base64: z.string().max(4_194_304),
   }, false);
   register("upload_map", "Create a scoped Atlas map from an HTTPS image URL or upload a PNG, JPEG, or WebP up to 3 MiB. Maps default to secret.", {
     campaign_id: campaignId,

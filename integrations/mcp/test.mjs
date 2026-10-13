@@ -15,7 +15,7 @@ test("MCP exposes one personal Admin surface with admin_only contracts", async (
   await server.connect(serverTransport); await client.connect(clientTransport);
   try {
     const listed = await client.listTools();
-    assert.equal(listed.tools.length, 36);
+    assert.equal(listed.tools.length, Object.keys(definitions).length);
     assert.ok(listed.tools.some((tool) => tool.name === "prepare_session_close"));
     assert.equal(listed.tools.find((tool) => tool.name === "close_session").inputSchema.properties.confirm_close.const, true);
     assert.equal(listed.tools.find((tool) => tool.name === "search_lore").inputSchema.properties.admin_only.type, "boolean");
@@ -40,7 +40,7 @@ test("MCP transport contains no database or service-role path", async () => {
   assert.doesNotMatch(source, /supabase|service_role|postgres|database/i);
   assert.match(source, /api\/integrations\/content\/auth/);
   assert.match(source, /sessionIdGenerator:\s*undefined/);
-  assert.deepEqual(Object.keys(definitions).sort(), ["read_entity_images", "read_map_image", "attach_asset", "close_session", "complete_mission", "create_item", "create_location", "create_lore", "create_mission", "create_mission_encounter", "create_monster", "create_npc", "delete_mission", "delete_mission_encounter", "get_entity", "get_map", "get_mission", "link_mission_resource", "list_mission_encounters", "list_sessions", "list_wiki_relationships", "prepare_session_close", "reopen_mission", "replace_encounter_monsters", "search_lore", "search_maps", "search_missions", "set_mission_status", "set_status", "update_entity", "update_mission", "update_mission_encounter", "upload_asset", "upload_entity_image", "upload_map", "upsert_wiki_relationship"].sort());
+  assert.deepEqual(Object.keys(definitions).sort(), ["read_entity_images", "read_map_image", "attach_asset", "close_session", "complete_mission", "create_item", "create_location", "create_lore", "create_mission", "create_mission_encounter", "create_monster", "create_npc", "delete_mission", "delete_mission_encounter", "get_entity", "get_map", "get_mission", "link_mission_resource", "list_mission_encounters", "list_sessions", "list_wiki_relationships", "prepare_session_close", "reopen_mission", "replace_encounter_monsters", "search_lore", "search_maps", "search_missions", "set_mission_status", "set_status", "update_entity", "update_mission", "update_mission_encounter", "upload_asset", "upload_entity_image", "upload_map", "upload_map_image", "upsert_wiki_relationship"].sort());
 });
 
 

@@ -152,6 +152,40 @@ test("item and monster creation contracts mirror the manual Wiki persistence fie
   assert.equal(result.entity.global_status, "alive");
 });
 
+test("map image replacement validates input and preserves map identity with optimistic concurrency", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const timestamp = "2026-10-13T10:00:00+00:00";
+  const args = { campaign_id: campaign, map_id: entityId, expected_updated_at: timestamp, filename: "map.png", mime_type: "image/png", data_base64: Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]).toString("base64") };
+  for (const invalid of [{ map_id: undefined }, { expected_updated_at: "yesterday" }, { visibility: "public" }, { data_base64: "AAAA" }]) {
+    assert.throws(() => validate({ operation: "upload_map_image", args: { ...args, ...invalid } }), ApiError);
+  }
+  const enabled = { id: campaign, type: "long", admin_drafts_enabled: true };
+  const map = { id: entityId, campaign_id: campaign, name: "Corte", updated_at: timestamp, image_url: "old", parent_map_id: campaign, visibility: "secret", admin_only: false };
+  let uploads = 0;
+  const deps = { uploadImage: async () => { uploads++; return "new/id"; } };
+  for (const current of [null, { ...map, updated_at: "2026-10-13T11:00:00Z" }]) {
+    const db = fakeDb([enabled, current]);
+    await assert.rejects(executeContent(admin(db.db), { operation: "upload_map_image", args }, deps), (e: any) => [404, 409].includes(e.status));
+  }
+  await assert.rejects(executeContent(nonAdmin(fakeDb([]).db), { operation: "upload_map_image", args }, deps));
+  await assert.rejects(executeContent(admin(fakeDb([]).db), { operation: "upload_map_image", args: { ...args, campaign_id: entityId } }, deps));
+  assert.equal(uploads, 0);
+  const raced = fakeDb([enabled, map, null]);
+  await assert.rejects(executeContent(admin(raced.db), { operation: "upload_map_image", args }, deps), (e: any) => e.status === 409);
+  const success = fakeDb([enabled, map, { ...map, image_url: "/api/tg-image/new%2Fid", updated_at: "2026-10-13T12:00:00Z" }]);
+  const result: any = await executeContent(admin(success.db), { operation: "upload_map_image", args }, deps);
+  assert.deepEqual(Object.keys(success.calls.find(c => c[0] === "update")![1] as object).sort(), ["image_url", "updated_at"]);
+  assert(success.calls.some(c => c[0] === "eq" && c[1] === "updated_at" && c[2] === timestamp));
+  assert(success.calls.some(c => c[0] === "eq" && c[1] === "admin_only" && c[2] === false));
+  assert.equal(result.map.id, map.id);
+  assert.equal(result.map.parent_map_id, map.parent_map_id);
+  assert.equal(result.map.visibility, "secret");
+  assert.equal(result.previous_image_url, "old");
+  const protectedDb = fakeDb([enabled, { ...map, admin_only: true }, { ...map, admin_only: true }]);
+  await executeContent(admin(protectedDb.db), { operation: "upload_map_image", args: { ...args, admin_only: true } }, deps);
+  assert(!protectedDb.calls.some(c => c[0] === "eq" && c[1] === "admin_only"));
+});
+
 test("upload_map validates HTTPS input and creates a secret scoped Atlas map", async () => {
   process.env.MCP_CAMPAIGN_ID = campaign;
   assert.equal(validate({ operation: "upload_map", args: { campaign_id: campaign, name: "Bosco", image_url: "https://cdn.example.com/map.png" } }).operation, "upload_map");

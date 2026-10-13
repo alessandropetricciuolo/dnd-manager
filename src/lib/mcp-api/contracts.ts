@@ -1,6 +1,6 @@
 export const entityKinds = ["campaign", "npc", "location", "faction", "quest", "item", "event", "session", "lore", "player_character", "monster"] as const;
 export const statuses = ["draft", "proposed", "canonical", "deprecated"] as const;
-export const operations = ["search_lore", "get_entity", "read_entity_images", "read_map_image", "list_wiki_relationships", "upsert_wiki_relationship", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "set_status",
+export const operations = ["search_lore", "get_entity", "read_entity_images", "read_map_image", "list_wiki_relationships", "upsert_wiki_relationship", "search_maps", "get_map", "create_lore", "create_npc", "create_location", "create_item", "create_monster", "update_entity", "upload_asset", "attach_asset", "upload_entity_image", "upload_map", "upload_map_image", "set_status",
   "search_missions", "get_mission", "create_mission", "update_mission", "set_mission_status", "complete_mission", "reopen_mission", "delete_mission",
   "list_mission_encounters", "create_mission_encounter", "update_mission_encounter", "delete_mission_encounter", "replace_encounter_monsters", "link_mission_resource",
   "list_sessions", "prepare_session_close", "close_session"] as const;
@@ -39,6 +39,7 @@ const fields: Record<Operation, string[]> = {
   upsert_wiki_relationship: ["source_id", "target_id", "target_map_id", "label", "admin_only"],
   search_maps: ["query", "map_type", "limit", "offset", "admin_only"],
   get_map: ["map_id", "admin_only"],
+  upload_map_image: ["map_id", "expected_updated_at", "admin_only", "filename", "mime_type", "data_base64"],
   create_lore: ["name", "body", "attributes", "admin_only"],
   create_npc: ["name", "body", "attributes", "admin_only"],
   create_location: ["name", "body", "attributes", "admin_only"],
@@ -152,7 +153,10 @@ export function validate(raw: unknown): { operation: Operation; args: Record<str
       args.mime_type === "image/webp" ? bytes.toString("ascii", 0, 4) === "RIFF" && bytes.toString("ascii", 8, 12) === "WEBP" : bytes.toString("ascii", 0, 5) === "%PDF-";
     if (!validSignature) return fail();
   }
-  if (operation === "upload_entity_image") {
+  if (operation === "upload_map_image") {
+    if (args.map_id === undefined || typeof args.expected_updated_at !== "string" || !/^\d{4}-\d{2}-\d{2}T/.test(args.expected_updated_at) || !Number.isFinite(Date.parse(args.expected_updated_at))) return fail();
+  }
+  if (operation === "upload_entity_image" || operation === "upload_map_image") {
     if (args.mode !== undefined && !["primary", "gallery"].includes(args.mode)) return fail();
     if (args.title !== undefined && (typeof args.title !== "string" || args.title.length > 200)) return fail();
     if (typeof args.filename !== "string" || args.filename.length > 120 || !/^[\w .-]+$/.test(args.filename) || args.filename.includes("..")) return fail();

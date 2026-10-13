@@ -333,6 +333,28 @@ export async function executeContent(
     return { asset };
   }
 
+  if (operation === "upload_map_image") {
+    let query = auth.db.from("maps").select(mapColumns).eq("id", a.map_id).eq("campaign_id", a.campaign_id);
+    if (!adminOnlyRequested) query = query.eq("admin_only", false);
+    const map = checked(await query.maybeSingle());
+    if (!map) throw new ApiError(404, "Map not found");
+    if (map.updated_at !== a.expected_updated_at) throw new ApiError(409, "Map changed: read map again");
+    const file = new File([Buffer.from(a.data_base64, "base64")], a.filename, { type: a.mime_type });
+    let imageUrl: string;
+    try { imageUrl = `/api/tg-image/${encodeURIComponent(await uploadImage(file, `Mappa: ${map.name}`))}`; }
+    catch { throw new ApiError(503, "Map image upload failed"); }
+    const updated = checked(await auth.db.from("maps")
+      .update({ image_url: imageUrl, updated_at: new Date().toISOString() })
+      .eq("id", a.map_id).eq("campaign_id", a.campaign_id).eq("updated_at", a.expected_updated_at)
+      .select(mapColumns).maybeSingle());
+    if (!updated) throw new ApiError(409, "Map changed during upload: read map again; image was not replaced");
+    try {
+      revalidatePath(`/campaigns/${a.campaign_id}`);
+      revalidatePath(`/campaigns/${a.campaign_id}/maps/${a.map_id}`, "layout");
+    } catch { /* Tests may run outside a Next request cache context. */ }
+    return { map: updated, previous_image_url: map.image_url };
+  }
+
   if (operation === "upload_map") {
     const duplicate = checked(await auth.db.from("maps").select("id,name").eq("campaign_id", a.campaign_id).ilike("name", a.name.trim()).limit(1).maybeSingle());
     if (duplicate) throw new ApiError(409, `Map already exists: ${duplicate.name} (${duplicate.id})`);

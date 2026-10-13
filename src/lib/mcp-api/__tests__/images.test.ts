@@ -40,6 +40,8 @@ test("Wiki and Atlas return native image blocks, source context, and no base64 i
     assert.equal(text.type, "text");
     if (text.type === "text") assert.ok(!text.text.includes(png.toString("base64")));
     assert.equal(output.structuredContent.source.id, id);
+    assert.equal(output.structuredContent.site_display_verified, false);
+    assert.equal(result.references[0].retrieval_path, "telegram_direct");
   }
 });
 
@@ -105,6 +107,9 @@ test("native MCP server delivers an authorized attached image and hides protecte
     const listed = await client.listTools();
     assert.equal(listed.tools.find(tool => tool.name === "read_entity_images")?.annotations?.readOnlyHint, true);
     const upload = listed.tools.find(tool => tool.name === "upload_entity_image");
+    const mapUpload = listed.tools.find(tool => tool.name === "upload_map_image");
+    assert.equal(mapUpload?.annotations?.readOnlyHint, false);
+    assert.ok(mapUpload?.inputSchema.required?.includes("expected_updated_at"));
     assert.deepEqual((upload?.inputSchema.properties?.mode as any)?.enum, ["primary", "gallery"]);
     assert.match(upload?.description ?? "", /preserving the cover/);
     const hidden = await client.callTool({ name: "read_entity_images", arguments: { campaign_id: campaign, entity_id: id } });
