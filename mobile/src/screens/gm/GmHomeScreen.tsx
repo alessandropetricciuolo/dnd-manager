@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Modal,
   ActivityIndicator,
   Alert,
+  RefreshControl,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
@@ -33,15 +34,79 @@ import {
   Plus,
   Minus,
   Skull,
+  Clock,
+  MapPin,
+  CheckCircle2,
+  Compass,
+  Flame,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useGmCampaigns } from '../../hooks/useGmCampaigns';
+import { CAMPAIGN_TYPE_BADGES, CAMPAIGN_TYPE_LABELS } from '../../contexts/CampaignContext';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { GmCreateSessionModal } from '../../components/gm/GmCreateSessionModal';
 import { GmSessionSignupsModal } from '../../components/gm/GmSessionSignupsModal';
 import { GmSessionsManagerModal } from '../../components/gm/GmSessionsManagerModal';
 import type { GmTabParamList } from '../../navigation/GmTabNavigator';
+import { Campaign, CampaignType, Session } from '../../types';
+
+type SessionFilter = 'all' | 'scheduled' | 'completed';
+type CampaignFilter = 'all' | 'oneshot' | 'quest' | 'long' | 'torneo';
+
+function computeCountdown(scheduledAt: string): { label: string; isImminent: boolean } {
+  try {
+    const now = new Date().getTime();
+    const target = new Date(scheduledAt).getTime();
+    const diffMs = target - now;
+
+    if (diffMs <= 0) {
+      return { label: 'In corso adesso!', isImminent: true };
+    }
+
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+    const diffDays = Math.floor(diffHours / 24);
+    const remainingHours = diffHours % 24;
+
+    if (diffDays === 0) {
+      if (diffHours === 0) {
+        const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
+        return { label: `Tra ${diffMins} minuti!`, isImminent: true };
+      }
+      return { label: `Oggi · Tra ${diffHours} ore`, isImminent: true };
+    } else if (diffDays === 1) {
+      return { label: `Domani (${remainingHours}h)`, isImminent: false };
+    } else {
+      return { label: `Tra ${diffDays} gg e ${remainingHours} ore`, isImminent: false };
+    }
+  } catch {
+    return { label: 'In arrivo', isImminent: false };
+  }
+}
+
+function formatSessionDate(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return { dayName: 'Data da definire', dayNum: '', month: '', time: '' };
+    }
+    const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const dayName = days[d.getDay()];
+    const dayNum = String(d.getDate());
+    const month = months[d.getMonth()];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return {
+      dayName,
+      dayNum,
+      month,
+      time: `${hours}:${mins}`,
+    };
+  } catch {
+    return { dayName: 'Data non valida', dayNum: '', month: '', time: '' };
+  }
+}
 
 export const GmHomeScreen: React.FC = () => {
   const navigation = useNavigation<BottomTabNavigationProp<GmTabParamList>>();
@@ -54,14 +119,24 @@ export const GmHomeScreen: React.FC = () => {
     activeSession,
     characters,
     isLoading,
+    isRefreshing,
     updateCharacterHp,
     refreshSessionData,
+    refreshCampaigns,
   } = useGmCampaigns();
 
+  // Filters state
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>('all');
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>('all');
+
+  // Modals state
   const [campaignModalVisible, setCampaignModalVisible] = useState<boolean>(false);
   const [createSessionModalVisible, setCreateSessionModalVisible] = useState<boolean>(false);
   const [signupsModalVisible, setSignupsModalVisible] = useState<boolean>(false);
   const [sessionsManagerModalVisible, setSessionsManagerModalVisible] = useState<boolean>(false);
+  const [selectedSessionForSignups, setSelectedSessionForSignups] = useState<Session | null>(null);
+
+  // HP modifications pending states
   const [pendingHpIds, setPendingHpIds] = useState<Set<string>>(new Set());
   const pendingHpIdsRef = useRef<Set<string>>(new Set());
 
@@ -71,8 +146,13 @@ export const GmHomeScreen: React.FC = () => {
     user?.email?.split('@')[0] ||
     'Game Master';
 
+  const onRefresh = useCallback(async () => {
+    await Promise.all([refreshCampaigns(), refreshSessionData()]);
+  }, [refreshCampaigns, refreshSessionData]);
+
   // Statistics
   const completedSessionsCount = sessions.filter((s) => s.status === 'completed').length;
+  const scheduledSessionsCount = sessions.filter((s) => s.status === 'scheduled').length;
   const criticalCharacters = characters.filter((c) => {
     const maxHp = c.hit_points || 30;
     const currentHp = typeof c.hit_points === 'number' ? c.hit_points : 30;
@@ -83,19 +163,28 @@ export const GmHomeScreen: React.FC = () => {
       ? Math.round(characters.reduce((acc, c) => acc + (c.level || 1), 0) / characters.length)
       : 1;
 
-  const formatSessionDate = (dateStr?: string) => {
-    if (!dateStr) return 'Prossimamente';
-    const d = new Date(dateStr);
-    return isNaN(d.getTime())
-      ? dateStr
-      : d.toLocaleDateString('it-IT', {
-          weekday: 'short',
-          day: '2-digit',
-          month: 'short',
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-  };
+  // Next session countdown
+  const countdownInfo = useMemo(() => {
+    if (!activeSession?.scheduled_at) return null;
+    return computeCountdown(activeSession.scheduled_at);
+  }, [activeSession?.scheduled_at]);
+
+  // Filtered Sessions
+  const filteredSessions = useMemo(() => {
+    let list = [...sessions];
+    if (sessionFilter === 'scheduled') {
+      list = list.filter((s) => s.status === 'scheduled');
+    } else if (sessionFilter === 'completed') {
+      list = list.filter((s) => s.status === 'completed');
+    }
+    return list.sort((a, b) => (a.scheduled_at > b.scheduled_at ? -1 : 1));
+  }, [sessions, sessionFilter]);
+
+  // Filtered Campaigns
+  const filteredCampaigns = useMemo(() => {
+    if (campaignFilter === 'all') return campaigns;
+    return campaigns.filter((c) => c.type === campaignFilter);
+  }, [campaigns, campaignFilter]);
 
   const handleAdjustHp = async (characterId: string, currentHp: number, delta: number) => {
     if (pendingHpIdsRef.current.has(characterId)) return;
@@ -117,11 +206,34 @@ export const GmHomeScreen: React.FC = () => {
     }
   };
 
+  const handleSelectCampaign = async (camp: Campaign) => {
+    if (camp.id === activeCampaign?.id) return;
+    try {
+      await selectCampaign(camp.id);
+      Alert.alert('Campagna Attiva', `"${camp.name}" è ora la campagna selezionata per la Regia.`);
+    } catch {
+      Alert.alert('Errore', 'Impossibile selezionare la campagna.');
+    }
+  };
+
+  const openSignupsForSession = (sess: Session) => {
+    setSelectedSessionForSignups(sess);
+    setSignupsModalVisible(true);
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.brassLight}
+            colors={[colors.brassBase]}
+          />
+        }
       >
         {/* GM Mode Switcher Banner */}
         <View style={styles.switcherBanner}>
@@ -144,31 +256,27 @@ export const GmHomeScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Master Active Campaign Card */}
-        <View style={styles.directorCard}>
-          <View style={styles.directorTopRow}>
-            <Text style={styles.campaignStatus}>CAMPAGNA ATTIVA</Text>
-            {campaigns.length > 1 && (
-              <TouchableOpacity
-                style={styles.switchCampaignBtn}
-                onPress={() => setCampaignModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.switchCampaignText}>Cambia</Text>
-                <ChevronDown size={13} color={colors.brassLight} />
-              </TouchableOpacity>
-            )}
+        {/* Master Quick Stats Header Card */}
+        <View style={styles.headerCard}>
+          <View style={styles.badgeRow}>
+            <View style={styles.roleBadge}>
+              <Crown size={12} color={colors.brassLight} />
+              <Text style={styles.roleBadgeText}>PLANCIA REGIA DI GILDA</Text>
+            </View>
+            <View style={styles.fameBadge}>
+              <Sparkles size={12} color={colors.brassBase} />
+              <Text style={styles.fameBadgeText}>
+                {campaigns.length} Campagne
+              </Text>
+            </View>
           </View>
 
-          <Text style={styles.campaignName}>
-            {activeCampaign?.name || 'Caricamento Campagna...'}
+          <Text style={styles.welcomeTitle}>Regia Master, {gmName}</Text>
+          <Text style={styles.welcomeSubtitle}>
+            Supervisiona i tavoli di gioco, i vitali del party e organizza le prossime sessioni della Gilda.
           </Text>
 
-          <Text style={styles.campaignDescription} numberOfLines={2}>
-            {activeCampaign?.description || 'Nessuna descrizione per questa campagna.'}
-          </Text>
-
-          {/* Quick Campaign Stats Strip */}
+          {/* Quick Stats Strip */}
           <View style={styles.statsStrip}>
             <View style={styles.statBox}>
               <Users size={14} color={colors.brassLight} />
@@ -188,73 +296,331 @@ export const GmHomeScreen: React.FC = () => {
               <Text style={styles.statDesc}>Sessioni Svolte</Text>
             </View>
           </View>
+        </View>
 
-          <View style={styles.divider} />
+        {/* 1. SPOTLIGHT PROSSIMA SESSIONE AL TAVOLO */}
+        <View style={styles.sectionHeader}>
+          <Calendar size={18} color={colors.brassBase} />
+          <Text style={styles.sectionTitle}>PROSSIMA SESSIONE IN PROGRAMMA</Text>
+        </View>
 
-          {/* Active / Next Session Info */}
-          <View style={styles.activeSessionRow}>
-            <View style={styles.sessionStatusBadge}>
-              <View
-                style={[
-                  styles.pulseDot,
-                  { backgroundColor: activeSession?.status === 'scheduled' ? colors.emerald : colors.brassLight },
-                ]}
-              />
-              <View style={{ flex: 1, paddingRight: 6 }}>
-                <Text style={styles.sessionStatusText} numberOfLines={1}>
-                  {activeSession?.title || 'Sessione da programmare'}
+        {activeSession ? (
+          <View style={styles.sessionCard}>
+            <View style={styles.sessionTopRow}>
+              <View style={styles.campaignTag}>
+                <Text style={styles.campaignTagText}>
+                  {activeCampaign?.name || 'CAMPAGNA ATTIVA'}
                 </Text>
-                <Text style={styles.sessionTimeText} numberOfLines={1}>
-                  {formatSessionDate(activeSession?.scheduled_at)}
-                  {activeSession?.location ? ` • ${activeSession.location}` : ''}
+              </View>
+
+              <View style={styles.statusLive}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>
+                  {activeSession.status === 'scheduled' ? 'PROGRAMMATA' : 'ATTIVA'}
                 </Text>
               </View>
             </View>
 
-            <TouchableOpacity
-              style={styles.launchSessionBtn}
-              onPress={() => navigation.navigate('GmCombat')}
-              activeOpacity={0.85}
-            >
-              <Play size={13} color={colors.void} />
-              <Text style={styles.launchSessionText}>Avvia Regia</Text>
-            </TouchableOpacity>
-          </View>
+            <Text style={styles.sessionTitle}>
+              {activeSession.title || 'Sessione Ufficiale al Tavolo'}
+            </Text>
 
-          {/* Session Management Quick Bar */}
-          <View style={styles.sessionManageBar}>
-            {activeSession ? (
+            <View style={styles.sessionDetailsRow}>
+              <View style={styles.sessionDetailItem}>
+                <MapPin size={13} color={colors.brassLight} />
+                <Text style={styles.sessionInfoText}>
+                  {activeSession.location || 'Barber & Dragons · Tavolo Taverna'}
+                </Text>
+              </View>
+
+              {countdownInfo && (
+                <View style={styles.countdownBadge}>
+                  <Clock size={12} color={countdownInfo.isImminent ? colors.void : colors.brassLight} />
+                  <Text
+                    style={[
+                      styles.countdownText,
+                      countdownInfo.isImminent && styles.countdownTextImminent,
+                    ]}
+                  >
+                    {countdownInfo.label}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Quick Action Buttons for Active Session */}
+            <View style={styles.sessionActionRow}>
               <TouchableOpacity
-                style={styles.manageSignupsBtn}
-                onPress={() => setSignupsModalVisible(true)}
-                activeOpacity={0.75}
+                style={styles.launchCombatBtn}
+                onPress={() => navigation.navigate('GmCombat')}
+                activeOpacity={0.85}
+              >
+                <Play size={14} color={colors.void} />
+                <Text style={styles.launchCombatBtnText}>Avvia Regia (Iniziativa)</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.manageSignupsActionBtn}
+                onPress={() => openSignupsForSession(activeSession)}
+                activeOpacity={0.8}
               >
                 <Users size={13} color={colors.brassLight} />
-                <Text style={styles.manageSignupsBtnText}>Gestisci Iscritti</Text>
+                <Text style={styles.manageSignupsActionText}>Iscritti</Text>
               </TouchableOpacity>
-            ) : null}
-
+            </View>
+          </View>
+        ) : (
+          <View style={styles.noSessionCard}>
+            <Calendar size={28} color={colors.parchmentMuted} />
+            <Text style={styles.noSessionTitle}>Nessuna Sessione Programmata</Text>
+            <Text style={styles.noSessionSub}>
+              Crea una nuova sessione per aprire le iscrizioni ai giocatori.
+            </Text>
             <TouchableOpacity
-              style={styles.createSessionPillBtn}
+              style={styles.createSessionInlineBtn}
               onPress={() => setCreateSessionModalVisible(true)}
               activeOpacity={0.8}
             >
-              <Plus size={13} color={colors.void} />
-              <Text style={styles.createSessionPillText}>+ Nuova Sessione</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.calendarAllBtn}
-              onPress={() => setSessionsManagerModalVisible(true)}
-              activeOpacity={0.75}
-            >
-              <Calendar size={13} color={colors.parchmentMuted} />
-              <Text style={styles.calendarAllBtnText}>Tutti i Tavoli ({sessions.length})</Text>
+              <Plus size={14} color={colors.void} />
+              <Text style={styles.createSessionInlineText}>Crea Sessione Ora</Text>
             </TouchableOpacity>
           </View>
+        )}
+
+        {/* 2. CALENDARIO COMPLETO TAVOLI DI GILDA (COME SUL SITO) */}
+        <View style={styles.sectionHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Calendar size={18} color={colors.brassBase} />
+            <Text style={styles.sectionTitle}>CALENDARIO SESSIONI DI GILDA</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.createHeaderBtn}
+            onPress={() => setCreateSessionModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Plus size={12} color={colors.void} />
+            <Text style={styles.createHeaderBtnText}>Nuovo Tavolo</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Party Vitals Warning Bar if someone is bleeding/KO */}
+        {/* Filtri Sessioni */}
+        <View style={styles.filterRow}>
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'all' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('all')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'all' && styles.filterPillTextActive]}>
+              Tutti ({sessions.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'scheduled' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('scheduled')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'scheduled' && styles.filterPillTextActive]}>
+              In Programma ({scheduledSessionsCount})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'completed' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('completed')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'completed' && styles.filterPillTextActive]}>
+              Conclusi ({completedSessionsCount})
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Lista Rapida Sessioni del Master */}
+        {filteredSessions.slice(0, 4).map((session) => {
+          const dateMeta = formatSessionDate(session.scheduled_at);
+          const isCompleted = session.status === 'completed';
+
+          return (
+            <View key={session.id} style={styles.miniSessionCard}>
+              <View style={styles.miniSessionDateBox}>
+                <Text style={styles.miniSessionDayNum}>{dateMeta.dayNum}</Text>
+                <Text style={styles.miniSessionMonth}>{dateMeta.month}</Text>
+                <Text style={styles.miniSessionTime}>{dateMeta.time}</Text>
+              </View>
+
+              <View style={styles.miniSessionInfo}>
+                <Text style={styles.miniSessionCampName}>
+                  {activeCampaign?.name || 'CAMPAGNA'}
+                </Text>
+                <Text style={styles.miniSessionTitle} numberOfLines={1}>
+                  {session.title || 'Sessione di Gioco'}
+                </Text>
+                <View style={styles.miniSessionOccupancy}>
+                  <Users size={11} color={colors.brassLight} />
+                  <Text style={styles.miniSessionOccupancyText}>
+                    Max {session.max_players ?? 6} posti • {session.location || 'Taverna'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.miniSessionAction}>
+                <TouchableOpacity
+                  style={styles.gmManageMiniBtn}
+                  onPress={() => openSignupsForSession(session)}
+                  activeOpacity={0.75}
+                >
+                  <Text style={styles.gmManageMiniText}>Gestisci</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          );
+        })}
+
+        {sessions.length > 4 && (
+          <TouchableOpacity
+            style={styles.viewAllSessionsButton}
+            onPress={() => setSessionsManagerModalVisible(true)}
+            activeOpacity={0.8}
+          >
+            <Calendar size={14} color={colors.brassLight} />
+            <Text style={styles.viewAllSessionsText}>
+              Gestisci Tutti i {sessions.length} Tavoli
+            </Text>
+            <ChevronRight size={14} color={colors.brassLight} />
+          </TouchableOpacity>
+        )}
+
+        {/* 3. PANORAMICA DI TUTTE LE CAMPAGNE DELLA GILDA (COME SUL SITO) */}
+        <View style={styles.sectionHeaderRow}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <Swords size={18} color={colors.brassBase} />
+            <Text style={styles.sectionTitle}>TUTTE LE CAMPAGNE DELLA GILDA</Text>
+          </View>
+          {campaigns.length > 1 && (
+            <TouchableOpacity
+              style={styles.switchCampaignBtn}
+              onPress={() => setCampaignModalVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.switchCampaignText}>Selettore</Text>
+              <ChevronDown size={13} color={colors.brassLight} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        {/* Filtri Formato Campagna */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.campaignFiltersScroll}
+        >
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'all' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('all')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'all' && styles.filterPillTextActive]}>
+              Tutte ({campaigns.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'oneshot' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('oneshot')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'oneshot' && styles.filterPillTextActive]}>
+              One Shot
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'quest' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('quest')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'quest' && styles.filterPillTextActive]}>
+              Quest
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'long' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('long')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'long' && styles.filterPillTextActive]}>
+              Campagne Long
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'torneo' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('torneo')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'torneo' && styles.filterPillTextActive]}>
+              Torneo
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Griglia/Elenco Campagne */}
+        {filteredCampaigns.slice(0, 4).map((camp) => {
+          const cType: CampaignType = camp.type || 'quest';
+          const badgeMeta = CAMPAIGN_TYPE_BADGES[cType] || CAMPAIGN_TYPE_BADGES.quest;
+          const isActive = camp.id === activeCampaign?.id;
+
+          return (
+            <View key={camp.id} style={[styles.campaignCard, isActive && styles.campaignCardActive]}>
+              <View style={styles.campaignCardBody}>
+                <View style={styles.campaignCardHeaderRow}>
+                  <View
+                    style={[
+                      styles.campaignTypeBadge,
+                      { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
+                    ]}
+                  >
+                    <Text style={[styles.campaignTypeBadgeText, { color: badgeMeta.text }]}>
+                      {badgeMeta.label}
+                    </Text>
+                  </View>
+
+                  {isActive ? (
+                    <View style={styles.activePill}>
+                      <Check size={11} color={colors.void} />
+                      <Text style={styles.activePillText}>IN REGIA</Text>
+                    </View>
+                  ) : (
+                    <TouchableOpacity
+                      style={styles.selectCampPill}
+                      onPress={() => handleSelectCampaign(camp)}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.selectCampPillText}>Seleziona</Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <Text style={styles.campaignCardTitle}>{camp.name}</Text>
+                <Text style={styles.campaignCardDesc} numberOfLines={2}>
+                  {camp.description || 'Nessuna descrizione disponibile.'}
+                </Text>
+
+                <View style={styles.campaignCardFooter}>
+                  <View style={styles.campFooterMeta}>
+                    <Crown size={12} color={colors.brassLight} />
+                    <Text style={styles.campFooterMetaText}>
+                      {camp.is_public ? 'Campagna Pubblica' : 'Campagna Privata'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.campFooterMeta}>
+                    <Users size={12} color={colors.parchmentMuted} />
+                    <Text style={styles.campFooterMetaText}>
+                      {isActive ? 'In Uso Ora' : 'Disponibile'}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+
+        {/* 4. MONITOR VITALI DEL PARTY IN TEMPO REALE */}
         {criticalCharacters.length > 0 && (
           <View style={styles.criticalNoticeBanner}>
             <ShieldAlert size={16} color={colors.crimsonLight} />
@@ -264,11 +630,10 @@ export const GmHomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Live Party Vitals Monitor */}
         <View style={styles.sectionHeader}>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Activity size={16} color={colors.brassBase} />
-            <Text style={styles.sectionTitle}>MONITOR VITALI DEL PARTY IN TEMPO REALE</Text>
+            <Text style={styles.sectionTitle}>MONITOR VITALI DEL PARTY (LIVE)</Text>
           </View>
           <Text style={styles.sectionSubCount}>{characters.length} Eroi</Text>
         </View>
@@ -276,7 +641,7 @@ export const GmHomeScreen: React.FC = () => {
         <View style={styles.partyGrid}>
           {characters.length === 0 ? (
             <View style={styles.emptyPartyBox}>
-              <Text style={styles.emptyPartyText}>Nessun personaggio associato.</Text>
+              <Text style={styles.emptyPartyText}>Nessun personaggio associato alla campagna attiva.</Text>
             </View>
           ) : (
             characters.map((char) => {
@@ -399,7 +764,7 @@ export const GmHomeScreen: React.FC = () => {
           )}
         </View>
 
-        {/* Quick Tools Grid (Shortcuts to Tabs) */}
+        {/* 5. STRUMENTI RAPIDI REGIA TAVOLO */}
         <View style={styles.sectionHeader}>
           <Crown size={16} color={colors.brassBase} />
           <Text style={styles.sectionTitle}>STRUMENTI RAPIDI REGIA TAVOLO</Text>
@@ -504,12 +869,15 @@ export const GmHomeScreen: React.FC = () => {
         }}
       />
 
-      {/* Active Session Signups Modal */}
-      {activeSession && (
+      {/* Session Signups Modal */}
+      {selectedSessionForSignups && (
         <GmSessionSignupsModal
           visible={signupsModalVisible}
-          onClose={() => setSignupsModalVisible(false)}
-          session={activeSession}
+          onClose={() => {
+            setSignupsModalVisible(false);
+            setSelectedSessionForSignups(null);
+          }}
+          session={selectedSessionForSignups}
           onSignupsUpdated={() => {
             refreshSessionData();
           }}
@@ -581,25 +949,123 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     color: colors.void,
   },
-  directorCard: {
+  headerCard: {
     backgroundColor: colors.stoneSurface,
     borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colors.stoneBorder,
     padding: 16,
-    marginBottom: 16,
+    marginBottom: 20,
   },
-  directorTopRow: {
+  badgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 8,
   },
-  campaignStatus: {
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.stone,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  roleBadgeText: {
     fontSize: 9,
     fontWeight: '800',
     color: colors.brassLight,
+    letterSpacing: 0.8,
+  },
+  fameBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  fameBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.brassBase,
+  },
+  welcomeTitle: {
+    fontSize: 20,
+    fontWeight: '900',
+    color: colors.parchmentLight,
+    marginBottom: 4,
+  },
+  welcomeSubtitle: {
+    fontSize: 12,
+    color: colors.parchmentMuted,
+    lineHeight: 17,
+    marginBottom: 14,
+  },
+  statsStrip: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    backgroundColor: colors.stone,
+    borderRadius: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  statBox: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  statVal: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginTop: 2,
+  },
+  statDesc: {
+    fontSize: 9,
+    color: colors.parchmentMuted,
+  },
+  statDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: colors.stoneBorder,
+    alignSelf: 'center',
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginTop: 6,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    marginTop: 14,
+  },
+  sectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.brassLight,
     letterSpacing: 1,
+  },
+  sectionSubCount: {
+    fontSize: 10,
+    color: colors.parchmentMuted,
+    fontWeight: '700',
+  },
+  createHeaderBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 5,
+  },
+  createHeaderBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.void,
   },
   switchCampaignBtn: {
     flexDirection: 'row',
@@ -615,145 +1081,371 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.brassLight,
   },
-  campaignName: {
-    fontSize: 19,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    marginBottom: 4,
+  sessionCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.brassDark,
+    padding: 14,
+    marginBottom: 16,
   },
-  campaignDescription: {
-    fontSize: 11,
-    color: colors.parchmentMuted,
-    lineHeight: 16,
-    marginBottom: 12,
-  },
-  statsStrip: {
+  sessionTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  campaignTag: {
     backgroundColor: colors.stone,
-    borderRadius: 8,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-  },
-  statBox: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  statVal: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    marginTop: 2,
-  },
-  statDesc: {
-    fontSize: 8,
-    color: colors.parchmentMuted,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: colors.stoneBorder,
-    alignSelf: 'center',
-  },
-  divider: {
-    height: 1,
-    backgroundColor: colors.stoneBorder,
-    marginVertical: 12,
-  },
-  activeSessionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  sessionStatusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-  },
-  pulseDot: {
-    width: 8,
-    height: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 4,
   },
-  sessionStatusText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.parchmentLight,
-  },
-  sessionTimeText: {
+  campaignTagText: {
     fontSize: 9,
+    fontWeight: '800',
+    color: colors.brassLight,
+    letterSpacing: 0.5,
+  },
+  statusLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: 'rgba(34, 197, 94, 0.15)',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+  },
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.emerald,
+  },
+  liveText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.emerald,
+  },
+  sessionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginBottom: 8,
+  },
+  sessionDetailsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  sessionDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    flex: 1,
+  },
+  sessionInfoText: {
+    fontSize: 11,
     color: colors.parchmentMuted,
   },
-  launchSessionBtn: {
+  countdownBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 10,
-    paddingVertical: 7,
-    borderRadius: 6,
-  },
-  launchSessionText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.void,
-  },
-  sessionManageBar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 12,
-    paddingTop: 10,
-    borderTopWidth: 1,
-    borderTopColor: colors.stoneBorder,
-    alignItems: 'center',
-  },
-  manageSignupsBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
+    gap: 4,
     backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 5,
   },
-  manageSignupsBtnText: {
+  countdownText: {
     fontSize: 10,
     fontWeight: '700',
     color: colors.brassLight,
   },
-  createSessionPillBtn: {
+  countdownTextImminent: {
+    color: colors.crimsonLight,
+  },
+  sessionActionRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  launchCombatBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 5,
+    justifyContent: 'center',
+    gap: 6,
     backgroundColor: colors.brassBase,
-    paddingHorizontal: 9,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 8,
+    borderRadius: 7,
   },
-  createSessionPillText: {
-    fontSize: 10,
+  launchCombatBtnText: {
+    fontSize: 11,
     fontWeight: '800',
     color: colors.void,
   },
-  calendarAllBtn: {
+  manageSignupsActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 7,
+  },
+  manageSignupsActionText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  noSessionCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    padding: 20,
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  noSessionTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  noSessionSub: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  createSessionInlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  createSessionInlineText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.void,
+  },
+  filterRow: {
+    flexDirection: 'row',
+    gap: 6,
+    marginBottom: 10,
+  },
+  filterPill: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  filterPillActive: {
+    backgroundColor: colors.brassDark,
+    borderColor: colors.brassBase,
+  },
+  filterPillText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.parchmentMuted,
+  },
+  filterPillTextActive: {
+    color: colors.brassLight,
+  },
+  miniSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    padding: 10,
+    marginBottom: 8,
+    gap: 10,
+  },
+  miniSessionDateBox: {
+    backgroundColor: colors.stone,
+    borderRadius: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    minWidth: 46,
+  },
+  miniSessionDayNum: {
+    fontSize: 15,
+    fontWeight: '900',
+    color: colors.brassLight,
+    lineHeight: 18,
+  },
+  miniSessionMonth: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.parchmentMuted,
+    textTransform: 'uppercase',
+  },
+  miniSessionTime: {
+    fontSize: 8,
+    color: colors.parchmentMuted,
+    marginTop: 2,
+  },
+  miniSessionInfo: {
+    flex: 1,
+  },
+  miniSessionCampName: {
+    fontSize: 8,
+    fontWeight: '800',
+    color: colors.brassBase,
+    letterSpacing: 0.5,
+  },
+  miniSessionTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginTop: 1,
+  },
+  miniSessionOccupancy: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: 'transparent',
+    marginTop: 3,
+  },
+  miniSessionOccupancyText: {
+    fontSize: 9,
+    color: colors.parchmentMuted,
+  },
+  miniSessionAction: {
+    marginLeft: 4,
+  },
+  gmManageMiniBtn: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    paddingHorizontal: 9,
+    paddingVertical: 5,
+    borderRadius: 5,
+  },
+  gmManageMiniText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  viewAllSessionsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 6,
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 12,
   },
-  calendarAllBtnText: {
+  viewAllSessionsText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  campaignFiltersScroll: {
+    gap: 6,
+    paddingBottom: 8,
+  },
+  campaignCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  campaignCardActive: {
+    borderColor: colors.brassBase,
+  },
+  campaignCardBody: {
+    padding: 12,
+  },
+  campaignCardHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  campaignTypeBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  campaignTypeBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  activePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  activePillText: {
+    fontSize: 9,
+    fontWeight: '900',
+    color: colors.void,
+  },
+  selectCampPill: {
+    backgroundColor: colors.stone,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  selectCampPillText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  campaignCardTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginBottom: 3,
+  },
+  campaignCardDesc: {
     fontSize: 10,
     color: colors.parchmentMuted,
-    fontWeight: '600',
+    lineHeight: 14,
+    marginBottom: 8,
+  },
+  campaignCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    borderTopWidth: 1,
+    borderTopColor: colors.stoneBorder,
+    paddingTop: 8,
+  },
+  campFooterMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  campFooterMetaText: {
+    fontSize: 10,
+    color: colors.parchmentMuted,
   },
   criticalNoticeBanner: {
     flexDirection: 'row',
@@ -762,61 +1454,41 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(239, 68, 68, 0.15)',
     borderWidth: 1,
     borderColor: colors.crimson,
-    borderRadius: 8,
     padding: 10,
-    marginBottom: 16,
+    borderRadius: 8,
+    marginBottom: 12,
   },
   criticalNoticeText: {
     fontSize: 11,
     fontWeight: '700',
     color: colors.crimsonLight,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  sectionTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 1.1,
-    color: colors.parchmentMuted,
-  },
-  sectionSubCount: {
-    fontSize: 10,
-    color: colors.brassLight,
-    fontWeight: '700',
-  },
   partyGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 20,
+    gap: 8,
+    marginBottom: 16,
   },
   emptyPartyBox: {
-    width: '100%',
-    padding: 20,
     backgroundColor: colors.stoneSurface,
+    padding: 16,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
     alignItems: 'center',
   },
   emptyPartyText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.parchmentMuted,
   },
   partyMemberCard: {
-    width: '48%',
     backgroundColor: colors.stoneSurface,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     padding: 10,
-    justifyContent: 'space-between',
   },
   cardKo: {
     borderColor: colors.crimson,
-    opacity: 0.6,
+    backgroundColor: 'rgba(239, 68, 68, 0.05)',
   },
   cardDanger: {
     borderColor: colors.crimsonLight,
@@ -824,29 +1496,28 @@ const styles = StyleSheet.create({
   partyMemberTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     marginBottom: 6,
-    gap: 4,
   },
   charName: {
     fontSize: 13,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.parchmentLight,
   },
   charNameDead: {
+    color: colors.parchmentMuted,
     textDecorationLine: 'line-through',
   },
   charClass: {
     fontSize: 10,
     color: colors.parchmentMuted,
-    marginTop: 1,
   },
   caBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
     backgroundColor: colors.stone,
-    paddingHorizontal: 4,
+    paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
   },
@@ -856,15 +1527,15 @@ const styles = StyleSheet.create({
     color: colors.parchmentLight,
   },
   hpBarContainer: {
-    height: 4,
+    height: 6,
     backgroundColor: colors.stone,
-    borderRadius: 2,
+    borderRadius: 3,
     overflow: 'hidden',
     marginBottom: 6,
   },
   hpBarFill: {
     height: '100%',
-    borderRadius: 2,
+    borderRadius: 3,
   },
   hpInfoRow: {
     flexDirection: 'row',
@@ -885,36 +1556,32 @@ const styles = StyleSheet.create({
   koBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 2,
+    gap: 3,
     backgroundColor: colors.crimson,
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 3,
   },
   koBadgeText: {
     fontSize: 8,
-    fontWeight: '800',
+    fontWeight: '900',
     color: colors.parchmentLight,
   },
   quickHpAdjustRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 4,
-    borderTopWidth: 1,
-    borderTopColor: colors.stoneBorder,
-    paddingTop: 6,
+    gap: 6,
   },
   quickHpBtnMinus: {
     flex: 1,
     backgroundColor: colors.stone,
     borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    paddingVertical: 3,
-    borderRadius: 4,
+    borderColor: 'rgba(239, 68, 68, 0.4)',
+    paddingVertical: 5,
     alignItems: 'center',
+    borderRadius: 4,
   },
   quickHpMinusText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.crimsonLight,
   },
@@ -922,13 +1589,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.stone,
     borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    paddingVertical: 3,
-    borderRadius: 4,
+    borderColor: 'rgba(34, 197, 94, 0.4)',
+    paddingVertical: 5,
     alignItems: 'center',
+    borderRadius: 4,
   },
   quickHpPlusText: {
-    fontSize: 9,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.emerald,
   },
@@ -936,15 +1603,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
+    marginBottom: 20,
   },
   toolTile: {
-    position: 'relative',
     width: '48%',
     backgroundColor: colors.stoneSurface,
     borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     padding: 12,
+    position: 'relative',
   },
   toolTileIcon: {
     width: 38,
@@ -972,54 +1640,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     right: 10,
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalCard: {
-    width: '100%',
-    backgroundColor: colors.stoneSurface,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.brassDark,
-    padding: 16,
-  },
-  modalTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.brassLight,
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
-  modalOption: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 10,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.stoneBorder,
-  },
-  modalOptionActive: {
-    backgroundColor: colors.stone,
-    borderRadius: 6,
-  },
-  modalOptionText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: colors.parchmentLight,
-  },
-  modalOptionTextActive: {
-    color: colors.brassLight,
-  },
-  modalOptionSub: {
-    fontSize: 10,
-    color: colors.parchmentMuted,
-    marginTop: 1,
   },
 });
 

@@ -1,6 +1,8 @@
 import React from 'react';
 import { Alert, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Compass,
   Shield,
@@ -13,7 +15,7 @@ import {
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { CampaignHeaderBar } from '../components/common/CampaignHeaderBar';
-import { GuildHomeScreen } from '../screens/home/GuildHomeScreen';
+import { PlayerHomeScreen } from '../screens/player/PlayerHomeScreen';
 import { CharacterSheetScreen } from '../screens/player/CharacterSheetScreen';
 import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen';
 import { CampaignLoreScreen } from '../screens/player/CampaignLoreScreen';
@@ -29,9 +31,17 @@ export type PlayerTabParamList = {
   Sessions: undefined;
 };
 
-const Tab = createBottomTabNavigator<PlayerTabParamList>();
+export type PlayerStackParamList = {
+  PlayerTabs: undefined;
+  Sessions: undefined;
+};
 
-export const PlayerTabNavigator: React.FC = () => {
+const Tab = createBottomTabNavigator<PlayerTabParamList>();
+const Stack = createNativeStackNavigator<PlayerStackParamList>();
+
+const PlayerTabs: React.FC = () => {
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, 10);
   const { role, switchMode, signOut } = useAuth();
   const isAdmin = role === 'admin';
 
@@ -41,7 +51,13 @@ export const PlayerTabNavigator: React.FC = () => {
       screenOptions={{
         tabBarActiveTintColor: colors.brassBase,
         tabBarInactiveTintColor: colors.parchmentMuted,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: 56 + bottomInset,
+            paddingBottom: bottomInset,
+          },
+        ],
         tabBarLabelStyle: styles.tabBarLabel,
         headerStyle: styles.header,
         headerShadowVisible: false,
@@ -77,10 +93,10 @@ export const PlayerTabNavigator: React.FC = () => {
         ),
       }}
     >
-      {/* 1. HOME - Calendario Sessioni + Panoramica Campagne */}
+      {/* 1. HOME - Calendario Sessioni + Panoramica Campagne + Vitals Eroe */}
       <Tab.Screen
         name="PlayerHome"
-        component={GuildHomeScreen}
+        component={PlayerHomeScreen}
         options={{
           title: 'Home',
           tabBarLabel: 'Home',
@@ -136,19 +152,26 @@ export const PlayerTabNavigator: React.FC = () => {
           tabBarIcon: ({ color, size }) => <User size={size ?? 22} color={color} />,
         }}
       />
+    </Tab.Navigator>
+  );
+};
 
-      {/* SCHERMATA SESSIONI (Accessibile via deep link o push, nascosta dalla barra principale a 5 tasti) */}
-      <Tab.Screen
+export const PlayerTabNavigator: React.FC = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="PlayerTabs" component={PlayerTabs} />
+      <Stack.Screen
         name="Sessions"
         component={SessionsCalendarScreen}
         options={{
-          title: 'Sessioni',
-          headerTitle: 'Tavoli di Gioco',
-          tabBarButton: () => null,
-          tabBarItemStyle: { display: 'none' },
+          headerShown: true,
+          title: 'Tavoli di Gioco',
+          headerStyle: styles.header,
+          headerTintColor: colors.parchmentLight,
+          headerTitleStyle: { color: colors.parchmentLight, fontWeight: '700' },
         }}
       />
-    </Tab.Navigator>
+    </Stack.Navigator>
   );
 };
 
@@ -157,8 +180,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stoneSurface,
     borderTopWidth: 1,
     borderTopColor: colors.stoneBorder,
-    height: 64,
-    paddingBottom: 8,
     paddingTop: 6,
   },
   tabBarLabel: {

@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   SafeAreaView,
   RefreshControl,
+  Image,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   Shield,
@@ -23,16 +26,25 @@ import {
   Coins,
   MapPin,
   CheckCircle2,
+  Users,
+  Compass,
+  Check,
+  BookOpen,
+  MessageSquare,
+  Flame,
 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
-import { useCampaign, CAMPAIGN_TYPE_BADGES } from '../../contexts/CampaignContext';
+import { useCampaign, CAMPAIGN_TYPE_BADGES, CAMPAIGN_TYPE_LABELS } from '../../contexts/CampaignContext';
 import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
 import { usePlayerSessions } from '../../hooks/usePlayerSessions';
 import { DiceRollerModal } from '../../components/player/DiceRollerModal';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
-import { CampaignType } from '../../types';
+import { Campaign, CampaignType, PlayerSession } from '../../types';
+
+type SessionFilter = 'all' | 'mine' | 'available';
+type CampaignFilter = 'all' | 'oneshot' | 'quest' | 'long' | 'torneo';
 
 function computeCountdown(scheduledAt: string): { label: string; isImminent: boolean } {
   try {
@@ -53,7 +65,7 @@ function computeCountdown(scheduledAt: string): { label: string; isImminent: boo
         const diffMins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
         return { label: `Tra ${diffMins} minuti!`, isImminent: true };
       }
-      return { label: `Oggi • Tra ${diffHours} ore`, isImminent: true };
+      return { label: `Oggi · Tra ${diffHours} ore`, isImminent: true };
     } else if (diffDays === 1) {
       return { label: `Domani (${remainingHours}h)`, isImminent: false };
     } else {
@@ -64,10 +76,43 @@ function computeCountdown(scheduledAt: string): { label: string; isImminent: boo
   }
 }
 
+function formatSessionDate(dateStr: string) {
+  try {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) {
+      return { dayName: 'Data da definire', dayNum: '', month: '', time: '' };
+    }
+    const days = ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'];
+    const months = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+    const dayName = days[d.getDay()];
+    const dayNum = String(d.getDate());
+    const month = months[d.getMonth()];
+    const hours = String(d.getHours()).padStart(2, '0');
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    return {
+      dayName,
+      dayNum,
+      month,
+      time: `${hours}:${mins}`,
+    };
+  } catch {
+    return { dayName: 'Data non valida', dayNum: '', month: '', time: '' };
+  }
+}
+
 export const PlayerHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { profile, user, role, switchMode } = useAuth();
-  const { activeCampaign } = useCampaign();
+  const isAdmin = role === 'admin';
+
+  const {
+    campaigns,
+    activeCampaign,
+    activeCampaignId,
+    selectCampaign,
+    refreshCampaigns,
+  } = useCampaign();
+
   const {
     activeCharacter,
     safeCharacter,
@@ -76,16 +121,22 @@ export const PlayerHomeScreen: React.FC = () => {
     updateHp,
     refresh: refreshCharacter,
   } = usePlayerCharacter();
+
   const {
     sessions,
     nextConfirmedSession,
     loading: sessionsLoading,
     refresh: refreshSessions,
+    signUpForSession,
+    cancelSignUp,
   } = usePlayerSessions();
 
-  const isAdmin = role === 'admin';
+  // Filters state
+  const [sessionFilter, setSessionFilter] = useState<SessionFilter>('all');
+  const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>('all');
+  const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
 
-  // Modal states
+  // Modals state
   const [isDiceModalOpen, setIsDiceModalOpen] = useState<boolean>(false);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
 
@@ -97,10 +148,10 @@ export const PlayerHomeScreen: React.FC = () => {
 
   const isRefreshing = charLoading || sessionsLoading;
 
-  const onRefresh = () => {
+  const onRefresh = useCallback(async () => {
     refreshCharacter();
-    refreshSessions();
-  };
+    await Promise.all([refreshCampaigns(), refreshSessions()]);
+  }, [refreshCharacter, refreshCampaigns, refreshSessions]);
 
   // Next session details
   const targetSession = nextConfirmedSession;
@@ -108,6 +159,27 @@ export const PlayerHomeScreen: React.FC = () => {
     if (!targetSession?.scheduled_at) return null;
     return computeCountdown(targetSession.scheduled_at);
   }, [targetSession?.scheduled_at]);
+
+  // Filtered Sessions
+  const filteredSessions = useMemo(() => {
+    let list = [...sessions];
+    const nowIso = new Date(Date.now() - 3 * 3600 * 1000).toISOString();
+    list = list.filter((s) => s.scheduled_at >= nowIso);
+
+    if (sessionFilter === 'mine') {
+      list = list.filter((s) => s.isConfirmed);
+    } else if (sessionFilter === 'available') {
+      list = list.filter((s) => !s.isFull && !s.isConfirmed);
+    }
+
+    return list.sort((a, b) => (a.scheduled_at > b.scheduled_at ? 1 : -1));
+  }, [sessions, sessionFilter]);
+
+  // Filtered Campaigns
+  const filteredCampaigns = useMemo(() => {
+    if (campaignFilter === 'all') return campaigns;
+    return campaigns.filter((c) => c.type === campaignFilter);
+  }, [campaigns, campaignFilter]);
 
   // Active hero vitals
   const currentHp = safeCharacter.hit_points ?? 0;
@@ -122,6 +194,65 @@ export const PlayerHomeScreen: React.FC = () => {
 
   const campType: CampaignType = activeCampaign?.type || 'quest';
   const campBadge = CAMPAIGN_TYPE_BADGES[campType] || CAMPAIGN_TYPE_BADGES.quest;
+
+  // Session Sign Up / Cancellation
+  const handleSignUp = async (session: PlayerSession) => {
+    try {
+      setActionInProgressId(session.id);
+      const res = await signUpForSession(session.id);
+      if (res.error) {
+        Alert.alert('Prenotazione non riuscita', res.error);
+      } else {
+        Alert.alert(
+          'Posto al Tavolo Riservato!',
+          `Sei registrato per "${session.title || session.campaigns?.name || 'la sessione'}". Il Master riceverà la conferma.`
+        );
+      }
+    } catch {
+      Alert.alert('Errore', 'Impossibile completare la prenotazione. Riprova.');
+    } finally {
+      setActionInProgressId(null);
+    }
+  };
+
+  const handleCancelSignUp = (session: PlayerSession) => {
+    Alert.alert(
+      'Annulla Prenotazione',
+      'Sei sicuro di voler rinunciare al tuo posto al tavolo per questa sessione?',
+      [
+        { text: 'Resta Iscritto', style: 'cancel' },
+        {
+          text: 'Conferma Rinuncia',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setActionInProgressId(session.id);
+              const res = await cancelSignUp(session.id);
+              if (res.error) {
+                Alert.alert('Errore', res.error);
+              } else {
+                Alert.alert('Iscrizione Annullata', 'Il tuo posto è stato liberato.');
+              }
+            } catch {
+              Alert.alert('Errore', 'Impossibile annullare l’iscrizione. Riprova.');
+            } finally {
+              setActionInProgressId(null);
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleSelectCampaign = async (camp: Campaign) => {
+    if (camp.id === activeCampaignId) return;
+    try {
+      await selectCampaign(camp.id);
+      Alert.alert('Campagna Attiva', `"${camp.name}" è ora la tua campagna selezionata.`);
+    } catch {
+      Alert.alert('Errore', 'Impossibile selezionare la campagna.');
+    }
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -199,39 +330,10 @@ export const PlayerHomeScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Tavolo da Gioco / Campagna Attiva */}
-        <View style={styles.sectionHeader}>
-          <Swords size={18} color={colors.brassBase} />
-          <Text style={styles.sectionTitle}>CAMPAGNA ATTIVA</Text>
-        </View>
-
-        <View style={styles.campaignActiveCard}>
-          <View style={styles.campaignActiveTop}>
-            <View style={[styles.campaignTypeBadge, { backgroundColor: campBadge.bg, borderColor: campBadge.border }]}>
-              <Text style={[styles.campaignTypeBadgeText, { color: campBadge.text }]}>{campBadge.label}</Text>
-            </View>
-            <TouchableOpacity
-              style={styles.changeCampaignBtn}
-              onPress={() => setIsCampaignModalOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.changeCampaignBtnText}>Cambia Campagna</Text>
-              <ChevronRight size={13} color={colors.brassLight} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={styles.campaignActiveTitle}>{activeCampaign?.name || 'Seleziona Campagna'}</Text>
-          {activeCampaign?.description ? (
-            <Text style={styles.campaignActiveDesc} numberOfLines={2}>
-              {activeCampaign.description}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Prossima Sessione in Programma con Countdown Live */}
+        {/* 1. SPOTLIGHT PROSSIMA SESSIONE */}
         <View style={styles.sectionHeader}>
           <Calendar size={18} color={colors.brassBase} />
-          <Text style={styles.sectionTitle}>PROSSIMA SESSIONE</Text>
+          <Text style={styles.sectionTitle}>PROSSIMA SESSIONE AL TAVOLO</Text>
         </View>
 
         {targetSession ? (
@@ -260,13 +362,13 @@ export const PlayerHomeScreen: React.FC = () => {
               )}
             </View>
 
-            <Text style={styles.sessionTitle}>{targetSession.title}</Text>
+            <Text style={styles.sessionTitle}>{targetSession.title || 'Sessione Ufficiale al Tavolo'}</Text>
 
             <View style={styles.sessionDetailsRow}>
               <View style={styles.sessionDetailItem}>
                 <MapPin size={13} color={colors.brassLight} />
                 <Text style={styles.sessionInfoText}>
-                  {targetSession.location || 'Barber & Dragons - Salone Est'}
+                  {targetSession.location || 'Barber & Dragons · Tavolo Taverna'}
                 </Text>
               </View>
 
@@ -293,7 +395,7 @@ export const PlayerHomeScreen: React.FC = () => {
                 <Text style={styles.dmName}>
                   {targetSession.dm_id?.startsWith('dm-')
                     ? targetSession.dm_id.replace('dm-', '').toUpperCase()
-                    : 'Guglielmo Il Barbiere'}
+                    : 'Master di Gilda'}
                 </Text>
               </Text>
               <TouchableOpacity
@@ -316,12 +418,234 @@ export const PlayerHomeScreen: React.FC = () => {
               onPress={() => navigation.navigate('Sessions')}
             >
               <Calendar size={14} color={colors.void} />
-              <Text style={styles.browseSessionsBtnText}>Consulta Calendario</Text>
+              <Text style={styles.browseSessionsBtnText}>Consulta Calendario Tavoli</Text>
             </TouchableOpacity>
           </View>
         )}
 
-        {/* Scheda PG Rapida Live con barra HP interattiva */}
+        {/* 2. CALENDARIO SESSIONI DELLA GILDA (COME SUL SITO) */}
+        <View style={styles.sectionHeaderWithAction}>
+          <View style={styles.sectionHeaderRowInline}>
+            <Calendar size={18} color={colors.brassBase} />
+            <Text style={styles.sectionTitle}>CALENDARIO SESSIONI SUL SITO</Text>
+          </View>
+          <TouchableOpacity
+            style={styles.viewAllLink}
+            onPress={() => navigation.navigate('Sessions')}
+          >
+            <Text style={styles.viewAllLinkText}>Vedi tutte</Text>
+            <ChevronRight size={12} color={colors.brassLight} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Filtri Sessioni */}
+        <View style={styles.filterPillsRow}>
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'all' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('all')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'all' && styles.filterPillTextActive]}>
+              Tutti i Tavoli ({sessions.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'mine' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('mine')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'mine' && styles.filterPillTextActive]}>
+              I Miei Tavoli
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, sessionFilter === 'available' && styles.filterPillActive]}
+            onPress={() => setSessionFilter('available')}
+          >
+            <Text style={[styles.filterPillText, sessionFilter === 'available' && styles.filterPillTextActive]}>
+              Posti Liberi
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Lista Rapida Sessioni in evidenza */}
+        {filteredSessions.slice(0, 3).map((session) => {
+          const dateMeta = formatSessionDate(session.scheduled_at);
+          const isFull = session.isFull;
+          const isConfirmed = session.isConfirmed;
+          const isBusy = actionInProgressId === session.id;
+
+          return (
+            <View key={session.id} style={styles.miniSessionCard}>
+              <View style={styles.miniSessionDateBox}>
+                <Text style={styles.miniSessionDayNum}>{dateMeta.dayNum}</Text>
+                <Text style={styles.miniSessionMonth}>{dateMeta.month}</Text>
+                <Text style={styles.miniSessionTime}>{dateMeta.time}</Text>
+              </View>
+
+              <View style={styles.miniSessionInfo}>
+                <Text style={styles.miniSessionCampName}>
+                  {session.campaigns?.name || 'CAMPAGNA'}
+                </Text>
+                <Text style={styles.miniSessionTitle} numberOfLines={1}>
+                  {session.title || 'Sessione di Gioco'}
+                </Text>
+                <View style={styles.miniSessionOccupancy}>
+                  <Users size={11} color={colors.brassLight} />
+                  <Text style={styles.miniSessionOccupancyText}>
+                    {session.confirmedCount ?? 0}/{session.max_players ?? 6} posti
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.miniSessionAction}>
+                {isBusy ? (
+                  <ActivityIndicator size="small" color={colors.brassBase} />
+                ) : isConfirmed ? (
+                  <TouchableOpacity
+                    style={styles.cancelSessionBtn}
+                    onPress={() => handleCancelSignUp(session)}
+                  >
+                    <CheckCircle2 size={12} color={colors.emerald} />
+                    <Text style={styles.cancelSessionBtnText}>Iscritto</Text>
+                  </TouchableOpacity>
+                ) : isFull ? (
+                  <View style={styles.fullBadge}>
+                    <Text style={styles.fullBadgeText}>Pieno</Text>
+                  </View>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.joinSessionBtn}
+                    onPress={() => handleSignUp(session)}
+                  >
+                    <Text style={styles.joinSessionBtnText}>Prenota</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            </View>
+          );
+        })}
+
+        {/* 3. PANORAMICA DI TUTTE LE CAMPAGNE (COME SUL SITO) */}
+        <View style={styles.sectionHeader}>
+          <Swords size={18} color={colors.brassBase} />
+          <Text style={styles.sectionTitle}>TUTTE LE CAMPAGNE DELLA GILDA</Text>
+        </View>
+
+        {/* Filtri Formato Campagna */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.campaignFiltersScroll}
+        >
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'all' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('all')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'all' && styles.filterPillTextActive]}>
+              Tutte ({campaigns.length})
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'oneshot' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('oneshot')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'oneshot' && styles.filterPillTextActive]}>
+              One Shot
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'quest' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('quest')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'quest' && styles.filterPillTextActive]}>
+              Quest
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'long' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('long')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'long' && styles.filterPillTextActive]}>
+              Campagne Long
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.filterPill, campaignFilter === 'torneo' && styles.filterPillActive]}
+            onPress={() => setCampaignFilter('torneo')}
+          >
+            <Text style={[styles.filterPillText, campaignFilter === 'torneo' && styles.filterPillTextActive]}>
+              Torneo
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
+
+        {/* Griglia/Carosello Campagne */}
+        {filteredCampaigns.slice(0, 4).map((camp) => {
+          const cType: CampaignType = camp.type || 'quest';
+          const badgeMeta = CAMPAIGN_TYPE_BADGES[cType] || CAMPAIGN_TYPE_BADGES.quest;
+          const isActive = camp.id === activeCampaignId;
+
+          return (
+            <View key={camp.id} style={[styles.campaignCard, isActive && styles.campaignCardActive]}>
+              <View style={styles.campaignCardBody}>
+                <View style={styles.campaignCardHeaderRow}>
+                  <View
+                    style={[
+                      styles.campaignTypeBadge,
+                      { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
+                    ]}
+                  >
+                    <Text style={[styles.campaignTypeBadgeText, { color: badgeMeta.text }]}>
+                      {badgeMeta.label}
+                    </Text>
+                  </View>
+
+                  {isActive && (
+                    <View style={styles.activePillBadge}>
+                      <Check size={11} color={colors.brassLight} />
+                      <Text style={styles.activePillBadgeText}>Campagna in Uso</Text>
+                    </View>
+                  )}
+                </View>
+
+                <Text style={styles.campaignCardTitle}>{camp.name}</Text>
+
+                {camp.description ? (
+                  <Text style={styles.campaignCardDesc} numberOfLines={2}>
+                    {camp.description}
+                  </Text>
+                ) : null}
+
+                <View style={styles.campaignCardFooter}>
+                  <TouchableOpacity
+                    style={[styles.selectCampBtn, isActive && styles.selectCampBtnActive]}
+                    onPress={() => handleSelectCampaign(camp)}
+                    activeOpacity={0.8}
+                  >
+                    {isActive ? (
+                      <>
+                        <Check size={13} color={colors.brassLight} />
+                        <Text style={styles.selectCampBtnActiveText}>Selezionata</Text>
+                      </>
+                    ) : (
+                      <>
+                        <Text style={styles.selectCampBtnText}>Imposta come Attiva</Text>
+                        <ChevronRight size={13} color={colors.void} />
+                      </>
+                    )}
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          );
+        })}
+
+        {/* 4. SCHEDA PG RAPIDA LIVE CON BARRA HP INTERATTIVA */}
         <View style={styles.sectionHeader}>
           <Sparkles size={18} color={colors.brassBase} />
           <Text style={styles.sectionTitle}>IL TUO EROE ATTIVO</Text>
@@ -435,7 +759,7 @@ export const PlayerHomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Quick Dice Roller Launch Banner */}
+        {/* 5. QUICK DICE ROLLER LAUNCH BANNER */}
         <TouchableOpacity
           style={styles.diceLauncherCard}
           onPress={() => setIsDiceModalOpen(true)}
@@ -452,6 +776,50 @@ export const PlayerHomeScreen: React.FC = () => {
           </View>
           <ChevronRight size={18} color={colors.brassLight} />
         </TouchableOpacity>
+
+        {/* 6. ACCESSO RAPIDO A TUTTE LE SEZIONI DI GIOCO */}
+        <View style={styles.sectionHeader}>
+          <Compass size={18} color={colors.brassBase} />
+          <Text style={styles.sectionTitle}>ACCESSO RAPIDO ALLA GILDA</Text>
+        </View>
+
+        <View style={styles.quickGrid}>
+          <TouchableOpacity
+            style={styles.quickTile}
+            onPress={() => navigation.navigate('CharacterSheet')}
+          >
+            <Shield size={22} color={colors.brassBase} />
+            <Text style={styles.quickTileTitle}>Scheda PG</Text>
+            <Text style={styles.quickTileSub}>Gestione Eroe</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickTile}
+            onPress={() => navigation.navigate('Sessions')}
+          >
+            <Calendar size={22} color={colors.brassBase} />
+            <Text style={styles.quickTileTitle}>Tavoli</Text>
+            <Text style={styles.quickTileSub}>Prenotazioni</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickTile}
+            onPress={() => navigation.navigate('PlayerWhisper')}
+          >
+            <MessageSquare size={22} color={colors.brassBase} />
+            <Text style={styles.quickTileTitle}>Whisper</Text>
+            <Text style={styles.quickTileSub}>Sussurri DM</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.quickTile}
+            onPress={() => navigation.navigate('LoreMissions')}
+          >
+            <BookOpen size={22} color={colors.brassBase} />
+            <Text style={styles.quickTileTitle}>Bacheca</Text>
+            <Text style={styles.quickTileSub}>Lore & Diario</Text>
+          </TouchableOpacity>
+        </View>
 
         {/* Avvisi e Note del Barbiere */}
         <View style={styles.infoBox}>
@@ -491,169 +859,71 @@ const styles = StyleSheet.create({
   },
   container: {
     padding: 16,
-    paddingBottom: 36,
-  },
-  campaignActiveCard: {
-    backgroundColor: colors.stone,
-    borderRadius: 12,
-    borderWidth: 1.5,
-    borderColor: colors.brassDark,
-    padding: 16,
-    marginBottom: 20,
-    shadowColor: colors.brassBase,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  campaignActiveTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
-  },
-  campaignTypeBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 5,
-    borderWidth: 1,
-  },
-  campaignTypeBadgeText: {
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.6,
-  },
-  changeCampaignBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.stoneSurface,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-  },
-  changeCampaignBtnText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: colors.brassLight,
-  },
-  campaignActiveTitle: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    letterSpacing: 0.3,
-    marginBottom: 4,
-  },
-  campaignActiveDesc: {
-    fontSize: 11,
-    color: colors.parchmentMuted,
-    lineHeight: 16,
-  },
-  noCharacterCard: {
-    backgroundColor: colors.stone,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    padding: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  noCharacterTitle: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-    marginBottom: 4,
-  },
-  noCharacterSub: {
-    fontSize: 11,
-    color: colors.parchmentMuted,
-    textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 14,
-  },
-  selectOtherCampaignBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 12,
-    paddingVertical: 7,
-    borderRadius: 6,
-  },
-  selectOtherCampaignBtnText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.void,
+    paddingBottom: 40,
+    gap: 14,
   },
   gmNoticeBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: colors.stoneSurface,
+    backgroundColor: 'rgba(197, 155, 39, 0.15)',
     borderWidth: 1,
     borderColor: colors.brassDark,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 10,
-    marginBottom: 16,
+    paddingVertical: 8,
   },
   gmNoticeLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    flex: 1,
   },
   gmNoticeText: {
     fontSize: 12,
     color: colors.parchmentLight,
   },
   boldText: {
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
   },
   gmSwitchButton: {
     backgroundColor: colors.brassBase,
     paddingHorizontal: 10,
-    paddingVertical: 6,
+    paddingVertical: 5,
     borderRadius: 6,
   },
   gmSwitchButtonText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.void,
   },
   headerCard: {
-    backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    borderRadius: 12,
-    padding: 18,
-    marginBottom: 20,
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.brassDark,
+    padding: 16,
+    gap: 10,
   },
   badgeRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 10,
+    justifyContent: 'space-between',
   },
   roleBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: colors.stoneSurface,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
+    gap: 5,
+    backgroundColor: colors.stone,
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
   },
   roleBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 0.5,
   },
@@ -661,51 +931,50 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    backgroundColor: colors.stoneSurface,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
+    backgroundColor: 'rgba(197, 155, 39, 0.12)',
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   fameBadgeText: {
-    fontSize: 10,
-    fontWeight: '600',
-    color: colors.parchmentLight,
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.brassBase,
   },
   welcomeTitle: {
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '800',
     color: colors.parchmentLight,
-    letterSpacing: 0.5,
-    marginBottom: 4,
+    letterSpacing: 0.4,
   },
   welcomeSubtitle: {
-    fontSize: 13,
-    color: colors.parchmentMuted,
+    fontSize: 12,
     lineHeight: 18,
-    marginBottom: 14,
+    color: colors.parchmentMuted,
   },
   profileStatsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.stoneSurface,
-    borderRadius: 8,
+    justifyContent: 'space-around',
+    backgroundColor: colors.stone,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     paddingVertical: 10,
+    marginTop: 2,
   },
   profileStatItem: {
-    flex: 1,
     alignItems: 'center',
+    flex: 1,
   },
   profileStatVal: {
-    fontSize: 15,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.parchmentLight,
   },
   profileStatLabel: {
-    fontSize: 9,
+    fontSize: 10,
+    fontWeight: '700',
     color: colors.parchmentMuted,
     marginTop: 2,
   },
@@ -718,97 +987,122 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginBottom: 10,
     marginTop: 6,
+  },
+  sectionHeaderWithAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+  },
+  sectionHeaderRowInline: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   sectionTitle: {
     fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1.2,
-    color: colors.parchmentMuted,
+    color: colors.brassLight,
+    letterSpacing: 0.8,
   },
+  viewAllLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  viewAllLinkText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+
+  // SPOTLIGHT SESSION
   sessionCard: {
     backgroundColor: colors.stoneSurface,
     borderRadius: 12,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    padding: 16,
-    marginBottom: 20,
+    borderWidth: 1.5,
+    borderColor: colors.brassBase,
+    padding: 14,
+    gap: 8,
   },
   sessionTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    justifyContent: 'space-between',
   },
   campaignTag: {
-    backgroundColor: colors.stone,
+    backgroundColor: 'rgba(197, 155, 39, 0.15)',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
   },
   campaignTagText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
-    letterSpacing: 0.5,
   },
   statusLive: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 5,
+    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
   },
   liveDot: {
-    width: 7,
-    height: 7,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: colors.emerald,
   },
   liveText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.emerald,
-    letterSpacing: 0.5,
   },
   statusWaitlist: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
+    backgroundColor: 'rgba(217, 119, 6, 0.15)',
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
   },
   statusWaitlistText: {
     fontSize: 10,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
   },
   statusOpen: {
     backgroundColor: colors.stone,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   statusOpenText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
-    color: colors.emerald,
+    color: colors.parchmentMuted,
   },
   sessionTitle: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.parchmentLight,
-    marginBottom: 6,
   },
   sessionDetailsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 12,
   },
   sessionDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
     flex: 1,
   },
   sessionInfoText: {
@@ -820,11 +1114,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
     paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: 6,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
   },
   countdownText: {
     fontSize: 10,
@@ -833,34 +1127,33 @@ const styles = StyleSheet.create({
   },
   countdownTextImminent: {
     color: colors.void,
-    backgroundColor: colors.brassBase,
   },
   sessionDivider: {
     height: 1,
     backgroundColor: colors.stoneBorder,
-    marginBottom: 12,
+    marginVertical: 2,
   },
   sessionFooter: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
   dmLabel: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.parchmentMuted,
   },
   dmName: {
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.parchmentLight,
   },
   sessionDetailsLink: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
   sessionDetailsText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,
+    fontWeight: '700',
     color: colors.brassLight,
   },
   noSessionCard: {
@@ -868,21 +1161,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    padding: 20,
+    padding: 16,
     alignItems: 'center',
-    marginBottom: 20,
+    gap: 6,
   },
   noSessionTitle: {
     fontSize: 14,
     fontWeight: '800',
     color: colors.parchmentLight,
-    marginBottom: 4,
   },
   noSessionSubtitle: {
     fontSize: 12,
     color: colors.parchmentMuted,
     textAlign: 'center',
-    marginBottom: 14,
+    lineHeight: 17,
   },
   browseSessionsBtn: {
     flexDirection: 'row',
@@ -891,31 +1183,255 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brassBase,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 6,
+    marginTop: 4,
   },
   browseSessionsBtnText: {
     fontSize: 11,
     fontWeight: '800',
     color: colors.void,
   },
+
+  // MINI SESSIONS CALENDAR
+  filterPillsRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  campaignFiltersScroll: {
+    gap: 8,
+    paddingVertical: 2,
+  },
+  filterPill: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 16,
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  filterPillActive: {
+    backgroundColor: colors.brassBase,
+    borderColor: colors.brassLight,
+  },
+  filterPillText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.parchmentMuted,
+  },
+  filterPillTextActive: {
+    color: colors.void,
+  },
+  miniSessionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    padding: 10,
+    gap: 10,
+  },
+  miniSessionDateBox: {
+    width: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.stone,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  miniSessionDayNum: {
+    fontSize: 16,
+    fontWeight: '900',
+    color: colors.brassLight,
+  },
+  miniSessionMonth: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.parchmentMuted,
+    textTransform: 'uppercase',
+  },
+  miniSessionTime: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+    marginTop: 1,
+  },
+  miniSessionInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  miniSessionCampName: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.brassBase,
+  },
+  miniSessionTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+  },
+  miniSessionOccupancy: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  miniSessionOccupancyText: {
+    fontSize: 10,
+    color: colors.parchmentMuted,
+    fontWeight: '600',
+  },
+  miniSessionAction: {
+    justifyContent: 'center',
+  },
+  joinSessionBtn: {
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  joinSessionBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.void,
+  },
+  cancelSessionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    borderWidth: 1,
+    borderColor: 'rgba(16, 185, 129, 0.4)',
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  cancelSessionBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.emerald,
+  },
+  fullBadge: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    borderRadius: 6,
+  },
+  fullBadgeText: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: colors.parchmentMuted,
+  },
+
+  // CAMPAIGNS OVERVIEW
+  campaignCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    overflow: 'hidden',
+  },
+  campaignCardActive: {
+    borderColor: colors.brassBase,
+    borderWidth: 1.5,
+  },
+  campaignCardBody: {
+    padding: 12,
+    gap: 6,
+  },
+  campaignCardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  campaignTypeBadge: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 4,
+    borderWidth: 1,
+  },
+  campaignTypeBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+  activePillBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: 'rgba(197, 155, 39, 0.15)',
+    borderWidth: 1,
+    borderColor: colors.brassBase,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  activePillBadgeText: {
+    fontSize: 9,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  campaignCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+  },
+  campaignCardDesc: {
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.parchmentMuted,
+  },
+  campaignCardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    marginTop: 2,
+  },
+  selectCampBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+  },
+  selectCampBtnActive: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+  },
+  selectCampBtnText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.void,
+  },
+  selectCampBtnActiveText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+
+  // HERO PREVIEW CARD
   characterPreviewCard: {
     backgroundColor: colors.stoneSurface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    padding: 16,
-    marginBottom: 20,
+    padding: 14,
+    gap: 12,
   },
   characterHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    marginBottom: 14,
+    gap: 10,
   },
   avatarCrest: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.stone,
     borderWidth: 1.5,
     borderColor: colors.brassBase,
@@ -924,21 +1440,21 @@ const styles = StyleSheet.create({
   },
   avatarLetter: {
     fontSize: 18,
-    fontWeight: '800',
+    fontWeight: '900',
     color: colors.brassLight,
   },
   characterDetails: {
     flex: 1,
   },
   characterName: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 15,
+    fontWeight: '800',
     color: colors.parchmentLight,
   },
   characterClass: {
-    fontSize: 12,
-    color: colors.brassLight,
-    marginTop: 2,
+    fontSize: 11,
+    color: colors.parchmentMuted,
+    marginTop: 1,
   },
   openSheetBtn: {
     flexDirection: 'row',
@@ -953,68 +1469,67 @@ const styles = StyleSheet.create({
   },
   openSheetBtnText: {
     fontSize: 11,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
   },
   quickHpSection: {
     backgroundColor: colors.stone,
     borderRadius: 8,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    padding: 12,
-    marginBottom: 12,
+    padding: 10,
+    gap: 6,
   },
   quickHpHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    justifyContent: 'space-between',
   },
   hpLabelLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 5,
   },
   quickHpTitle: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
-    color: colors.parchmentMuted,
-    letterSpacing: 0.8,
+    color: colors.parchmentLight,
+    letterSpacing: 0.5,
   },
   quickHpValues: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '800',
   },
   quickHpTrack: {
     height: 6,
-    backgroundColor: colors.stoneSurface,
+    backgroundColor: colors.void,
     borderRadius: 3,
     overflow: 'hidden',
-    marginBottom: 10,
   },
   quickHpFill: {
     height: '100%',
+    borderRadius: 3,
   },
   quickHpButtonsRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 8,
+    marginTop: 4,
   },
   quickStepBtn: {
     flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    borderRadius: 6,
     paddingVertical: 6,
-    alignItems: 'center',
+    borderRadius: 6,
   },
   quickStepBtnDamageText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.crimsonLight,
   },
   quickStepBtnHealText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.emerald,
   },
@@ -1024,35 +1539,70 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
+    alignItems: 'center',
     backgroundColor: colors.stone,
-    borderRadius: 8,
+    paddingVertical: 8,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingVertical: 10,
-    alignItems: 'center',
   },
   statLabel: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 9,
+    fontWeight: '800',
     color: colors.parchmentMuted,
-    marginBottom: 2,
-    letterSpacing: 0.5,
   },
   statValue: {
     fontSize: 14,
     fontWeight: '800',
     color: colors.parchmentLight,
+    marginTop: 2,
   },
+  noCharacterCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    padding: 16,
+    alignItems: 'center',
+    gap: 6,
+  },
+  noCharacterTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+  },
+  noCharacterSub: {
+    fontSize: 12,
+    color: colors.parchmentMuted,
+    textAlign: 'center',
+    lineHeight: 17,
+  },
+  selectOtherCampaignBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 6,
+    marginTop: 4,
+  },
+  selectOtherCampaignBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.void,
+  },
+
+  // DICE LAUNCHER
   diceLauncherCard: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
     borderWidth: 1.5,
     borderColor: colors.brassDark,
-    borderRadius: 12,
     padding: 14,
-    marginBottom: 20,
   },
   diceLauncherLeft: {
     flexDirection: 'row',
@@ -1063,35 +1613,64 @@ const styles = StyleSheet.create({
   diceLauncherTitle: {
     fontSize: 14,
     fontWeight: '800',
-    color: colors.parchmentLight,
+    color: colors.brassLight,
   },
   diceLauncherSub: {
     fontSize: 11,
     color: colors.parchmentMuted,
     marginTop: 2,
   },
+
+  // QUICK GRID
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  quickTile: {
+    width: '48%',
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    padding: 14,
+    gap: 4,
+  },
+  quickTileTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+    marginTop: 4,
+  },
+  quickTileSub: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+  },
+
+  // INFO BOX
   infoBox: {
     flexDirection: 'row',
-    backgroundColor: colors.stone,
+    gap: 10,
+    backgroundColor: 'rgba(197, 155, 39, 0.08)',
     borderWidth: 1,
     borderColor: colors.brassDark,
-    borderRadius: 8,
+    borderRadius: 10,
     padding: 12,
-    gap: 10,
+    marginTop: 4,
   },
   infoContent: {
     flex: 1,
+    gap: 3,
   },
   infoTitle: {
     fontSize: 12,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.brassLight,
-    marginBottom: 2,
   },
   infoText: {
     fontSize: 11,
-    color: colors.parchmentMuted,
     lineHeight: 16,
+    color: colors.parchmentMuted,
   },
 });
 
