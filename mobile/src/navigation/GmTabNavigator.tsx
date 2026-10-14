@@ -4,19 +4,20 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  LayoutDashboard,
+  Compass,
+  Crown,
   Swords,
   Radio,
   MessageSquare,
   Repeat,
   LogOut,
-  Crown,
+  Sparkles,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { GmCampaignProvider } from '../contexts/GmCampaignContext';
-import { CampaignHeaderBar } from '../components/common/CampaignHeaderBar';
 import { GmHomeScreen } from '../screens/gm/GmHomeScreen';
+import { GmRegiaScreen } from '../screens/gm/GmRegiaScreen';
 import { GmCombatTrackerScreen } from '../screens/gm/GmCombatTrackerScreen';
 import { GmAudioRemoteScreen } from '../screens/gm/GmAudioRemoteScreen';
 import { GmWhispersInboxScreen } from '../screens/gm/GmWhispersInboxScreen';
@@ -26,16 +27,18 @@ import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen
 
 export type GmTabParamList = {
   GmHome: undefined;
+  GmRegia: undefined;
   GmCombat: undefined;
-  GmAudioRemote: undefined;
   GmWhispers: undefined;
   Account: undefined;
+  GmAudioRemote: undefined;
   GmXpAttendance: { notificationSessionId?: string } | undefined;
   Sessions: undefined;
 };
 
 export type GmStackParamList = {
   GmTabs: undefined;
+  GmAudioRemote: undefined;
   GmXpAttendance: { notificationSessionId?: string } | undefined;
   Sessions: undefined;
 };
@@ -64,12 +67,7 @@ const GmTabs: React.FC = () => {
         tabBarLabelStyle: styles.tabBarLabel,
         headerStyle: styles.header,
         headerShadowVisible: false,
-        headerTitle: '',
-        headerLeft: () => (
-          <View style={styles.headerLeftContainer}>
-            <CampaignHeaderBar compact />
-          </View>
-        ),
+        headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
             {role === 'admin' && (
@@ -97,21 +95,35 @@ const GmTabs: React.FC = () => {
         ),
       }}
     >
-      {/* 1. HOME - Plancia Regia: Calendario + Panoramica Campagne + Live Party Vitals */}
+      {/* 1. HOME - Calendario a Griglia di tutte le sessioni + Panoramica Campagne */}
       <Tab.Screen
         name="GmHome"
         component={GmHomeScreen}
         options={{
-          title: 'Regia',
-          tabBarLabel: 'Regia',
-          headerTitle: 'Regia Master',
+          title: 'Home',
+          tabBarLabel: 'Home',
+          headerTitle: 'Plancia di Gilda',
           tabBarIcon: ({ color, size }) => (
-            <LayoutDashboard size={size ?? 22} color={color} />
+            <Compass size={size ?? 22} color={color} />
           ),
         }}
       />
 
-      {/* 2. INIZIATIVA - Combat Tracker */}
+      {/* 2. REGIA - Plancia Live Master (Vitali Party, Controlli Sessione, Scorciatoie) */}
+      <Tab.Screen
+        name="GmRegia"
+        component={GmRegiaScreen}
+        options={{
+          title: 'Regia',
+          tabBarLabel: 'Regia',
+          headerTitle: 'Plancia di Regia Master',
+          tabBarIcon: ({ color, size }) => (
+            <Crown size={size ?? 22} color={color} />
+          ),
+        }}
+      />
+
+      {/* 3. INIZIATIVA - Combat Tracker */}
       <Tab.Screen
         name="GmCombat"
         component={GmCombatTrackerScreen}
@@ -121,20 +133,6 @@ const GmTabs: React.FC = () => {
           headerTitle: 'Tracker di Combattimento',
           tabBarIcon: ({ color, size }) => (
             <Swords size={size ?? 22} color={color} />
-          ),
-        }}
-      />
-
-      {/* 3. AUDIO - Telecomando Sonoro con QR pairing */}
-      <Tab.Screen
-        name="GmAudioRemote"
-        component={GmAudioRemoteScreen}
-        options={{
-          title: 'Telecomando',
-          tabBarLabel: 'Audio',
-          headerTitle: 'Telecomando Sonoro',
-          tabBarIcon: ({ color, size }) => (
-            <Radio size={size ?? 22} color={color} />
           ),
         }}
       />
@@ -174,6 +172,17 @@ export const GmTabNavigator: React.FC = () => {
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="GmTabs" component={GmTabs} />
         <Stack.Screen
+          name="GmAudioRemote"
+          component={GmAudioRemoteScreen}
+          options={{
+            headerShown: true,
+            title: 'Telecomando Sonoro',
+            headerStyle: styles.header,
+            headerTintColor: colors.parchmentLight,
+            headerTitleStyle: styles.headerTitle,
+          }}
+        />
+        <Stack.Screen
           name="GmXpAttendance"
           component={GmXpAttendanceScreen}
           options={{
@@ -181,7 +190,7 @@ export const GmTabNavigator: React.FC = () => {
             title: 'Registro Sessione & XP',
             headerStyle: styles.header,
             headerTintColor: colors.parchmentLight,
-            headerTitleStyle: { color: colors.parchmentLight, fontWeight: '700' },
+            headerTitleStyle: styles.headerTitle,
           }}
         />
         <Stack.Screen
@@ -192,7 +201,7 @@ export const GmTabNavigator: React.FC = () => {
             title: 'Tavoli di Gioco',
             headerStyle: styles.header,
             headerTintColor: colors.parchmentLight,
-            headerTitleStyle: { color: colors.parchmentLight, fontWeight: '700' },
+            headerTitleStyle: styles.headerTitle,
           }}
         />
       </Stack.Navigator>
@@ -217,8 +226,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.stoneBorder,
   },
-  headerLeftContainer: {
-    marginLeft: 12,
+  headerTitle: {
+    color: colors.parchmentLight,
+    fontWeight: '800',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   headerRightContainer: {
     flexDirection: 'row',

@@ -41,7 +41,8 @@ import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
 import { usePlayerSessions } from '../../hooks/usePlayerSessions';
 import { DiceRollerModal } from '../../components/player/DiceRollerModal';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
-import { Campaign, CampaignType, PlayerSession } from '../../types';
+import { GridCalendar } from '../../components/common/GridCalendar';
+import { Campaign, CampaignType, PlayerSession, Session } from '../../types';
 
 type SessionFilter = 'all' | 'mine' | 'available';
 type CampaignFilter = 'all' | 'oneshot' | 'quest' | 'long' | 'torneo';
@@ -254,6 +255,12 @@ export const PlayerHomeScreen: React.FC = () => {
     }
   };
 
+  const handleSelectSession = (session: PlayerSession | Session) => {
+    if (session.campaign_id && session.campaign_id !== activeCampaignId) {
+      void selectCampaign(session.campaign_id);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView
@@ -423,108 +430,20 @@ export const PlayerHomeScreen: React.FC = () => {
           </View>
         )}
 
-        {/* 2. CALENDARIO SESSIONI DELLA GILDA (COME SUL SITO) */}
-        <View style={styles.sectionHeaderWithAction}>
-          <View style={styles.sectionHeaderRowInline}>
-            <Calendar size={18} color={colors.brassBase} />
-            <Text style={styles.sectionTitle}>CALENDARIO SESSIONI SUL SITO</Text>
-          </View>
-          <TouchableOpacity
-            style={styles.viewAllLink}
-            onPress={() => navigation.navigate('Sessions')}
-          >
-            <Text style={styles.viewAllLinkText}>Vedi tutte</Text>
-            <ChevronRight size={12} color={colors.brassLight} />
-          </TouchableOpacity>
+        {/* 2. CALENDARIO A GRIGLIA DELLE SESSIONI DI GILDA */}
+        <View style={styles.sectionHeader}>
+          <Calendar size={18} color={colors.brassBase} />
+          <Text style={styles.sectionTitle}>CALENDARIO SESSIONI DELLA GILDA</Text>
         </View>
 
-        {/* Filtri Sessioni */}
-        <View style={styles.filterPillsRow}>
-          <TouchableOpacity
-            style={[styles.filterPill, sessionFilter === 'all' && styles.filterPillActive]}
-            onPress={() => setSessionFilter('all')}
-          >
-            <Text style={[styles.filterPillText, sessionFilter === 'all' && styles.filterPillTextActive]}>
-              Tutti i Tavoli ({sessions.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterPill, sessionFilter === 'mine' && styles.filterPillActive]}
-            onPress={() => setSessionFilter('mine')}
-          >
-            <Text style={[styles.filterPillText, sessionFilter === 'mine' && styles.filterPillTextActive]}>
-              I Miei Tavoli
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.filterPill, sessionFilter === 'available' && styles.filterPillActive]}
-            onPress={() => setSessionFilter('available')}
-          >
-            <Text style={[styles.filterPillText, sessionFilter === 'available' && styles.filterPillTextActive]}>
-              Posti Liberi
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Lista Rapida Sessioni in evidenza */}
-        {filteredSessions.slice(0, 3).map((session) => {
-          const dateMeta = formatSessionDate(session.scheduled_at);
-          const isFull = session.isFull;
-          const isConfirmed = session.isConfirmed;
-          const isBusy = actionInProgressId === session.id;
-
-          return (
-            <View key={session.id} style={styles.miniSessionCard}>
-              <View style={styles.miniSessionDateBox}>
-                <Text style={styles.miniSessionDayNum}>{dateMeta.dayNum}</Text>
-                <Text style={styles.miniSessionMonth}>{dateMeta.month}</Text>
-                <Text style={styles.miniSessionTime}>{dateMeta.time}</Text>
-              </View>
-
-              <View style={styles.miniSessionInfo}>
-                <Text style={styles.miniSessionCampName}>
-                  {session.campaigns?.name || 'CAMPAGNA'}
-                </Text>
-                <Text style={styles.miniSessionTitle} numberOfLines={1}>
-                  {session.title || 'Sessione di Gioco'}
-                </Text>
-                <View style={styles.miniSessionOccupancy}>
-                  <Users size={11} color={colors.brassLight} />
-                  <Text style={styles.miniSessionOccupancyText}>
-                    {session.confirmedCount ?? 0}/{session.max_players ?? 6} posti
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.miniSessionAction}>
-                {isBusy ? (
-                  <ActivityIndicator size="small" color={colors.brassBase} />
-                ) : isConfirmed ? (
-                  <TouchableOpacity
-                    style={styles.cancelSessionBtn}
-                    onPress={() => handleCancelSignUp(session)}
-                  >
-                    <CheckCircle2 size={12} color={colors.emerald} />
-                    <Text style={styles.cancelSessionBtnText}>Iscritto</Text>
-                  </TouchableOpacity>
-                ) : isFull ? (
-                  <View style={styles.fullBadge}>
-                    <Text style={styles.fullBadgeText}>Pieno</Text>
-                  </View>
-                ) : (
-                  <TouchableOpacity
-                    style={styles.joinSessionBtn}
-                    onPress={() => handleSignUp(session)}
-                  >
-                    <Text style={styles.joinSessionBtnText}>Prenota</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
-            </View>
-          );
-        })}
+        <GridCalendar
+          sessions={sessions}
+          activeCampaignId={activeCampaignId}
+          onSelectSession={handleSelectSession}
+          onSignUp={handleSignUp}
+          onCancelSignUp={handleCancelSignUp}
+          actionInProgressId={actionInProgressId}
+        />
 
         {/* 3. PANORAMICA DI TUTTE LE CAMPAGNE (COME SUL SITO) */}
         <View style={styles.sectionHeader}>

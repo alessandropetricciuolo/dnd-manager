@@ -14,7 +14,6 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
-import { CampaignHeaderBar } from '../components/common/CampaignHeaderBar';
 import { PlayerHomeScreen } from '../screens/player/PlayerHomeScreen';
 import { CharacterSheetScreen } from '../screens/player/CharacterSheetScreen';
 import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen';
@@ -60,13 +59,7 @@ const PlayerTabs: React.FC = () => {
         ],
         tabBarLabelStyle: styles.tabBarLabel,
         headerStyle: styles.header,
-        headerShadowVisible: false,
-        headerTitle: '',
-        headerLeft: () => (
-          <View style={styles.headerLeftContainer}>
-            <CampaignHeaderBar compact />
-          </View>
-        ),
+        headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
             {isAdmin && (
@@ -192,8 +185,11 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.stoneBorder,
   },
-  headerLeftContainer: {
-    marginLeft: 12,
+  headerTitle: {
+    color: colors.parchmentLight,
+    fontWeight: '800',
+    fontSize: 16,
+    letterSpacing: 0.5,
   },
   headerRightContainer: {
     flexDirection: 'row',
