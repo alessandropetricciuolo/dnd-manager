@@ -30,7 +30,7 @@
       },
       "userInterfaceStyle": "dark",
       "package": "com.barberanddragons.mobile",
-      "versionCode": 3,
+      "versionCode": 4,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
