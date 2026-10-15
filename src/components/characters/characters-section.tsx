@@ -95,7 +95,7 @@ export function CharactersSection({
             <div className="flex flex-wrap items-center gap-2">
               <DownloadCampaignSheetsButton campaignId={campaignId} characters={characters} />
               <ImportCharactersFromCatalogDialog campaignId={campaignId} />
-              <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} />
+              <CreateCharacterDialog campaignId={campaignId} initialOpen={openCreateDialogOnLoad} isLongCampaign={isLongCampaign} />
             </div>
           </div>
         ) : null}

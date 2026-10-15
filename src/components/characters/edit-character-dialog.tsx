@@ -420,7 +420,7 @@ export function EditCharacterDialog({
           </div>
 
           <DialogFooter>
-            <Button
+            {!isLongCampaign ? <Button
               type="button"
               variant="outline"
               onClick={openSheetGeneratorPreview}
@@ -428,7 +428,7 @@ export function EditCharacterDialog({
               className="border-barber-gold/40 text-barber-gold"
             >
               Anteprima scheda
-            </Button>
+            </Button> : null}
             <Button
               type="button"
               variant="outline"

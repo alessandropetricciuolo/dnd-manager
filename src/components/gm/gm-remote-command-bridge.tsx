@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { applyRemoteAudioCommand } from "@/lib/gm-remote/apply-audio-command";
-import { applyInitiativeRemoteCommand, isInitiativeRemoteType } from "@/lib/gm-remote/initiative-commands";
+import { applyInitiativeRemoteCommand, isInitiativeRemoteType, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 import { applyTorneoRemoteCommand, type TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
 import { isRecord } from "@/lib/gm-remote/protocol";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
@@ -14,6 +14,7 @@ type Props = {
   sessionPublicId: string | null;
   forge?: GmAudioForgeControls | null;
   initiativeHandleRef?: React.RefObject<InitiativeTrackerHandle | null>;
+  initiativeHandlers?: InitiativeRemoteCommandHandlers;
   /** Tavolo 2 (torneo parallelo). */
   initiativeHandleRef2?: React.RefObject<InitiativeTrackerHandle | null>;
   station1MatchId?: string | null;
@@ -49,6 +50,7 @@ function resolveInitiativeHandle(
   if (matchId && station1MatchId && matchId === station1MatchId) {
     return ref1?.current ?? null;
   }
+  if (matchId) return null;
   return ref1?.current ?? ref2?.current ?? null;
 }
 
@@ -57,6 +59,7 @@ export function GmRemoteCommandBridge({
   sessionPublicId,
   forge,
   initiativeHandleRef,
+  initiativeHandlers,
   initiativeHandleRef2,
   station1MatchId,
   station2MatchId,
@@ -126,6 +129,10 @@ export function GmRemoteCommandBridge({
             }
 
             if (isInitiativeRemoteType(type)) {
+              if (initiativeHandlers) {
+                applyInitiativeRemoteCommand(initiativeHandlers, type, pl);
+                return;
+              }
               const handle = resolveInitiativeHandle(
                 pl,
                 station1Ref.current,
@@ -164,7 +171,7 @@ export function GmRemoteCommandBridge({
       channelRef.current = null;
       if (ch) void supabase.removeChannel(ch);
     };
-  }, [campaignId, sessionPublicId, onRealtimeStatus]);
+  }, [campaignId, initiativeHandlers, sessionPublicId, onRealtimeStatus]);
 
   return null;
 }

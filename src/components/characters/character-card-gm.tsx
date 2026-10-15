@@ -47,6 +47,8 @@ import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
+import { CharacterSheetPanel } from "./character-sheet-panel";
+import { LongCharacterSheetEditor } from "./long-character-sheet-editor";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/200x280/1c1917/fbbf24/png?text=PG";
 
@@ -280,6 +282,7 @@ export function CharacterCardGm({
   const [editOpen, setEditOpen] = useState(false);
   const [contentAccessOpen, setContentAccessOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [sheetEditorOpen, setSheetEditorOpen] = useState(false);
   const [imgError, setImgError] = useState(false);
   const [forceImagesUnoptimized, setForceImagesUnoptimized] = useState(false);
   const [sheetImgError, setSheetImgError] = useState(false);
@@ -606,15 +609,16 @@ export function CharacterCardGm({
           <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
             <SheetContent
               side="right"
-              className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:max-w-lg"
+              className="flex h-full max-h-[100dvh] w-full flex-col overflow-y-auto border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:w-[min(100vw,1100px)] sm:max-w-none"
             >
               <SheetHeader className="shrink-0 space-y-1 text-left border-b border-barber-gold/20 pb-3">
                 <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">
                   Dossier Personaggio — {character.name}
                 </SheetTitle>
                 <SheetDescription className="text-barber-paper/65">
-                  Solo consultazione. Per modificare usa &quot;Modifica&quot; sulla card.
+                  Scheda, avanzamento e risorse del personaggio.
                 </SheetDescription>
+                {isLongCampaign ? <Button type="button" size="sm" className="mt-2 w-fit bg-barber-red text-barber-paper" onClick={() => setSheetEditorOpen(true)}>Compila / modifica scheda Long</Button> : null}
               </SheetHeader>
               <div className="mt-4 shrink-0 space-y-4 border-b border-barber-gold/25 pb-4">
                 <div className="relative mx-auto aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-lg bg-barber-dark ring-1 ring-barber-gold/30">
@@ -635,7 +639,7 @@ export function CharacterCardGm({
                   <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
                   <div className="mt-1 text-xs text-barber-paper/80">{raceClassSubtitle}</div>
                 </div>
-                <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+                <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
                   <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                     <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Classe</dt>
                     <dd className="font-medium tabular-nums text-barber-paper">{classLabel}</dd>
@@ -654,11 +658,11 @@ export function CharacterCardGm({
                   </div>
                 </dl>
               </div>
-              <div className="mt-4 flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">
+              <div className="mt-4 pb-3">
                 <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
                   Background / Lore
                 </p>
-                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-barber-gold/25 p-3 [-webkit-overflow-scrolling:touch]">
+                <div className="rounded-md border border-barber-gold/25 p-3">
                   {backgroundForSheet ? (
                     <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
                       {backgroundForSheet}
@@ -668,6 +672,7 @@ export function CharacterCardGm({
                   )}
                 </div>
               </div>
+              <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
             </SheetContent>
           </Sheet>
         )}
@@ -680,6 +685,7 @@ export function CharacterCardGm({
             isLongCampaign={Boolean(isLongCampaign)}
           />
         )}
+        {isLongCampaign && <LongCharacterSheetEditor character={character} open={sheetEditorOpen} onOpenChange={setSheetEditorOpen} />}
       </>
     );
   }
@@ -1088,15 +1094,16 @@ export function CharacterCardGm({
         <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
           <SheetContent
             side="right"
-            className="flex h-full max-h-[100dvh] w-full max-w-lg flex-col overflow-hidden border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:max-w-lg"
+            className="flex h-full max-h-[100dvh] w-full flex-col overflow-y-auto border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:w-[min(100vw,1100px)] sm:max-w-none"
           >
           <SheetHeader className="shrink-0 space-y-1 text-left border-b border-barber-gold/20 pb-3">
             <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">
               Dossier Personaggio — {character.name}
             </SheetTitle>
             <SheetDescription className="text-barber-paper/65">
-              Solo consultazione. Per modificare usa &quot;Modifica&quot; sulla card.
+              Scheda, avanzamento e risorse del personaggio.
             </SheetDescription>
+            {isLongCampaign ? <Button type="button" size="sm" className="mt-2 w-fit bg-barber-red text-barber-paper" onClick={() => setSheetEditorOpen(true)}>Compila / modifica scheda Long</Button> : null}
           </SheetHeader>
 
           <div className="mt-4 shrink-0 space-y-4 border-b border-barber-gold/25 pb-4">
@@ -1148,7 +1155,7 @@ export function CharacterCardGm({
                 ) : null}
               </div>
             </div>
-            <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-4">
+            <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
               <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
                 <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Classe</dt>
                 <dd className="font-medium tabular-nums text-barber-paper">{classLabel}</dd>
@@ -1180,11 +1187,11 @@ export function CharacterCardGm({
             )}
           </div>
 
-          <div className="mt-4 flex min-h-0 flex-1 flex-col pb-[env(safe-area-inset-bottom)]">
+          <div className="mt-4 pb-3">
             <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
               Background / Lore
             </p>
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain rounded-md border border-barber-gold/25 p-3 [-webkit-overflow-scrolling:touch]">
+            <div className="rounded-md border border-barber-gold/25 p-3">
               {backgroundForSheet ? (
                 <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
                   {backgroundForSheet}
@@ -1194,6 +1201,7 @@ export function CharacterCardGm({
               )}
             </div>
           </div>
+          <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
           </SheetContent>
         </Sheet>
       )}
@@ -1206,6 +1214,7 @@ export function CharacterCardGm({
           isLongCampaign={Boolean(isLongCampaign)}
         />
       )}
+      {isLongCampaign && <LongCharacterSheetEditor character={character} open={sheetEditorOpen} onOpenChange={setSheetEditorOpen} />}
 
       {isLongCampaign && assignedTo && contentAccessOpen && (
         <CharacterContentAccessSheet

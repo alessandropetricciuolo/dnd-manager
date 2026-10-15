@@ -349,6 +349,9 @@ export async function attachAiAssistantV2CharacterSheet(input: {
       generatedSheetSpellcasting: input.sheet.spellcasting
         ? JSON.stringify(input.sheet.spellcasting)
         : null,
+      generatedCharacterSheet: input.sheet.characterSheet
+        ? JSON.stringify(input.sheet.characterSheet)
+        : null,
     };
     const updated = await repo.createRevision(artifact, {
       status: "draft",

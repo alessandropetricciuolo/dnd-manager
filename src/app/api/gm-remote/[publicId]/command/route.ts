@@ -4,14 +4,16 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { parseRemotePostBody, isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
+import { isInitiativeRemoteType, isValidInitiativeRemotePayload } from "@/lib/gm-remote/initiative-commands";
 
-const RATE_MAX = 45;
+const RATE_MAX = 120;
 const RATE_WINDOW_MS = 60_000;
 
-type RouteParams = { params: { publicId: string } };
+type RouteParams = { params: Promise<{ publicId: string }> | { publicId: string } };
 
-export async function POST(req: NextRequest, { params }: RouteParams) {
-  const publicId = params.publicId?.trim();
+export async function POST(req: NextRequest, context: RouteParams) {
+  const { publicId: rawPublicId } = await context.params;
+  const publicId = rawPublicId?.trim();
   if (!publicId || publicId.length > 80) {
     return NextResponse.json({ ok: false, error: "bad_request" }, { status: 400 });
   }
@@ -44,6 +46,13 @@ export async function POST(req: NextRequest, { params }: RouteParams) {
 
   const admin = createSupabaseAdminClient() as SupabaseClient<any>;
   const payloadJson = isRecord(envelope.payload) ? envelope.payload : {};
+
+  if (
+    envelope.type.startsWith("initiative.") &&
+    (!isInitiativeRemoteType(envelope.type) || !isValidInitiativeRemotePayload(envelope.type, payloadJson))
+  ) {
+    return NextResponse.json({ ok: false, error: "invalid_initiative_payload" }, { status: 400 });
+  }
 
   if (envelope.type === "audio.spotify_playlist_select") {
     const playlistId = typeof payloadJson.playlist_id === "string" ? payloadJson.playlist_id.trim() : "";

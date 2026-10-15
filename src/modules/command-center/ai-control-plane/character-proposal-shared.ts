@@ -41,6 +41,7 @@ export function mergeCharacterInputFromSheet(
     generatedSheetArmorClass: sheet.armorClass,
     generatedSheetHitPoints: sheet.hitPoints,
     generatedSheetSpellcasting: sheet.spellcasting ? JSON.stringify(sheet.spellcasting) : null,
+    generatedCharacterSheet: sheet.characterSheet ? JSON.stringify(sheet.characterSheet) : null,
   };
 }
 

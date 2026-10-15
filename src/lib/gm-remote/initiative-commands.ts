@@ -1,4 +1,5 @@
 import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
+import { normalizeCombatConditions, type CombatConditionId } from "@/lib/combat-conditions";
 
 export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.next_turn",
@@ -8,6 +9,12 @@ export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.reset_round",
   "initiative.adjust_damage",
   "initiative.adjust_damage_taken",
+  "initiative.set_hp",
+  "initiative.adjust_hp",
+  "initiative.set_conditions",
+  "initiative.toggle_condition",
+  "initiative.add_combatant",
+  "initiative.remove_combatant",
 ] as const;
 
 export type GmRemoteInitiativeCommandType = (typeof GM_REMOTE_INITIATIVE_TYPES)[number];
@@ -22,6 +29,8 @@ function isRecord(v: unknown): v is Record<string, unknown> {
 
 /** Snapshot leggero per il telecomando (solo lettura). */
 export type InitiativeRemoteSnapshot = {
+  sessionId?: string | null;
+  sessionTitle?: string | null;
   /** Incontro torneo attivo (sync telecomando / multi-PC). */
   matchId?: string;
   entries: Array<{
@@ -33,6 +42,8 @@ export type InitiativeRemoteSnapshot = {
     damageDealt: number;
     damageTaken: number;
     initiative: number;
+    ac?: number;
+    conditions?: CombatConditionId[];
     isDead?: boolean;
     teamId?: string;
     teamName?: string;
@@ -53,7 +64,9 @@ export type InitiativeRemoteSnapshot = {
 export function toInitiativeRemoteSnapshot(
   state: InitiativeTrackerState,
   activeMatch?: InitiativeRemoteSnapshot["activeMatch"],
-  matchId?: string
+  matchId?: string,
+  sessionId?: string | null,
+  sessionTitle?: string | null
 ): InitiativeRemoteSnapshot {
   const entries = state.entries.map((e) => ({
     id: e.id,
@@ -64,6 +77,8 @@ export function toInitiativeRemoteSnapshot(
     damageDealt: e.damageDealt ?? 0,
     damageTaken: e.damageTaken ?? 0,
     initiative: e.initiative,
+    ac: e.armorClass,
+    conditions: normalizeCombatConditions(e.conditions),
     isDead: e.isDead,
     ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
     ...(e.spellSlots?.remaining?.length
@@ -104,6 +119,8 @@ export function toInitiativeRemoteSnapshot(
   }
 
   return {
+    ...(sessionId !== undefined ? { sessionId } : {}),
+    ...(sessionTitle !== undefined ? { sessionTitle } : {}),
     ...(matchId ? { matchId } : {}),
     entries,
     activeMatch: matchSummary,
@@ -113,6 +130,12 @@ export function toInitiativeRemoteSnapshot(
     isTurnTimerRunning: state.isTurnTimerRunning,
     updatedAt: new Date().toISOString(),
   };
+}
+
+/** Stable content identity for publication: heartbeat timestamps must not count as edits. */
+export function initiativeRemoteSnapshotSignature(snapshot: InitiativeRemoteSnapshot): string {
+  const { updatedAt: _updatedAt, ...content } = snapshot;
+  return JSON.stringify(content);
 }
 
 export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSnapshot | null {
@@ -137,6 +160,8 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
         damageDealt: typeof r.damageDealt === "number" ? Math.max(0, r.damageDealt) : 0,
         damageTaken: typeof r.damageTaken === "number" ? Math.max(0, r.damageTaken) : 0,
         initiative: typeof r.initiative === "number" ? r.initiative : 0,
+        ac: typeof r.ac === "number" && Number.isFinite(r.ac) ? r.ac : undefined,
+        conditions: normalizeCombatConditions(r.conditions),
         isDead: r.isDead === true,
         ...(typeof r.teamId === "string" && r.teamId
           ? {
@@ -171,8 +196,12 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
   }
 
   const matchId = typeof o.matchId === "string" && o.matchId.trim() ? o.matchId.trim() : undefined;
+  const sessionId = typeof o.sessionId === "string" && o.sessionId.trim() ? o.sessionId.trim() : null;
+  const sessionTitle = typeof o.sessionTitle === "string" && o.sessionTitle.trim() ? o.sessionTitle.trim() : null;
 
   return {
+    ...(Object.hasOwn(o, "sessionId") ? { sessionId } : {}),
+    ...(Object.hasOwn(o, "sessionTitle") ? { sessionTitle } : {}),
     ...(matchId ? { matchId } : {}),
     entries,
     activeMatch,
@@ -192,7 +221,73 @@ export type InitiativeRemoteCommandHandlers = {
   resetRound: () => void;
   adjustDamage: (entryId: string, delta: number) => void;
   adjustDamageTaken: (entryId: string, delta: number) => void;
+  setHp: (entryId: string, hp: number) => void;
+  adjustHp: (entryId: string, delta: number) => void;
+  setConditions: (entryId: string, conditions: CombatConditionId[]) => void;
+  toggleCondition: (entryId: string, condition: CombatConditionId) => void;
+  addCombatant: (combatant: InitiativeRemoteCombatant) => void;
+  removeCombatant: (entryId: string) => void;
 };
+
+export type InitiativeRemoteCombatant = {
+  id: string;
+  name: string;
+  type: "monster" | "custom";
+  hp: number;
+  maxHp: number;
+  initiative: number;
+  ac: number;
+  conditions?: CombatConditionId[];
+};
+
+function parseCombatant(value: unknown): InitiativeRemoteCombatant | null {
+  if (!isRecord(value)) return null;
+  const { id, name, type, hp, maxHp, initiative, ac } = value;
+  if (
+    typeof id !== "string" || !id.trim() || id.length > 80 ||
+    typeof name !== "string" || !name.trim() || name.length > 100 ||
+    (type !== "monster" && type !== "custom") ||
+    ![hp, maxHp, initiative, ac].every((n) => typeof n === "number" && Number.isFinite(n))
+  ) return null;
+  if (Math.abs(hp as number) > 100_000 || Math.abs(maxHp as number) > 100_000 ||
+      Math.abs(initiative as number) > 10_000 || Math.abs(ac as number) > 1_000) return null;
+  return {
+    id: id.trim(), name: name.trim(), type,
+    hp: Math.max(0, Math.min(hp as number, maxHp as number)),
+    maxHp: Math.max(0, maxHp as number),
+    initiative: initiative as number,
+    ac: ac as number,
+    conditions: normalizeCombatConditions(value.conditions),
+  };
+}
+
+export function isValidInitiativeRemotePayload(type: string, payload: Record<string, unknown>): boolean {
+  const boundedEntryId = (value: unknown) => typeof value === "string" && value.trim().length > 0 && value.length <= 80;
+  switch (type) {
+    case "initiative.adjust_damage":
+    case "initiative.adjust_damage_taken":
+    case "initiative.adjust_hp":
+      return boundedEntryId(payload.entry_id) && typeof payload.delta === "number" &&
+        Number.isFinite(payload.delta) && Math.abs(payload.delta) <= 100_000;
+    case "initiative.set_hp":
+      return boundedEntryId(payload.entry_id) && typeof payload.hp === "number" &&
+        Number.isFinite(payload.hp) && Math.abs(payload.hp) <= 100_000;
+    case "initiative.set_conditions": {
+      if (!boundedEntryId(payload.entry_id) || !Array.isArray(payload.conditions)) return false;
+      const normalized = normalizeCombatConditions(payload.conditions);
+      return normalized.length === payload.conditions.length && new Set(payload.conditions).size === payload.conditions.length;
+    }
+    case "initiative.toggle_condition":
+      return boundedEntryId(payload.entry_id) && typeof payload.condition === "string" &&
+        normalizeCombatConditions([payload.condition]).length === 1;
+    case "initiative.add_combatant":
+      return parseCombatant(payload.combatant) !== null;
+    case "initiative.remove_combatant":
+      return boundedEntryId(payload.entry_id);
+    default:
+      return true;
+  }
+}
 
 export function applyInitiativeRemoteCommand(
   handlers: InitiativeRemoteCommandHandlers,
@@ -230,7 +325,67 @@ export function applyInitiativeRemoteCommand(
       handlers.adjustDamageTaken(entryId, Math.trunc(delta));
       return true;
     }
+    case "initiative.set_hp": {
+      const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      const hp = payload.hp;
+      if (id && typeof hp === "number" && Number.isFinite(hp) && Math.abs(hp) <= 100_000) {
+        handlers.setHp(id, hp);
+      }
+      return true;
+    }
+    case "initiative.adjust_hp": {
+      const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      const delta = payload.delta;
+      if (id && typeof delta === "number" && Number.isFinite(delta) && Math.abs(delta) <= 100_000) {
+        handlers.adjustHp(id, Math.trunc(delta));
+      }
+      return true;
+    }
+    case "initiative.set_conditions": {
+      const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      if (id && Array.isArray(payload.conditions)) {
+        handlers.setConditions(id, normalizeCombatConditions(payload.conditions));
+      }
+      return true;
+    }
+    case "initiative.toggle_condition": {
+      const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      const condition = normalizeCombatConditions([payload.condition])[0];
+      if (id && condition) handlers.toggleCondition(id, condition);
+      return true;
+    }
+    case "initiative.add_combatant": {
+      const combatant = parseCombatant(payload.combatant);
+      if (!combatant) return false;
+      handlers.addCombatant(combatant);
+      return true;
+    }
+    case "initiative.remove_combatant": {
+      const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      if (!id || id.length > 80) return false;
+      handlers.removeCombatant(id);
+      return true;
+    }
     default:
       return false;
   }
+}
+
+/** Pure delta helper; callers apply it inside a functional update to avoid stale HP reads. */
+export function adjustInitiativeHp(
+  state: InitiativeTrackerState,
+  entryId: string,
+  delta: number
+): InitiativeTrackerState {
+  return {
+    ...state,
+    entries: state.entries.map((entry) => {
+      if (entry.id !== entryId) return entry;
+      const unclamped = entry.hp + delta;
+      const nextHp = Math.max(0, Math.min(unclamped, entry.maxHp > 0 ? entry.maxHp : unclamped));
+      const maxHp = entry.maxHp > 0 ? entry.maxHp : Math.max(entry.maxHp, nextHp);
+      const isDead = entry.type === "monster" || entry.type === "custom" ? nextHp === 0 : entry.isDead;
+      return { ...entry, hp: nextHp, maxHp, isDead };
+    }),
+  };
 }

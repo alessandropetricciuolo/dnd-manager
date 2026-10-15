@@ -40,6 +40,11 @@ import {
 } from "@/lib/character-sheets/storage-path";
 import type { GeneratedSheetBuildMeta } from "@/lib/character-sheet-build-meta";
 import { resolveCharacterXp, type CharacterXpSyncStatus } from "@/lib/character-xp";
+import {
+  isCharacterSheetV1,
+  mergeCharacterSheetIntoSnapshot,
+  type CharacterSheetV1,
+} from "@/lib/character-sheet";
 
 const SIGNED_URL_EXPIRY_SEC = 3600;
 
@@ -133,6 +138,44 @@ function formSlug(formData: FormData, key: string): string | null {
   const v = (formData.get(key) as string | null)?.trim();
   if (!v || v === "__none__") return null;
   return v;
+}
+
+const RUNTIME_SNAPSHOT_KEYS = [
+  "inspiration", "temp_hp", "hit_dice", "features", "usedSpellSlots", "death_saves",
+] as const;
+
+/** Recomputing derived rules must not erase the sheet or the player's live resources. */
+function mergeRecomputedSnapshot(
+  computed: CharacterRulesSnapshotV1,
+  previous: unknown,
+): CharacterRulesSnapshotV1 & Record<string, unknown> {
+  const prior = previous && typeof previous === "object" && !Array.isArray(previous)
+    ? previous as Record<string, unknown>
+    : {};
+  const merged: Record<string, unknown> = { ...prior, ...computed };
+  for (const key of RUNTIME_SNAPSHOT_KEYS) {
+    if (Object.prototype.hasOwnProperty.call(prior, key)) merged[key] = prior[key];
+  }
+  if (Object.prototype.hasOwnProperty.call(prior, "max_hp")) merged.max_hp = prior.max_hp;
+  if (Object.prototype.hasOwnProperty.call(prior, "character_sheet")) merged.character_sheet = prior.character_sheet;
+  return merged as CharacterRulesSnapshotV1 & Record<string, unknown>;
+}
+
+function parseCharacterSheet(raw: string | null): CharacterSheetV1 | null {
+  if (!raw?.trim()) return null;
+  try {
+    const value: unknown = JSON.parse(raw);
+    return isCharacterSheetV1(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+function spellSlotsForRulesSnapshot(sheet: CharacterSheetV1): Array<{ level: number; count: number }> | undefined {
+  if (!sheet.spellSlots) return undefined;
+  return Object.entries(sheet.spellSlots)
+    .map(([level, count]) => ({ level: Number(level), count }))
+    .sort((a, b) => a.level - b.level);
 }
 
 function normalizeSubraceForRace(raceSlug: string | null, subclassSlug: string | null): string | null {
@@ -261,7 +304,7 @@ export async function getCampaignCharacters(
   const { data: rows, error } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, name, image_url, character_class, class_subclass, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, calendar_anchor_date, calendar_anchor_hours, calendar_current_date, coins_gp, coins_sp, coins_cp, created_at, updated_at"
+      "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, time_offset_hours, calendar_anchor_date, calendar_anchor_hours, calendar_current_date, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
     .eq("campaign_id", campaignId)
     .eq("assigned_to", userId)
@@ -283,8 +326,6 @@ export async function getCampaignCharacters(
     const calendarResolved = resolveCharacterCalendar(calendarCtx, row);
     return {
       ...r,
-      armor_class: null,
-      hit_points: null,
       sheet_url: null,
       time_offset_hours:
         typeof (r as { time_offset_hours?: number }).time_offset_hours === "number"
@@ -310,6 +351,9 @@ export async function createCharacter(
   if (!ctx.isGmOrAdmin) return { success: false, error: "Solo il Master può creare personaggi." };
 
   const supabase = ctx.supabase;
+  const { data: campaignTypeRow } = await supabase.from("campaigns").select("type").eq("id", campaignId).maybeSingle();
+  if (!campaignTypeRow) return { success: false, error: "Campagna non trovata." };
+  const campaignType = String((campaignTypeRow as { type?: unknown }).type ?? "");
   const name = (formData.get("name") as string | null)?.trim();
   const characterClass = (formData.get("character_class") as string | null)?.trim() || null;
   const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || null;
@@ -347,6 +391,23 @@ export async function createCharacter(
   const generatedHitPointsRaw = (formData.get("generated_sheet_hit_points") as string | null)?.trim() || "";
   const generatedSpellcastingRaw =
     (formData.get("generated_sheet_spellcasting") as string | null)?.trim() || "";
+  const generatedSheetRaw = (formData.get("character_sheet") as string | null)?.trim() || "";
+  const generatedSheet = generatedSheetRaw ? parseCharacterSheet(generatedSheetRaw) : null;
+  if (generatedSheetRaw && !generatedSheet) {
+    return { success: false, error: "Dati della scheda generata non validi." };
+  }
+  if (generatedSheet && (generatedSheet.source !== "generator" || !["quest", "oneshot"].includes(campaignType))) {
+    return { success: false, error: "Il generatore è disponibile solo per Quest e Oneshot." };
+  }
+  if (generatedSheetPdfBase64 && !["quest", "oneshot"].includes(campaignType)) {
+    return { success: false, error: "Il PDF del generatore è disponibile solo per Quest e Oneshot." };
+  }
+  if (generatedSheet && generatedSheet.characterName && generatedSheet.characterName !== name) {
+    return { success: false, error: "Il nome della scheda non corrisponde al personaggio." };
+  }
+  if (generatedSheet && generatedSheet.classLabel && characterClass && generatedSheet.classLabel !== characterClass) {
+    return { success: false, error: "La classe della scheda non corrisponde al personaggio." };
+  }
 
   if (!name) return { success: false, error: "Il nome del personaggio è obbligatorio." };
   const armorClass = armorClassRaw !== "" ? Number.parseInt(armorClassRaw, 10) : null;
@@ -450,6 +511,7 @@ export async function createCharacter(
     const parsed = Number.parseInt(generatedHitPointsRaw, 10);
     if (Number.isFinite(parsed) && parsed >= 0) finalHitPoints = parsed;
   }
+  if (finalHitPoints == null && generatedSheet?.hpMax !== undefined) finalHitPoints = generatedSheet.hpMax;
 
   let rules_snapshot = await recomputeCharacterRulesSnapshot({
     campaignId,
@@ -460,6 +522,13 @@ export async function createCharacter(
     subclassSlug: subclass_slug,
     backgroundSlug: background_slug,
   });
+  if (generatedSheet) {
+    Object.assign(rules_snapshot, {
+      character_sheet: generatedSheet,
+      ...(generatedSheet.hpMax === undefined ? {} : { max_hp: generatedSheet.hpMax }),
+      ...(spellSlotsForRulesSnapshot(generatedSheet) === undefined ? {} : { spellSlots: spellSlotsForRulesSnapshot(generatedSheet) }),
+    });
+  }
   const generatedSpellcasting = parseSpellcastingMetaFromJson(generatedSpellcastingRaw);
   if (generatedSpellcasting) {
     rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, generatedSpellcasting);
@@ -573,7 +642,7 @@ export async function updateCharacter(
 
   const { data: existing, error: fetchErr } = await supabase
     .from("campaign_characters")
-    .select("image_url, sheet_file_path, level")
+    .select("image_url, sheet_file_path, level, rules_snapshot, updated_at")
     .eq("id", characterId)
     .single();
 
@@ -618,26 +687,14 @@ export async function updateCharacter(
 
   let sheet_file_path: string | null = (existing as { sheet_file_path: string | null }).sheet_file_path;
   if (removeSheet) {
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
-    }
     sheet_file_path = null;
   } else if (sheetUrlFromFormRaw && !sheetUrlFromForm) {
     return { success: false, error: "URL scheda non valido o non consentito." };
   } else if (sheetUrlFromForm) {
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
-    }
     sheet_file_path = normalizeCharacterSheetStoragePath(sheetUrlFromForm) ?? sheetUrlFromForm;
   } else if (sheetFile && sheetFile instanceof File && sheetFile.size > 0) {
     if (sheetFile.type !== "application/pdf") {
       return { success: false, error: "La scheda tecnica deve essere un file PDF." };
-    }
-    const normalizedPrevPath = normalizeCharacterSheetStoragePath(sheet_file_path);
-    if (normalizedPrevPath) {
-      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([normalizedPrevPath]);
     }
     const safeName = sheetFile.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80);
     const path = `${campaignId}/${randomUUID()}-${safeName}`;
@@ -651,7 +708,7 @@ export async function updateCharacter(
     sheet_file_path = path;
   }
 
-  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+  const recomputedRulesSnapshot = await recomputeCharacterRulesSnapshot({
     campaignId,
     level: nextLevel,
     characterClass,
@@ -660,6 +717,10 @@ export async function updateCharacter(
     subclassSlug: subclass_slug,
     backgroundSlug: background_slug,
   });
+  const rules_snapshot = mergeRecomputedSnapshot(
+    recomputedRulesSnapshot,
+    (existing as { rules_snapshot?: unknown }).rules_snapshot,
+  );
 
   const { data: row, error } = await supabase
     .from("campaign_characters")
@@ -669,7 +730,7 @@ export async function updateCharacter(
       character_class: characterClass,
       class_subclass: classSubclass,
       armor_class: armorClass,
-      hit_points: hitPoints,
+      ...(hitPointsRaw !== "" ? { hit_points: hitPoints } : {}),
       sheet_file_path,
       level: nextLevel,
       background,
@@ -680,14 +741,32 @@ export async function updateCharacter(
       ...(isLong ? { coins_gp: coinsGp, coins_sp: coinsSp, coins_cp: coinsCp } : {}),
     })
     .eq("id", characterId)
+    .eq("updated_at", existing.updated_at)
     .select(
       "id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, coins_gp, coins_sp, coins_cp, created_at, updated_at"
     )
-    .single();
+    .maybeSingle();
 
   if (error) {
     console.error("[updateCharacter]", error);
+    const newlyUploadedPath = normalizeCharacterSheetStoragePath(sheet_file_path);
+    const oldPath = normalizeCharacterSheetStoragePath((existing as { sheet_file_path: string | null }).sheet_file_path);
+    if (newlyUploadedPath && newlyUploadedPath !== oldPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([newlyUploadedPath]);
+    }
     return { success: false, error: error.message ?? "Errore nell'aggiornamento." };
+  }
+  if (!row) {
+    const newlyUploadedPath = normalizeCharacterSheetStoragePath(sheet_file_path);
+    const oldPath = normalizeCharacterSheetStoragePath((existing as { sheet_file_path: string | null }).sheet_file_path);
+    if (newlyUploadedPath && newlyUploadedPath !== oldPath) {
+      await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([newlyUploadedPath]);
+    }
+    return { success: false, error: "Il personaggio è stato aggiornato da un altro dispositivo. Ricarica la scheda e riprova." };
+  }
+  const oldSheetPath = normalizeCharacterSheetStoragePath((existing as { sheet_file_path: string | null }).sheet_file_path);
+  if (oldSheetPath && oldSheetPath !== normalizeCharacterSheetStoragePath(sheet_file_path)) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([oldSheetPath]);
   }
 
   try {
@@ -697,6 +776,99 @@ export async function updateCharacter(
     console.error("[updateCharacter] campaign memory sync", memoryErr);
   }
 
+  revalidatePath(`/campaigns/${campaignId}`);
+  return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
+}
+
+export type SaveLongCampaignCharacterSheetPayload = {
+  expectedUpdatedAt: string;
+  character_sheet: CharacterSheetV1;
+  identity: {
+    name: string;
+    character_class?: string | null;
+    class_subclass?: string | null;
+    level?: number;
+    armor_class?: number | null;
+    max_hp?: number | null;
+    background?: string | null;
+  };
+};
+
+/** Manual GM/Admin sheet editor for Long campaigns; CAS prevents overwriting newer mobile resources. */
+export async function saveLongCampaignCharacterSheet(
+  characterId: string,
+  campaignId: string,
+  payload: SaveLongCampaignCharacterSheetPayload,
+): Promise<CharResult<CampaignCharacterRow>> {
+  const ctx = await getCurrentUserAndRole();
+  if (!ctx) return { success: false, error: "Non autenticato." };
+  if (!ctx.isGmOrAdmin) return { success: false, error: "Solo Master/Admin possono compilare la scheda." };
+  if (!payload || typeof payload !== "object" || !payload.identity || !isCharacterSheetV1(payload.character_sheet) || !["manual", "recovered"].includes(payload.character_sheet.source)) {
+    return { success: false, error: "Dati della scheda manuale non validi." };
+  }
+  const expectedUpdatedAt = payload.expectedUpdatedAt;
+  const identity = payload.identity;
+  if (typeof expectedUpdatedAt !== "string" || !Number.isFinite(Date.parse(expectedUpdatedAt)) || typeof identity.name !== "string" || !identity.name.trim()) {
+    return { success: false, error: "Nome o revisione della scheda non validi." };
+  }
+  const supabase = ctx.supabase;
+  const { data: campaign } = await supabase.from("campaigns").select("type").eq("id", campaignId).maybeSingle();
+  if (!campaign || (campaign as { type?: string }).type !== "long") {
+    return { success: false, error: "La compilazione manuale è disponibile solo per le Campagne Long." };
+  }
+  const { data: existing, error: fetchError } = await supabase
+    .from("campaign_characters")
+    .select("id, campaign_id, name, character_class, class_subclass, level, armor_class, hit_points, background, rules_snapshot, assigned_to, updated_at")
+    .eq("id", characterId)
+    .eq("campaign_id", campaignId)
+    .maybeSingle();
+  if (fetchError || !existing) return { success: false, error: "Personaggio non trovato." };
+  if (existing.updated_at !== expectedUpdatedAt) {
+    return { success: false, error: "La scheda è stata aggiornata su un altro dispositivo. Ricaricala prima di salvare." };
+  }
+  const nextLevel = identity.level ?? existing.level;
+  if (!Number.isInteger(nextLevel) || nextLevel < 1 || nextLevel > 20) return { success: false, error: "Livello non valido (1–20)." };
+  const nextAc = identity.armor_class ?? existing.armor_class;
+  const nextMaxHp = identity.max_hp ?? payload.character_sheet.hpMax ?? null;
+  if (nextAc !== null && (!Number.isInteger(nextAc) || nextAc < 0 || nextAc > 1000)) return { success: false, error: "CA non valida." };
+  if (nextMaxHp !== null && (!Number.isInteger(nextMaxHp) || nextMaxHp < 0 || nextMaxHp > 100000)) return { success: false, error: "PF massimi non validi." };
+  const existingSnapshot = existing.rules_snapshot && typeof existing.rules_snapshot === "object" && !Array.isArray(existing.rules_snapshot)
+    ? existing.rules_snapshot as Record<string, unknown>
+    : {};
+  const previousSheet = isCharacterSheetV1(existingSnapshot.character_sheet) ? existingSnapshot.character_sheet : null;
+  if (payload.character_sheet.source === "recovered" && previousSheet?.source !== "recovered") {
+    return { success: false, error: "La provenienza recuperata non corrisponde alla scheda attuale." };
+  }
+  if (previousSheet?.source === "recovered" && payload.character_sheet.source !== "recovered") {
+    return { success: false, error: "La scheda proviene da un PDF recuperato. Conferma prima la corrispondenza dei dati." };
+  }
+  const nextSheet: CharacterSheetV1 = { ...payload.character_sheet, hpMax: nextMaxHp ?? payload.character_sheet.hpMax };
+  const nextSnapshot = mergeCharacterSheetIntoSnapshot(existingSnapshot, nextSheet);
+  const spellSlots = spellSlotsForRulesSnapshot(nextSheet);
+  if (spellSlots !== undefined) nextSnapshot.spellSlots = spellSlots;
+  if (nextMaxHp !== null) nextSnapshot.max_hp = nextMaxHp;
+  const patch: Record<string, unknown> = {
+    name: identity.name.trim(),
+    character_class: identity.character_class === undefined ? existing.character_class : identity.character_class,
+    class_subclass: identity.class_subclass === undefined ? existing.class_subclass : identity.class_subclass,
+    level: nextLevel,
+    armor_class: nextAc,
+    background: identity.background === undefined ? existing.background : identity.background,
+    rules_snapshot: nextSnapshot as unknown as Json,
+  };
+  const { data: row, error } = await supabase
+    .from("campaign_characters")
+    .update(patch)
+    .eq("id", characterId)
+    .eq("campaign_id", campaignId)
+    .eq("updated_at", expectedUpdatedAt)
+    .select("id, campaign_id, name, image_url, character_class, class_subclass, armor_class, hit_points, current_xp, level, background, race_slug, subclass_slug, background_slug, rules_snapshot, assigned_to, created_at, updated_at")
+    .maybeSingle();
+  if (error) {
+    console.error("[saveLongCampaignCharacterSheet]", error);
+    return { success: false, error: error.message ?? "Errore nel salvataggio." };
+  }
+  if (!row) return { success: false, error: "Conflitto di revisione: la scheda è cambiata. Ricaricala e riprova." };
   revalidatePath(`/campaigns/${campaignId}`);
   return { success: true, data: { ...row, sheet_url: null } as CampaignCharacterRow };
 }
@@ -836,7 +1008,7 @@ export async function levelUpCharacter(
 
   const { data: row, error } = await supabase
     .from("campaign_characters")
-    .select("campaign_id, level, character_class, class_subclass, race_slug, subclass_slug, background_slug")
+    .select("campaign_id, level, character_class, class_subclass, race_slug, subclass_slug, background_slug, rules_snapshot")
     .eq("id", characterId)
     .maybeSingle();
 
@@ -857,7 +1029,7 @@ export async function levelUpCharacter(
       error: "Per passare al livello 3 o superiore devi prima selezionare la sottoclasse nella modifica del personaggio.",
     };
   }
-  const rules_snapshot = await recomputeCharacterRulesSnapshot({
+  const recomputedSnapshot = await recomputeCharacterRulesSnapshot({
     campaignId: row.campaign_id,
     level: newLevel,
     characterClass: (row as { character_class?: string | null }).character_class ?? null,
@@ -866,6 +1038,7 @@ export async function levelUpCharacter(
     subclassSlug: (row as { subclass_slug?: string | null }).subclass_slug ?? null,
     backgroundSlug: (row as { background_slug?: string | null }).background_slug ?? null,
   });
+  const rules_snapshot = mergeRecomputedSnapshot(recomputedSnapshot, row.rules_snapshot);
   const { error: updateError } = await supabase
     .from("campaign_characters")
     .update({ level: newLevel, rules_snapshot: rules_snapshot as unknown as Json })
@@ -1214,7 +1387,8 @@ export async function saveGeneratedSheetToCharacter(
   fileName: string,
   combatFromSheet?: { armorClass: number; hitPoints: number } | null,
   spellcastingFromSheet?: CharacterSpellcastingMeta | null,
-  buildFromSheet?: GeneratedSheetBuildMeta | null
+  buildFromSheet?: GeneratedSheetBuildMeta | null,
+  characterSheet?: CharacterSheetV1 | null,
 ): Promise<CharResult<void>> {
   try {
     return await saveGeneratedSheetToCharacterInner(
@@ -1224,7 +1398,8 @@ export async function saveGeneratedSheetToCharacter(
       fileName,
       combatFromSheet,
       spellcastingFromSheet,
-      buildFromSheet
+      buildFromSheet,
+      characterSheet,
     );
   } catch (err) {
     console.error("[saveGeneratedSheetToCharacter]", err);
@@ -1239,7 +1414,8 @@ async function saveGeneratedSheetToCharacterInner(
   fileName: string,
   combatFromSheet?: { armorClass: number; hitPoints: number } | null,
   spellcastingFromSheet?: CharacterSpellcastingMeta | null,
-  buildFromSheet?: GeneratedSheetBuildMeta | null
+  buildFromSheet?: GeneratedSheetBuildMeta | null,
+  characterSheet?: CharacterSheetV1 | null,
 ): Promise<CharResult<void>> {
   const ctx = await getCurrentUserAndRole();
   if (!ctx) return { success: false, error: "Non autenticato." };
@@ -1250,11 +1426,18 @@ async function saveGeneratedSheetToCharacterInner(
   const chid = characterId.trim();
   if (!cid || !chid) return { success: false, error: "Campagna o personaggio non validi." };
   if (!pdfBase64.trim()) return { success: false, error: "PDF non valido." };
+  const { data: campaignTypeRow } = await supabase.from("campaigns").select("type").eq("id", cid).maybeSingle();
+  if (!campaignTypeRow || !["quest", "oneshot"].includes(String((campaignTypeRow as { type?: unknown }).type ?? ""))) {
+    return { success: false, error: "Il generatore è disponibile solo per Quest e Oneshot." };
+  }
+  if (characterSheet && (!isCharacterSheetV1(characterSheet) || characterSheet.source !== "generator")) {
+    return { success: false, error: "Scheda generata non valida." };
+  }
 
   const { data: row, error: fetchErr } = await supabase
     .from("campaign_characters")
     .select(
-      "id, campaign_id, sheet_file_path, rules_snapshot, level, character_class, class_subclass, race_slug, subclass_slug, background_slug"
+      "id, campaign_id, sheet_file_path, rules_snapshot, level, character_class, class_subclass, race_slug, subclass_slug, background_slug, updated_at"
     )
     .eq("id", chid)
     .eq("campaign_id", cid)
@@ -1306,7 +1489,12 @@ async function saveGeneratedSheetToCharacterInner(
     if (spellcastingFromSheet) {
       rules_snapshot = mergeSpellcastingIntoSnapshot(rules_snapshot, spellcastingFromSheet);
     }
-    precomputedRulesSnapshot = rules_snapshot;
+    const merged = mergeRecomputedSnapshot(rules_snapshot, row.rules_snapshot);
+    if (characterSheet) {
+      merged.character_sheet = characterSheet;
+      if (characterSheet.hpMax !== undefined) merged.max_hp = characterSheet.hpMax;
+    }
+    precomputedRulesSnapshot = merged;
   }
 
   const safeName = fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "scheda-generata.pdf";
@@ -1318,11 +1506,9 @@ async function saveGeneratedSheetToCharacterInner(
 
   const prevPath = row.sheet_file_path;
   const ac = combatFromSheet?.armorClass;
-  const hp = combatFromSheet?.hitPoints;
   const updateRow: {
     sheet_file_path: string;
     armor_class?: number;
-    hit_points?: number;
     rules_snapshot?: Json;
     race_slug?: string | null;
     subclass_slug?: string | null;
@@ -1333,13 +1519,10 @@ async function saveGeneratedSheetToCharacterInner(
     updated_at: string;
   } = {
     sheet_file_path: path,
-    updated_at: new Date().toISOString(),
+    updated_at: new Date(Math.max(Date.now(), Date.parse(row.updated_at) + 1)).toISOString(),
   };
   if (typeof ac === "number" && Number.isFinite(ac) && ac >= 0) {
     updateRow.armor_class = Math.trunc(ac);
-  }
-  if (typeof hp === "number" && Number.isFinite(hp) && hp >= 0) {
-    updateRow.hit_points = Math.trunc(hp);
   }
   if (buildFromSheet) {
     const race_slug = raceBySlug(buildFromSheet.raceSlug) ? buildFromSheet.raceSlug.trim() : null;
@@ -1363,19 +1546,34 @@ async function saveGeneratedSheetToCharacterInner(
     if (precomputedRulesSnapshot) {
       updateRow.rules_snapshot = precomputedRulesSnapshot as unknown as Json;
     }
-  } else if (spellcastingFromSheet) {
-    const prevSnap = parseRulesSnapshot((row as { rules_snapshot?: Json | null }).rules_snapshot ?? null);
-    if (prevSnap) {
-      updateRow.rules_snapshot = mergeSpellcastingIntoSnapshot(
-        prevSnap,
-        spellcastingFromSheet
-      ) as unknown as Json;
+  } else if (spellcastingFromSheet || characterSheet) {
+    const previous = row.rules_snapshot && typeof row.rules_snapshot === "object" && !Array.isArray(row.rules_snapshot)
+      ? row.rules_snapshot as Record<string, unknown>
+      : {};
+    const parsedPrevious = parseRulesSnapshot((row as { rules_snapshot?: Json | null }).rules_snapshot ?? null);
+    let next = { ...previous } as Record<string, unknown>;
+    if (spellcastingFromSheet && parsedPrevious) {
+      next = { ...next, ...mergeSpellcastingIntoSnapshot(parsedPrevious, spellcastingFromSheet) };
     }
+    if (characterSheet) next = mergeCharacterSheetIntoSnapshot(next, characterSheet);
+    const characterSpellSlots = characterSheet ? spellSlotsForRulesSnapshot(characterSheet) : undefined;
+    if (characterSpellSlots !== undefined) next.spellSlots = characterSpellSlots;
+    if (characterSheet?.hpMax !== undefined) next.max_hp = characterSheet.hpMax;
+    updateRow.rules_snapshot = next as unknown as Json;
   }
-  const { error: updateErr } = await supabase.from("campaign_characters").update(updateRow).eq("id", chid);
+  const { data: updated, error: updateErr } = await supabase.from("campaign_characters")
+    .update(updateRow)
+    .eq("id", chid)
+    .eq("updated_at", row.updated_at)
+    .select("id")
+    .maybeSingle();
   if (updateErr) {
     await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([path]);
     return { success: false, error: updateErr.message ?? "Errore salvataggio scheda." };
+  }
+  if (!updated) {
+    await supabase.storage.from(CHARACTER_SHEETS_BUCKET).remove([path]);
+    return { success: false, error: "Il personaggio è cambiato durante il salvataggio. Ricarica la scheda e riprova." };
   }
   const normalizedPrevPath = normalizeCharacterSheetStoragePath(prevPath);
   if (normalizedPrevPath) {

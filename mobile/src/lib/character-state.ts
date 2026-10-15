@@ -4,6 +4,7 @@ export type MobileCharacterOperation =
   | { type: "spendHitDie"; count: number }
   | { type: "useFeature"; featureId: string }
   | { type: "shortRest" }
+  | { type: "shortRestHitDie"; hitPoints: number }
   | { type: "spellSlot"; level: number; usedCount: number }
   | { type: "coins"; gp: number; sp: number; cp: number }
   | { type: "deathSaves"; successes: number; failures: number }
@@ -39,6 +40,37 @@ const boundedInt = (value: unknown, min: number, max: number, label: string) => 
 const exactKeys = (value: Record<string, unknown>, allowed: string[]) =>
   Object.keys(value).length === allowed.length && Object.keys(value).every((key) => allowed.includes(key));
 
+/** Prefer the persisted character-sheet contract; legacy runtime fields are a fallback. */
+function maxHpFor(snapshot: Snapshot): number | null {
+  const canonical = snapshot.character_sheet?.hpMax;
+  if (Number.isInteger(canonical) && canonical >= 0) return canonical;
+  return Number.isInteger(snapshot.max_hp) && snapshot.max_hp >= 0 ? snapshot.max_hp : null;
+}
+
+function hitDiceFor(snapshot: Snapshot) {
+  const runtime = snapshot.hit_dice && typeof snapshot.hit_dice === "object" ? snapshot.hit_dice : {};
+  const sheet = snapshot.character_sheet && typeof snapshot.character_sheet === "object" ? snapshot.character_sheet : {};
+  const freshSheetRuntime = !snapshot.hit_dice && (sheet.source === "generator" || sheet.source === "manual");
+  return {
+    ...runtime,
+    ...(Number.isInteger(runtime.total) ? {} : Number.isInteger(sheet.hitDiceTotal) ? { total: sheet.hitDiceTotal } : {}),
+    ...(typeof runtime.die === "string" ? {} : typeof sheet.hitDie === "string" ? { die: sheet.hitDie } : {}),
+    ...(runtime.current === undefined && freshSheetRuntime && Number.isInteger(sheet.hitDiceTotal)
+      ? { current: sheet.hitDiceTotal }
+      : {}),
+  };
+}
+
+function spellSlotFor(snapshot: Snapshot, level: number): Snapshot | null {
+  const nestedSlots = snapshot.character_sheet?.spellSlots;
+  const count = nestedSlots?.[level];
+  if (Number.isInteger(count) && count >= 0) return { level, count };
+  const runtime = Array.isArray(snapshot.spellSlots)
+    ? snapshot.spellSlots.find((item: Snapshot) => item?.level === level)
+    : undefined;
+  return runtime ?? null;
+}
+
 export function applyMobileCharacterOperation(
   row: MobileCharacterState,
   operation: MobileCharacterOperation
@@ -50,8 +82,8 @@ export function applyMobileCharacterOperation(
   let coins_cp = row.coins_cp ?? 0;
   switch (operation.type) {
     case "hp": {
-      if (!Number.isInteger(snapshot.max_hp) || snapshot.max_hp < 0) throw new Error("max_hp_unavailable");
-      const maxHp = snapshot.max_hp;
+      const maxHp = maxHpFor(snapshot);
+      if (maxHp === null) throw new Error("max_hp_unavailable");
       hit_points = boundedInt(operation.hitPoints, 0, maxHp, "hp");
       if (operation.tempHp !== undefined) snapshot.temp_hp = boundedInt(operation.tempHp, 0, 1000000, "temp_hp");
       if (hit_points > 0) snapshot.death_saves = { successes: 0, failures: 0 };
@@ -61,7 +93,7 @@ export function applyMobileCharacterOperation(
       snapshot.inspiration = !Boolean(snapshot.inspiration);
       break;
     case "spendHitDie": {
-      const dice = snapshot.hit_dice ?? {};
+      const dice = hitDiceFor(snapshot);
       const total = Number.isInteger(dice.total) ? dice.total : 0;
       const current = Number.isInteger(dice.current) ? dice.current : 0;
       const count = boundedInt(operation.count, 1, total, "hit_dice");
@@ -87,9 +119,26 @@ export function applyMobileCharacterOperation(
           : feature
       );
       break;
+    case "shortRestHitDie": {
+      const maxHp = maxHpFor(snapshot);
+      if (maxHp === null) throw new Error("max_hp_unavailable");
+      const dice = hitDiceFor(snapshot);
+      const total = Number.isInteger(dice.total) ? dice.total : 0;
+      const current = Number.isInteger(dice.current) ? dice.current : 0;
+      if (current < 1 || total < 1 || current > total) throw new Error("hit_dice_unavailable");
+      hit_points = boundedInt(operation.hitPoints, 0, maxHp, "hp");
+      snapshot.hit_dice = { ...dice, current: current - 1 };
+      snapshot.features = (Array.isArray(snapshot.features) ? snapshot.features : []).map((feature: Snapshot) =>
+        feature?.resetOn === "shortRest" && Number.isInteger(feature.usesMax)
+          ? { ...feature, usesCurrent: Math.max(0, feature.usesMax) }
+          : feature
+      );
+      if (hit_points > 0) snapshot.death_saves = { successes: 0, failures: 0 };
+      break;
+    }
     case "spellSlot": {
       const level = boundedInt(operation.level, 1, 9, "spell_level");
-      const slot = (Array.isArray(snapshot.spellSlots) ? snapshot.spellSlots : []).find((item: Snapshot) => item?.level === level);
+      const slot = spellSlotFor(snapshot, level);
       if (!slot) throw new Error("spell_slot_unavailable");
       const used = boundedInt(operation.usedCount, 0, Number.isInteger(slot.count) ? slot.count : 0, "spell_slot");
       snapshot.usedSpellSlots = { ...(snapshot.usedSpellSlots ?? {}), [level]: used };
@@ -107,16 +156,16 @@ export function applyMobileCharacterOperation(
       };
       break;
     case "longRest": {
-      if (!Number.isInteger(snapshot.max_hp) || snapshot.max_hp < 0) throw new Error("max_hp_unavailable");
-      const maxHp = snapshot.max_hp;
+      const maxHp = maxHpFor(snapshot);
+      if (maxHp === null) throw new Error("max_hp_unavailable");
       hit_points = maxHp;
       snapshot.temp_hp = 0;
       snapshot.death_saves = { successes: 0, failures: 0 };
       snapshot.usedSpellSlots = {};
-      const dice = snapshot.hit_dice ?? {};
-      const total = Number.isInteger(dice.total) ? dice.total : 0;
-      const current = Number.isInteger(dice.current) ? dice.current : 0;
-      snapshot.hit_dice = { ...dice, current: Math.min(total, current + Math.max(1, Math.floor(total / 2))) };
+      const dice = hitDiceFor(snapshot);
+      if (Number.isInteger(dice.total) && Number.isInteger(dice.current) && dice.total >= 0 && dice.current >= 0 && dice.current <= dice.total) {
+        snapshot.hit_dice = { ...dice, current: Math.min(dice.total, dice.current + Math.max(1, Math.floor(dice.total / 2))) };
+      }
       snapshot.features = (Array.isArray(snapshot.features) ? snapshot.features : []).map((feature: Snapshot) =>
         Number.isInteger(feature?.usesMax) ? { ...feature, usesCurrent: Math.max(0, feature.usesMax) } : feature
       );
@@ -138,6 +187,7 @@ export function isMobileCharacterOperation(value: unknown): value is MobileChara
   switch (operation.type) {
     case "hp": return exactKeys(operation, operation.tempHp === undefined ? ["type", "hitPoints"] : ["type", "hitPoints", "tempHp"]) && number("hitPoints") && (operation.tempHp === undefined || number("tempHp"));
     case "toggleInspiration": case "shortRest": case "longRest": return exactKeys(operation, ["type"]);
+    case "shortRestHitDie": return exactKeys(operation, ["type", "hitPoints"]) && number("hitPoints");
     case "spendHitDie": return exactKeys(operation, ["type", "count"]) && number("count");
     case "useFeature": return exactKeys(operation, ["type", "featureId"]) && typeof operation.featureId === "string";
     case "spellSlot": return exactKeys(operation, ["type", "level", "usedCount"]) && number("level") && number("usedCount");

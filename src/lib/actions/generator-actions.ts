@@ -14,6 +14,7 @@ import { mapGeneratedSheetToPdfFields } from "@/lib/sheet-generator/sheet-mapper
 import { buildFeatureSummaryV2, type FeatureSummaryV2 } from "@/lib/sheet-generator/features-v2";
 import type { CharacterGeneratorInput, GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import { headers } from "next/headers";
+import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 
 export type GenerateSheetResult = {
   success: boolean;
@@ -82,9 +83,17 @@ async function requestOriginFromHeaders(): Promise<string | null> {
   return host ? `${proto}://${host}` : null;
 }
 
+async function canUseCharacterGenerator(): Promise<boolean> {
+  const { user, profile } = await getRequestAuthContext();
+  return Boolean(user && (profile?.role === "gm" || profile?.role === "admin"));
+}
+
 export async function previewBuildChoicesAction(
   formData: FormData
 ): Promise<PreviewBuildChoicesResult> {
+  if (!(await canUseCharacterGenerator())) {
+    return { success: false, message: "Il generatore è riservato a Master e Admin." };
+  }
   const input = parseInput(formData);
   if (!input.raceSlug || !input.classLabel || !input.backgroundSlug) {
     return { success: false, message: "Compila razza, classe, background e livello." };
@@ -116,6 +125,9 @@ export async function previewBuildChoicesAction(
 }
 
 export async function generateSheetAction(formData: FormData): Promise<GenerateSheetResult> {
+  if (!(await canUseCharacterGenerator())) {
+    return { success: false, message: "Il generatore è riservato a Master e Admin." };
+  }
   const input = parseInput(formData);
   if (!input.raceSlug || !input.classLabel || !input.backgroundSlug) {
     return { success: false, message: "Compila razza, classe, background e livello." };
@@ -169,6 +181,9 @@ export async function generateFeatureSummaryV2Action(
   sheet: GeneratedCharacterSheet,
   overrides?: CharacterBuildOverrides | null
 ): Promise<FeatureSummaryV2Result> {
+  if (!(await canUseCharacterGenerator())) {
+    return { success: false, message: "Il generatore è riservato a Master e Admin." };
+  }
   try {
     const summary = buildFeatureSummaryV2(sheet, overrides);
     return {

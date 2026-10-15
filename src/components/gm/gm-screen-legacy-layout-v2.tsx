@@ -136,7 +136,14 @@ function LegacyWorkspace({
         >
           <Headphones className="h-3.5 w-3.5" />
         </Button>
-        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
+        <GmRemoteIntegration
+          campaignId={campaignId}
+          forge={audioForge}
+          initiativeState={shared.initiativeState}
+          initiativeHandlers={shared.initiativeRemoteHandlers}
+          initiativeSessionId={selectedSessionId}
+          initiativeSessionTitle={sessionLabel ?? null}
+        />
       </div>
 
       <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">

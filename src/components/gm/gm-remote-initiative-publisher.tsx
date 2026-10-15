@@ -1,55 +1,117 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import { publishGmRemoteInitiativeSnapshot } from "@/app/campaigns/gm-remote-actions";
 import { saveTorneoMatchInitiativeAction } from "@/app/campaigns/torneo-live-actions";
+import { loadTurnTimerState } from "@/lib/fight-mode/turn-timer";
 import {
+  initiativeRemoteSnapshotSignature,
   toInitiativeRemoteSnapshot,
   type InitiativeRemoteSnapshot,
 } from "@/lib/gm-remote/initiative-commands";
-import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
+import type { InitiativeTrackerHandle, InitiativeTrackerState } from "@/components/gm/initiative-tracker";
+
+const HEARTBEAT_MS = 5_000;
+const SAMPLE_MS = 400;
+const MIN_PUBLISH_INTERVAL_MS = 500;
 
 type Props = {
   campaignId: string;
   sessionPublicId: string | null;
-  state: InitiativeTrackerState;
+  initiativeHandleRef?: RefObject<InitiativeTrackerHandle | null>;
+  state?: InitiativeTrackerState;
+  active?: boolean;
+  sessionId?: string | null;
+  sessionTitle?: string | null;
   torneoActiveMatch?: InitiativeRemoteSnapshot["activeMatch"];
   torneoMatchId?: string | null;
 };
 
+/** Publishes the provider's authoritative tracker. Sampling catches rapid edits without
+ * letting the change debounce starve; unchanged snapshots still carry a PC heartbeat. */
 export function GmRemoteInitiativePublisher({
   campaignId,
   sessionPublicId,
+  initiativeHandleRef,
   state,
+  active = true,
+  sessionId,
+  sessionTitle,
   torneoActiveMatch,
   torneoMatchId,
 }: Props) {
-  const lastPublishedRef = useRef<string>("");
+  const latestStateRef = useRef(state);
+  latestStateRef.current = state;
+  const latestMetadataRef = useRef({ sessionId, sessionTitle, torneoActiveMatch, torneoMatchId });
+  latestMetadataRef.current = { sessionId, sessionTitle, torneoActiveMatch, torneoMatchId };
 
   useEffect(() => {
-    if (!sessionPublicId || state.entries.length === 0) return;
+    if (!sessionPublicId || !active) return;
 
-    const snapshot: InitiativeRemoteSnapshot = toInitiativeRemoteSnapshot(
-      state,
-      torneoActiveMatch ?? undefined,
-      torneoMatchId ?? undefined
-    );
-    const serialized = JSON.stringify(snapshot);
-    if (serialized === lastPublishedRef.current) return;
-
-    const timer = window.setTimeout(() => {
-      void publishGmRemoteInitiativeSnapshot(campaignId, sessionPublicId, snapshot).then((res) => {
+    let cancelled = false;
+    let publishing = false;
+    let pending = false;
+    let lastSignature = "";
+    let lastPublishedAt = 0;
+    const publish = async () => {
+      const current = initiativeHandleRef?.current?.getState() ?? latestStateRef.current;
+      if (cancelled || !current) return;
+      const metadata = latestMetadataRef.current;
+      const timer = loadTurnTimerState(campaignId);
+      const trackerState = metadata.torneoMatchId ? current : {
+        ...current,
+        isTurnTimerRunning: timer.isRunning,
+        turnElapsedSeconds: timer.remainingSeconds,
+      };
+      const snapshot = toInitiativeRemoteSnapshot(
+        trackerState,
+        metadata.torneoActiveMatch ?? undefined,
+        metadata.torneoMatchId ?? undefined,
+        metadata.sessionId ?? null,
+        metadata.sessionTitle ?? null
+      );
+      const signature = initiativeRemoteSnapshotSignature(snapshot);
+      const changed = signature !== lastSignature;
+      const heartbeatDue = Date.now() - lastPublishedAt >= HEARTBEAT_MS;
+      if (!changed && !heartbeatDue) return;
+      if (Date.now() - lastPublishedAt < MIN_PUBLISH_INTERVAL_MS) return;
+      if (publishing) {
+        pending = true;
+        return;
+      }
+      publishing = true;
+      try {
+        const res = await publishGmRemoteInitiativeSnapshot(campaignId, sessionPublicId, snapshot);
         if (res.success) {
-          lastPublishedRef.current = serialized;
-          if (torneoMatchId) {
-            void saveTorneoMatchInitiativeAction(campaignId, torneoMatchId, state);
+          lastSignature = signature;
+          lastPublishedAt = Date.now();
+          if (metadata.torneoMatchId && changed) {
+            await saveTorneoMatchInitiativeAction(campaignId, metadata.torneoMatchId, trackerState);
           }
         }
-      });
-    }, 400);
+      } catch (error) {
+        console.warn("[gm-remote] initiative_snapshot_publish_failed", error);
+      } finally {
+        publishing = false;
+        if (pending && !cancelled) {
+          pending = false;
+          window.setTimeout(() => void publish(), MIN_PUBLISH_INTERVAL_MS);
+        }
+      }
+    };
 
-    return () => window.clearTimeout(timer);
-  }, [campaignId, sessionPublicId, state, torneoActiveMatch, torneoMatchId]);
+    void publish();
+    const timer = window.setInterval(() => void publish(), SAMPLE_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [
+    active,
+    campaignId,
+    initiativeHandleRef,
+    sessionPublicId,
+  ]);
 
   return null;
 }

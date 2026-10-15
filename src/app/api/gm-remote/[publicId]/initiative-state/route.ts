@@ -7,6 +7,8 @@ import { parseInitiativeRemoteSnapshot } from "@/lib/gm-remote/initiative-comman
 
 type RouteContext = { params: Promise<{ publicId: string }> };
 
+const PC_ONLINE_FRESHNESS_MS = 20_000;
+
 export async function POST(request: Request, context: RouteContext) {
   const { publicId } = await context.params;
   if (!publicId?.trim()) {
@@ -25,7 +27,7 @@ export async function POST(request: Request, context: RouteContext) {
     return NextResponse.json({ ok: false, error: "invalid_token" }, { status: 401 });
   }
 
-  if (!gmRemoteRateLimit(`init:${publicId}`, 60, 60_000)) {
+  if (!gmRemoteRateLimit(`init:${publicId}`, 600, 60_000)) {
     return NextResponse.json({ ok: false, error: "rate_limited" }, { status: 429 });
   }
 
@@ -95,11 +97,33 @@ export async function POST(request: Request, context: RouteContext) {
           : undefined,
         focusedMatchId
       );
-      return NextResponse.json({ ok: true, snapshot });
+      const storedSnapshot = parseInitiativeRemoteSnapshot(sess?.initiative_snapshot ?? null);
+      return NextResponse.json({
+        ok: true,
+        campaignId: v.session.campaign_id,
+        expiresAt: v.session.expires_at,
+        pcOnline: isPcSnapshotFresh(storedSnapshot),
+        controlsReady: snapshot.matchId === focusedMatchId,
+        snapshot,
+      });
     }
   }
 
   const snapshot = parseInitiativeRemoteSnapshot(sess?.initiative_snapshot ?? null);
 
-  return NextResponse.json({ ok: true, snapshot });
+  return NextResponse.json({
+    ok: true,
+    campaignId: v.session.campaign_id,
+    expiresAt: v.session.expires_at,
+    pcOnline: isPcSnapshotFresh(snapshot),
+    controlsReady: !focusedMatchId && !!snapshot,
+    snapshot,
+  });
+}
+
+function isPcSnapshotFresh(snapshot: ReturnType<typeof parseInitiativeRemoteSnapshot>): boolean {
+  if (!snapshot) return false;
+  const updatedAt = Date.parse(snapshot.updatedAt);
+  const age = Date.now() - updatedAt;
+  return Number.isFinite(updatedAt) && age >= -30_000 && age <= PC_ONLINE_FRESHNESS_MS;
 }

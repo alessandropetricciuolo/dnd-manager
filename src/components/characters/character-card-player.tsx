@@ -11,6 +11,7 @@ import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
+import { CharacterSheetPanel } from "./character-sheet-panel";
 
 const PLACEHOLDER_AVATAR = "https://placehold.co/400x560/1c1917/fbbf24/png?text=PG";
 
@@ -441,6 +442,9 @@ export function CharacterCardPlayer({
             )}
           </div>
         </div>
+      </div>
+      <div className="mt-6">
+        <CharacterSheetPanel character={character} />
       </div>
     </div>
   );

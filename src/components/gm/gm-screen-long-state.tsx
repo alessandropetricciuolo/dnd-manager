@@ -8,9 +8,12 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type SetStateAction,
   type ReactNode,
 } from "react";
 import { getCampaignCharacters, type CampaignCharacterRow } from "@/app/campaigns/character-actions";
+import { setWikiEntityGlobalStatus } from "@/app/campaigns/wiki-actions";
 import {
   getApprovedSignupsForSession,
   getLongCampaignCalendarState,
@@ -26,6 +29,9 @@ import {
   emptyInitiativeTrackerState,
   sanitizeInitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
+import { adjustInitiativeHp, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
+import { normalizeCombatConditions } from "@/lib/combat-conditions";
+import { resetTurnTimer, toggleTurnTimer } from "@/lib/fight-mode/turn-timer";
 import {
   DEFAULT_FANTASY_BASE_DATE,
   DEFAULT_FANTASY_CALENDAR_CONFIG,
@@ -69,6 +75,28 @@ export type LongSessionMissionSelection = {
 
 type InitiativeState = InitiativeTrackerState;
 
+function advanceRemoteTurn(state: InitiativeState, direction: 1 | -1): InitiativeState {
+  const length = state.entries.length;
+  if (!length) return state;
+  let index = state.currentTurnIndex;
+  let rounds = state.roundNumber;
+  for (let attempt = 0; attempt < length; attempt += 1) {
+    const previous = index;
+    index = direction === 1 ? (index + 1) % length : index === 0 ? length - 1 : index - 1;
+    if (direction === 1 && index === 0) rounds += 1;
+    if (direction === -1 && previous === 0) rounds = Math.max(1, rounds - 1);
+    const entry = state.entries[index];
+    const dead = entry && (entry.type === "monster" || entry.type === "custom") && (entry.isDead || entry.hp <= 0);
+    if (!dead) break;
+  }
+  return {
+    ...state,
+    entries: state.entries.map((entry) => entry.usedReaction ? { ...entry, usedReaction: false } : entry),
+    currentTurnIndex: index,
+    roundNumber: rounds,
+  };
+}
+
 type StoredLongSessionState = {
   importedLegacy?: boolean;
   revision?: number;
@@ -99,7 +127,8 @@ type LongSessionContextValue = {
   attendance: Record<string, LongSessionAttendanceStatus>;
   setAttendance: (playerId: string, value: LongSessionAttendanceStatus) => void;
   initiativeState: InitiativeState;
-  setInitiativeState: (state: InitiativeState) => void;
+  setInitiativeState: Dispatch<SetStateAction<InitiativeState>>;
+  initiativeRemoteHandlers: InitiativeRemoteCommandHandlers;
   xpState: LongSessionXpState;
   setXpState: (state: LongSessionXpState) => void;
   elapsedHours: number;
@@ -317,6 +346,125 @@ export function GmScreenLongStateProvider({
   const [selectedSessionId, setSelectedSessionIdState] = useState<string | null>(initialSessionId ?? null);
   const [attendance, setAttendanceState] = useState<Record<string, LongSessionAttendanceStatus>>({});
   const [initiativeState, setInitiativeState] = useState<InitiativeState>(emptyInitiativeState);
+  const initiativeRef = useRef(initiativeState);
+  initiativeRef.current = initiativeState;
+  const remoteHpProjectionRef = useRef<Map<string, number>>(new Map());
+  remoteHpProjectionRef.current = new Map(initiativeState.entries.map((entry) => [entry.id, entry.hp]));
+  const coreStatusSaveQueueRef = useRef(Promise.resolve());
+  const saveRemoteCoreStatus = useCallback((entryId: string, hp: number) => {
+    const entry = initiativeRef.current.entries.find((candidate) => candidate.id === entryId);
+    if (!entry?.entityId || !entry.isCore) return;
+    const nextHp = Math.max(0, Math.min(hp, entry.maxHp > 0 ? entry.maxHp : hp));
+    const projected = remoteHpProjectionRef.current.get(entryId) ?? entry.hp;
+    if ((projected <= 0) === (nextHp <= 0)) {
+      remoteHpProjectionRef.current.set(entryId, nextHp);
+      return;
+    }
+    remoteHpProjectionRef.current.set(entryId, nextHp);
+    const status = nextHp <= 0 ? "dead" : "alive";
+    coreStatusSaveQueueRef.current = coreStatusSaveQueueRef.current
+      .then(() => setWikiEntityGlobalStatus(entry.entityId!, campaignId, status))
+      .then(() => undefined)
+      .catch((error: unknown) => {
+        console.warn("[gm-remote] core_monster_status_sync_failed", error);
+      });
+  }, [campaignId]);
+  const initiativeRemoteHandlers = useMemo<InitiativeRemoteCommandHandlers>(() => ({
+    nextTurn: () => {
+      setInitiativeState((state) => advanceRemoteTurn(state, 1));
+      resetTurnTimer(campaignId, true);
+    },
+    prevTurn: () => {
+      setInitiativeState((state) => advanceRemoteTurn(state, -1));
+      resetTurnTimer(campaignId, true);
+    },
+    toggleTurnTimer: () => toggleTurnTimer(campaignId),
+    resetTurnTimer: () => resetTurnTimer(campaignId, false),
+    resetRound: () => {
+      setInitiativeState((state) => ({ ...state, currentTurnIndex: 0, roundNumber: 1 }));
+      resetTurnTimer(campaignId, false);
+    },
+    adjustDamage: (entryId, delta) => setInitiativeState((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === entryId
+        ? { ...entry, damageDealt: Math.max(0, (entry.damageDealt ?? 0) + delta) }
+        : entry),
+    })),
+    adjustDamageTaken: (entryId, delta) => setInitiativeState((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === entryId
+        ? { ...entry, damageTaken: Math.max(0, (entry.damageTaken ?? 0) + delta) }
+        : entry),
+    })),
+    adjustHp: (entryId, delta) => {
+      const entry = initiativeRef.current.entries.find((candidate) => candidate.id === entryId);
+      if (entry) {
+        const currentHp = remoteHpProjectionRef.current.get(entryId) ?? entry.hp;
+        const nextHp = Math.max(0, Math.min(currentHp + delta, entry.maxHp > 0 ? entry.maxHp : currentHp + delta));
+        saveRemoteCoreStatus(entryId, nextHp);
+      }
+      setInitiativeState((state) => adjustInitiativeHp(state, entryId, delta));
+    },
+    setHp: (entryId, hp) => {
+      saveRemoteCoreStatus(entryId, hp);
+      setInitiativeState((state) => ({
+        ...state,
+        entries: state.entries.map((entry) => {
+          if (entry.id !== entryId) return entry;
+          const nextHp = Math.max(0, Math.min(hp, entry.maxHp > 0 ? entry.maxHp : hp));
+          const maxHp = entry.maxHp > 0 ? entry.maxHp : Math.max(entry.maxHp, nextHp);
+          const isDead = entry.type === "monster" || entry.type === "custom" ? nextHp === 0 : entry.isDead;
+          return { ...entry, hp: nextHp, maxHp, isDead };
+        }),
+      }));
+    },
+    setConditions: (entryId, conditions) => setInitiativeState((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => entry.id === entryId
+        ? { ...entry, conditions: normalizeCombatConditions(conditions) }
+        : entry),
+    })),
+    toggleCondition: (entryId, condition) => setInitiativeState((state) => ({
+      ...state,
+      entries: state.entries.map((entry) => {
+        if (entry.id !== entryId) return entry;
+        const current = normalizeCombatConditions(entry.conditions);
+        const next = current.includes(condition)
+          ? current.filter((item) => item !== condition)
+          : [...current, condition];
+        return { ...entry, conditions: normalizeCombatConditions(next) };
+      }),
+    })),
+    addCombatant: (combatant) => setInitiativeState((state) => {
+      if (state.entries.some((entry) => entry.id === combatant.id)) return state;
+      const activeId = state.entries[state.currentTurnIndex]?.id;
+      const added: InitiativeEntry = {
+        id: combatant.id,
+        name: combatant.name,
+        type: combatant.type,
+        armorClass: combatant.ac,
+        hp: combatant.hp,
+        maxHp: combatant.maxHp,
+        initiative: combatant.initiative,
+        conditions: normalizeCombatConditions(combatant.conditions),
+        isDead: combatant.hp <= 0,
+        damageDealt: 0,
+        damageTaken: 0,
+      };
+      const entries = [...state.entries, added].sort((a, b) => b.initiative - a.initiative);
+      const activeIndex = entries.findIndex((entry) => entry.id === activeId);
+      return { ...state, entries, currentTurnIndex: activeIndex >= 0 ? activeIndex : state.currentTurnIndex };
+    }),
+    removeCombatant: (entryId) => setInitiativeState((state) => {
+      const removedIndex = state.entries.findIndex((entry) => entry.id === entryId);
+      if (removedIndex < 0) return state;
+      const entries = state.entries.filter((entry) => entry.id !== entryId);
+      let currentTurnIndex = state.currentTurnIndex;
+      if (removedIndex < currentTurnIndex) currentTurnIndex -= 1;
+      if (currentTurnIndex >= entries.length) currentTurnIndex = Math.max(0, entries.length - 1);
+      return { ...state, entries, currentTurnIndex };
+    }),
+  }), [campaignId, saveRemoteCoreStatus]);
   const [xpState, setXpState] = useState<LongSessionXpState>(emptyXpState);
   const [elapsedHours, setElapsedHoursState] = useState(0);
   const [calendarBaseDate, setCalendarBaseDateState] = useState<FantasyCalendarDate>(DEFAULT_FANTASY_BASE_DATE);
@@ -332,8 +480,6 @@ export function GmScreenLongStateProvider({
   const lastSavedRef = useRef<Record<string,string>>({});
   const readableSessionsRef = useRef(new Set<string>());
   const saveQueueRef = useRef(Promise.resolve());
-  const initiativeRef = useRef(initiativeState);
-  initiativeRef.current = initiativeState;
   const concludeFight = useCallback(() => {
     if (!selectedSessionId || hydratedSessionId !== selectedSessionId) { toast.error("Seleziona una sessione e attendi il caricamento della bozza."); return false; }
     const xp = monsterXp(initiativeRef.current.entries);
@@ -714,6 +860,7 @@ export function GmScreenLongStateProvider({
       setAttendance,
       initiativeState,
       setInitiativeState,
+      initiativeRemoteHandlers,
       xpState,
       setXpState,
       elapsedHours,
@@ -751,6 +898,7 @@ export function GmScreenLongStateProvider({
       saveCalendarSettings,
       hasUnsavedLocalState,
       initiativeState,
+      initiativeRemoteHandlers,
       loadingCharacters,
       loadingSessions,
       loadingSignups,

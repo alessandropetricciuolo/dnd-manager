@@ -53,6 +53,7 @@ export type CharacterGeneratedSheetPayload = {
     level: string;
   };
   characterName: string;
+  characterSheet?: import("@/lib/character-sheet").CharacterSheetV1;
 };
 
 

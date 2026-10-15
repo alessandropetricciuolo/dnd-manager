@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import type { InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
+import type { InitiativeRemoteCombatant } from "@/lib/gm-remote/initiative-commands";
 import {
   Table,
   TableBody,
@@ -359,6 +360,7 @@ export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
   toggleDeathSaveFail: (entryId: string) => void;
   updateNote: (entryId: string, noteText: string) => void;
   updateConditions: (entryId: string, conditions: CombatConditionId[]) => void;
+  addRemoteCombatant: (combatant: InitiativeRemoteCombatant) => void;
   enrichMonster?: (entryId: string, fullStatblock: string) => void;
 };
 
@@ -506,8 +508,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         skipControlledEchoRef.current = false;
         return;
       }
-      // Evita di azzerare lo stato del parent prima che value sia sincronizzato su entries.
-      if (entries.length === 0 && (value?.entries.length ?? 0) > 0) return;
       const sig = initiativeStateSyncSignature(state);
       const parentSig = initiativeStateSyncSignature(
         sanitizeInitiativeTrackerState(value ?? undefined)
@@ -568,6 +568,26 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       const next = prev.filter((e) => e.id !== id);
       setCurrentTurnIndex((i) => (next.length === 0 ? 0 : Math.min(i, next.length - 1)));
       return next;
+    });
+  }, []);
+
+  const addRemoteCombatant = useCallback((combatant: InitiativeRemoteCombatant) => {
+    setEntries((prev) => {
+      if (prev.some((entry) => entry.id === combatant.id)) return prev;
+      const entry = normalizeInitiativeEntry({
+        id: combatant.id,
+        name: combatant.name,
+        type: combatant.type,
+        armorClass: combatant.ac,
+        hp: combatant.hp,
+        maxHp: combatant.maxHp,
+        initiative: combatant.initiative,
+        conditions: combatant.conditions,
+        isDead: combatant.hp <= 0,
+        damageDealt: 0,
+        damageTaken: 0,
+      });
+      return [...prev, entry].sort((a, b) => b.initiative - a.initiative);
     });
   }, []);
 
@@ -1004,6 +1024,21 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     );
   }, []);
 
+  const toggleCondition = useCallback((entryId: string, condition: CombatConditionId) => {
+    setEntries((prev) => prev.map((entry) => {
+      if (entry.id !== entryId) return entry;
+      const current = normalizeCombatConditions(entry.conditions);
+      return {
+        ...entry,
+        conditions: normalizeCombatConditions(
+          current.includes(condition)
+            ? current.filter((item) => item !== condition)
+            : [...current, condition]
+        ),
+      };
+    }));
+  }, []);
+
   const enrichMonster = useCallback((entryId: string, fullStatblock: string) => {
     if (!fullStatblock?.trim()) return;
     const parsedStats = parseMonsterStatsFromMarkdown(fullStatblock);
@@ -1046,11 +1081,16 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       resetRound: resetRoundCounter,
       adjustDamage: adjustDamageDealt,
       adjustDamageTaken,
+      adjustHp: (id: string, delta: number) => void adjustHp(id, delta),
+      setHp: (id: string, hp: number) => void applyHpChange(id, hp),
+      setConditions: updateConditions,
+      toggleCondition,
+      addCombatant: addRemoteCombatant,
+      removeCombatant: removeEntry,
       getState: () => buildTrackerState(),
       toggleReaction,
       closeFight: handleCloseFight,
       updateHp: (id: string, hp: number) => void applyHpChange(id, hp),
-      adjustHp: (id: string, delta: number) => void adjustHp(id, delta),
       spendSlot: spendSpellSlot,
       restoreSlot: restoreSpellSlot,
       resetSlots: resetEntrySpellSlots,
@@ -1058,9 +1098,14 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       toggleDeathSaveFail,
       updateNote,
       updateConditions,
+      addRemoteCombatant,
+      removeEntry,
       enrichMonster,
     }),
     [
+      addRemoteCombatant,
+      removeEntry,
+      toggleCondition,
       adjustDamageDealt,
       adjustDamageTaken,
       adjustHp,

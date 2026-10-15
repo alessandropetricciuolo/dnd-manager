@@ -60,6 +60,7 @@ function LongWorkspace({
     sessionCharactersMissingSheet,
     attendance,
     initiativeState,
+    initiativeRemoteHandlers,
     xpState,
     elapsedHours,
     calendarBaseDate,
@@ -292,7 +293,14 @@ function LongWorkspace({
         >
           <Headphones className="h-3.5 w-3.5" />
         </Button>
-        <GmRemoteIntegration campaignId={campaignId} forge={audioForge} />
+        <GmRemoteIntegration
+          campaignId={campaignId}
+          forge={audioForge}
+          initiativeState={initiativeState}
+          initiativeHandlers={initiativeRemoteHandlers}
+          initiativeSessionId={selectedSessionId}
+          initiativeSessionTitle={selectedSessionLabel ?? null}
+        />
         <Button
           variant="ghost"
           size="icon"

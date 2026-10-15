@@ -25,6 +25,7 @@ type CharacterActionInput = {
   generatedSheetPdfBase64: string | null;
   generatedSheetFileName: string | null;
   generatedSheetSpellcasting: string | null;
+  generatedCharacterSheet: string | null;
 };
 
 function parseCharacterBase(
@@ -85,6 +86,7 @@ function parseCharacterBase(
       generatedSheetPdfBase64: optionalString(o.generatedSheetPdfBase64),
       generatedSheetFileName: optionalString(o.generatedSheetFileName),
       generatedSheetSpellcasting: optionalString(o.generatedSheetSpellcasting),
+      generatedCharacterSheet: optionalString(o.generatedCharacterSheet),
     },
   };
 }
@@ -115,6 +117,7 @@ function toCharacterFormData(data: CharacterActionInput): FormData {
     if (data.generatedSheetSpellcasting) {
       fd.set("generated_sheet_spellcasting", data.generatedSheetSpellcasting);
     }
+    if (data.generatedCharacterSheet) fd.set("character_sheet", data.generatedCharacterSheet);
   }
   return fd;
 }

@@ -15,6 +15,7 @@ import type { FeatureSummaryV2 } from "@/lib/sheet-generator/features-v2";
 import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { useSearchParams } from "next/navigation";
 import { saveGeneratedSheetToCharacter } from "@/app/campaigns/character-actions";
+import { createCharacterSheetV1 } from "@/lib/character-sheet";
 import {
   mapGeneratorFormToCharacterBuildDraft,
   parseGeneratedSheetBuildMeta,
@@ -149,7 +150,8 @@ function GeneratorPageContent() {
           `${sheet.characterName || "scheda"}-compilata.pdf`,
           { armorClass: sheet.armorClass, hitPoints: sheet.hpMax },
           spellcastingMetaFromGeneratedSheet(sheet),
-          buildMeta
+          buildMeta,
+          createCharacterSheetV1("generator", sheet)
         );
         if (saved.success) {
           const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
@@ -180,6 +182,7 @@ function GeneratorPageContent() {
               fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
               armorClass: sheet.armorClass,
               hitPoints: sheet.hpMax,
+              sheet,
               sheetData: sheetDataObj,
               quickManualSections,
               backgroundPdfSections,

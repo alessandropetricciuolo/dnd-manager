@@ -25,10 +25,11 @@ import { CharacterTextGenChat } from "@/components/characters/character-text-gen
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
 import { backgroundBySlug } from "@/lib/character-build-catalog";
-import type { QuickManualSection } from "@/lib/sheet-generator/quick-manual-builder";
 import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
 import type { GeneratedCharacterSheet } from "@/lib/sheet-generator/types";
 import type { CharacterFormBuildDraft } from "@/lib/character-sheet-build-meta";
+import { createCharacterSheetV1 } from "@/lib/character-sheet";
+import { parseStoredGeneratedSheet, type StoredGeneratedSheet } from "@/lib/character-sheets/generated-sheet-storage";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 
 const MAX_TOTAL_MB = 4;
@@ -50,27 +51,6 @@ function parseDraftStrings(raw: string | null): Record<string, string> {
   }
 }
 
-type StoredSpellcastingMeta = {
-  spellSlots: Array<{ level: number; count: number }>;
-  cantripsKnown: number;
-  spellcastingAbility: string | null;
-};
-
-type StoredGeneratedSheet = {
-  pdfBase64: string;
-  fileName: string;
-  armorClass: number;
-  hitPoints: number;
-  /** Presente se salvato dal generatore recente: consente di rigenerare il PDF con lo story in creazione PG. */
-  sheetData?: Record<string, unknown>;
-  quickManualSections?: QuickManualSection[];
-  backgroundPdfSections?: QuickManualSection[];
-  includeBackgroundStoryInPdf?: boolean;
-  characterStory?: string | null;
-  spellcasting?: StoredSpellcastingMeta | null;
-  build?: CharacterFormBuildDraft;
-};
-
 function pickBuildField(
   generated: StoredGeneratedSheet | null,
   draft: Record<string, string>,
@@ -82,79 +62,13 @@ function pickBuildField(
   return fromDraft || null;
 }
 
-function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSheet | null {
-  if (!raw) return null;
-  try {
-    const parsed = JSON.parse(raw) as {
-      pdfBase64?: string;
-      fileName?: string;
-      armorClass?: number;
-      hitPoints?: number;
-      sheetData?: unknown;
-      quickManualSections?: unknown;
-      backgroundPdfSections?: unknown;
-      includeBackgroundStoryInPdf?: boolean;
-      characterStory?: string | null;
-      spellcasting?: unknown;
-      build?: unknown;
-    };
-    if (
-      typeof parsed.pdfBase64 === "string" &&
-      typeof parsed.fileName === "string" &&
-      typeof parsed.armorClass === "number" &&
-      typeof parsed.hitPoints === "number" &&
-      parsed.pdfBase64.length > 0
-    ) {
-      const sheetData =
-        parsed.sheetData != null &&
-        typeof parsed.sheetData === "object" &&
-        !Array.isArray(parsed.sheetData)
-          ? (parsed.sheetData as Record<string, unknown>)
-          : undefined;
-      const quickManualSections = Array.isArray(parsed.quickManualSections)
-        ? (parsed.quickManualSections as QuickManualSection[])
-        : undefined;
-      const backgroundPdfSections = Array.isArray(parsed.backgroundPdfSections)
-        ? (parsed.backgroundPdfSections as QuickManualSection[])
-        : undefined;
-      let spellcasting: StoredSpellcastingMeta | null | undefined;
-      if (parsed.spellcasting != null && typeof parsed.spellcasting === "object") {
-        const sc = parsed.spellcasting as StoredSpellcastingMeta;
-        if (Array.isArray(sc.spellSlots)) {
-          spellcasting = sc;
-        }
-      }
-      const build =
-        parsed.build != null && typeof parsed.build === "object" && !Array.isArray(parsed.build)
-          ? (parsed.build as CharacterFormBuildDraft)
-          : undefined;
-      return {
-        pdfBase64: parsed.pdfBase64,
-        fileName: parsed.fileName,
-        armorClass: parsed.armorClass,
-        hitPoints: parsed.hitPoints,
-        sheetData,
-        quickManualSections,
-        backgroundPdfSections,
-        includeBackgroundStoryInPdf: parsed.includeBackgroundStoryInPdf === true,
-        characterStory:
-          typeof parsed.characterStory === "string" ? parsed.characterStory : undefined,
-        spellcasting,
-        build,
-      };
-    }
-  } catch {
-    // ignore
-  }
-  return null;
-}
-
 type CreateCharacterDialogProps = {
   campaignId: string;
   initialOpen?: boolean;
+  isLongCampaign?: boolean;
 };
 
-export function CreateCharacterDialog({ campaignId, initialOpen = false }: CreateCharacterDialogProps) {
+export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongCampaign = false }: CreateCharacterDialogProps) {
   const router = useRouter();
   const [open, setOpen] = useState(!!initialOpen);
   const [isLoading, setIsLoading] = useState(false);
@@ -324,6 +238,9 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
         formData.set("generated_sheet_file_name", gen.fileName);
         formData.set("generated_sheet_armor_class", String(gen.armorClass));
         formData.set("generated_sheet_hit_points", String(gen.hitPoints));
+        if (gen.sheet) {
+          formData.set("character_sheet", JSON.stringify(createCharacterSheetV1("generator", gen.sheet)));
+        }
         if (gen.spellcasting) {
           formData.set("generated_sheet_spellcasting", JSON.stringify(gen.spellcasting));
         }
@@ -576,7 +493,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
           </div>
 
           <DialogFooter>
-            <Button
+            {!isLongCampaign ? <Button
               type="button"
               variant="outline"
               onClick={openSheetGeneratorPreview}
@@ -584,7 +501,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false }: Creat
               className="border-barber-gold/40 text-barber-gold"
             >
               Anteprima scheda
-            </Button>
+            </Button> : null}
             <Button
               type="button"
               variant="outline"

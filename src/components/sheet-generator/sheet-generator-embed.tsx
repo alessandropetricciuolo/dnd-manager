@@ -20,6 +20,7 @@ import { spellcastingMetaFromGeneratedSheet } from "@/lib/sheet-generator/spell-
 import { buildCompiledSheetPdfRequestBody } from "@/lib/sheet-generator/sheet-pdf-payload";
 import { arrayBufferToBase64 } from "@/lib/utils/array-buffer-base64";
 import type { CharacterGeneratedSheetPayload } from "@/modules/command-center/ai-control-plane/draft-assistant.types";
+import { createCharacterSheetV1 } from "@/lib/character-sheet";
 
 export type SheetGeneratorEmbedInitial = {
   characterName?: string;
@@ -143,6 +144,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
           level: buildDraft.level ?? "1",
         },
         characterName: sheet.characterName,
+        characterSheet: createCharacterSheetV1("generator", sheet),
       };
       onSheetReady(payload);
       toast.success("Scheda collegata alla proposta.");

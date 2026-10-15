@@ -11,12 +11,17 @@ import { GmRemoteSfxPadPublisher } from "./gm-remote-sfx-pad-publisher";
 import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
 import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
 import type { InitiativeTrackerHandle, InitiativeTrackerState } from "./initiative-tracker";
+import type { InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 
 type Props = {
   campaignId: string;
   forge?: GmAudioForgeControls | null;
   initiativeHandleRef?: RefObject<InitiativeTrackerHandle | null>;
+  initiativeHandlers?: InitiativeRemoteCommandHandlers;
   initiativeState?: InitiativeTrackerState | null;
+  initiativeActive?: boolean;
+  initiativeSessionId?: string | null;
+  initiativeSessionTitle?: string | null;
   onSessionPublicIdChange?: (publicId: string | null) => void;
   /** Sessione telecomando dalla live torneo (stesso publicId per tutti i device). */
   forcedSessionPublicId?: string | null;
@@ -36,7 +41,11 @@ export function GmRemoteIntegration({
   campaignId,
   forge,
   initiativeHandleRef,
+  initiativeHandlers,
   initiativeState,
+  initiativeActive = true,
+  initiativeSessionId,
+  initiativeSessionTitle,
   onSessionPublicIdChange,
   forcedSessionPublicId,
   initiativeHandleRef2,
@@ -116,17 +125,22 @@ export function GmRemoteIntegration({
         sessionPublicId={sessionPublicId}
         forge={forge}
         initiativeHandleRef={initiativeHandleRef}
+        initiativeHandlers={initiativeHandlers}
         initiativeHandleRef2={initiativeHandleRef2}
         station1MatchId={station1MatchId}
         station2MatchId={station2MatchId}
         torneoHandlers={torneoHandlers}
         onRealtimeStatus={setRealtimeConnected}
       />
-      {initiativeState && !onSessionPublicIdChange ? (
+      {(initiativeHandleRef || initiativeState) && !onSessionPublicIdChange ? (
         <GmRemoteInitiativePublisher
           campaignId={campaignId}
           sessionPublicId={sessionPublicId}
-          state={initiativeState}
+          initiativeHandleRef={initiativeHandleRef}
+          state={initiativeState ?? undefined}
+          active={initiativeActive}
+          sessionId={initiativeSessionId}
+          sessionTitle={initiativeSessionTitle}
         />
       ) : null}
       {forge ? (

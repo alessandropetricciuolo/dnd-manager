@@ -31,7 +31,7 @@ export function GmTacticalScreen({
   className,
 }: GmTacticalScreenProps) {
   const long = useGmScreenLongStateOptional();
-  const initiativeRef = useRef<InitiativeTrackerHandle>(null);
+  const initiativeRef = useRef<InitiativeTrackerHandle>(null!);
   const [activeCombatant, setActiveCombatant] = useState<InitiativeEntry | null>(null);
 
   const handleEnrichMonster = useCallback((id: string, body: string) => {
