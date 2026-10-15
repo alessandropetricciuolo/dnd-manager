@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemo, useState } from "react";
+
 import { CreateCharacterDialog } from "./create-character-dialog";
 import { ImportCharactersFromCatalogDialog } from "./import-characters-from-catalog-dialog";
 import { CharacterCardGm } from "./character-card-gm";
@@ -36,16 +38,33 @@ export function CharactersSection({
   gmId,
   hideActions = false,
 }: CharactersSectionProps) {
+  const [characterSearch, setCharacterSearch] = useState("");
+  const [assignmentFilter, setAssignmentFilter] = useState<"all" | "assigned" | "free">("all");
   const isLongCampaign = campaignType === "long";
   const isTorneoCampaign = campaignType === "torneo";
 
-  const eligibleLabelById = new Map(eligiblePlayers.map((p) => [p.id, p.label]));
+  const eligibleLabelById = useMemo(() => new Map(eligiblePlayers.map((p) => [p.id, p.label])), [eligiblePlayers]);
+  const visibleCharacters = useMemo(() => {
+    const query = characterSearch.trim().toLocaleLowerCase("it");
+    return characters.filter((character) => {
+      const assigned = Boolean(character.assigned_to?.trim());
+      if (assignmentFilter === "assigned" && !assigned) return false;
+      if (assignmentFilter === "free" && assigned) return false;
+      if (!query) return true;
+      const playerLabel = character.assigned_to ? eligibleLabelById.get(character.assigned_to) ?? "" : "";
+      return [character.name, character.character_class, character.class_subclass, character.race_slug, character.background, playerLabel]
+        .filter(Boolean)
+        .join(" ")
+        .toLocaleLowerCase("it")
+        .includes(query);
+    });
+  }, [assignmentFilter, characterSearch, characters, eligibleLabelById]);
   const groupLabelForCharacter = (char: CampaignCharacterRow): string => {
     const assigned = char.assigned_to?.trim() ?? "";
     if (!assigned) return "Non assegnati";
     return playerPartyById[assigned]?.trim() || "Senza gruppo";
   };
-  const sortedCharacters = [...characters].sort((a, b) => {
+  const sortedCharacters = [...visibleCharacters].sort((a, b) => {
     if (!isGm || !isLongCampaign) return 0;
 
     const aAssigned = a.assigned_to?.trim() ?? "";
@@ -99,6 +118,28 @@ export function CharactersSection({
             </div>
           </div>
         ) : null}
+        {characters.length > 0 ? (
+          <div className="flex flex-col gap-2 border-b border-barber-gold/15 pb-4 sm:flex-row">
+            <input
+              type="search"
+              value={characterSearch}
+              onChange={(event) => setCharacterSearch(event.target.value)}
+              placeholder="Cerca un personaggio…"
+              aria-label="Cerca un personaggio"
+              className="h-10 min-w-0 flex-1 rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-sm text-barber-paper outline-none focus-visible:ring-2 focus-visible:ring-barber-gold/50"
+            />
+            <select
+              value={assignmentFilter}
+              onChange={(event) => setAssignmentFilter(event.target.value as typeof assignmentFilter)}
+              aria-label="Filtra per assegnazione"
+              className="h-10 rounded-md border border-barber-gold/30 bg-barber-dark px-3 text-sm text-barber-paper outline-none focus-visible:ring-2 focus-visible:ring-barber-gold/50"
+            >
+              <option value="all">Tutti i personaggi</option>
+              <option value="assigned">Assegnati</option>
+              <option value="free">Da assegnare</option>
+            </select>
+          </div>
+        ) : null}
         {characters.length === 0 ? (
           <div className="card-guild-stone relative rounded-xl p-8 text-center">
             <span className="corner-ornament-tl" />
@@ -110,6 +151,8 @@ export function CharactersSection({
               Nessun personaggio creato. Clicca &quot;Nuovo personaggio&quot; o importa dal catalogo per aggiungerne uno.
             </p>
           </div>
+        ) : sortedCharacters.length === 0 ? (
+          <p className="rounded-md border border-barber-gold/20 p-5 text-center text-sm text-barber-paper/65">Nessun personaggio corrisponde alla ricerca.</p>
         ) : isLongCampaign ? (
           <div className="space-y-6">
             {groupedCharacters.map((group) => (

@@ -293,7 +293,6 @@ export function CharacterCardGm({
   }, [character.image_url]);
   const [isLeveling, startTransition] = useTransition();
   const [isSavingXp, startXpTransition] = useTransition();
-  const [epochOpen, setEpochOpen] = useState(false);
   const [epochDraft, setEpochDraft] = useState(String(character.time_offset_hours ?? 0));
   const [epochSaving, setEpochSaving] = useState(false);
   const [calendarYearDraft, setCalendarYearDraft] = useState(String(character.calendar_current_date?.year ?? 1));
@@ -320,7 +319,6 @@ export function CharacterCardGm({
   const classLabel = character.character_class?.trim() || "—";
   const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
   const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
-  const epochHours = character.time_offset_hours ?? 0;
   const calendarLabel = character.calendar_date_label ?? "Data non impostata";
 
   const backgroundPreview = character.background?.trim() ?? "";
@@ -391,7 +389,6 @@ export function CharacterCardGm({
       const result = await forceCharacterTimeSync(character.id, n);
       if (result.success) {
         toast.success(result.message);
-        setEpochOpen(false);
         router.refresh();
       } else {
         toast.error(result.error);
@@ -495,62 +492,74 @@ export function CharacterCardGm({
   );
 
   const cardActionButtons = (iconSize: "sm" | "md") => {
-    const btn = iconSize === "sm" ? "h-7 w-7" : "h-8 w-8";
     const icon = iconSize === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
     return (
-      <div className="absolute right-1.5 top-1.5 z-[1] flex items-center gap-0">
-        {character.sheet_url && (
+      <div className="grid grid-cols-3 gap-1 border-b border-barber-gold/20 p-2">
+        {character.sheet_url ? (
           <Button
             variant="ghost"
-            size="icon"
-            className={`${btn} text-barber-gold hover:bg-barber-gold/15`}
+            size="sm"
+            className="h-11 w-full gap-1 px-1 text-[10px] text-barber-gold hover:bg-barber-gold/15"
             asChild
             title="Scarica scheda PDF"
           >
             <a href={character.sheet_url} target="_blank" rel="noopener noreferrer">
               <Download className={icon} />
+              <span>PDF</span>
             </a>
           </Button>
+        ) : (
+          <Button type="button" variant="ghost" size="sm" disabled className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper/40" title="PDF non disponibile">
+            <Download className={icon} /><span>PDF</span>
+          </Button>
         )}
-        {character.image_url && (
+        {character.image_url ? (
           <>
-            <MapPopoutButton
-              imageUrl={character.image_url}
-              title={character.name}
-              compact
-              variant="ghost"
-              size="icon"
-              className={`${btn} text-barber-gold`}
-            />
-            <DownloadImageButton
-              driveUrl={character.image_url}
-              filename={character.name}
-              compact
-              variant="ghost"
-              size="icon"
-              className={`${btn} text-barber-gold`}
-              title="Scarica immagine personaggio"
-            />
+            <div className="flex min-w-0 flex-col items-center justify-start gap-0.5">
+              <MapPopoutButton imageUrl={character.image_url} title={character.name} compact variant="ghost" size="sm" className="h-11 w-full text-[10px] text-barber-gold" />
+              <span className="text-center text-[10px] leading-tight text-barber-paper/75">Apri immagine</span>
+            </div>
+            <div className="flex min-w-0 flex-col items-center justify-start gap-0.5">
+              <DownloadImageButton driveUrl={character.image_url} filename={character.name} compact variant="ghost" size="sm" className="h-11 w-full text-[10px] text-barber-gold" title="Scarica immagine personaggio" />
+              <span className="text-center text-[10px] leading-tight text-barber-paper/75">Scarica immagine</span>
+            </div>
+          </>
+        ) : (
+          <>
+            <Button type="button" variant="ghost" size="sm" disabled className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper/40" title="Ritratto non disponibile"><Eye className={icon} /><span>Apri immagine</span></Button>
+            <Button type="button" variant="ghost" size="sm" disabled className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper/40" title="Ritratto non disponibile"><Download className={icon} /><span>Immagine</span></Button>
           </>
         )}
         <Button
           variant="ghost"
-          size="icon"
-          className={`${btn} text-barber-paper/80 hover:bg-barber-gold/10`}
+          size="sm"
+          className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper"
+          onClick={() => setDetailsOpen(true)}
+          title="Dettagli personaggio"
+        >
+          <Eye className={icon} />
+          <span>Dettagli</span>
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper/80 hover:bg-barber-gold/10"
           disabled={deleting}
           onClick={onDelete}
           title="Elimina personaggio"
         >
           <Trash2 className={`${icon} text-barber-red/90`} />
+          <span>Elimina</span>
         </Button>
         <Button
           variant="ghost"
-          size="icon"
-          className={`${btn} text-barber-paper/80 hover:bg-barber-gold/10`}
+          size="sm"
+          className="h-11 w-full gap-1 px-1 text-[10px] text-barber-paper/80 hover:bg-barber-gold/10"
           onClick={() => setEditOpen(true)}
           title="Modifica personaggio"
         >
           <Pencil className={icon} />
+          <span>Modifica</span>
         </Button>
       </div>
     );
@@ -559,49 +568,40 @@ export function CharacterCardGm({
   if (isTorneoCampaign) {
     return (
       <>
-        <div className="card-guild-stone relative overflow-hidden rounded-xl border border-[#3b322b] p-2.5 pt-8 shadow-lg min-w-0">
+        <div className="card-guild-stone relative overflow-hidden rounded-xl border border-[#3b322b] shadow-lg min-w-0">
           <span className="corner-ornament-tl" />
           <span className="corner-ornament-tr" />
           <span className="corner-ornament-bl" />
           <span className="corner-ornament-br" />
+          <div className="relative aspect-[2/1] w-full overflow-hidden bg-barber-dark">
+            <Image
+              src={imageSrc}
+              alt={character.name}
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, 420px"
+              unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+              onError={() => {
+                if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                else setImgError(true);
+              }}
+            />
+            <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/90 to-transparent p-3 pt-12">
+              <h3 className="min-w-0 break-words font-cinzel text-lg font-bold text-gold-relief">{character.name}</h3>
+              <span className="shrink-0 rounded border border-barber-gold/45 bg-black/75 px-2 py-1 font-cinzel text-sm text-barber-gold">Lv {storedLevel}</span>
+            </div>
+          </div>
           {cardActionButtons("sm")}
-          <div className="space-y-2">
-            <div className="flex gap-2">
-              <div className="relative h-16 w-16 shrink-0 overflow-hidden rounded-lg bg-barber-dark border border-barber-gold/40 shadow-sm">
-                <Image
-                  src={imageSrc}
-                  alt={character.name}
-                  fill
-                  className="object-cover"
-                  sizes="64px"
-                  unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
-                  onError={() => {
-                    if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
-                    else setImgError(true);
-                  }}
-                />
-              </div>
-              <div className="min-w-0 flex-1 pr-14">
-                <h3 className="font-cinzel truncate text-sm font-bold text-barber-gold">{character.name}</h3>
+          <div className="space-y-2 p-3.5">
+            <div className="min-w-0">
                 {raceClassSubtitle}
                 {statsDl(true)}
-              </div>
             </div>
             {backgroundPreview ? (
               <p className="line-clamp-2 text-xs text-barber-paper/70">{character.background}</p>
             ) : (
               <p className="line-clamp-2 text-xs italic text-barber-paper/40">Nessun background.</p>
             )}
-            <Button
-              type="button"
-              variant="secondary"
-              size="sm"
-              className="h-8 w-full border-barber-gold/30 bg-barber-gold/15 text-xs text-barber-paper hover:bg-barber-gold/25"
-              onClick={() => setDetailsOpen(true)}
-            >
-              <Eye className="mr-1.5 h-3.5 w-3.5" />
-              Dettagli
-            </Button>
           </div>
         </div>
 
@@ -697,434 +697,30 @@ export function CharacterCardGm({
         <span className="corner-ornament-tr" />
         <span className="corner-ornament-bl" />
         <span className="corner-ornament-br" />
-        {/* Azioni compatte in alto a destra */}
-        <div className="absolute right-2 top-2 z-[1] flex items-center gap-0.5">
-          {character.sheet_url && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-barber-gold hover:bg-barber-gold/15"
-              asChild
-              title="Scarica scheda PDF"
-            >
-              <a href={character.sheet_url} target="_blank" rel="noopener noreferrer">
-                <Download className="h-4 w-4" />
-              </a>
-            </Button>
-          )}
-          {character.image_url && (
-            <>
-              <MapPopoutButton
-                imageUrl={character.image_url}
-                title={character.name}
-                compact
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-barber-gold"
-              />
-              <DownloadImageButton
-                driveUrl={character.image_url}
-                filename={character.name}
-                compact
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-barber-gold"
-                title="Scarica immagine personaggio"
-              />
-            </>
-          )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/10"
-            disabled={deleting}
-            onClick={onDelete}
-            title="Elimina personaggio"
-          >
-            <Trash2 className="h-4 w-4 text-barber-red/90" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/10"
-            onClick={() => setEditOpen(true)}
-            title="Modifica personaggio"
-          >
-            <Pencil className="h-4 w-4" />
-          </Button>
-          {!skipTimeXpUi && (
-          <Popover
-            open={epochOpen}
-            onOpenChange={(o) => {
-              setEpochOpen(o);
-              if (o) {
-                setEpochDraft(String(character.time_offset_hours ?? 0));
-                setCalendarYearDraft(String(character.calendar_current_date?.year ?? 1));
-                setCalendarMonthDraft(String(character.calendar_current_date?.month ?? 1));
-                setCalendarDayDraft(String(character.calendar_current_date?.day ?? 1));
-              }
+        <div className="relative aspect-[2/1] w-full overflow-hidden bg-barber-dark">
+          <Image
+            src={imageSrc}
+            alt={character.name}
+            fill
+            className="object-cover"
+            sizes="(max-width: 768px) 100vw, 420px"
+            unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+            onError={() => {
+              if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+              else setImgError(true);
             }}
-          >
-            <PopoverTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-amber-400/90 hover:bg-amber-500/15"
-                title="Epoch: ore vissute (sincronizza)"
-                type="button"
-              >
-                <Clock className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent
-              className="w-72 border-barber-gold/30 bg-barber-dark text-barber-paper"
-              align="end"
-            >
-              <p className="mb-2 text-xs font-medium text-barber-gold">Timeline personaggio</p>
-              <p className="mb-3 text-sm text-barber-paper/80">
-                Ore attuali: <span className="font-semibold tabular-nums text-barber-paper">{epochHours}</span>
-              </p>
-              <p className="mb-3 text-xs text-barber-paper/70">
-                Data fantasy attuale: <span className="font-semibold text-amber-200">{calendarLabel}</span>
-              </p>
-              <label className="mb-1 block text-xs text-barber-paper/70">Nuovo valore (sovrascrive)</label>
-              <Input
-                type="number"
-                min={0}
-                value={epochDraft}
-                onChange={(e) => setEpochDraft(e.target.value)}
-                className="mb-3 border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
-              />
-              <Button
-                type="button"
-                size="sm"
-                className="w-full bg-amber-600 text-white hover:bg-amber-500"
-                disabled={epochSaving}
-                onClick={() => void onEpochSync()}
-              >
-                {epochSaving ? "Salvataggio…" : "Sincronizza tempo"}
-              </Button>
-              <div className="mt-3 grid grid-cols-3 gap-2">
-                <Input
-                  type="number"
-                  min={1}
-                  value={calendarDayDraft}
-                  onChange={(e) => setCalendarDayDraft(e.target.value)}
-                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
-                  placeholder="Giorno"
-                />
-                <Input
-                  type="number"
-                  min={1}
-                  value={calendarMonthDraft}
-                  onChange={(e) => setCalendarMonthDraft(e.target.value)}
-                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
-                  placeholder="Mese"
-                />
-                <Input
-                  type="number"
-                  min={1}
-                  value={calendarYearDraft}
-                  onChange={(e) => setCalendarYearDraft(e.target.value)}
-                  className="border-barber-gold/30 bg-barber-dark/80 text-barber-paper"
-                  placeholder="Anno"
-                />
-              </div>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                className="mt-2 w-full border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
-                disabled={epochSaving}
-                onClick={() => void onCalendarOverride()}
-              >
-                Imposta override data
-              </Button>
-            </PopoverContent>
-          </Popover>
-          )}
+          />
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-3 bg-gradient-to-t from-black/90 to-transparent p-3 pt-12">
+            <h3 className="min-w-0 break-words font-cinzel text-lg font-bold text-gold-relief">{character.name}</h3>
+            <span className="shrink-0 rounded border border-barber-gold/45 bg-black/75 px-2 py-1 font-cinzel text-sm text-barber-gold">Lv {storedLevel}</span>
+          </div>
         </div>
 
-        <div className="space-y-3 p-3.5 pt-10">
-          <div className="flex gap-3">
-            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg bg-barber-dark border border-barber-gold/40 shadow-md">
-              <Image
-                src={imageSrc}
-                alt={character.name}
-                fill
-                className="object-cover"
-                sizes="80px"
-                unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
-                onError={() => {
-                  if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
-                  else setImgError(true);
-                }}
-              />
-            </div>
-            <div className="min-w-0 flex-1 pr-10">
-              <h3 className="font-cinzel truncate font-bold text-gold-relief text-base">{character.name}</h3>
-              <div className="mt-0.5 min-h-4 text-[10px] leading-tight text-barber-paper/75 sm:text-[11px]">
-                {raceLabel ? (
-                  <>
-                    <RulesTip
-                      label={subraceLabel ?? raceLabel}
-                      body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : raceTraitsBody}
-                    />
-                    {" · "}
-                  </>
-                ) : null}
-                <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
-                {character.class_subclass?.trim() ? (
-                  <>
-                    {" · "}
-                    <RulesTip
-                      label={character.class_subclass.trim()}
-                      body={snap?.classSubclassMd ?? ""}
-                    />
-                  </>
-                ) : null}
-                {snap?.spellcastingMd || snap?.spellsListMd ? (
-                  <>
-                    {" · "}
-                    <SpellsTip
-                      listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
-                      details={snap?.spellsDetailsMd}
-                    />
-                  </>
-                ) : null}
-                {bgRulesLabel ? (
-                  <>
-                    {" · "}
-                    <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
-                  </>
-                ) : null}
-              </div>
-              <dl className="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-[11px] text-barber-paper/75 sm:text-xs">
-                <div className="flex justify-between gap-1">
-                  <dt className="text-muted-foreground">Classe</dt>
-                  <dd className="truncate font-medium tabular-nums text-barber-paper">{classLabel}</dd>
-                </div>
-                <div className="flex justify-between gap-1">
-                  <dt className="text-muted-foreground">PF</dt>
-                  <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
-                </div>
-                <div className="flex justify-between gap-1">
-                  <dt className="text-muted-foreground">CA</dt>
-                  <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
-                </div>
-                <div className="flex justify-between gap-1">
-                  <dt className="text-muted-foreground">Lv</dt>
-                  <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
-                </div>
-                {!skipTimeXpUi && (
-                <>
-                <div className="col-span-2 flex justify-between gap-1 border-t border-barber-gold/10 pt-0.5">
-                  <dt className="text-muted-foreground">Ore (epoch)</dt>
-                  <dd className="font-medium tabular-nums text-amber-200/90">{epochHours}</dd>
-                </div>
-                <div className="col-span-2 flex justify-between gap-1">
-                  <dt className="text-muted-foreground">Data fantasy</dt>
-                  <dd className="font-medium text-amber-200/90">{calendarLabel}</dd>
-                </div>
-                </>
-                )}
-                {isLongCampaign && (
-                  <div className="col-span-2 flex flex-col gap-0.5 border-t border-barber-gold/10 pt-1">
-                    <dt className="text-[10px] text-muted-foreground">Monete</dt>
-                    <dd className="text-[11px] font-medium tabular-nums text-barber-gold/95">
-                      {character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram
-                    </dd>
-                  </div>
-                )}
-              </dl>
-              {!skipTimeXpUi && (
-              <p className="mt-1 text-[10px] text-barber-paper/55 tabular-nums">{xpLabel}</p>
-              )}
-            </div>
-          </div>
+        {cardActionButtons("md")}
 
-          {backgroundPreview ? (
-            <p className="line-clamp-2 text-sm text-muted-foreground">{character.background}</p>
-          ) : (
-            <p className="line-clamp-2 text-sm italic text-muted-foreground">Nessun background.</p>
-          )}
-
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="w-full border-barber-gold/30 bg-barber-gold/15 text-barber-paper hover:bg-barber-gold/25"
-            onClick={() => setDetailsOpen(true)}
-          >
-            <Eye className="mr-2 h-4 w-4" />
-            Dettagli
-          </Button>
-
-          {isLongCampaign && assignedTo && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              className="w-full border-emerald-600/40 text-emerald-200 hover:bg-emerald-500/10"
-              onClick={() => setContentAccessOpen(true)}
-            >
-              <BookOpen className="mr-2 h-4 w-4" />
-              Wiki e mappe sbloccati
-            </Button>
-          )}
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-medium uppercase tracking-wide text-barber-paper/60">
-              Assegna a
-            </label>
-            <Select
-              value={assignedTo ?? "__none__"}
-              onValueChange={onAssign}
-              disabled={assigning}
-            >
-              <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
-                <SelectValue placeholder="Seleziona giocatore" />
-              </SelectTrigger>
-              <SelectContent className="border-barber-gold/30 bg-barber-dark">
-                <SelectItem value="__none__" className="text-barber-paper focus:bg-barber-gold/20">
-                  Nessuno
-                </SelectItem>
-                {eligiblePlayers.map((p) => (
-                  <SelectItem
-                    key={p.id}
-                    value={p.id}
-                    className="text-barber-paper focus:bg-barber-gold/20"
-                  >
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <p className="truncate text-[10px] text-barber-paper/50">{currentLabel}</p>
-          </div>
-
-          {!skipTimeXpUi && (
-          <div className="space-y-1.5 rounded-md border border-barber-gold/35 bg-barber-dark/70 p-2">
-            <div className="flex items-center justify-between text-[10px] font-medium text-barber-paper/80">
-              <span>PE</span>
-              <span>
-                Lv {storedLevel}
-                {hasLevelUp && (
-                  <span className="ml-1.5 rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-300">
-                    Level up
-                  </span>
-                )}
-              </span>
-            </div>
-            <Progress value={progressPercent} className="h-1.5" />
-            <div className="flex items-center justify-between text-[10px] text-barber-paper/65">
-              <span className="tabular-nums">{xpLabel}</span>
-              <span className="tabular-nums">{Math.round(progressPercent)}%</span>
-            </div>
-            {character.xp_sync_status === "mismatch" ? (
-              <p className="text-[10px] text-amber-300/90">
-                Scheda canonica: {xp} PE. Registro membro: {character.member_xp ?? 0} PE. Usa “Salva PE” per riallinearli.
-              </p>
-            ) : null}
-            <div className="flex items-center gap-1.5 pt-1">
-              <Input
-                type="number"
-                min={0}
-                value={xpDraft}
-                onChange={(event) => setXpDraft(event.target.value)}
-                className="h-7 border-barber-gold/30 bg-barber-dark text-[11px] tabular-nums text-barber-paper"
-                disabled={isSavingXp}
-              />
-              <Button
-                type="button"
-                size="sm"
-                variant="secondary"
-                className="h-7 border-barber-gold/40 bg-barber-gold/15 px-2 text-[10px] text-barber-paper hover:bg-barber-gold/25"
-                disabled={isSavingXp || !assignedTo}
-                onClick={() =>
-                  startXpTransition(async () => {
-                    const parsed = Number.parseInt(xpDraft.trim(), 10);
-                    if (!Number.isFinite(parsed) || parsed < 0) {
-                      toast.error("Inserisci PE validi (numero intero >= 0).");
-                      return;
-                    }
-                    const result = await setCharacterExperience(character.id, parsed);
-                    if (result.success) {
-                      toast.success(result.message);
-                      router.refresh();
-                    } else {
-                      toast.error(result.error);
-                    }
-                  })
-                }
-              >
-                {isSavingXp ? "Salvataggio..." : "Salva PE"}
-              </Button>
-            </div>
-            {!assignedTo ? (
-              <p className="text-[10px] text-barber-paper/55">Assegna prima il PG a un giocatore per modificare i PE.</p>
-            ) : null}
-            {hasLevelUp && (
-              <Button
-                type="button"
-                size="sm"
-                className="h-7 w-full bg-emerald-600 text-[11px] text-barber-dark hover:bg-emerald-500"
-                disabled={isLeveling}
-                onClick={() =>
-                  startTransition(async () => {
-                    const result = await levelUpCharacter(character.id);
-                    if (result.success) {
-                      toast.success("Level up confermato.");
-                      router.refresh();
-                    } else {
-                      toast.error(result.error);
-                    }
-                  })
-                }
-              >
-                {isLeveling ? "Aggiornamento..." : "Conferma level up"}
-              </Button>
-            )}
-          </div>
-          )}
-        </div>
-      </div>
-
-      {detailsOpen && (
-        <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
-          <SheetContent
-            side="right"
-            className="flex h-full max-h-[100dvh] w-full flex-col overflow-y-auto border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:w-[min(100vw,1100px)] sm:max-w-none"
-          >
-          <SheetHeader className="shrink-0 space-y-1 text-left border-b border-barber-gold/20 pb-3">
-            <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">
-              Dossier Personaggio — {character.name}
-            </SheetTitle>
-            <SheetDescription className="text-barber-paper/65">
-              Scheda, avanzamento e risorse del personaggio.
-            </SheetDescription>
-            {isLongCampaign ? <Button type="button" size="sm" className="mt-2 w-fit bg-barber-red text-barber-paper" onClick={() => setSheetEditorOpen(true)}>Compila / modifica scheda Long</Button> : null}
-          </SheetHeader>
-
-          <div className="mt-4 shrink-0 space-y-4 border-b border-barber-gold/25 pb-4">
-            <div className="relative mx-auto aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-lg bg-barber-dark ring-1 ring-barber-gold/30">
-              <Image
-                src={sheetImageSrc}
-                alt={character.name}
-                fill
-                className="object-cover"
-                sizes="220px"
-                unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
-                onError={() => {
-                  if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
-                  else setSheetImgError(true);
-                }}
-              />
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
-              <p className="text-sm text-muted-foreground">Assegnato: {currentLabel}</p>
-              <div className="mt-1 text-xs text-barber-paper/80">
+        <div className="space-y-3 p-3.5">
+          <div className="min-w-0">
+              <div className="text-xs leading-relaxed text-barber-paper/80">
                 {raceLabel ? (
                   <>
                     <RulesTip label={subraceLabel ?? raceLabel} body={subraceLabel ? (snap?.subraceTraitsMd ?? "") : raceTraitsBody} />
@@ -1132,79 +728,135 @@ export function CharacterCardGm({
                   </>
                 ) : null}
                 <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
-                {character.class_subclass?.trim() ? (
-                  <>
-                    {" · "}
-                    <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} />
-                  </>
-                ) : null}
-                {snap?.spellcastingMd || snap?.spellsListMd ? (
-                  <>
-                    {" · "}
-                    <SpellsTip
-                      listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")}
-                      details={snap?.spellsDetailsMd}
-                    />
-                  </>
-                ) : null}
-                {bgRulesLabel ? (
-                  <>
-                    {" · "}
-                    <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} />
-                  </>
-                ) : null}
+                {character.class_subclass?.trim() ? <> · <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} /></> : null}
+                {snap?.spellcastingMd || snap?.spellsListMd ? <> · <SpellsTip listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")} details={snap?.spellsDetailsMd} /></> : null}
+                {bgRulesLabel ? <> · <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} /></> : null}
               </div>
-            </div>
-            <dl className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3 lg:grid-cols-6">
-              <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Classe</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{classLabel}</dd>
-              </div>
-              <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">PF</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd>
-              </div>
-              <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">CA</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd>
-              </div>
-              <div className="rounded-md border border-barber-gold/25 bg-barber-dark/80 px-2 py-1.5">
-                <dt className="text-[10px] uppercase tracking-wide text-muted-foreground">Livello</dt>
-                <dd className="font-medium tabular-nums text-barber-paper">{storedLevel}</dd>
-              </div>
-            </dl>
-            {!skipTimeXpUi && (
-            <div className="rounded-md border border-barber-gold/30 bg-barber-dark/70 p-2 text-xs text-barber-paper/80">
-              <div className="flex justify-between gap-2">
-                <span className="text-muted-foreground">Punti esperienza</span>
-                <span className="tabular-nums font-medium">{xpLabel}</span>
-              </div>
-              <Progress value={progressPercent} className="mt-2 h-1.5" />
-              <p className="mt-1 text-right text-[10px] text-muted-foreground">
-                Progresso livello: {Math.round(progressPercent)}%
-              </p>
-            </div>
-            )}
+              <dl className="mt-2 grid grid-cols-2 gap-x-3 gap-y-1 text-xs text-barber-paper/75">
+                <div className="flex justify-between gap-2"><dt>PF</dt><dd className="font-medium tabular-nums text-barber-paper">{hpLabel}</dd></div>
+                <div className="flex justify-between gap-2"><dt>CA</dt><dd className="font-medium tabular-nums text-barber-paper">{acLabel}</dd></div>
+                {!skipTimeXpUi ? <div className="col-span-2 flex justify-between gap-2 border-t border-barber-gold/10 pt-1"><dt>Esperienza</dt><dd className="font-medium tabular-nums text-barber-paper">{xpLabel}</dd></div> : null}
+                {isLongCampaign ? <div className="col-span-2 border-t border-barber-gold/10 pt-1"><dt className="text-barber-paper/55">Monete</dt><dd className="font-medium tabular-nums text-barber-gold/95">{character.coins_gp ?? 0} oro · {character.coins_sp ?? 0} arg · {character.coins_cp ?? 0} ram</dd></div> : null}
+              </dl>
           </div>
 
-          <div className="mt-4 pb-3">
-            <p className="mb-2 shrink-0 text-xs font-medium uppercase tracking-wide text-barber-paper/60">
-              Background / Lore
-            </p>
-            <div className="rounded-md border border-barber-gold/25 p-3">
-              {backgroundForSheet ? (
-                <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">
-                  {backgroundForSheet}
-                </div>
-              ) : (
-                <p className="text-sm italic text-muted-foreground">Nessun background inserito.</p>
-              )}
-            </div>
+          {backgroundPreview ? (
+            <p className="line-clamp-3 whitespace-pre-wrap text-sm text-barber-paper/70">{character.background}</p>
+          ) : (
+            <p className="text-sm italic text-barber-paper/45">Nessun background.</p>
+          )}
+
+          {isLongCampaign && assignedTo && (
+            <Button type="button" variant="outline" size="sm" className="w-full border-emerald-600/40 text-emerald-200 hover:bg-emerald-500/10" onClick={() => setContentAccessOpen(true)}>
+              <BookOpen className="mr-2 h-4 w-4" />Wiki e mappe sbloccati
+            </Button>
+          )}
+
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-barber-paper/75">Giocatore assegnato</label>
+            <Select value={assignedTo ?? "__none__"} onValueChange={onAssign} disabled={assigning}>
+              <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
+                <SelectValue placeholder="Seleziona giocatore" />
+              </SelectTrigger>
+              <SelectContent className="border-barber-gold/30 bg-barber-dark">
+                <SelectItem value="__none__" className="text-barber-paper focus:bg-barber-gold/20">Nessuno</SelectItem>
+                {eligiblePlayers.map((p) => <SelectItem key={p.id} value={p.id} className="text-barber-paper focus:bg-barber-gold/20">{p.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <p className="truncate text-xs text-barber-paper/55">{currentLabel}</p>
           </div>
-          <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
-          </SheetContent>
-        </Sheet>
-      )}
+
+          {!skipTimeXpUi && (
+          <div className="space-y-2 border-t border-barber-gold/20 pt-3">
+            <div className="flex items-center justify-between gap-2 text-xs text-barber-paper/80"><span>PE · Lv {storedLevel}</span>{hasLevelUp ? <span className="text-emerald-300">Level up</span> : null}</div>
+            <Progress value={progressPercent} className="h-1.5" />
+            <div className="flex justify-between text-xs text-barber-paper/60"><span className="tabular-nums">{xpLabel}</span><span>{Math.round(progressPercent)}%</span></div>
+            {character.xp_sync_status === "mismatch" ? <p className="text-xs text-amber-300/90">Scheda: {xp} PE · registro membro: {character.member_xp ?? 0} PE. Salva per riallinearli.</p> : null}
+            <div className="flex items-center gap-2">
+              <Input type="number" min={0} value={xpDraft} onChange={(event) => setXpDraft(event.target.value)} aria-label={`Esperienza di ${character.name}`} className="h-9 min-w-0 border-barber-gold/30 bg-barber-dark text-sm tabular-nums text-barber-paper" disabled={isSavingXp} />
+              <Button type="button" size="sm" variant="secondary" className="h-9 border-barber-gold/40 bg-barber-gold/15 text-xs text-barber-paper hover:bg-barber-gold/25" disabled={isSavingXp || !assignedTo} onClick={() => startXpTransition(async () => {
+                const parsed = Number.parseInt(xpDraft.trim(), 10);
+                if (!Number.isFinite(parsed) || parsed < 0) { toast.error("Inserisci PE validi (numero intero >= 0)."); return; }
+                const result = await setCharacterExperience(character.id, parsed);
+                if (result.success) { toast.success(result.message); router.refresh(); } else toast.error(result.error);
+              })}>{isSavingXp ? "Salvataggio…" : "Salva PE"}</Button>
+            </div>
+            {!assignedTo ? <p className="text-xs text-barber-paper/55">Assegna prima il personaggio per modificare i PE.</p> : null}
+            {hasLevelUp ? <Button type="button" size="sm" className="h-8 w-full bg-emerald-600 text-xs text-barber-dark hover:bg-emerald-500" disabled={isLeveling} onClick={() => startTransition(async () => { const result = await levelUpCharacter(character.id); if (result.success) { toast.success("Level up confermato."); router.refresh(); } else toast.error(result.error); })}>{isLeveling ? "Aggiornamento…" : "Conferma level up"}</Button> : null}
+          </div>
+          )}
+
+          {!skipTimeXpUi && (
+            <div className="space-y-2 border-t border-barber-gold/20 pt-3">
+              <div className="flex items-center gap-2 text-xs font-medium text-barber-gold"><Clock className="h-4 w-4" />Tempo vissuto · {calendarLabel}</div>
+              <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+                <Input type="number" min={0} value={epochDraft} onChange={(event) => setEpochDraft(event.target.value)} aria-label={`Ore vissute di ${character.name}`} className="h-9 border-barber-gold/30 bg-barber-dark text-sm text-barber-paper" />
+                <Button type="button" size="sm" variant="outline" className="h-9 border-barber-gold/40 text-xs text-barber-gold" disabled={epochSaving} onClick={() => void onEpochSync()}>{epochSaving ? "Salvo…" : "Sincronizza"}</Button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Input type="number" min={1} value={calendarDayDraft} onChange={(event) => setCalendarDayDraft(event.target.value)} aria-label="Giorno calendario fantasy" className="h-9 border-barber-gold/30 bg-barber-dark text-xs text-barber-paper" />
+                <Input type="number" min={1} value={calendarMonthDraft} onChange={(event) => setCalendarMonthDraft(event.target.value)} aria-label="Mese calendario fantasy" className="h-9 border-barber-gold/30 bg-barber-dark text-xs text-barber-paper" />
+                <Input type="number" min={1} value={calendarYearDraft} onChange={(event) => setCalendarYearDraft(event.target.value)} aria-label="Anno calendario fantasy" className="h-9 border-barber-gold/30 bg-barber-dark text-xs text-barber-paper" />
+              </div>
+              <Button type="button" size="sm" variant="ghost" className="h-8 w-full text-xs text-barber-paper/70" disabled={epochSaving} onClick={() => void onCalendarOverride()}>Imposta override data fantasy</Button>
+            </div>
+          )}
+
+          {detailsOpen && (
+            <Sheet open={detailsOpen} onOpenChange={setDetailsOpen}>
+              <SheetContent side="right" className="flex h-full max-h-[100dvh] w-full flex-col overflow-y-auto border-barber-gold/40 bg-[#120f0d] text-barber-paper sm:w-[min(100vw,1100px)] sm:max-w-none">
+                <SheetHeader className="shrink-0 space-y-1 border-b border-barber-gold/20 pb-3 text-left">
+                  <SheetTitle className="font-cinzel text-lg font-bold text-gold-relief">Dossier Personaggio — {character.name}</SheetTitle>
+                  <SheetDescription className="text-barber-paper/65">Scheda completa, contenuti e risorse del personaggio.</SheetDescription>
+                  {isLongCampaign ? <Button type="button" size="sm" className="mt-2 w-fit bg-barber-red text-barber-paper" onClick={() => setSheetEditorOpen(true)}>Compila / modifica scheda Long</Button> : null}
+                </SheetHeader>
+                <div className="mt-4 space-y-4 border-b border-barber-gold/25 pb-4">
+                  <div className="relative mx-auto aspect-[4/5] w-full max-w-[220px] overflow-hidden rounded-lg bg-barber-dark ring-1 ring-barber-gold/30">
+                    <Image
+                      src={sheetImageSrc}
+                      alt={character.name}
+                      fill
+                      className="object-cover"
+                      sizes="220px"
+                      unoptimized={forceImagesUnoptimized || (!!character.image_url && !isImageSourceOptimizable(character.image_url))}
+                      onError={() => {
+                        if (!forceImagesUnoptimized && character.image_url && isImageSourceOptimizable(character.image_url)) setForceImagesUnoptimized(true);
+                        else setSheetImgError(true);
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-barber-paper">{character.name}</h2>
+                    <div className="mt-1 text-xs text-barber-paper/80">{raceClassSubtitle}</div>
+                  </div>
+                </div>
+                <div className="mt-4 pb-3">
+                  <p className="mb-2 text-xs font-medium uppercase tracking-wide text-barber-paper/60">Background / Lore</p>
+                  <div className="rounded-md border border-barber-gold/25 p-3">
+                    {backgroundForSheet ? (
+                      <div className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">{backgroundForSheet}</div>
+                    ) : (
+                      <p className="text-sm italic text-muted-foreground">Nessun background inserito.</p>
+                    )}
+                  </div>
+                </div>
+                <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
+              </SheetContent>
+            </Sheet>
+          )}
+
+          {isLongCampaign && assignedTo && contentAccessOpen && (
+            <CharacterContentAccessSheet
+              open={contentAccessOpen}
+              onOpenChange={setContentAccessOpen}
+              campaignId={character.campaign_id}
+              playerId={assignedTo}
+              playerName={eligiblePlayers.find((p) => p.id === assignedTo)?.label ?? "Giocatore"}
+              characterName={character.name}
+            />
+          )}
+        </div>
+      </div>
 
       {editOpen && (
         <EditCharacterDialog
@@ -1215,17 +867,6 @@ export function CharacterCardGm({
         />
       )}
       {isLongCampaign && <LongCharacterSheetEditor character={character} open={sheetEditorOpen} onOpenChange={setSheetEditorOpen} />}
-
-      {isLongCampaign && assignedTo && contentAccessOpen && (
-        <CharacterContentAccessSheet
-          open={contentAccessOpen}
-          onOpenChange={setContentAccessOpen}
-          campaignId={character.campaign_id}
-          playerId={assignedTo}
-          playerName={eligiblePlayers.find((p) => p.id === assignedTo)?.label ?? "Giocatore"}
-          characterName={character.name}
-        />
-      )}
     </>
   );
 }
