@@ -22,8 +22,13 @@ function getMimeType(filePath: string): string {
   return MIME_BY_EXT[ext] ?? "image/jpeg";
 }
 
-/** Placeholder SVG 1x1 trasparente per fallback (evita icona rotta in <img>). */
-const PLACEHOLDER_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" viewBox="0 0 1 1"><rect width="1" height="1" fill="#1c1917"/></svg>`;
+function imageError(reason: string) {
+  // A successful blank image prevents onError fallbacks and can poison image caches.
+  return NextResponse.json({ error: "Immagine temporaneamente non disponibile" }, {
+    status: 502,
+    headers: { "Cache-Control": "no-store", "X-Tg-Image-Error": reason },
+  });
+}
 
 export async function GET(
   _request: NextRequest,
@@ -53,7 +58,8 @@ export async function GET(
   try {
     // 1. Recupero dinamico del path: getFile ogni volta (file_id può risolversi in path aggiornato)
     const getFileUrl = `${TELEGRAM_API}${token}/getFile?file_id=${encodeURIComponent(fileId)}`;
-    const getFileRes = await fetch(getFileUrl);
+    // Telegram download paths expire. Next 14 otherwise caches getFile indefinitely.
+    const getFileRes = await fetch(getFileUrl, { cache: "no-store" });
     const getFileData = (await getFileRes.json()) as {
       ok: boolean;
       result?: { file_path: string };
@@ -66,34 +72,20 @@ export async function GET(
         ok: getFileData.ok,
         description: getFileData.description ?? "no path",
       });
-      return new NextResponse(PLACEHOLDER_SVG, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/svg+xml",
-          "Cache-Control": "no-store",
-          "X-Tg-Image-Error": "getfile-failed",
-        },
-      });
+      return imageError("getfile-failed");
     }
 
     const filePath = getFileData.result.file_path;
     const downloadUrl = `${TELEGRAM_FILE_BASE}${token}/${filePath}`;
 
-    const fileRes = await fetch(downloadUrl);
+    const fileRes = await fetch(downloadUrl, { cache: "no-store" });
 
     if (!fileRes.ok || !fileRes.body) {
       console.error("[tg-image] download failed", {
         file_path: filePath,
         status: fileRes.status,
       });
-      return new NextResponse(PLACEHOLDER_SVG, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/svg+xml",
-          "Cache-Control": "no-store",
-          "X-Tg-Image-Error": "download-failed",
-        },
-      });
+      return imageError("download-failed");
     }
 
     const ext = getExtension(filePath);
@@ -112,14 +104,10 @@ export async function GET(
       },
     });
   } catch (e) {
-    console.error("[tg-image] unexpected error", { file_id: fileId, error: e });
-    return new NextResponse(PLACEHOLDER_SVG, {
-      status: 200,
-      headers: {
-        "Content-Type": "image/svg+xml",
-        "Cache-Control": "no-store",
-        "X-Tg-Image-Error": "internal-error",
-      },
+    console.error("[tg-image] unexpected error", {
+      file_id: fileId,
+      error: e instanceof Error ? e.message.replaceAll(token, "[redacted]") : "Unknown error",
     });
+    return imageError("internal-error");
   }
 }
