@@ -16,6 +16,7 @@ import {
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
 import { GmCampaignProvider } from '../contexts/GmCampaignContext';
+import { GmLiveProvider } from '../contexts/GmLiveContext';
 import { GmHomeScreen } from '../screens/gm/GmHomeScreen';
 import { GmRegiaScreen } from '../screens/gm/GmRegiaScreen';
 import { GmCombatTrackerScreen } from '../screens/gm/GmCombatTrackerScreen';
@@ -70,7 +71,7 @@ const GmTabs: React.FC = () => {
         headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
-            {role === 'admin' && (
+            {(role === 'admin' || role === 'gm') && (
               <TouchableOpacity
                 style={styles.playerSwitchButton}
                 onPress={() => switchMode('player')}
@@ -169,6 +170,7 @@ const GmTabs: React.FC = () => {
 export const GmTabNavigator: React.FC = () => {
   return (
     <GmCampaignProvider>
+      <GmLiveProvider>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         <Stack.Screen name="GmTabs" component={GmTabs} />
         <Stack.Screen
@@ -205,6 +207,7 @@ export const GmTabNavigator: React.FC = () => {
           }}
         />
       </Stack.Navigator>
+      </GmLiveProvider>
     </GmCampaignProvider>
   );
 };

@@ -1,923 +1,489 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  TextInput,
-  Modal,
-  Alert,
-} from 'react-native';
-import * as SecureStore from 'expo-secure-store';
-import {
-  Swords,
-  Shield,
-  Heart,
-  FastForward,
-  RotateCcw,
-  Plus,
-  Minus,
-  Skull,
-  Play,
-  Users,
-  UserPlus,
-  Trash2,
-  Sparkles,
-  Dices,
-  X,
-  Check,
-  ChevronDown,
-} from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Alert, ActivityIndicator, AppState, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Check, Mic, Plus, RotateCcw, Sparkles, Swords, Trash2, Wifi, WifiOff } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
+import { useGmLive, type GmLiveEntry, type GmLiveSnapshot } from '../../contexts/GmLiveContext';
 import { useGmCampaigns } from '../../hooks/useGmCampaigns';
-import { useAuth } from '../../contexts/AuthContext';
-import { Combatant, CombatCondition } from '../../types';
-import {
-  createCombatStorageWritePlan,
-  getCombatStorageKey,
-  parseCombatSnapshot,
-  parseCombatStorageManifest,
-} from '../../lib/combat-storage';
+import { useIsFocused } from '@react-navigation/native';
+import { usePushToTalk } from '../../hooks/usePushToTalk';
 
-// D&D 5e Conditions definitions with thematic colors
-const DND_CONDITIONS: Array<{ key: CombatCondition; label: string; color: string; bg: string }> = [
-  { key: 'Avvelenato', label: 'Avvelenato', color: '#10B981', bg: 'rgba(16, 185, 129, 0.15)' },
-  { key: 'Barcollante', label: 'Barcollante', color: '#F97316', bg: 'rgba(249, 115, 22, 0.15)' },
-  { key: 'Invisibile', label: 'Invisibile', color: '#38BDF8', bg: 'rgba(56, 189, 248, 0.15)' },
-  { key: 'Paralizzato', label: 'Paralizzato', color: '#C084FC', bg: 'rgba(192, 132, 252, 0.15)' },
-  { key: 'Privo di sensi', label: 'Privo di sensi', color: '#EF4444', bg: 'rgba(239, 68, 68, 0.2)' },
-  { key: 'Prono', label: 'Prono', color: '#FBBF24', bg: 'rgba(251, 191, 36, 0.15)' },
-  { key: 'Stordito', label: 'Stordito', color: '#FACC15', bg: 'rgba(250, 204, 21, 0.15)' },
-  { key: 'Trattenuto', label: 'Trattenuto', color: '#94A3B8', bg: 'rgba(148, 163, 184, 0.15)' },
-];
+const LIVE_CONDITIONS = [
+  ['accecato', 'Accecato'], ['affascinato', 'Affascinato'], ['assordato', 'Assordato'],
+  ['avvelenato', 'Avvelenato'], ['afferrato', 'Afferrato'], ['incapacitato', 'Incapacitato'],
+  ['invisibile', 'Invisibile'], ['paralizzato', 'Paralizzato'], ['pietrificato', 'Pietrificato'],
+  ['prono', 'Prono'], ['spaventato', 'Spaventato'], ['stordito', 'Stordito'],
+  ['trattenuto', 'Trattenuto'], ['esausto', 'Esausto'], ['sotto_tiro', 'Sotto tiro'],
+  ['concentrato', 'Concentrato'],
+] as const;
 
-export const GmCombatTrackerScreen: React.FC = () => {
-  const { characters, updateCharacterHp, activeCampaign, isLoading } = useGmCampaigns();
-  const { user } = useAuth();
+type MobileCommandOperation = NonNullable<NonNullable<GmLiveSnapshot['combatCommand']>['proposal']>['operations'][number];
 
-  const [round, setRound] = useState<number>(1);
-  const [currentTurnIndex, setCurrentTurnIndex] = useState<number>(0);
-  const [addModalVisible, setAddModalVisible] = useState<boolean>(false);
-  const [activeConditionsCombatantId, setActiveConditionsCombatantId] = useState<string | null>(null);
+function formatCommandOperation(operation: MobileCommandOperation, entries: GmLiveEntry[]): string {
+  const recipients = (operation.targetIds ?? []).map((id) => entries.find((entry) => entry.id === id)?.name).filter(Boolean).join(', ');
+  switch (operation.kind) {
+    case 'damage': return `${operation.targetName} subisce ${operation.amount} danni${operation.sourceLabel ? ` · fonte: ${operation.sourceLabel}` : ''}`;
+    case 'heal': return `${operation.targetName} recupera ${operation.amount} PF`;
+    case 'set_exact_hp': return `${operation.targetName} passa a ${operation.exactHp} PF`;
+    case 'add_effect': return `${operation.label} → ${operation.targetName}${operation.spellName ? ` · incantesimo: ${operation.spellName}` : ''}${operation.sourceName ? ` · fonte: ${operation.sourceName}` : ''}`;
+    case 'remove_effect': return `Rimuovi effetto da ${operation.targetName}`;
+    case 'start_concentration': return `${operation.casterName} inizia concentrazione${operation.spellName ? ` su ${operation.spellName}` : ''}${recipients ? ` · bersagli: ${recipients}` : ''}`;
+    case 'break_concentration': return `${operation.casterName} interrompe la concentrazione`;
+    default: return `Dettaglio operazione non disponibile: ${operation.kind}`;
+  }
+}
 
-  // New combatant form state
-  const [newName, setNewName] = useState<string>('');
-  const [newHp, setNewHp] = useState<string>('25');
-  const [newAc, setNewAc] = useState<string>('14');
-  const [newInitiative, setNewInitiative] = useState<string>('12');
-  const [newIsEnemy, setNewIsEnemy] = useState<boolean>(true);
-
-  // Combatants state initialized from real campaign characters
-  const [combatants, setCombatants] = useState<Combatant[]>([]);
-  const [pendingCharacterHpIds, setPendingCharacterHpIds] = useState<Set<string>>(new Set());
-  const pendingCharacterHpRef = useRef<Set<string>>(new Set());
-  const [restoredStorageKey, setRestoredStorageKey] = useState<string | null>(null);
-  const [storageKeyNeedingPartySeed, setStorageKeyNeedingPartySeed] = useState<string | null>(null);
-  const [restoreFailedStorageKey, setRestoreFailedStorageKey] = useState<string | null>(null);
-  const [storageError, setStorageError] = useState<string | null>(null);
-  const saveQueue = useRef<Promise<void>>(Promise.resolve());
-  const activeCampaignId = activeCampaign?.id ?? null;
-  const activeStorageKey = getCombatStorageKey(user?.id, activeCampaignId);
-  const activeStorageKeyRef = useRef<string | null>(activeStorageKey);
-  activeStorageKeyRef.current = activeStorageKey;
-
-  // Keep encounters separate by signed-in user and campaign on this device.
-  useEffect(() => {
-    setCombatants([]);
-    setRound(1);
-    setCurrentTurnIndex(0);
-    setRestoredStorageKey(null);
-    setStorageKeyNeedingPartySeed(null);
-    setRestoreFailedStorageKey(null);
-    setStorageError(null);
-
-    if (!activeStorageKey) return;
-
-    let cancelled = false;
-    const storageKey = activeStorageKey;
-    void (async () => {
-      try {
-        const manifestValue = await SecureStore.getItemAsync(storageKey);
-        if (cancelled) return;
-        if (manifestValue) {
-          const manifest = parseCombatStorageManifest(manifestValue);
-          const pieces = await Promise.all(
-            Array.from({ length: manifest.chunks }, (_, index) =>
-              SecureStore.getItemAsync(`${storageKey}_${manifest.revision}_${index}`)
-            )
-          );
-          if (cancelled) return;
-          if (pieces.some((piece) => piece === null)) {
-            throw new Error('A combat state chunk is missing.');
-          }
-          const snapshot = parseCombatSnapshot(pieces.join(''));
-          if (cancelled) return;
-          setCombatants(snapshot.combatants);
-          setRound(snapshot.round);
-          setCurrentTurnIndex(snapshot.currentTurnIndex);
-        } else {
-          setStorageKeyNeedingPartySeed(storageKey);
-        }
-        setRestoredStorageKey(storageKey);
-      } catch (error: unknown) {
-        console.warn('[GmCombatTracker] Could not restore local combat state:', error);
-        if (!cancelled) {
-          setRestoreFailedStorageKey(storageKey);
-          setStorageError('Non ho potuto recuperare lo scontro salvato su questo dispositivo.');
-          setRestoredStorageKey(storageKey);
-        }
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [activeStorageKey]);
+const GmLiveCombatTrackerScreen: React.FC = () => {
+  const live = useGmLive();
+  const setSnapshotConsumer = live.setSnapshotConsumer;
+  const { activeCampaign } = useGmCampaigns();
+  const isFocused = useIsFocused();
+  const [pending, setPending] = useState(false);
+  const [notice, setNotice] = useState('');
+  const [addModalVisible, setAddModalVisible] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newHp, setNewHp] = useState('');
+  const [newAc, setNewAc] = useState('');
+  const [newInitiative, setNewInitiative] = useState('');
+  const { state: voiceState, transcript: voiceTranscript, message: voiceMessage, begin: beginVoice, release: releaseVoice, cancel: cancelVoice } = usePushToTalk();
+  const [commandText, setCommandText] = useState('');
+  const [commandMode, setCommandMode] = useState<'local' | 'ai'>('local');
+  const [commandPending, setCommandPending] = useState(false);
+  const requestIdRef = useRef<string | null>(null);
+  const requestFingerprintRef = useRef('');
+  const confirmCommandIdRef = useRef<string | null>(null);
+  const [selectedOperationIds, setSelectedOperationIds] = useState<string[]>([]);
+  const lastTranscriptRef = useRef('');
 
   useEffect(() => {
-    if (!activeStorageKey || restoredStorageKey !== activeStorageKey) return;
-    if (
-      restoreFailedStorageKey === activeStorageKey &&
-      combatants.length === 0 &&
-      round === 1 &&
-      currentTurnIndex === 0
-    ) return;
-    const storageKey = activeStorageKey;
-    let plan: ReturnType<typeof createCombatStorageWritePlan>;
-    try {
-      plan = createCombatStorageWritePlan(
-        storageKey,
-        { combatants, round, currentTurnIndex },
-        `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-      );
-    } catch (error: unknown) {
-      console.warn('[GmCombatTracker] Could not prepare local combat state:', error);
-      setStorageError('Questo scontro è troppo grande per il salvataggio locale.');
-      return;
-    }
+    setSnapshotConsumer('initiative', isFocused);
+    return () => setSnapshotConsumer('initiative', false);
+  }, [isFocused, setSnapshotConsumer]);
 
-    saveQueue.current = saveQueue.current
-      .catch(() => undefined)
-      .then(async () => {
-        const previousManifestValue = await SecureStore.getItemAsync(storageKey);
-        await Promise.all(plan.chunks.map((chunk) => SecureStore.setItemAsync(chunk.key, chunk.value)));
-        await SecureStore.setItemAsync(storageKey, JSON.stringify(plan.manifest));
-        if (previousManifestValue) {
-          try {
-            const previousManifest = parseCombatStorageManifest(previousManifestValue);
-            if (previousManifest.revision !== plan.manifest.revision) {
-              try {
-                await Promise.all(
-                  Array.from({ length: previousManifest.chunks }, (_, index) =>
-                    SecureStore.deleteItemAsync(`${storageKey}_${previousManifest.revision}_${index}`)
-                  )
-                );
-              } catch (error: unknown) {
-                // The new manifest already points to a complete committed revision.
-                console.warn('[GmCombatTracker] Could not clean up old combat snapshot:', error);
-              }
-            }
-          } catch {
-            // The previous value was not a valid chunk manifest.
-          }
-        }
-        if (activeStorageKeyRef.current === storageKey) {
-          setStorageError(null);
-          setRestoreFailedStorageKey((previous) => previous === storageKey ? null : previous);
-        }
-      })
-      .catch((error: unknown) => {
-        console.warn('[GmCombatTracker] Could not save local combat state:', error);
-        if (activeStorageKeyRef.current === storageKey) {
-          setStorageError('Non ho potuto salvare lo scontro su questo dispositivo.');
-        }
-      });
-  }, [activeStorageKey, restoredStorageKey, restoreFailedStorageKey, combatants, round, currentTurnIndex]);
-
-  // Automatically populate real characters when loaded
   useEffect(() => {
-    if (
-      !isLoading &&
-      activeCampaignId &&
-      activeStorageKey &&
-      restoredStorageKey === activeStorageKey &&
-      storageKeyNeedingPartySeed === activeStorageKey &&
-      restoreFailedStorageKey !== activeStorageKey &&
-      characters.length > 0 &&
-      characters.every((character) => character.campaign_id === activeCampaignId) &&
-      combatants.length === 0
-    ) {
-      const initialParty: Combatant[] = characters.map((c, index) => {
-        const charDexMod = (c.rules_snapshot as any)?.abilities?.dex
-          ? Math.floor(((c.rules_snapshot as any).abilities.dex - 10) / 2)
-          : 0;
-        const maxHp = (c.rules_snapshot as any)?.max_hp ?? c.hit_points ?? 20;
-        const init = 12 + charDexMod - index;
-        return {
-          id: `c-party-${c.id}`,
-          characterId: c.id,
-          name: `${c.name}${c.character_class ? ` (${c.character_class})` : ''}`,
-          initiative: init,
-          hp: c.hit_points ?? maxHp,
-          maxHp,
-          ac: c.armor_class ?? 12,
-          isEnemy: false,
-          conditions: [],
-        };
-      });
-      setCombatants(initialParty);
-      setStorageKeyNeedingPartySeed(null);
-    }
-  }, [activeCampaignId, activeStorageKey, characters, combatants.length, isLoading, restoredStorageKey, storageKeyNeedingPartySeed, restoreFailedStorageKey]);
-
-  // Sorted combatants by initiative descending
-  const sortedCombatants = useMemo(() => {
-    return [...combatants].sort((a, b) => b.initiative - a.initiative);
-  }, [combatants]);
-
-  // Advance turn forward
-  const advanceTurn = () => {
-    if (sortedCombatants.length === 0) return;
-    if (currentTurnIndex + 1 >= sortedCombatants.length) {
-      setCurrentTurnIndex(0);
-      setRound((r) => r + 1);
-    } else {
-      setCurrentTurnIndex((idx) => idx + 1);
-    }
-  };
-
-  // Move turn backward
-  const previousTurn = () => {
-    if (sortedCombatants.length === 0) return;
-    if (currentTurnIndex - 1 < 0) {
-      setCurrentTurnIndex(sortedCombatants.length - 1);
-      setRound((r) => Math.max(1, r - 1));
-    } else {
-      setCurrentTurnIndex((idx) => idx - 1);
-    }
-  };
-
-  // Reset combat tracker
-  const resetCombat = () => {
-    Alert.alert(
-      'Azzera Combattimento',
-      'Vuoi reimpostare il contatore al Round 1 e ripartire dall’inizio dell’iniziativa?',
-      [
-        { text: 'Annulla', style: 'cancel' },
-        {
-          text: 'Azzera Turni',
-          style: 'destructive',
-          onPress: () => {
-            setRound(1);
-            setCurrentTurnIndex(0);
-          },
-        },
-      ]
-    );
-  };
-
-  // Adjust HP of combatant (+1, +5, -1, -5, K.O.)
-  const adjustHp = async (id: string, delta: number | 'ko') => {
-    const combatant = combatants.find((entry) => entry.id === id);
-    if (!combatant || pendingCharacterHpRef.current.has(id)) return;
-
-    const nextHp = delta === 'ko'
-      ? 0
-      : Math.max(0, Math.min(combatant.maxHp, combatant.hp + delta));
-    if (combatant.characterId) {
-      const nextPending = new Set(pendingCharacterHpRef.current);
-      nextPending.add(id);
-      pendingCharacterHpRef.current = nextPending;
-      setPendingCharacterHpIds(nextPending);
-      try {
-        const saved = await updateCharacterHp(combatant.characterId, nextHp);
-        if (!saved) {
-          Alert.alert(
-            'Salvataggio non riuscito',
-            'I PF non sono stati aggiornati. Aggiorna la campagna e riprova.'
-          );
-          return;
-        }
-      } finally {
-        const remaining = new Set(pendingCharacterHpRef.current);
-        remaining.delete(id);
-        pendingCharacterHpRef.current = remaining;
-        setPendingCharacterHpIds(remaining);
-      }
-    }
-
-    setCombatants((previous) => previous.map((entry) => {
-      if (entry.id !== id) return entry;
-      let nextConditions = [...entry.conditions];
-      if (nextHp === 0 && !nextConditions.includes('Privo di sensi')) {
-        nextConditions.push('Privo di sensi');
-      } else if (nextHp > 0 && nextConditions.includes('Privo di sensi')) {
-        nextConditions = nextConditions.filter((condition) => condition !== 'Privo di sensi');
-      }
-      return { ...entry, hp: nextHp, conditions: nextConditions };
-    }));
-  };
-
-  // Toggle condition on a combatant
-  const toggleCondition = (combatantId: string, condition: CombatCondition) => {
-    setCombatants((prev) =>
-      prev.map((c) => {
-        if (c.id !== combatantId) return c;
-        const exists = c.conditions.includes(condition);
-        const nextConditions = exists
-          ? c.conditions.filter((item) => item !== condition)
-          : [...c.conditions, condition];
-        return { ...c, conditions: nextConditions };
-      })
-    );
-  };
-
-  // Remove a combatant from the tracker
-  const removeCombatant = (id: string) => {
-    setCombatants((prev) => prev.filter((c) => c.id !== id));
-    if (currentTurnIndex >= sortedCombatants.length - 1) {
-      setCurrentTurnIndex(0);
-    }
-  };
-
-  // Import characters from active campaign with 1 click
-  const handleImportCampaignParty = () => {
-    if (characters.length === 0) {
-      Alert.alert('Nessun Personaggio', 'Nessun personaggio trovato nella campagna attiva.');
-      return;
-    }
-
-    const existingCharIds = new Set(combatants.map((c) => c.characterId).filter(Boolean));
-    const charsToAdd = characters.filter((c) => !existingCharIds.has(c.id));
-
-    if (charsToAdd.length === 0) {
-      Alert.alert('Già Presenti', 'Tutti i PG della campagna sono già nell’ordine di iniziativa.');
-      return;
-    }
-
-    const importedCombatants: Combatant[] = charsToAdd.map((c) => {
-      // Roll initiative: d20 + (dex modifier or 10)
-      const rolledInit = Math.floor(Math.random() * 20) + 1 + 2;
-      const maxHp = (c.rules_snapshot as any)?.max_hp ?? c.hit_points ?? 30;
-      return {
-        id: `c-party-${c.id}`,
-        characterId: c.id,
-        name: c.name,
-        initiative: rolledInit,
-        hp: c.hit_points ?? maxHp,
-        maxHp,
-        ac: c.armor_class ?? 14,
-        isEnemy: false,
-        conditions: [],
-      };
+    if (!isFocused) cancelVoice();
+  }, [isFocused, cancelVoice]);
+  useEffect(() => {
+    if (voiceState === 'requesting') lastTranscriptRef.current = '';
+  }, [voiceState]);
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') cancelVoice();
     });
+    return () => subscription.remove();
+  }, [cancelVoice]);
+  useEffect(() => {
+    if (voiceTranscript && voiceTranscript !== lastTranscriptRef.current) {
+      lastTranscriptRef.current = voiceTranscript;
+      setCommandText((current) => current.trim() ? `${current.trim()} ${voiceTranscript}` : voiceTranscript);
+      requestIdRef.current = null;
+    }
+  }, [voiceTranscript]);
 
-    setCombatants((prev) => [...prev, ...importedCombatants]);
-    Alert.alert(
-      'Party Importato',
-      `Aggiunti ${importedCombatants.length} eroi con iniziativa tirata automaticamente!`
-    );
+  const snapshot = live.snapshot;
+  const entries = snapshot?.entries ?? [];
+  const current = entries.length ? entries[((snapshot?.currentTurnIndex ?? 0) % entries.length + entries.length) % entries.length] : null;
+
+  const send = async (type: string, payload: Record<string, unknown> = {}) => {
+    setPending(true);
+    setNotice('Invio al PC…');
+    const scopedPayload = snapshot?.matchId ? { ...payload, match_id: snapshot.matchId } : payload;
+    const result = await live.sendCommand(type, scopedPayload);
+    setPending(false);
+    if (result.ok) {
+      setNotice('Comando accodato · in attesa dello snapshot del PC');
+      void live.refresh();
+    } else {
+      setNotice(`Comando non inviato: ${result.error || 'errore'}`);
+    }
   };
 
-  // Roll d20 for modal initiative
-  const rollModalInit = () => {
-    const roll = Math.floor(Math.random() * 20) + 1 + 2;
-    setNewInitiative(roll.toString());
-  };
-
-  // Add custom monster / NPC
-  const handleAddCombatant = () => {
-    if (!newName.trim()) {
-      Alert.alert('Nome Obbligatorio', 'Inserisci il nome del mostro o combattente.');
+  const adjustHp = (entry: GmLiveEntry, delta: number | 'ko') => {
+    if (delta === 'ko') {
+      void send('initiative.set_hp', { entry_id: entry.id, hp: 0 });
       return;
     }
+    void send('initiative.adjust_hp', { entry_id: entry.id, delta });
+  };
 
-    const hpNum = Math.max(1, parseInt(newHp, 10) || 20);
-    const acNum = Math.max(5, parseInt(newAc, 10) || 12);
-    const initNum = parseInt(newInitiative, 10) || 10;
+  const toggleCondition = (entry: GmLiveEntry, conditionId: string) => {
+    void send('initiative.toggle_condition', { entry_id: entry.id, condition: conditionId });
+  };
 
-    const newEntry: Combatant = {
-      id: `custom-${Date.now()}`,
-      name: newName.trim(),
-      initiative: initNum,
-      hp: hpNum,
-      maxHp: hpNum,
-      ac: acNum,
-      isEnemy: newIsEnemy,
-      conditions: [],
-    };
+  const removeEntry = (entry: GmLiveEntry) => {
+    Alert.alert('Rimuovi combattente', `Rimuovere ${entry.name} dalla live?`, [
+      { text: 'Annulla', style: 'cancel' },
+      { text: 'Rimuovi', style: 'destructive', onPress: () => void send('initiative.remove_combatant', { entry_id: entry.id }) },
+    ]);
+  };
 
-    setCombatants((prev) => [...prev, newEntry]);
-    setNewName('');
-    setNewHp('25');
-    setNewAc('14');
-    setNewInitiative('12');
+  const addEntry = () => {
+    const name = newName.trim();
+    const hp = Number.parseInt(newHp, 10);
+    const ac = Number.parseInt(newAc, 10);
+    const initiative = Number.parseInt(newInitiative, 10);
+    if (!name || !Number.isFinite(hp) || hp < 1 || !Number.isFinite(ac) || !Number.isFinite(initiative)) {
+      Alert.alert('Dati incompleti', 'Inserisci nome, PF, CA e iniziativa manuale.');
+      return;
+    }
+    const id = `mobile-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+    void send('initiative.add_combatant', {
+      combatant: { id, name, type: 'monster', hp, maxHp: hp, initiative, ac, conditions: [] },
+    });
     setAddModalVisible(false);
+    setNewName('');
+    setNewHp('');
+    setNewAc('');
+    setNewInitiative('');
   };
 
-  // Quick preset templates for monsters
-  const applyMonsterPreset = (name: string, hp: number, ac: number, init: number) => {
-    setNewName(name);
-    setNewHp(hp.toString());
-    setNewAc(ac.toString());
-    setNewInitiative(init.toString());
-    setNewIsEnemy(true);
+  const pcOnline = live.status === 'online' && live.campaignId === activeCampaign?.id;
+  const blocked = live.status !== 'online' || live.controlsReady === false || snapshot?.controlsReady === false || !snapshot;
+  const command = snapshot?.combatCommand;
+  const commandProposalRef = useRef(command?.proposal);
+  commandProposalRef.current = command?.proposal;
+  const commandContextMatches = command?.campaignId === live.campaignId && command?.remoteSessionPublicId === live.pairing?.publicId && command?.sessionId === snapshot?.sessionId && command?.matchId === (snapshot?.matchId ?? null) && (command?.status !== 'proposal' || command?.stateSignature === snapshot?.stateSignature);
+
+  useEffect(() => {
+    const proposal = commandProposalRef.current;
+    if (proposal) {
+      setSelectedOperationIds(proposal.operations.map((operation) => operation.id));
+      confirmCommandIdRef.current = null;
+    }
+  }, [command?.proposalId]);
+
+  const createRequestId = () => 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    return (c === 'x' ? r : (r & 0x3) | 0x8).toString(16);
+  });
+
+  const sendCombatCommand = async () => {
+    const text = commandText.trim();
+    if (!text || blocked || commandPending) return;
+    if (snapshot?.matchId) {
+      setNotice('La proposta vocale è disponibile per il combattimento della sessione, non per il focus torneo.');
+      return;
+    }
+    if (!snapshot?.stateSignature || !snapshot.sessionId) {
+      setNotice('Il PC non ha pubblicato il contesto della sessione. Aggiorna il GM Screen.');
+      return;
+    }
+    if (Date.now() - Date.parse(snapshot.updatedAt) > 20_000) {
+      setNotice('Snapshot del PC scaduto. Attendi una nuova sincronizzazione prima di inviare.');
+      return;
+    }
+    const fingerprint = JSON.stringify([text, commandMode, live.campaignId, snapshot.sessionId, snapshot.matchId ?? null, snapshot.stateSignature]);
+    const requestId = requestIdRef.current && requestFingerprintRef.current === fingerprint && (!command || command.status === 'awaiting')
+      ? requestIdRef.current
+      : createRequestId();
+    requestFingerprintRef.current = fingerprint;
+    requestIdRef.current = requestId;
+    setCommandPending(true);
+    setNotice('Invio richiesta al PC…');
+    const result = await live.sendCommand('combat.command_request', {
+      request_id: requestId,
+      text,
+      mode: commandMode,
+      campaign_id: live.campaignId,
+      session_id: snapshot.sessionId,
+      match_id: snapshot.matchId ?? null,
+      state_signature: snapshot.stateSignature,
+    }, requestId);
+    setCommandPending(false);
+    setNotice(result.ok ? 'Richiesta accodata · in attesa dell’analisi sul PC' : `Richiesta non inviata: ${result.error || 'errore'}`);
+    if (result.ok) void live.refresh();
   };
 
-  const activeCombatant = sortedCombatants[currentTurnIndex];
+  const confirmCombatCommand = async () => {
+    if (!command?.proposalId || !command.proposal || commandPending || blocked || !commandContextMatches) return;
+    if (command.proposal.unresolvedTargets.length || command.proposal.missingData.length) {
+      setNotice('Completa bersagli e dati mancanti correggendo il comando e chiedendo una nuova analisi.');
+      return;
+    }
+    const commandId = confirmCommandIdRef.current ?? createRequestId();
+    confirmCommandIdRef.current = commandId;
+    setCommandPending(true);
+    setNotice('Conferma inviata · in attesa dell’applicazione sul PC');
+    const result = await live.sendCommand('combat.command_confirm', {
+      request_id: command.requestId,
+      proposal_id: command.proposalId,
+      operation_ids: selectedOperationIds,
+      campaign_id: live.campaignId,
+      state_signature: snapshot?.stateSignature,
+      session_id: snapshot?.sessionId,
+      match_id: snapshot?.matchId ?? null,
+    }, commandId);
+    setCommandPending(false);
+    setNotice(result.ok ? 'Conferma accodata · attendo la ricevuta del PC' : `Conferma non inviata: ${result.error || 'errore'}`);
+    if (result.ok) void live.refresh();
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {storageError && (
-          <View style={styles.storageWarning} accessibilityRole="alert">
-            <Text style={styles.storageWarningText}>{storageError}</Text>
-          </View>
-        )}
-        {/* Round & Turn Commander Bar */}
-        <View style={styles.roundCard}>
-          <View style={styles.roundLeft}>
-            <Swords size={22} color={colors.brassLight} />
-            <View>
-              <Text style={styles.roundLabel}>BATTAGLIA ATTIVA</Text>
-              <Text style={styles.roundCount}>Round {round}</Text>
-            </View>
-          </View>
-
-          <View style={styles.turnNavGroup}>
-            <TouchableOpacity
-              style={styles.prevTurnBtn}
-              onPress={previousTurn}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.prevTurnText}>◄ Prec</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.nextTurnBtn}
-              onPress={advanceTurn}
-              activeOpacity={0.8}
-            >
-              <FastForward size={14} color={colors.void} />
-              <Text style={styles.nextTurnText}>Prossimo Turno ►</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.resetBtn}
-              onPress={resetCombat}
-              activeOpacity={0.7}
-            >
-              <RotateCcw size={14} color={colors.parchmentMuted} />
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Action Bar: Import Party & Add NPC */}
-        <View style={styles.actionBar}>
-          <TouchableOpacity
-            style={styles.actionBtnHero}
-            onPress={handleImportCampaignParty}
-            activeOpacity={0.8}
-          >
-            <Users size={15} color={colors.brassLight} />
-            <Text style={styles.actionBtnHeroText}>
-              Importa PG Campagna ({characters.length})
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.liveHeader}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.liveHeaderEyebrow}>INIZIATIVA CONDIVISA</Text>
+            <Text style={styles.liveHeaderTitle}>
+              {live.status === 'unpaired' ? 'Collega prima il GM Screen dalla Regia' : live.status === 'mismatch' ? 'Campagna non corrispondente' : live.status === 'expired' ? 'Sessione scaduta' : live.status === 'online' ? 'PC online' : live.status === 'checking' ? 'Verifica sessione…' : 'PC offline'}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtnMonster}
-            onPress={() => setAddModalVisible(true)}
-            activeOpacity={0.8}
-          >
-            <Plus size={15} color={colors.void} />
-            <Text style={styles.actionBtnMonsterText}>+ Mostro / NPC</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Active Combatant Spotlight */}
-        {activeCombatant && (
-          <View style={styles.spotlightCard}>
-            <View style={styles.spotlightTop}>
-              <View style={styles.spotlightBadge}>
-                <Play size={10} color={colors.void} />
-                <Text style={styles.spotlightBadgeText}>È IL TURNO DI:</Text>
-              </View>
-              <Text style={styles.spotlightInit}>Iniziativa: {activeCombatant.initiative}</Text>
-            </View>
-            <Text
-              style={[
-                styles.spotlightName,
-                activeCombatant.isEnemy ? styles.enemyName : styles.heroName,
-              ]}
-              numberOfLines={1}
-            >
-              {activeCombatant.name}
-            </Text>
-            <View style={styles.spotlightStatsRow}>
-              <View style={styles.spotlightStat}>
-                <Shield size={13} color={colors.parchmentMuted} />
-                <Text style={styles.spotlightStatText}>CA {activeCombatant.ac}</Text>
-              </View>
-              <View style={styles.spotlightStat}>
-                <Heart size={13} color={colors.crimsonLight} />
-                <Text style={styles.spotlightStatText}>
-                  {activeCombatant.hp} / {activeCombatant.maxHp} HP
-                </Text>
-              </View>
-              {activeCombatant.conditions.length > 0 && (
-                <View style={styles.spotlightConditions}>
-                  {activeCombatant.conditions.map((c) => (
-                    <Text key={c} style={styles.spotlightCondText}>
-                      • {c}
-                    </Text>
-                  ))}
-                </View>
-              )}
-            </View>
+            <Text style={styles.liveHeaderSub}>{live.campaignId === activeCampaign?.id ? activeCampaign?.name : 'Campagna non verificata'}{live.expiresAt ? ` · scade ${new Date(live.expiresAt).toLocaleTimeString()}` : ''}</Text>
           </View>
-        )}
-
-        {/* Combatants Queue Header */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>ORDINE DI INIZIATIVA ({sortedCombatants.length})</Text>
-          <Text style={styles.combatantsCount}>
-            {sortedCombatants.filter((c) => c.hp > 0).length} Combattenti in Piedi
-          </Text>
+          {live.status === 'checking' ? <ActivityIndicator color={colors.brassLight} /> : pcOnline ? <Wifi size={19} color={colors.emerald} /> : <WifiOff size={19} color={colors.crimsonLight} />}
         </View>
 
-        {/* Combatants List */}
-        {sortedCombatants.length === 0 ? (
+        {live.status === 'mismatch' && <Text style={styles.liveError}>{live.error || 'La live appartiene a un’altra campagna. I comandi sono bloccati.'}</Text>}
+        {live.status === 'offline' && <Text style={styles.liveWarning}>Sessione valida, PC momentaneamente non presente. I comandi sono sospesi e lo snapshot visibile può essere superato.</Text>}
+        {live.status === 'online' && (live.controlsReady === false || snapshot?.controlsReady === false) && <Text style={styles.liveWarning}>GM Screen online, ma il pannello iniziativa non è pronto sul PC. Il combattimento è in sola lettura.</Text>}
+
+        <View style={styles.voiceCard}>
+          <Text style={styles.voiceTitle}>Comando al GM Screen</Text>
+          <Text style={styles.voiceHint}>Tieni premuto per dettare. La trascrizione resta sul telefono e puoi correggerla prima dell’invio.</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Tieni premuto per parlare al GM Screen"
+            accessibilityHint="Rilascia per fermare la dettatura e rivedere il testo"
+            disabled={blocked || voiceState === 'stopping' || voiceState === 'unavailable'}
+            onPressIn={() => void beginVoice()}
+            onPressOut={releaseVoice}
+            onLongPress={() => undefined}
+            style={({ pressed }) => [styles.voiceButton, pressed && styles.voiceButtonPressed, (blocked || voiceState === 'unavailable') && styles.voiceDisabled]}
+          >
+            {voiceState === 'requesting' || voiceState === 'stopping'
+              ? <ActivityIndicator color={colors.void} />
+              : <Mic size={20} color={colors.void} />}
+            <Text style={styles.voiceButtonText}>{voiceState === 'listening' ? 'In ascolto · rilascia per fermare' : voiceState === 'requesting' ? 'Richiesta permesso…' : 'Tieni premuto per parlare'}</Text>
+          </Pressable>
+          {!!voiceMessage && <Text style={styles.voiceMessage}>{voiceMessage}</Text>}
+          <Text style={styles.voiceLabel}>Testo del comando</Text>
+          <TextInput
+            accessibilityLabel="Testo del comando per il GM Screen"
+            multiline
+            value={commandText}
+            onChangeText={(value) => { setCommandText(value); requestIdRef.current = null; }}
+            placeholder="Es. Goblin 1 subisce 8 danni"
+            placeholderTextColor={colors.parchmentMuted}
+            style={styles.voiceInput}
+            editable={!commandPending}
+          />
+          <View style={styles.voiceModeRow}>
+            <Pressable accessibilityRole="button" accessibilityState={{ selected: commandMode === 'local' }} onPress={() => { setCommandMode('local'); requestIdRef.current = null; }} style={[styles.voiceModeButton, commandMode === 'local' && styles.voiceModeSelected]}>
+              <Text style={[styles.voiceModeText, commandMode === 'local' && styles.voiceModeTextSelected]}>Analisi locale</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" accessibilityState={{ selected: commandMode === 'ai' }} onPress={() => { setCommandMode('ai'); requestIdRef.current = null; }} style={[styles.voiceModeButton, commandMode === 'ai' && styles.voiceModeSelected]}>
+              <Sparkles size={14} color={commandMode === 'ai' ? colors.void : colors.brassLight} />
+              <Text style={[styles.voiceModeText, commandMode === 'ai' && styles.voiceModeTextSelected]}>Chiedi IA</Text>
+            </Pressable>
+          </View>
+          <Pressable accessibilityRole="button" disabled={blocked || commandPending || !commandText.trim()} onPress={() => void sendCombatCommand()} style={[styles.voiceSendButton, (blocked || commandPending || !commandText.trim()) && styles.voiceDisabled]}>
+            {commandPending ? <ActivityIndicator color={colors.void} /> : <Text style={styles.voiceSendText}>Invia al PC per revisione</Text>}
+          </Pressable>
+          {!!command && commandContextMatches && <View style={styles.commandReview}>
+            <Text style={styles.commandStatus}>{command.status === 'awaiting' ? 'In attesa del PC' : command.status === 'proposal' ? 'Proposta da rivedere' : command.status === 'applied' ? 'Applicato dal PC' : 'Richiesta rifiutata'}</Text>
+            {!!command.message && <Text style={styles.voiceHint}>{command.message}</Text>}
+            {command.proposal?.operations.map((operation) => {
+              const selected = selectedOperationIds.includes(operation.id);
+              return <Pressable key={operation.id} accessibilityRole="checkbox" accessibilityState={{ checked: selected }} onPress={() => setSelectedOperationIds((current) => selected ? current.filter((id) => id !== operation.id) : [...current, operation.id])} style={styles.commandOperationRow}>
+                <View style={[styles.commandCheckbox, selected && styles.commandCheckboxSelected]}>{selected ? <Check size={13} color={colors.void} /> : null}</View>
+                <Text style={styles.commandOperation}>{formatCommandOperation(operation, entries)}</Text>
+              </Pressable>;
+            })}
+            {!!command.proposal?.unresolvedTargets.length && <Text style={styles.voiceMessage}>Bersagli da precisare: {command.proposal.unresolvedTargets.map((target) => `${target.query}${target.candidates?.length ? ` (${target.candidates.map((candidate) => candidate.name).join(', ')})` : ''}`).join('; ')}. Correggi il testo sopra e richiedi una nuova analisi.</Text>}
+            {!!command.proposal?.missingData.length && <Text style={styles.voiceMessage}>Dati mancanti: {command.proposal.missingData.map((missing) => missing.message).join(' ')}</Text>}
+            {command.status === 'proposal' && <Pressable accessibilityRole="button" disabled={blocked || commandPending || !selectedOperationIds.length || !command.proposal || !!command.proposal.unresolvedTargets.length || !!command.proposal.missingData.length} onPress={() => void confirmCombatCommand()} style={[styles.voiceConfirmButton, (blocked || commandPending || !selectedOperationIds.length || !!command.proposal?.unresolvedTargets.length || !!command.proposal?.missingData.length) && styles.voiceDisabled]}>
+              <Check size={17} color={colors.void} /><Text style={styles.voiceSendText}>Conferma proposta</Text>
+            </Pressable>}
+            {command.status === 'applied' && <Text style={styles.commandReceipt}>Ricevuta PC · {command.receipt?.appliedAt ? new Date(command.receipt.appliedAt).toLocaleTimeString() : 'applicazione verificata'}</Text>}
+          </View>}
+        </View>
+
+        <View style={styles.liveRoundCard}>
+          <View>
+            <Text style={styles.liveRoundLabel}>ROUND</Text>
+            <Text style={styles.liveRoundNumber}>{snapshot?.roundNumber ?? '—'}</Text>
+          </View>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} style={styles.liveTurnButton} onPress={() => void send('initiative.prev_turn')}>
+            <Text style={styles.liveTurnButtonText}>◀ Prec</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} style={[styles.liveTurnButton, styles.liveTurnPrimary]} onPress={() => void send('initiative.next_turn')}>
+            <Text style={[styles.liveTurnButtonText, styles.liveTurnPrimaryText]}>Prossimo ▶</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} style={styles.liveIconButton} onPress={() => Alert.alert('Azzera round', 'Riportare il combattimento al round 1?', [
+            { text: 'Annulla', style: 'cancel' }, { text: 'Azzera', style: 'destructive', onPress: () => void send('initiative.reset_round') },
+          ])}>
+            <RotateCcw size={15} color={colors.parchmentMuted} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.liveTimerRow}>
+          <Text style={styles.liveTimerText}>{snapshot?.isTurnTimerRunning ? 'Timer turno attivo' : 'Timer turno fermo'} · {snapshot?.turnElapsedSeconds ?? 0}s</Text>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} onPress={() => void send('initiative.toggle_timer')}>
+            <Text style={styles.liveTimerAction}>{snapshot?.isTurnTimerRunning ? 'Ferma timer' : 'Avvia timer'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} onPress={() => void send('initiative.reset_turn_timer')}>
+            <Text style={styles.liveTimerAction}>Azzera</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.liveActionBar}>
+          <Text style={styles.liveCount}>{entries.length} combattenti</Text>
+          <TouchableOpacity disabled={blocked} style={styles.liveAddButton} onPress={() => setAddModalVisible(true)}>
+            <Plus size={14} color={colors.void} /><Text style={styles.liveAddText}>Aggiungi mostro</Text>
+          </TouchableOpacity>
+        </View>
+
+        {current && <View style={styles.liveSpotlight}>
+          <Text style={styles.liveSpotlightLabel}>È IL TURNO DI</Text>
+          <Text style={styles.liveSpotlightName}>{current.name}</Text>
+          <Text style={styles.liveSpotlightInfo}>Iniziativa {current.initiative} · CA {current.ac ?? '—'} · {current.hp}/{current.maxHp} PF</Text>
+        </View>}
+
+        {entries.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Swords size={36} color={colors.parchmentMuted} style={{ marginBottom: 12 }} />
-            <Text style={styles.emptyTitle}>Nessun Combattente nell'Iniziativa</Text>
-            <Text style={styles.emptySubtitle}>
-              Tocca "Importa PG Campagna" per caricare gli eroi di questa campagna o usa "+ Mostro / NPC" per iniziare lo scontro.
-            </Text>
+            {live.status === 'checking' ? <ActivityIndicator color={colors.brassLight} /> : <Swords size={30} color={colors.parchmentMuted} />}
+            <Text style={styles.emptyTitle}>{live.status === 'unpaired' ? 'Nessuna live collegata' : blocked ? 'Controllo live bloccato' : !snapshot ? 'In attesa dello snapshot del PC' : 'Nessun combattente nella live'}</Text>
+            <Text style={styles.emptySubtitle}>{live.error || 'Lo stato arriva dal GM Screen collegato.'}</Text>
           </View>
-        ) : (
-          sortedCombatants.map((c, index) => {
-          const isActive = index === currentTurnIndex;
-          const isDead = c.hp <= 0;
-          const showConditionsTray = activeConditionsCombatantId === c.id;
-
-          return (
-            <View
-              key={c.id}
-              style={[
-                styles.combatantCard,
-                isActive && styles.combatantCardActive,
-                isDead && styles.combatantCardDead,
-              ]}
-            >
-              {isActive && <View style={styles.activeTurnIndicator} />}
-
-              {/* Initiative Badge */}
-              <View style={[styles.initBadge, isActive && styles.initBadgeActive]}>
-                <Text style={[styles.initNumber, isActive && styles.initNumberActive]}>
-                  {c.initiative}
-                </Text>
-                <Text style={styles.initLabel}>INIZ</Text>
+        ) : entries.map((entry, index) => (
+          <View key={entry.id} style={[styles.liveEntryCard, index === snapshot?.currentTurnIndex && styles.liveEntryActive]}>
+            <View style={styles.liveEntryTop}>
+              <View style={styles.liveInitBadge}><Text style={styles.liveInitValue}>{entry.initiative}</Text><Text style={styles.liveInitLabel}>INIZ</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.liveEntryName}>{entry.name}</Text>
+                <Text style={styles.liveEntryMeta}>CA {entry.ac ?? '—'} · {entry.hp}/{entry.maxHp} PF · inflitti {entry.damageDealt} · subiti {entry.damageTaken}</Text>
               </View>
-
-              {/* Main Combatant Details */}
-              <View style={styles.combatantMain}>
-                <View style={styles.nameRow}>
-                  <Text
-                    style={[
-                      styles.combatantName,
-                      c.isEnemy ? styles.enemyName : styles.heroName,
-                      isDead && styles.deadText,
-                    ]}
-                    numberOfLines={1}
-                  >
-                    {c.name}
-                  </Text>
-
-                  {isDead && (
-                    <View style={styles.deadBadge}>
-                      <Skull size={10} color={colors.crimsonLight} />
-                      <Text style={styles.deadBadgeText}>K.O. / A TERRA</Text>
-                    </View>
-                  )}
-
-                  {isActive && !isDead && (
-                    <View style={styles.turnBadge}>
-                      <Play size={9} color={colors.void} />
-                      <Text style={styles.turnBadgeText}>ATTIVO</Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* Stats & Condition Chips Row */}
-                <View style={styles.statsRow}>
-                  <View style={styles.statChip}>
-                    <Shield size={11} color={colors.parchmentMuted} />
-                    <Text style={styles.statChipText}>CA {c.ac}</Text>
-                  </View>
-
-                  <View style={styles.statChip}>
-                    <Heart
-                      size={11}
-                      color={c.hp < c.maxHp * 0.3 ? colors.crimsonLight : colors.emerald}
-                    />
-                    <Text
-                      style={[
-                        styles.statChipText,
-                        c.hp < c.maxHp * 0.3 && { color: colors.crimsonLight, fontWeight: '800' },
-                      ]}
-                    >
-                      {c.hp} / {c.maxHp} HP
-                    </Text>
-                  </View>
-
-                  {/* Conditions Pills Preview */}
-                  {c.conditions.map((cond) => {
-                    const meta = DND_CONDITIONS.find((d) => d.key === cond);
-                    return (
-                      <View
-                        key={cond}
-                        style={[
-                          styles.activeCondBadge,
-                          { backgroundColor: meta?.bg || 'rgba(255,255,255,0.1)' },
-                        ]}
-                      >
-                        <Text style={[styles.activeCondText, { color: meta?.color || '#fff' }]}>
-                          {cond}
-                        </Text>
-                      </View>
-                    );
-                  })}
-                </View>
-              </View>
-
-              {/* Controls Column: Quick HP & Conditions */}
-              <View style={styles.cardRightControls}>
-                {/* HP Adjust Buttons (+1, +5, -1, -5, K.O.) */}
-                <View style={styles.hpButtonGrid}>
-                  <TouchableOpacity
-                    style={styles.hpBtn}
-                    disabled={pendingCharacterHpIds.has(c.id)}
-                    onPress={() => adjustHp(c.id, -5)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.hpBtnText, { color: colors.crimsonLight }]}>-5</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.hpBtn}
-                    disabled={pendingCharacterHpIds.has(c.id)}
-                    onPress={() => adjustHp(c.id, -1)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.hpBtnText, { color: colors.crimsonLight }]}>-1</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.hpBtn}
-                    disabled={pendingCharacterHpIds.has(c.id)}
-                    onPress={() => adjustHp(c.id, +1)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.hpBtnText, { color: colors.emerald }]}>+1</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.hpBtn}
-                    disabled={pendingCharacterHpIds.has(c.id)}
-                    onPress={() => adjustHp(c.id, +5)}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.hpBtnText, { color: colors.emerald }]}>+5</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[styles.hpBtn, styles.koBtn]}
-                    disabled={pendingCharacterHpIds.has(c.id)}
-                    onPress={() => adjustHp(c.id, 'ko')}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.koBtnText}>K.O.</Text>
-                  </TouchableOpacity>
-                </View>
-
-                {/* Conditions Tray Toggle & Trash */}
-                <View style={styles.rowBelowHp}>
-                  <TouchableOpacity
-                    style={[
-                      styles.toggleCondBtn,
-                      showConditionsTray && styles.toggleCondBtnActive,
-                    ]}
-                    onPress={() =>
-                      setActiveConditionsCombatantId(
-                        showConditionsTray ? null : c.id
-                      )
-                    }
-                    activeOpacity={0.7}
-                  >
-                    <Sparkles size={11} color={colors.brassLight} />
-                    <Text style={styles.toggleCondBtnText}>
-                      Condizioni ({c.conditions.length})
-                    </Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.deleteBtn}
-                    onPress={() => removeCombatant(c.id)}
-                    activeOpacity={0.7}
-                  >
-                    <Trash2 size={13} color={colors.parchmentMuted} />
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              {/* Conditions Tray (Expandable when tapped) */}
-              {showConditionsTray && (
-                <View style={styles.conditionsTray}>
-                  <Text style={styles.conditionsTrayTitle}>
-                    STATI & CONDIZIONI D&D 5E PER {c.name.toUpperCase()}:
-                  </Text>
-                  <View style={styles.conditionsGrid}>
-                    {DND_CONDITIONS.map((cond) => {
-                      const isSelected = c.conditions.includes(cond.key);
-                      return (
-                        <TouchableOpacity
-                          key={cond.key}
-                          style={[
-                            styles.conditionPill,
-                            { borderColor: cond.color },
-                            isSelected && { backgroundColor: cond.bg },
-                          ]}
-                          onPress={() => toggleCondition(c.id, cond.key)}
-                          activeOpacity={0.7}
-                        >
-                          <View
-                            style={[
-                              styles.condCheckDot,
-                              isSelected && { backgroundColor: cond.color },
-                            ]}
-                          />
-                          <Text
-                            style={[
-                              styles.conditionPillText,
-                              { color: isSelected ? cond.color : colors.parchmentMuted },
-                            ]}
-                          >
-                            {cond.label}
-                          </Text>
-                        </TouchableOpacity>
-                      );
-                    })}
-                  </View>
-                </View>
-              )}
+              <TouchableOpacity disabled={pending || blocked} onPress={() => removeEntry(entry)} style={styles.liveRemoveButton}>
+                <Trash2 size={15} color={colors.parchmentMuted} />
+              </TouchableOpacity>
             </View>
-          );
-        }))}
+            <View style={styles.liveControlRow}>
+              {[-5, -1, 1, 5].map((delta) => <TouchableOpacity key={delta} disabled={pending || blocked} style={styles.liveHpButton} onPress={() => adjustHp(entry, delta)}>
+                <Text style={[styles.liveHpText, { color: delta < 0 ? colors.crimsonLight : colors.emerald }]}>{delta > 0 ? `+${delta}` : delta}</Text>
+              </TouchableOpacity>)}
+              <TouchableOpacity disabled={pending || blocked} style={[styles.liveHpButton, styles.liveKoButton]} onPress={() => adjustHp(entry, 'ko')}><Text style={styles.liveKoText}>K.O.</Text></TouchableOpacity>
+            </View>
+            <View style={styles.liveControlRow}>
+              <TouchableOpacity disabled={pending || blocked} style={styles.liveDamageButton} onPress={() => void send('initiative.adjust_damage', { entry_id: entry.id, delta: -1 })}><Text style={styles.liveDamageText}>− Inflitti</Text></TouchableOpacity>
+              <TouchableOpacity disabled={pending || blocked} style={styles.liveDamageButton} onPress={() => void send('initiative.adjust_damage', { entry_id: entry.id, delta: 1 })}><Text style={styles.liveDamageText}>+ Inflitti</Text></TouchableOpacity>
+              <TouchableOpacity disabled={pending || blocked} style={styles.liveDamageButton} onPress={() => void send('initiative.adjust_damage_taken', { entry_id: entry.id, delta: -1 })}><Text style={styles.liveDamageText}>− Subiti</Text></TouchableOpacity>
+              <TouchableOpacity disabled={pending || blocked} style={styles.liveDamageButton} onPress={() => void send('initiative.adjust_damage_taken', { entry_id: entry.id, delta: 1 })}><Text style={styles.liveDamageText}>+ Subiti</Text></TouchableOpacity>
+            </View>
+            <View style={styles.liveConditions}>
+              {LIVE_CONDITIONS.map(([id, label]) => {
+                const selected = entry.conditions?.includes(id) ?? false;
+                return <TouchableOpacity key={id} disabled={pending || blocked} style={[styles.liveConditionChip, selected && styles.liveConditionSelected]} onPress={() => toggleCondition(entry, id)}>
+                  <Text style={[styles.liveConditionText, selected && styles.liveConditionTextSelected]}>{label}</Text>
+                </TouchableOpacity>;
+              })}
+            </View>
+          </View>
+        ))}
+
+        {!!notice && <Text style={styles.liveNotice}>{notice}</Text>}
+        {!!snapshot?.updatedAt && <Text style={styles.liveUpdated}>Aggiornato {new Date(snapshot.updatedAt).toLocaleTimeString()}{live.status === 'offline' ? ` · ${Math.max(0, Math.floor((Date.now() - new Date(snapshot.updatedAt).getTime()) / 1000))}s fa` : ''}</Text>}
       </ScrollView>
 
-      {/* Add Custom Combatant Modal */}
-      <Modal
-        visible={addModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setAddModalVisible(false)}
-      >
-        <TouchableOpacity
-          style={styles.modalBackdrop}
-          activeOpacity={1}
-          onPress={() => setAddModalVisible(false)}
-        >
-          <View style={styles.modalCard} onStartShouldSetResponder={() => true}>
-            <View style={styles.modalHeader}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                <Swords size={18} color={colors.brassLight} />
-                <Text style={styles.modalTitle}>AGGIUNGI COMBATTENTE</Text>
-              </View>
-              <TouchableOpacity onPress={() => setAddModalVisible(false)}>
-                <X size={18} color={colors.parchmentMuted} />
-              </TouchableOpacity>
+      <Modal visible={addModalVisible} transparent animationType="slide" onRequestClose={() => setAddModalVisible(false)}>
+        <View style={styles.liveModalBackdrop}>
+          <View style={styles.liveModalCard}>
+            <Text style={styles.liveModalTitle}>Aggiungi mostro alla live</Text>
+            <TextInput style={styles.liveInput} placeholder="Nome" placeholderTextColor={colors.parchmentMuted} value={newName} onChangeText={setNewName} />
+            <TextInput style={styles.liveInput} placeholder="Punti ferita" placeholderTextColor={colors.parchmentMuted} keyboardType="number-pad" value={newHp} onChangeText={setNewHp} />
+            <TextInput style={styles.liveInput} placeholder="Classe armatura" placeholderTextColor={colors.parchmentMuted} keyboardType="number-pad" value={newAc} onChangeText={setNewAc} />
+            <TextInput style={styles.liveInput} placeholder="Iniziativa (inserita dal GM)" placeholderTextColor={colors.parchmentMuted} keyboardType="number-pad" value={newInitiative} onChangeText={setNewInitiative} />
+            <View style={styles.liveModalButtons}>
+              <TouchableOpacity onPress={() => setAddModalVisible(false)}><Text style={styles.liveTimerAction}>Annulla</Text></TouchableOpacity>
+              <TouchableOpacity disabled={blocked || pending} style={styles.liveAddButton} onPress={addEntry}><Text style={styles.liveAddText}>Invia al PC</Text></TouchableOpacity>
             </View>
-
-            {/* Quick Templates */}
-            <Text style={styles.templateLabel}>Template Rapidi:</Text>
-            <View style={styles.templateRow}>
-              <TouchableOpacity
-                style={styles.templateChip}
-                onPress={() => applyMonsterPreset('Goblin Arciere', 7, 13, 14)}
-              >
-                <Text style={styles.templateChipText}>Goblin (7 HP)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.templateChip}
-                onPress={() => applyMonsterPreset('Orco Guerriero', 15, 13, 11)}
-              >
-                <Text style={styles.templateChipText}>Orco (15 HP)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.templateChip}
-                onPress={() => applyMonsterPreset('Scheletro Guerriero', 13, 13, 12)}
-              >
-                <Text style={styles.templateChipText}>Scheletro (13 HP)</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.templateChip}
-                onPress={() => applyMonsterPreset('Cultista dell’Ombra', 32, 14, 15)}
-              >
-                <Text style={styles.templateChipText}>Cultista (32 HP)</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Form Fields */}
-            <View style={styles.formGroup}>
-              <Text style={styles.formLabel}>Nome Combattente:</Text>
-              <TextInput
-                style={styles.formInput}
-                value={newName}
-                onChangeText={setNewName}
-                placeholder="Es. Boss Manticora o Guardia"
-                placeholderTextColor={colors.parchmentMuted}
-              />
-            </View>
-
-            <View style={styles.formThreeRow}>
-              <View style={styles.formCol}>
-                <Text style={styles.formLabel}>HP Max:</Text>
-                <TextInput
-                  style={styles.formInputSmall}
-                  value={newHp}
-                  onChangeText={setNewHp}
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.formCol}>
-                <Text style={styles.formLabel}>Classe Arm. (CA):</Text>
-                <TextInput
-                  style={styles.formInputSmall}
-                  value={newAc}
-                  onChangeText={setNewAc}
-                  keyboardType="number-pad"
-                />
-              </View>
-
-              <View style={styles.formCol}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                  <Text style={styles.formLabel}>Iniziativa:</Text>
-                  <TouchableOpacity onPress={rollModalInit}>
-                    <Text style={{ fontSize: 10, color: colors.brassLight }}>🎲 Roll</Text>
-                  </TouchableOpacity>
-                </View>
-                <TextInput
-                  style={styles.formInputSmall}
-                  value={newInitiative}
-                  onChangeText={setNewInitiative}
-                  keyboardType="number-pad"
-                />
-              </View>
-            </View>
-
-            {/* Enemy or Ally Toggle */}
-            <View style={styles.enemyToggleRow}>
-              <Text style={styles.formLabel}>Fazione:</Text>
-              <View style={styles.factionOptions}>
-                <TouchableOpacity
-                  style={[styles.factionChip, newIsEnemy && styles.factionChipEnemy]}
-                  onPress={() => setNewIsEnemy(true)}
-                >
-                  <Text style={[styles.factionChipText, newIsEnemy && styles.factionTextActive]}>
-                    Nemico / Mostro
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.factionChip, !newIsEnemy && styles.factionChipAlly]}
-                  onPress={() => setNewIsEnemy(false)}
-                >
-                  <Text style={[styles.factionChipText, !newIsEnemy && styles.factionTextActive]}>
-                    Alleato / PG
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Submit Button */}
-            <TouchableOpacity
-              style={styles.addSubmitBtn}
-              onPress={handleAddCombatant}
-              activeOpacity={0.85}
-            >
-              <Plus size={16} color={colors.void} />
-              <Text style={styles.addSubmitBtnText}>INSERISCI NELL’INIZIATIVA</Text>
-            </TouchableOpacity>
           </View>
-        </TouchableOpacity>
+        </View>
       </Modal>
     </SafeAreaView>
   );
 };
 
+export const GmCombatTrackerScreen: React.FC = () => {
+  return <GmLiveCombatTrackerScreen />;
+};
+
 const styles = StyleSheet.create({
+  liveHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: colors.stoneSurface, borderColor: colors.stoneBorder, borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 12 },
+  liveHeaderEyebrow: { color: colors.brassLight, fontSize: 9, fontWeight: '900', letterSpacing: 1 },
+  liveHeaderTitle: { color: colors.parchmentLight, fontSize: 16, fontWeight: '800', marginTop: 3 },
+  liveHeaderSub: { color: colors.parchmentMuted, fontSize: 10, marginTop: 3 },
+  liveError: { color: colors.crimsonLight, backgroundColor: 'rgba(239,68,68,0.12)', borderRadius: 7, padding: 10, fontSize: 11, marginBottom: 10 },
+  liveWarning: { color: colors.brassLight, backgroundColor: 'rgba(201,156,74,0.12)', borderRadius: 7, padding: 10, fontSize: 11, marginBottom: 10 },
+  liveRoundCard: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: colors.stoneSurface, borderColor: colors.stoneBorder, borderWidth: 1, borderRadius: 10, padding: 10, marginBottom: 8 },
+  liveRoundLabel: { color: colors.parchmentMuted, fontSize: 8, fontWeight: '800' },
+  liveRoundNumber: { color: colors.brassLight, fontSize: 18, fontWeight: '900' },
+  liveTurnButton: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingVertical: 10, borderRadius: 7, backgroundColor: colors.stone },
+  liveTurnButtonText: { color: colors.parchmentLight, fontSize: 10, fontWeight: '800' },
+  liveTurnPrimary: { backgroundColor: colors.brassBase },
+  liveTurnPrimaryText: { color: colors.void },
+  liveIconButton: { padding: 9 },
+  liveTimerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', backgroundColor: colors.stoneSurface, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, marginBottom: 12 },
+  liveTimerText: { color: colors.parchmentMuted, fontSize: 10 },
+  liveTimerAction: { color: colors.brassLight, fontSize: 10, fontWeight: '800' },
+  liveActionBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 },
+  liveCount: { color: colors.parchmentLight, fontSize: 12, fontWeight: '800' },
+  liveAddButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 5, backgroundColor: colors.brassBase, paddingHorizontal: 10, paddingVertical: 8, borderRadius: 7 },
+  liveAddText: { color: colors.void, fontSize: 10, fontWeight: '900' },
+  liveSpotlight: { backgroundColor: colors.stoneSurface, borderColor: colors.brassDark, borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 10 },
+  liveSpotlightLabel: { color: colors.brassLight, fontSize: 8, fontWeight: '900', letterSpacing: 0.7 },
+  liveSpotlightName: { color: colors.parchmentLight, fontSize: 19, fontWeight: '900', marginVertical: 3 },
+  liveSpotlightInfo: { color: colors.parchmentMuted, fontSize: 10 },
+  liveEntryCard: { backgroundColor: colors.stoneSurface, borderColor: colors.stoneBorder, borderWidth: 1, borderRadius: 10, padding: 11, marginBottom: 8 },
+  liveEntryActive: { borderColor: colors.brassBase },
+  liveEntryTop: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 8 },
+  liveInitBadge: { width: 39, height: 39, borderRadius: 8, backgroundColor: colors.stone, alignItems: 'center', justifyContent: 'center' },
+  liveInitValue: { color: colors.brassLight, fontSize: 15, fontWeight: '900' },
+  liveInitLabel: { color: colors.parchmentMuted, fontSize: 7, fontWeight: '800' },
+  liveEntryName: { color: colors.parchmentLight, fontSize: 13, fontWeight: '800' },
+  liveEntryMeta: { color: colors.parchmentMuted, fontSize: 9, marginTop: 3 },
+  liveRemoveButton: { padding: 7 },
+  liveControlRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, marginBottom: 7 },
+  liveHpButton: { minWidth: 43, alignItems: 'center', backgroundColor: colors.stone, borderRadius: 5, paddingHorizontal: 9, paddingVertical: 7 },
+  liveHpText: { fontSize: 10, fontWeight: '900' },
+  liveKoButton: { backgroundColor: 'rgba(239,68,68,0.18)' },
+  liveKoText: { color: colors.crimsonLight, fontSize: 9, fontWeight: '900' },
+  liveDamageButton: { flexGrow: 1, alignItems: 'center', backgroundColor: colors.stone, borderRadius: 5, paddingHorizontal: 7, paddingVertical: 7, color: colors.parchmentMuted, fontSize: 9 },
+  liveDamageText: { color: colors.parchmentMuted, fontSize: 9 },
+  liveConditions: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, paddingTop: 2 },
+  liveConditionChip: { borderWidth: 1, borderColor: colors.stoneBorder, borderRadius: 10, paddingHorizontal: 7, paddingVertical: 4 },
+  liveConditionSelected: { backgroundColor: 'rgba(201,156,74,0.2)', borderColor: colors.brassBase },
+  liveConditionText: { color: colors.parchmentMuted, fontSize: 8 },
+  liveConditionTextSelected: { color: colors.brassLight, fontWeight: '800' },
+  liveNotice: { color: colors.brassLight, fontSize: 10, textAlign: 'center', marginTop: 8 },
+  liveUpdated: { color: colors.parchmentMuted, fontSize: 9, textAlign: 'center', marginTop: 6, marginBottom: 12 },
+  voiceCard: { backgroundColor: colors.stoneSurface, borderWidth: 1, borderColor: colors.brassDark, borderRadius: 12, padding: 14, marginBottom: 14, gap: 9 },
+  voiceTitle: { color: colors.parchmentLight, fontSize: 16, fontWeight: '900' },
+  voiceHint: { color: colors.parchmentMuted, fontSize: 12, lineHeight: 17 },
+  voiceButton: { minHeight: 56, borderRadius: 10, backgroundColor: colors.brassBase, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingHorizontal: 12 },
+  voiceButtonPressed: { backgroundColor: colors.brassLight, opacity: 0.9 },
+  voiceButtonText: { color: colors.void, fontSize: 14, fontWeight: '800' },
+  voiceDisabled: { opacity: 0.45 },
+  voiceMessage: { color: colors.crimsonLight, fontSize: 12, lineHeight: 17 },
+  voiceLabel: { color: colors.parchmentLight, fontSize: 12, fontWeight: '700' },
+  voiceInput: { minHeight: 80, textAlignVertical: 'top', color: colors.parchmentLight, backgroundColor: colors.void, borderWidth: 1, borderColor: colors.stoneBorder, borderRadius: 8, padding: 10, fontSize: 15, lineHeight: 21 },
+  voiceModeRow: { flexDirection: 'row', gap: 8 },
+  voiceModeButton: { flex: 1, minHeight: 48, borderWidth: 1, borderColor: colors.stoneBorder, borderRadius: 8, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6 },
+  voiceModeSelected: { backgroundColor: colors.brassBase, borderColor: colors.brassBase },
+  voiceModeText: { color: colors.parchmentMuted, fontSize: 12, fontWeight: '700' },
+  voiceModeTextSelected: { color: colors.void },
+  voiceSendButton: { minHeight: 52, borderRadius: 8, backgroundColor: colors.brassBase, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  voiceSendText: { color: colors.void, fontSize: 14, fontWeight: '900' },
+  commandReview: { backgroundColor: colors.void, borderRadius: 8, borderWidth: 1, borderColor: colors.stoneBorder, padding: 10, gap: 7 },
+  commandStatus: { color: colors.brassLight, fontSize: 13, fontWeight: '900' },
+  commandOperation: { color: colors.parchmentLight, fontSize: 12, lineHeight: 17 },
+  commandOperationRow: { minHeight: 48, flexDirection: 'row', alignItems: 'center', gap: 9, paddingVertical: 4 },
+  commandCheckbox: { width: 22, height: 22, borderWidth: 1, borderColor: colors.brassBase, borderRadius: 5, alignItems: 'center', justifyContent: 'center' },
+  commandCheckboxSelected: { backgroundColor: colors.brassBase },
+  voiceConfirmButton: { minHeight: 52, borderRadius: 8, backgroundColor: colors.brassBase, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
+  commandReceipt: { color: colors.emerald, fontSize: 12, fontWeight: '800' },
+  liveModalBackdrop: { flex: 1, justifyContent: 'center', backgroundColor: 'rgba(0,0,0,0.72)', padding: 18 },
+  liveModalCard: { backgroundColor: colors.stoneSurface, borderWidth: 1, borderColor: colors.brassDark, borderRadius: 12, padding: 16, gap: 9 },
+  liveModalTitle: { color: colors.parchmentLight, fontSize: 15, fontWeight: '900', marginBottom: 4 },
+  liveInput: { color: colors.parchmentLight, backgroundColor: colors.stone, borderWidth: 1, borderColor: colors.stoneBorder, borderRadius: 7, paddingHorizontal: 10, paddingVertical: 9, fontSize: 12 },
+  liveModalButtons: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 },
   safeArea: {
     flex: 1,
     backgroundColor: colors.void,
@@ -1043,7 +609,7 @@ const styles = StyleSheet.create({
     color: colors.void,
   },
   spotlightCard: {
-    backgroundColor: '#1E2530',
+    backgroundColor: colors.stoneHighlight,
     borderWidth: 1.5,
     borderColor: colors.brassBase,
     borderRadius: 10,
@@ -1134,7 +700,7 @@ const styles = StyleSheet.create({
   },
   combatantCardActive: {
     borderColor: colors.brassBase,
-    backgroundColor: '#1E2430',
+    backgroundColor: colors.stoneHighlight,
   },
   combatantCardDead: {
     opacity: 0.5,

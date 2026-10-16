@@ -15,7 +15,6 @@ import {
 import {
   Radio,
   Play,
-  Pause,
   Volume2,
   VolumeX,
   Volume1,
@@ -47,9 +46,10 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useGmCampaigns } from '../../hooks/useGmCampaigns';
-import { supabase, ExpoSecureStoreAdapter } from '../../api/supabase';
 import { GmQrScannerModal } from '../../components/gm/GmQrScannerModal';
 import { parseGmRemoteQr, ParsedGmRemoteQr } from '../../utils/qrParser';
+import { useGmLive } from '../../contexts/GmLiveContext';
+import { useIsFocused } from '@react-navigation/native';
 
 export interface SfxSlot {
   slotIndex: number;
@@ -97,19 +97,16 @@ function getSfxIconComponent(key: string): React.FC<any> {
   return SFX_ICON_MAP[key] ?? Circle;
 }
 
-function generateUuid(): string {
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
-}
-
-const STORAGE_KEY_PAIRING = 'gm_audio_remote_pairing';
 const DEFAULT_WEB_BASE = 'https://www.barberanddragons.com';
 
 export const GmAudioRemoteScreen: React.FC = () => {
   const { activeCampaign } = useGmCampaigns();
+  const live = useGmLive();
+  const isFocused = useIsFocused();
+  useEffect(() => {
+    live.setSnapshotConsumer('audio', isFocused);
+    return () => live.setSnapshotConsumer('audio', false);
+  }, [isFocused, live.setSnapshotConsumer]);
 
   // Connection & Pairing State
   const [pairingModalOpen, setPairingModalOpen] = useState<boolean>(false);
@@ -117,12 +114,12 @@ export const GmAudioRemoteScreen: React.FC = () => {
   const [sessionPublicId, setSessionPublicId] = useState<string>('');
   const [remoteToken, setRemoteToken] = useState<string>('');
   const [baseUrl, setBaseUrl] = useState<string>(DEFAULT_WEB_BASE);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const isConnected = !!live.pairing && (live.status === 'online' || live.status === 'offline') && live.campaignId === activeCampaign?.id;
+  const pcOnline = isConnected && live.status === 'online';
   const [isSearchingSession, setIsSearchingSession] = useState<boolean>(false);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
   // Playback & Audio State
-  const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(false);
   const [volume, setVolume] = useState<number>(75);
   const [nowPlayingTrackTitle, setNowPlayingTrackTitle] = useState<string | null>(null);
@@ -135,45 +132,12 @@ export const GmAudioRemoteScreen: React.FC = () => {
   const [catalogTracks, setCatalogTracks] = useState<GlobalMusicTrack[]>([]);
   const [catalogLoading, setCatalogLoading] = useState<boolean>(false);
 
-  // Load saved pairing from persistent storage on mount
   useEffect(() => {
-    let isMounted = true;
-    (async () => {
-      try {
-        const saved = await ExpoSecureStoreAdapter.getItem(STORAGE_KEY_PAIRING);
-        if (saved && isMounted) {
-          const parsed = JSON.parse(saved);
-          if (parsed.publicId) {
-            setSessionPublicId(parsed.publicId);
-            setRemoteToken(parsed.token || '');
-            setBaseUrl(parsed.baseUrl || DEFAULT_WEB_BASE);
-            setIsConnected(true);
-          }
-        }
-      } catch (e) {
-        console.warn('[GmAudioRemote] Error reading stored pairing:', e);
-      }
-    })();
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  // Save pairing to persistent storage
-  const savePairingToStorage = useCallback(async (pubId: string, tok: string, base: string) => {
-    try {
-      if (pubId) {
-        await ExpoSecureStoreAdapter.setItem(
-          STORAGE_KEY_PAIRING,
-          JSON.stringify({ publicId: pubId, token: tok, baseUrl: base })
-        );
-      } else {
-        await ExpoSecureStoreAdapter.removeItem(STORAGE_KEY_PAIRING);
-      }
-    } catch (e) {
-      console.warn('[GmAudioRemote] Error writing stored pairing:', e);
-    }
-  }, []);
+    if (!live.pairing) return;
+    setSessionPublicId(live.pairing.publicId);
+    setRemoteToken(live.pairing.token);
+    setBaseUrl(live.pairing.baseUrl);
+  }, [live.pairing]);
 
   // Fetch real SFX Pad Snapshot from website API
   const fetchSfxState = useCallback(async (base: string, pubId: string, tok: string) => {
@@ -227,11 +191,12 @@ export const GmAudioRemoteScreen: React.FC = () => {
     if (!sessionPublicId || !remoteToken) return;
     setIsRefreshing(true);
     await Promise.all([
+      live.refresh(),
       fetchSfxState(baseUrl, sessionPublicId, remoteToken),
       fetchCatalogTracks(baseUrl, sessionPublicId, remoteToken),
     ]);
     setIsRefreshing(false);
-  }, [baseUrl, sessionPublicId, remoteToken, fetchSfxState, fetchCatalogTracks]);
+  }, [baseUrl, sessionPublicId, remoteToken, fetchSfxState, fetchCatalogTracks, live.refresh]);
 
   useEffect(() => {
     if (isConnected && sessionPublicId && remoteToken) {
@@ -239,133 +204,32 @@ export const GmAudioRemoteScreen: React.FC = () => {
     }
   }, [isConnected, sessionPublicId, remoteToken, refreshRemoteData]);
 
-  // Realtime subscription to gm_remote_commands to sync playback state
-  useEffect(() => {
-    if (!sessionPublicId) return;
-
-    const channel = supabase
-      .channel(`gm-remote-${sessionPublicId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'gm_remote_commands',
-          filter: `session_public_id=eq.${sessionPublicId}`,
-        },
-        (payload) => {
-          const rec: any = payload.new;
-          if (!rec) return;
-
-          const type: string = rec.type;
-          const pl: Record<string, any> = rec.payload || {};
-
-          if (type === 'audio.music_play_pause') {
-            setIsPlaying((prev) => !prev);
-            setLastCommandInfo('Play/Pause');
-          } else if (type === 'audio.stop_all') {
-            setIsPlaying(false);
-            setNowPlayingTrackTitle(null);
-            setLastCommandInfo('Stop tutto');
-          } else if (type === 'audio.music_master_volume') {
-            if (typeof pl.value === 'number') {
-              setVolume(Math.round(pl.value * 100));
-            }
-            setLastCommandInfo(`Volume: ${Math.round((pl.value ?? 0.75) * 100)}%`);
-          } else if (type === 'audio.music_mute') {
-            setIsMuted(Boolean(pl.muted));
-            setLastCommandInfo(pl.muted ? 'Muto' : 'Volume ripristinato');
-          } else if (type === 'audio.music_play_global_catalog') {
-            setIsPlaying(true);
-            if (pl.title) {
-              setNowPlayingTrackTitle(pl.title);
-            }
-            setLastCommandInfo(`Musica: ${pl.title || 'Catalogo'}`);
-          } else if (type === 'audio.sfx_pad_slot') {
-            if (typeof pl.slot_index === 'number') {
-              setActivePadSlot(pl.slot_index);
-              setTimeout(() => setActivePadSlot(null), 300);
-            }
-            setLastCommandInfo(`SFX Pad ${Number(pl.slot_index) + 1}`);
-          } else {
-            setLastCommandInfo(`Eseguito: ${type.replace('audio.', '')}`);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      void supabase.removeChannel(channel);
-    };
-  }, [sessionPublicId]);
-
-  // Send Command to website API endpoint
-  const sendCommand = async (type: string, payload: Record<string, unknown> = {}) => {
-    const pubId = sessionPublicId.trim();
-    const tok = remoteToken.trim();
-
-    if (!pubId || !tok) {
-      setPairingModalOpen(true);
-      return;
+  // A successful response means queued; the PC's playback result is not published to mobile.
+  const sendCommand = async (type: string, payload: Record<string, unknown> = {}): Promise<boolean> => {
+    if (!isConnected || live.status !== 'online' || live.campaignId !== activeCampaign?.id) {
+      setLastCommandInfo(live.status === 'mismatch' ? 'Comando bloccato: campagna diversa' : 'Comando bloccato: PC offline o sessione da verificare');
+      return false;
     }
-
     setIsTransmitting(true);
     setLastCommandInfo(`Inviando ${type.replace('audio.', '')}...`);
-
     try {
-      const origin = baseUrl.replace(/\/+$/, '');
-      const url = `${origin}/api/gm-remote/${pubId}/command`;
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: tok,
-          command_id: generateUuid(),
-          type,
-          payload,
-          issued_at: new Date().toISOString(),
-          source: 'remote',
-        }),
-      });
-
-      const json = (await res.json().catch(() => ({}))) as {
-        ok?: boolean;
-        error?: string;
-      };
-
-      if (!res.ok || !json.ok) {
-        const errCode = json?.error || `HTTP ${res.status}`;
-        if (errCode === 'session_expired' || errCode === 'session_revoked') {
-          Alert.alert('Sessione Scaduta', 'La sessione del telecomando sul PC è scaduta. Inquadra un nuovo QR code.');
-          setIsConnected(false);
-        } else if (errCode === 'invalid_token') {
-          Alert.alert('Token Non Valido', 'Il token del telecomando non è valido. Effettua una nuova scansione.');
-        } else {
-          Alert.alert('Errore Invio', `Impossibile trasmettere il comando: ${errCode}`);
-        }
-        setLastCommandInfo(`Errore: ${errCode}`);
-        return;
+      const result = await live.sendCommand(type, payload);
+      if (!result.ok) {
+        setLastCommandInfo(`Errore invio: ${result.error || 'comando rifiutato'}`);
+        return false;
       }
-
-      setLastCommandInfo(`Eseguito: ${type.replace('audio.', '')}`);
-    } catch (err: any) {
-      console.warn('[GmAudioRemote] sendCommand exception:', err);
-      Alert.alert(
-        'Errore di Connessione',
-        `Impossibile raggiungere il server all’indirizzo:\n${baseUrl}\n\nVerifica che il PC sia online e raggiungibile.`
-      );
+      setLastCommandInfo(`Accodato: ${type.replace('audio.', '')} · in attesa del PC`);
+      return true;
+    } catch {
       setLastCommandInfo('Errore di connessione');
+      return false;
     } finally {
       setIsTransmitting(false);
     }
   };
 
   // Music controls actions
-  const togglePlayPause = () => {
-    const next = !isPlaying;
-    setIsPlaying(next);
-    void sendCommand('audio.music_play_pause', {});
-  };
+  const togglePlayPause = () => { void sendCommand('audio.music_play_pause', {}); };
 
   const skipNext = () => {
     void sendCommand('audio.music_next', {});
@@ -377,65 +241,62 @@ export const GmAudioRemoteScreen: React.FC = () => {
 
   const toggleMute = () => {
     const nextMute = !isMuted;
-    setIsMuted(nextMute);
-    void sendCommand('audio.music_mute', { muted: nextMute });
+    void sendCommand('audio.music_mute', { muted: nextMute }).then((accepted) => {
+      if (accepted) setIsMuted(nextMute);
+    });
   };
 
   const changeVolume = (newVal: number) => {
     const clamped = Math.max(0, Math.min(100, newVal));
-    setVolume(clamped);
-    if (isMuted && clamped > 0) {
-      setIsMuted(false);
-    }
-    void sendCommand('audio.music_master_volume', { value: clamped / 100 });
+    void sendCommand('audio.music_master_volume', { value: clamped / 100 }).then((accepted) => {
+      if (accepted) {
+        setVolume(clamped);
+        if (isMuted && clamped > 0) setIsMuted(false);
+      }
+    });
   };
 
   const stopAllAudio = () => {
-    setIsPlaying(false);
-    setNowPlayingTrackTitle(null);
     void sendCommand('audio.stop_all', {});
   };
 
   // Trigger SFX pad
   const triggerSfxPad = (slot: SfxSlot) => {
-    setActivePadSlot(slot.slotIndex);
-    setTimeout(() => setActivePadSlot(null), 300);
-
     void sendCommand('audio.sfx_pad_slot', {
       slot_index: slot.slotIndex,
+    }).then((accepted) => {
+      if (!accepted) return;
+      setActivePadSlot(slot.slotIndex);
+      setTimeout(() => setActivePadSlot(null), 300);
     });
   };
 
   // Play global catalog track
   const playCatalogTrack = (track: GlobalMusicTrack) => {
-    setNowPlayingTrackTitle(track.title);
-    setIsPlaying(true);
     void sendCommand('audio.music_play_global_catalog', {
       global_track_id: track.id,
       title: track.title,
-    });
+    }).then((accepted) => { if (accepted) setNowPlayingTrackTitle(track.title); });
   };
 
   // Handle successful QR scan from camera
-  const handleScannedQr = (result: ParsedGmRemoteQr) => {
+  const handleScannedQr = async (result: ParsedGmRemoteQr) => {
+    const paired = await live.pair(result);
+    if (!paired) {
+      Alert.alert('Collegamento non riuscito', live.error || 'Il QR non corrisponde alla campagna selezionata.');
+      return;
+    }
     setSessionPublicId(result.publicId);
     setRemoteToken(result.token || '');
     setBaseUrl(result.baseUrl);
-    setIsConnected(true);
     setPairingModalOpen(false);
-
-    void savePairingToStorage(result.publicId, result.token || '', result.baseUrl);
     void fetchSfxState(result.baseUrl, result.publicId, result.token || '');
     void fetchCatalogTracks(result.baseUrl, result.publicId, result.token || '');
-
-    Alert.alert(
-      'Telecomando Connesso! 🐉',
-      `Collegato con successo al GM Screen.\n\nSessione: ${result.publicId.slice(0, 13)}...\nHost: ${result.baseUrl}`
-    );
+    Alert.alert('Sessione verificata', `Collegamento associato alla campagna ${activeCampaign?.name || ''}. Lo stato del PC è visibile nella schermata.`);
   };
 
   // Handle manual pairing save
-  const handleSaveManualPairing = () => {
+  const handleSaveManualPairing = async () => {
     const parsed = parseGmRemoteQr(sessionPublicId, baseUrl);
     if (!parsed) {
       Alert.alert('Codice Mancante', 'Inserisci un Session Public ID valido o incolla il link completo del QR.');
@@ -445,25 +306,25 @@ export const GmAudioRemoteScreen: React.FC = () => {
     const finalToken = remoteToken.trim() || parsed.token || '';
     const finalBaseUrl = parsed.baseUrl || baseUrl.trim() || DEFAULT_WEB_BASE;
 
+    const paired = await live.pair({ ...parsed, token: finalToken, baseUrl: finalBaseUrl });
+    if (!paired) {
+      Alert.alert('Collegamento non riuscito', live.error || 'Token non valido o campagna diversa.');
+      return;
+    }
     setSessionPublicId(parsed.publicId);
     setRemoteToken(finalToken);
     setBaseUrl(finalBaseUrl);
-    setIsConnected(true);
     setPairingModalOpen(false);
-
-    void savePairingToStorage(parsed.publicId, finalToken, finalBaseUrl);
     void fetchSfxState(finalBaseUrl, parsed.publicId, finalToken);
     void fetchCatalogTracks(finalBaseUrl, parsed.publicId, finalToken);
-
-    Alert.alert('Telecomando Connesso', `Collegato alla sessione:\n${parsed.publicId.slice(0, 18)}...`);
+    Alert.alert('Sessione verificata', `Sessione collegata alla campagna ${activeCampaign?.name || ''}.`);
   };
 
   const disconnectSession = () => {
-    setIsConnected(false);
+    void live.disconnect();
     setSessionPublicId('');
     setRemoteToken('');
     setLastCommandInfo('Disconnesso');
-    void savePairingToStorage('', '', DEFAULT_WEB_BASE);
   };
 
   return (
@@ -486,16 +347,16 @@ export const GmAudioRemoteScreen: React.FC = () => {
             <View
               style={[
                 styles.pairingStatusDot,
-                isConnected ? styles.dotConnected : styles.dotDisconnected,
+                pcOnline ? styles.dotConnected : styles.dotDisconnected,
               ]}
             />
             <View style={{ flex: 1 }}>
               <Text style={styles.pairingTitle}>
-                {isConnected ? 'COLLEGATO AL GM SCREEN (PC)' : 'TELECOMANDO NON COLLEGATO'}
+                {pcOnline ? 'PC ONLINE · LIVE VERIFICATA' : live.status === 'checking' ? 'VERIFICA DELLA SESSIONE…' : live.status === 'mismatch' ? 'CAMPAGNA DIVERSA · COMANDI BLOCCATI' : live.status === 'expired' ? 'SESSIONE SCADUTA' : isConnected ? 'SESSIONE VALIDA · PC OFFLINE' : 'TELECOMANDO NON COLLEGATO'}
               </Text>
               <Text style={styles.pairingSub} numberOfLines={1}>
                 {isConnected
-                  ? `ID: ${sessionPublicId.slice(0, 13)}... • ${baseUrl.replace(/^https?:\/\//, '')}`
+                  ? `${live.campaignId === activeCampaign?.id ? activeCampaign?.name || 'Campagna verificata' : live.status === 'checking' ? 'Sessione in verifica' : 'La live appartiene a un’altra campagna'} · ${live.error || baseUrl.replace(/^https?:\/\//, '')}`
                   : 'Scansiona il QR Code mostrato sul sito per controllare l’audio'}
               </Text>
             </View>
@@ -530,7 +391,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
                 <Text style={styles.deckTitle}>REGIA MUSICA & MIXER</Text>
                 {nowPlayingTrackTitle ? (
                   <Text style={styles.nowPlayingSubtitle} numberOfLines={1}>
-                    In onda: <Text style={styles.nowPlayingHighlight}>{nowPlayingTrackTitle}</Text>
+                    Ultima traccia inviata: <Text style={styles.nowPlayingHighlight}>{nowPlayingTrackTitle}</Text>
                   </Text>
                 ) : null}
               </View>
@@ -547,31 +408,29 @@ export const GmAudioRemoteScreen: React.FC = () => {
           {/* Big Playback Transport Controls */}
           <View style={styles.transportRow}>
             {/* Prev Track */}
-            <TouchableOpacity style={styles.transportBtn} onPress={skipPrev} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.transportBtn} disabled={!pcOnline || isTransmitting} onPress={skipPrev} activeOpacity={0.7}>
               <SkipBack size={22} color={colors.parchmentLight} />
             </TouchableOpacity>
 
             {/* Play / Pause Big Button */}
             <TouchableOpacity
-              style={[styles.bigPlayBtn, isPlaying && styles.bigPlayBtnPlaying]}
+              style={styles.bigPlayBtn}
+              disabled={!pcOnline || isTransmitting}
               onPress={togglePlayPause}
               activeOpacity={0.85}
             >
-              {isPlaying ? (
-                <Pause size={30} color={colors.void} />
-              ) : (
-                <Play size={30} color={colors.void} style={{ marginLeft: 3 }} />
-              )}
+              <Play size={30} color={colors.void} style={{ marginLeft: 3 }} />
             </TouchableOpacity>
 
             {/* Next Track */}
-            <TouchableOpacity style={styles.transportBtn} onPress={skipNext} activeOpacity={0.7}>
+            <TouchableOpacity style={styles.transportBtn} disabled={!pcOnline || isTransmitting} onPress={skipNext} activeOpacity={0.7}>
               <SkipForward size={22} color={colors.parchmentLight} />
             </TouchableOpacity>
 
             {/* Stop All Emergency Button */}
             <TouchableOpacity
               style={styles.stopAllBtn}
+              disabled={!pcOnline || isTransmitting}
               onPress={stopAllAudio}
               activeOpacity={0.7}
             >
@@ -583,7 +442,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
           {/* Master Volume Controls */}
           <View style={styles.volumeConsole}>
             <View style={styles.volumeHeader}>
-              <TouchableOpacity onPress={toggleMute} style={styles.muteBtn} activeOpacity={0.7}>
+              <TouchableOpacity disabled={!pcOnline || isTransmitting} onPress={toggleMute} style={styles.muteBtn} activeOpacity={0.7}>
                 {isMuted || volume === 0 ? (
                   <VolumeX size={18} color={colors.crimsonLight} />
                 ) : volume < 50 ? (
@@ -600,6 +459,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
               <View style={styles.volStepRow}>
                 <TouchableOpacity
                   style={styles.volStepBtn}
+                  disabled={!pcOnline || isTransmitting}
                   onPress={() => changeVolume(volume - 10)}
                   activeOpacity={0.7}
                 >
@@ -607,6 +467,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.volStepBtn}
+                  disabled={!pcOnline || isTransmitting}
                   onPress={() => changeVolume(volume + 10)}
                   activeOpacity={0.7}
                 >
@@ -620,6 +481,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
               {[0, 25, 50, 75, 100].map((v) => (
                 <TouchableOpacity
                   key={v}
+                  disabled={!pcOnline || isTransmitting}
                   style={[
                     styles.presetVolChip,
                     volume === v && !isMuted && styles.presetVolChipActive,
@@ -655,6 +517,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
             return (
               <TouchableOpacity
                 key={slot.slotIndex}
+                disabled={!pcOnline || isTransmitting}
                 style={[styles.sfxPadCard, isFired && styles.sfxPadCardActive]}
                 onPress={() => triggerSfxPad(slot)}
                 activeOpacity={0.65}
@@ -690,6 +553,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
                 return (
                   <TouchableOpacity
                     key={track.id}
+                    disabled={!pcOnline || isTransmitting}
                     style={[styles.catalogTrackCard, isSelected && styles.catalogTrackCardActive]}
                     onPress={() => playCatalogTrack(track)}
                     activeOpacity={0.7}

@@ -62,7 +62,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
 
       const { data, error: fetchErr } = await supabase
         .from('sessions')
-        .select('*, campaigns(id, name, image_url), session_signups(id, player_id, status)')
+        .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
         .order('scheduled_at', { ascending: true });
 
       if (fetchErr) {
@@ -75,7 +75,71 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
       if (data && data.length > 0) {
         setAllSessions(enrichSessions(data));
       } else {
-        setAllSessions([]);
+        const today = new Date();
+        const d1 = new Date(today);
+        d1.setDate(today.getDate() + 1);
+        d1.setHours(20, 30, 0, 0);
+
+        const d2 = new Date(today);
+        d2.setDate(today.getDate() + 4);
+        d2.setHours(19, 0, 0, 0);
+
+        const d3 = new Date(today);
+        d3.setDate(today.getDate() + 8);
+        d3.setHours(21, 0, 0, 0);
+
+        const sampleRaw = [
+          {
+            id: 'demo-session-1',
+            campaign_id: 'demo-camp-1',
+            title: 'La Cripta dei Sussurri',
+            description: 'Esplorazione del dungeon sotto la vecchia cattedrale.',
+            scheduled_at: d1.toISOString(),
+            duration_hours: 3.5,
+            max_players: 5,
+            status: 'scheduled',
+            location: 'Tavolo Rosso - Sala Centrale',
+            campaigns: { id: 'demo-camp-1', name: 'Le Ombre di Waterdeep', image_url: null, type: 'long' },
+            session_signups: [
+              { id: 's1', session_id: 'demo-session-1', player_id: 'p1', status: 'confirmed' },
+              { id: 's2', session_id: 'demo-session-1', player_id: 'p2', status: 'confirmed' },
+            ],
+          },
+          {
+            id: 'demo-session-2',
+            campaign_id: 'demo-camp-2',
+            title: "L'Assedio alla Fortezza Nanica",
+            description: "Battaglia campale contro l'orda dei goblin.",
+            scheduled_at: d2.toISOString(),
+            duration_hours: 4,
+            max_players: 6,
+            status: 'scheduled',
+            location: 'Tavolo Verde',
+            campaigns: { id: 'demo-camp-2', name: 'La Corona di Pietra', image_url: null, type: 'quest' },
+            session_signups: [
+              { id: 's3', session_id: 'demo-session-2', player_id: 'p3', status: 'confirmed' },
+            ],
+          },
+          {
+            id: 'demo-session-3',
+            campaign_id: 'demo-camp-1',
+            title: 'Il Patto col Drago di Giada',
+            description: 'Negoziazione ad alta tensione nelle terre selvagge.',
+            scheduled_at: d3.toISOString(),
+            duration_hours: 4,
+            max_players: 4,
+            status: 'scheduled',
+            location: 'Tavolo Oro - Privé',
+            campaigns: { id: 'demo-camp-1', name: 'Le Ombre di Waterdeep', image_url: null, type: 'oneshot' },
+            session_signups: [
+              { id: 's4', session_id: 'demo-session-3', player_id: 'p4', status: 'confirmed' },
+              { id: 's5', session_id: 'demo-session-3', player_id: 'p5', status: 'confirmed' },
+              { id: 's6', session_id: 'demo-session-3', player_id: 'p6', status: 'confirmed' },
+              { id: 's7', session_id: 'demo-session-3', player_id: 'p7', status: 'confirmed' },
+            ],
+          },
+        ];
+        setAllSessions(enrichSessions(sampleRaw));
       }
     } catch (err: any) {
       console.warn('[usePlayerSessions] Eccezione:', err);

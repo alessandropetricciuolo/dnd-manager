@@ -61,6 +61,11 @@ function LongWorkspace({
     attendance,
     initiativeState,
     initiativeRemoteHandlers,
+    remoteCombatCommand,
+    handleRemoteCombatCommandRequest,
+    handleRemoteCombatCommandConfirm,
+    confirmRemoteCombatCommandOnPc,
+    onRemoteSessionContextChange,
     xpState,
     elapsedHours,
     calendarBaseDate,
@@ -88,6 +93,14 @@ function LongWorkspace({
   const [quickNoteLoading, setQuickNoteLoading] = useState(false);
   const [quickNoteTitle, setQuickNoteTitle] = useState("");
   const [quickNoteContent, setQuickNoteContent] = useState("");
+  const [dismissedRemoteCommandRequestId, setDismissedRemoteCommandRequestId] = useState<string | null>(null);
+  const [remoteProposalSelection, setRemoteProposalSelection] = useState<{ proposalId: string; operationIds: string[] }>({ proposalId: "", operationIds: [] });
+  const remoteCombatCommandHandlers = useMemo(() => ({ request: handleRemoteCombatCommandRequest, confirm: handleRemoteCombatCommandConfirm }), [handleRemoteCombatCommandConfirm, handleRemoteCombatCommandRequest]);
+  useEffect(() => {
+    if (remoteCombatCommand?.proposalId && remoteProposalSelection.proposalId !== remoteCombatCommand.proposalId) {
+      setRemoteProposalSelection({ proposalId: remoteCombatCommand.proposalId, operationIds: remoteCombatCommand.proposal?.operations.map((operation) => operation.id) ?? [] });
+    }
+  }, [remoteCombatCommand?.proposalId, remoteCombatCommand?.proposal?.operations, remoteProposalSelection.proposalId]);
 
   useEffect(() => {
     try {
@@ -300,7 +313,53 @@ function LongWorkspace({
           initiativeHandlers={initiativeRemoteHandlers}
           initiativeSessionId={selectedSessionId}
           initiativeSessionTitle={selectedSessionLabel ?? null}
+          combatCommandSnapshot={remoteCombatCommand}
+          combatCommandHandlers={remoteCombatCommandHandlers}
+          onRemoteSessionContextChange={onRemoteSessionContextChange}
         />
+        {remoteCombatCommand && remoteCombatCommand.requestId !== dismissedRemoteCommandRequestId ? (
+          <section className="fixed bottom-4 right-4 z-[120] w-[min(28rem,calc(100vw-2rem))] rounded-lg border border-amber-500/60 bg-zinc-950 p-4 text-zinc-100 shadow-2xl" aria-live="polite">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-wider text-amber-300">Comando vocale · {remoteCombatCommand.status === "awaiting" ? "in analisi" : remoteCombatCommand.status === "proposal" ? "da rivedere" : remoteCombatCommand.status === "applied" ? "applicato" : "rifiutato"}</p>
+                <p className="mt-2 text-sm">{remoteCombatCommand.rawInput}</p>
+              </div>
+              <button type="button" className="min-h-11 min-w-11 rounded border border-zinc-700 text-lg" aria-label="Chiudi proposta vocale" onClick={() => setDismissedRemoteCommandRequestId(remoteCombatCommand.requestId)}>×</button>
+            </div>
+            {remoteCombatCommand.message && <p className="mt-2 text-sm text-zinc-300">{remoteCombatCommand.message}</p>}
+            {remoteCombatCommand.proposal && <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto text-sm">
+              {remoteCombatCommand.proposal.operations.map((operation) => {
+                const selected = remoteProposalSelection.proposalId === remoteCombatCommand.proposalId && remoteProposalSelection.operationIds.includes(operation.id);
+                const recipientNames = "targetIds" in operation
+                  ? operation.targetIds?.map((id) => initiativeState.entries.find((entry) => entry.id === id)?.name).filter(Boolean).join(", ")
+                  : "";
+                const description = operation.kind === "damage"
+                  ? `${operation.targetName} subisce ${operation.amount} danni${operation.sourceLabel ? ` · fonte: ${operation.sourceLabel}` : ""}`
+                  : operation.kind === "heal"
+                    ? `${operation.targetName} recupera ${operation.amount} PF`
+                    : operation.kind === "set_exact_hp"
+                      ? `${operation.targetName} passa a ${operation.exactHp} PF`
+                      : operation.kind === "add_effect"
+                        ? `${operation.label} → ${operation.targetName}${operation.spellName ? ` · incantesimo: ${operation.spellName}` : ""}${operation.sourceName ? ` · fonte: ${operation.sourceName}` : ""}`
+                        : operation.kind === "remove_effect"
+                          ? `Rimuovi effetto da ${operation.targetName}`
+                          : operation.kind === "start_concentration"
+                            ? `${operation.casterName} inizia concentrazione${operation.spellName ? ` su ${operation.spellName}` : ""}${recipientNames ? ` · bersagli: ${recipientNames}` : ""}`
+                            : `${operation.casterName} interrompe la concentrazione`;
+                return <li key={operation.id}>
+                  <button type="button" role="checkbox" aria-checked={selected} className="flex min-h-11 w-full items-center gap-2 rounded bg-zinc-900 px-2 text-left" onClick={() => setRemoteProposalSelection((current) => ({ proposalId: remoteCombatCommand.proposalId!, operationIds: selected ? current.operationIds.filter((id) => id !== operation.id) : [...current.operationIds, operation.id] }))}>
+                    <span aria-hidden="true" className={`inline-flex h-5 w-5 items-center justify-center rounded border ${selected ? "border-amber-400 bg-amber-400 text-zinc-950" : "border-zinc-500"}`}>{selected ? "✓" : ""}</span>
+                    <span>{description}</span>
+                  </button>
+                </li>;
+              })}
+            </ul>}
+            {!!remoteCombatCommand.proposal?.unresolvedTargets.length && <p className="mt-3 text-sm text-rose-300">Bersagli da precisare: {remoteCombatCommand.proposal.unresolvedTargets.map((target) => target.query).join(", ")}. Correggi il testo sul telefono e richiedi una nuova analisi.</p>}
+            {!!remoteCombatCommand.proposal?.missingData.length && <p className="mt-2 text-sm text-rose-300">{remoteCombatCommand.proposal.missingData.map((missing) => missing.message).join(" ")}</p>}
+            {remoteCombatCommand.status === "proposal" && <Button type="button" className="mt-4 min-h-11 w-full" disabled={!remoteCombatCommand.proposal || !remoteProposalSelection.operationIds.length || !!remoteCombatCommand.proposal.unresolvedTargets.length || !!remoteCombatCommand.proposal.missingData.length} onClick={() => confirmRemoteCombatCommandOnPc(remoteProposalSelection.operationIds)}>Conferma e applica al combattimento</Button>}
+            {remoteCombatCommand.status === "applied" && remoteCombatCommand.receipt && <p className="mt-3 text-sm font-semibold text-emerald-300">Ricevuta · {new Date(remoteCombatCommand.receipt.appliedAt).toLocaleTimeString()}</p>}
+          </section>
+        ) : null}
         <Button
           variant="ghost"
           size="icon"

@@ -29,6 +29,7 @@ interface DiceRollerModalProps {
   visible: boolean;
   onClose: () => void;
   initialDie?: DieType;
+  initialDiceCount?: number;
   initialModifier?: number;
   initialLabel?: string;
   initialMode?: RollMode;
@@ -58,11 +59,13 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
   visible,
   onClose,
   initialDie = 'd20',
+  initialDiceCount = 1,
   initialModifier = 0,
   initialLabel,
   initialMode = 'normal',
 }) => {
   const [selectedDie, setSelectedDie] = useState<DieType>(initialDie);
+  const [diceCount, setDiceCount] = useState<number>(initialDiceCount);
   const [mode, setMode] = useState<RollMode>(initialMode);
   const [modifier, setModifier] = useState<number>(initialModifier);
   const [label, setLabel] = useState<string | undefined>(initialLabel);
@@ -79,11 +82,12 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
   useEffect(() => {
     if (visible) {
       setSelectedDie(initialDie);
+      setDiceCount(Math.max(1, Math.min(20, Math.trunc(initialDiceCount))));
       setModifier(initialModifier);
       setLabel(initialLabel);
-      setMode(initialMode);
+      setMode(initialDiceCount > 1 ? 'normal' : initialMode);
     }
-  }, [visible, initialDie, initialModifier, initialLabel, initialMode]);
+  }, [visible, initialDie, initialDiceCount, initialModifier, initialLabel, initialMode]);
 
   // Roll execution
   const executeRoll = useCallback(() => {
@@ -145,22 +149,19 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
         clearInterval(interval);
 
         // Final roll generation
-        const r1 = Math.floor(Math.random() * max) + 1;
-        const r2 = Math.floor(Math.random() * max) + 1;
+        const rolls = Array.from({ length: diceCount }, () => Math.floor(Math.random() * max) + 1);
+        let selectedRoll = rolls.reduce((sum, value) => sum + value, 0);
 
-        let selectedRoll = r1;
-        const rolls = [r1];
-
-        if (mode === 'advantage') {
-          rolls.push(r2);
-          selectedRoll = Math.max(r1, r2);
-        } else if (mode === 'disadvantage') {
-          rolls.push(r2);
-          selectedRoll = Math.min(r1, r2);
+        if (diceCount === 1 && mode === 'advantage') {
+          rolls.push(Math.floor(Math.random() * max) + 1);
+          selectedRoll = Math.max(rolls[0], rolls[1]);
+        } else if (diceCount === 1 && mode === 'disadvantage') {
+          rolls.push(Math.floor(Math.random() * max) + 1);
+          selectedRoll = Math.min(rolls[0], rolls[1]);
         }
 
-        const isNat20 = selectedDie === 'd20' && selectedRoll === 20;
-        const isNat1 = selectedDie === 'd20' && selectedRoll === 1;
+        const isNat20 = diceCount === 1 && selectedDie === 'd20' && selectedRoll === 20;
+        const isNat1 = diceCount === 1 && selectedDie === 'd20' && selectedRoll === 1;
         const total = selectedRoll + modifier;
 
         const now = new Date();
@@ -186,7 +187,7 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
         setIsRolling(false);
       }
     }, 45);
-  }, [isRolling, selectedDie, mode, modifier, label, scaleAnim, rotateAnim]);
+  }, [isRolling, selectedDie, diceCount, mode, modifier, label, scaleAnim, rotateAnim]);
 
   const spin = rotateAnim.interpolate({
     inputRange: [-1, 0, 1],
@@ -293,6 +294,7 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
                       styles.modeBtn,
                       mode === 'advantage' && styles.modeBtnActiveAdv,
                     ]}
+                    disabled={diceCount > 1}
                     onPress={() => setMode('advantage')}
                   >
                     <TrendingUp
@@ -316,6 +318,7 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
                       styles.modeBtn,
                       mode === 'disadvantage' && styles.modeBtnActiveDis,
                     ]}
+                    disabled={diceCount > 1}
                     onPress={() => setMode('disadvantage')}
                   >
                     <TrendingDown
@@ -513,7 +516,7 @@ export const DiceRollerModal: React.FC<DiceRollerModalProps> = ({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(11, 13, 16, 0.85)',
+    backgroundColor: 'rgba(11, 9, 8, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
     padding: 16,

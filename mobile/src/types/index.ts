@@ -123,8 +123,8 @@ export interface AbilityScoreEntry {
   key: AbilityKey;
   label: string;
   name: string;
-  score: number;
-  modifier: number;
+  score?: number;
+  modifier?: number;
 }
 
 export type SkillKey =
@@ -152,8 +152,8 @@ export interface SkillEntry {
   name: string;
   ability: AbilityKey;
   abilityLabel: string;
-  bonus: number;
-  proficient: boolean;
+  bonus?: number;
+  proficient?: boolean;
   expertise?: boolean;
 }
 
@@ -161,14 +161,14 @@ export interface SavingThrowEntry {
   key: AbilityKey;
   label: string;
   name: string;
-  bonus: number;
-  proficient: boolean;
+  bonus?: number;
+  proficient?: boolean;
 }
 
 export interface WeaponAttackEntry {
   id: string;
   name: string;
-  attackBonus: number;
+  attackBonus?: number;
   damage: string;
   damageType: string;
   range?: string;
@@ -205,7 +205,7 @@ export interface SpellEntry {
 export interface InventoryItemEntry {
   id: string;
   name: string;
-  quantity: number;
+  quantity?: number;
   weight?: string;
   equipped?: boolean;
   category?: string;
@@ -340,6 +340,8 @@ export interface PlayerSession extends Session {
     id?: string;
     name: string;
     image_url?: string | null;
+    type?: CampaignType | null;
+    description?: string | null;
   } | null;
   session_signups?: SessionSignup[];
   mySignup?: SessionSignup | null;
@@ -347,6 +349,8 @@ export interface PlayerSession extends Session {
   isConfirmed?: boolean;
   isWaitlist?: boolean;
   isFull?: boolean;
+  duration_hours?: number | null;
+  description?: string | null;
 }
 
 export type DieType = 'd20' | 'd12' | 'd10' | 'd8' | 'd6' | 'd4' | 'd2';

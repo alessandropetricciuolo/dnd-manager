@@ -38,6 +38,23 @@ test("snapshot signature notices session identity changes but ignores heartbeat 
   assert.notEqual(initiativeRemoteSnapshotSignature(snapshot), initiativeRemoteSnapshotSignature(nextSession));
 });
 
+test("a voice proposal receipt does not change the combat-state signature", () => {
+  const snapshot = toInitiativeRemoteSnapshot({
+    entries: [], currentTurnIndex: 0, roundNumber: 1, turnElapsedSeconds: 0, isTurnTimerRunning: false,
+  }, undefined, undefined, "session-a", "Session A");
+  const withRequest = {
+    ...snapshot,
+    combatCommand: {
+      requestId: "request-1", status: "awaiting" as const, campaignId: "campaign-a",
+      remoteSessionPublicId: "remote-a", sessionId: "session-a", matchId: null,
+      stateSignature: snapshot.stateSignature,
+    },
+  };
+  const withReceipt = { ...withRequest, combatCommand: { ...withRequest.combatCommand, status: "applied" as const } };
+  assert.equal(initiativeRemoteSnapshotSignature(withRequest), initiativeRemoteSnapshotSignature(withReceipt));
+  assert.equal(initiativeRemoteSnapshotSignature(withRequest), initiativeRemoteSnapshotSignature(snapshot));
+});
+
 test("remote combat commands validate bounded payloads and target the shared tracker", () => {
   const combatant = {
     id: "phone-monster-1", name: "Orco", type: "monster" as const, hp: 12, maxHp: 12,

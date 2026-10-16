@@ -7,6 +7,9 @@ import {
   normalizeCombatEffectInstance,
 } from "@/lib/fight-mode/state-transitions";
 import type { ActiveConcentration, CombatEffectInstance } from "@/lib/fight-mode/types";
+import { initiativeStateSyncSignature } from "@/lib/fight-mode/state-transitions";
+import { validateCombatCommandProposal } from "@/lib/fight-mode/combat-command-proposal-schema";
+import type { RemoteCombatCommandSnapshot } from "@/lib/gm-remote/combat-command-remote";
 
 export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.next_turn",
@@ -71,6 +74,8 @@ export type InitiativeRemoteSnapshot = {
   turnElapsedSeconds: number;
   isTurnTimerRunning: boolean;
   updatedAt: string;
+  stateSignature: string;
+  combatCommand?: RemoteCombatCommandSnapshot | null;
 };
 
 export function toInitiativeRemoteSnapshot(
@@ -78,7 +83,8 @@ export function toInitiativeRemoteSnapshot(
   activeMatch?: InitiativeRemoteSnapshot["activeMatch"],
   matchId?: string,
   sessionId?: string | null,
-  sessionTitle?: string | null
+  sessionTitle?: string | null,
+  combatCommand?: RemoteCombatCommandSnapshot | null
 ): InitiativeRemoteSnapshot {
   const entries = state.entries.map((e) => {
     const acCalc = computeEffectiveArmorClass(e.armorClass, e.activeEffects);
@@ -151,13 +157,45 @@ export function toInitiativeRemoteSnapshot(
     turnElapsedSeconds: state.turnElapsedSeconds,
     isTurnTimerRunning: state.isTurnTimerRunning,
     updatedAt: new Date().toISOString(),
+    stateSignature: initiativeStateSyncSignature(state),
+    ...(combatCommand !== undefined ? { combatCommand } : {}),
   };
 }
 
 /** Stable content identity for publication: heartbeat timestamps must not count as edits. */
 export function initiativeRemoteSnapshotSignature(snapshot: InitiativeRemoteSnapshot): string {
-  const { updatedAt: _updatedAt, ...content } = snapshot;
+  const { updatedAt: _updatedAt, combatCommand: _combatCommand, ...content } = snapshot;
   return JSON.stringify(content);
+}
+
+function parseRemoteCombatCommandSnapshot(raw: unknown): RemoteCombatCommandSnapshot | null {
+  if (!isRecord(raw)) return null;
+  const { requestId, proposalId, status, campaignId, remoteSessionPublicId, sessionId, matchId, stateSignature } = raw;
+  if (typeof requestId !== "string" || !requestId || typeof campaignId !== "string" || !campaignId ||
+    typeof remoteSessionPublicId !== "string" || !remoteSessionPublicId || typeof sessionId !== "string" || !sessionId ||
+    (matchId !== null && typeof matchId !== "string") || typeof stateSignature !== "string" || !stateSignature ||
+    (status !== "awaiting" && status !== "proposal" && status !== "applied" && status !== "rejected")) return null;
+  const proposal = raw.proposal;
+  if (proposal !== undefined && !validateCombatCommandProposal(proposal)) return null;
+  if (status === "proposal" && (typeof proposalId !== "string" || !proposal || !validateCombatCommandProposal(proposal))) return null;
+  const receiptRaw = raw.receipt;
+  const receipt = isRecord(receiptRaw) && typeof receiptRaw.appliedAt === "string" && typeof receiptRaw.stateSignature === "string"
+    ? { appliedAt: receiptRaw.appliedAt, stateSignature: receiptRaw.stateSignature }
+    : undefined;
+  return {
+    requestId,
+    ...(typeof proposalId === "string" ? { proposalId } : {}),
+    status,
+    campaignId,
+    remoteSessionPublicId,
+    sessionId,
+    matchId: matchId as string | null,
+    stateSignature,
+    ...(typeof raw.message === "string" ? { message: raw.message.slice(0, 1000) } : {}),
+    ...(typeof raw.rawInput === "string" ? { rawInput: raw.rawInput.slice(0, 2000) } : {}),
+    ...(proposal ? { proposal: proposal as RemoteCombatCommandSnapshot["proposal"] } : {}),
+    ...(receipt ? { receipt } : {}),
+  };
 }
 
 export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSnapshot | null {
@@ -236,6 +274,11 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
   const matchId = typeof o.matchId === "string" && o.matchId.trim() ? o.matchId.trim() : undefined;
   const sessionId = typeof o.sessionId === "string" && o.sessionId.trim() ? o.sessionId.trim() : null;
   const sessionTitle = typeof o.sessionTitle === "string" && o.sessionTitle.trim() ? o.sessionTitle.trim() : null;
+  const stateSignature = typeof o.stateSignature === "string" && o.stateSignature.length <= 20_000 ? o.stateSignature : "";
+  const combatCommand = o.combatCommand === null || o.combatCommand === undefined
+    ? null
+    : parseRemoteCombatCommandSnapshot(o.combatCommand);
+  if ((o.stateSignature !== undefined && !stateSignature) || (o.combatCommand != null && !combatCommand)) return null;
   const pendingConcentrationChecksCount =
     typeof o.pendingConcentrationChecksCount === "number" &&
     Number.isFinite(o.pendingConcentrationChecksCount) &&
@@ -255,6 +298,8 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
     turnElapsedSeconds: typeof o.turnElapsedSeconds === "number" ? Math.max(0, o.turnElapsedSeconds) : 0,
     isTurnTimerRunning: o.isTurnTimerRunning === true,
     updatedAt: typeof o.updatedAt === "string" ? o.updatedAt : new Date().toISOString(),
+    stateSignature,
+    ...(Object.hasOwn(o, "combatCommand") ? { combatCommand } : {}),
   };
 }
 
@@ -446,4 +491,3 @@ export function adjustInitiativeHp(
     amount: intDelta,
   });
 }
-

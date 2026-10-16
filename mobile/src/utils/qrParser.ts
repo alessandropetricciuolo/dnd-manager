@@ -5,13 +5,30 @@ export interface ParsedGmRemoteQr {
 }
 
 const DEFAULT_BASE_URL = 'https://www.barberanddragons.com';
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-/**
- * Extracts publicId, token and baseUrl from a scanned QR code or pasted link.
- *
- * Expected format from GM screen:
- * `${window.location.origin}/gm-remote/j/${publicId}#t=${plainToken}`
- */
+function decode(value: string): string | null {
+  try {
+    return decodeURIComponent(value).trim();
+  } catch {
+    return null;
+  }
+}
+
+function safeOrigin(value: string): string | null {
+  try {
+    const parsed = new URL(value);
+    const localHost = /^(localhost|127\.0\.0\.1)$/.test(parsed.hostname);
+    const trustedHost = parsed.hostname === 'barberanddragons.com' || parsed.hostname.endsWith('.barberanddragons.com');
+    const localHttp = parsed.protocol === 'http:' && localHost;
+    if ((!trustedHost && !localHost) || (parsed.protocol !== 'https:' && !localHttp)) return null;
+    return parsed.origin.replace(/\/+$/, '');
+  } catch {
+    return null;
+  }
+}
+
+/** Parses a GM remote QR URL or a manually entered public ID. */
 export function parseGmRemoteQr(
   scannedText: string,
   fallbackBaseUrl: string = DEFAULT_BASE_URL
@@ -19,66 +36,36 @@ export function parseGmRemoteQr(
   const trimmed = scannedText?.trim() || '';
   if (!trimmed) return null;
 
-  let baseUrl = fallbackBaseUrl;
-  let publicId = '';
-  let token = '';
-
   try {
-    if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    if (/^https?:\/\//i.test(trimmed)) {
       const url = new URL(trimmed);
-      baseUrl = url.origin;
+      if (url.username || url.password) return null;
+      const baseUrl = safeOrigin(url.origin);
+      if (!baseUrl) return null;
+      const match = url.pathname.match(/^\/gm-remote\/j\/([0-9a-f-]{36})\/?$/i);
+      const publicId = match?.[1] || '';
+      if (!UUID.test(publicId)) return null;
 
-      // Extract publicId from pathname e.g. /gm-remote/j/<uuid>
-      const pathMatch = url.pathname.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/);
-      if (pathMatch) {
-        publicId = pathMatch[1];
-      }
+      const hash = new URLSearchParams(url.hash.replace(/^#/, ''));
+      const tokenRaw = hash.get('t') || url.searchParams.get('t') || '';
+      const token = decode(tokenRaw);
+      if (!token) return null;
 
-      // Hash fragment e.g. #t=<token>
-      if (url.hash) {
-        const hashStr = url.hash.replace(/^#/, '');
-        if (hashStr.startsWith('t=')) {
-          token = decodeURIComponent(hashStr.slice(2));
-        } else {
-          const match = hashStr.match(/(?:^|&)t=([^&]+)/);
-          if (match) {
-            token = decodeURIComponent(match[1]);
-          }
-        }
-      }
-
-      // Query param fallback ?t=<token>
-      if (!token && url.searchParams.has('t')) {
-        token = url.searchParams.get('t') || '';
-      }
-    } else {
-      // Non-URL format (e.g. pasted <uuid>#t=<token>)
-      if (trimmed.includes('#t=')) {
-        const [left, right] = trimmed.split('#t=');
-        token = decodeURIComponent(right || '').trim();
-        const uuidMatch = left.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/);
-        publicId = uuidMatch ? uuidMatch[1] : left.trim();
-      } else {
-        const uuidMatch = trimmed.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/);
-        publicId = uuidMatch ? uuidMatch[1] : trimmed;
-      }
+      return { publicId, token, baseUrl };
     }
+
+    // Manual entry accepts a UUID with an optional token in the legacy #t= form.
+    const [idPart, ...hashParts] = trimmed.split('#');
+    const publicId = idPart.trim();
+    if (!UUID.test(publicId)) return null;
+    const hashText = hashParts.join('#');
+    const parsedHash = new URLSearchParams(hashText);
+    const rawToken = parsedHash.get('t') || hashText.replace(/^t=/, '').split('&')[0];
+    const token = hashText ? decode(rawToken) || undefined : undefined;
+    const baseUrl = safeOrigin(fallbackBaseUrl);
+    if (!baseUrl) return null;
+    return { publicId, token, baseUrl };
   } catch {
-    // Basic regex fallback if URL constructor fails
-    const uuidMatch = trimmed.match(/([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})/);
-    if (uuidMatch) {
-      publicId = uuidMatch[1];
-    }
-    if (trimmed.includes('#t=')) {
-      token = decodeURIComponent(trimmed.split('#t=')[1] || '').trim();
-    }
+    return null;
   }
-
-  if (!publicId) return null;
-
-  return {
-    publicId,
-    token: token || undefined,
-    baseUrl: baseUrl.replace(/\/+$/, ''),
-  };
 }

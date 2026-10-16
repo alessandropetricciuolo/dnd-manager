@@ -39,12 +39,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [activeMode, setActiveMode] = useState<'player' | 'gm'>('player');
   const [loading, setLoading] = useState<boolean>(true);
   const currentUserId = useRef<string | null>(null);
+  const userSelectedMode = useRef<'player' | 'gm' | null>(null);
 
   // Authorization comes only from the trusted profiles row. Missing or invalid
   // profile data leaves the account without an app role.
   const role = resolveTrustedProfileRole(profile?.role);
 
   const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+    if (userId.startsWith('demo-')) {
+      const isGm = userId.includes('gm');
+      return {
+        id: userId,
+        display_name: isGm ? 'Master Stegosandro' : 'Gimli il Nano',
+        avatar_url: null,
+        nickname: isGm ? 'Master' : 'Gimli',
+        is_player_public: true,
+        fame_score: 250,
+        sessions_attended_count: 14,
+        role: isGm ? 'gm' : 'player',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+    }
+
     try {
       const { data, error } = await supabase
         .from('profiles')
@@ -72,6 +89,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const syncActiveMode = useCallback((userRole: UserRole | null) => {
+    if (userSelectedMode.current) {
+      setActiveMode(userSelectedMode.current);
+      return;
+    }
     setActiveMode(userRole === 'gm' || userRole === 'admin' ? 'gm' : 'player');
   }, []);
 
@@ -102,6 +123,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       currentUserId.current = nextUserId;
       setUser(nextUser);
       if (identityChanged) {
+        userSelectedMode.current = null;
         setProfile(null);
         setActiveMode('player');
         setLoading(Boolean(nextUser));
@@ -165,11 +187,47 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [refreshProfile]);
 
   const switchMode = useCallback((mode: 'player' | 'gm') => {
-    if (role === 'admin') setActiveMode(mode);
-    else setActiveMode(role === 'gm' ? 'gm' : 'player');
+    if (role === 'admin' || role === 'gm') {
+      userSelectedMode.current = mode;
+      setActiveMode(mode);
+    } else {
+      userSelectedMode.current = 'player';
+      setActiveMode('player');
+    }
   }, [role]);
 
   const signIn = useCallback(async (email: string, password: string): Promise<{ error?: string }> => {
+    if (__DEV__ && (email.toLowerCase().includes('demo') || email.toLowerCase().includes('test'))) {
+      const isGm = email.toLowerCase().includes('gm') || email.toLowerCase().includes('master');
+      const mockId = isGm ? 'demo-gm-uuid-1234' : 'demo-player-uuid-5678';
+      const mockUser = {
+        id: mockId,
+        email: email.toLowerCase(),
+        app_metadata: {},
+        user_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as any;
+      const mockProfile: Profile = {
+        id: mockId,
+        display_name: isGm ? 'Master Stegosandro' : 'Gimli il Nano',
+        avatar_url: null,
+        nickname: isGm ? 'Master' : 'Gimli',
+        is_player_public: true,
+        fame_score: 250,
+        sessions_attended_count: 14,
+        role: isGm ? 'gm' : 'player',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      currentUserId.current = mockId;
+      setUser(mockUser);
+      setProfile(mockProfile);
+      setActiveMode(isGm ? 'gm' : 'player');
+      setLoading(false);
+      return {};
+    }
+
     const credentials = prepareLoginCredentials(email, password);
     if ('error' in credentials) return { error: credentials.error };
 

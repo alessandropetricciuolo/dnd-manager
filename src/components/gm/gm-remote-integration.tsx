@@ -8,6 +8,7 @@ import { GmRemoteCommandBridge } from "./gm-remote-command-bridge";
 import { GmRemoteControlModal } from "./gm-remote-control-modal";
 import { GmRemoteInitiativePublisher } from "./gm-remote-initiative-publisher";
 import { GmRemoteSfxPadPublisher } from "./gm-remote-sfx-pad-publisher";
+import type { RemoteCombatCommandBridgeHandlers } from "./gm-remote-command-bridge";
 import type { GmRemoteSessionCreated } from "@/app/campaigns/gm-remote-actions";
 import type { TorneoRemoteHandlers } from "@/lib/gm-remote/apply-torneo-remote";
 import type { InitiativeTrackerHandle, InitiativeTrackerState } from "./initiative-tracker";
@@ -29,6 +30,9 @@ type Props = {
   station1MatchId?: string | null;
   station2MatchId?: string | null;
   torneoHandlers?: TorneoRemoteHandlers | null;
+  combatCommandHandlers?: RemoteCombatCommandBridgeHandlers;
+  combatCommandSnapshot?: import("@/lib/gm-remote/combat-command-remote").RemoteCombatCommandSnapshot | null;
+  onRemoteSessionContextChange?: (remoteSessionPublicId: string | null) => void;
 };
 
 type BridgeSnapshot = { publicId: string; expiresAt: string };
@@ -52,6 +56,9 @@ export function GmRemoteIntegration({
   station1MatchId,
   station2MatchId,
   torneoHandlers,
+  combatCommandHandlers,
+  combatCommandSnapshot,
+  onRemoteSessionContextChange,
 }: Props) {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalSession, setModalSession] = useState<GmRemoteSessionCreated | null>(null);
@@ -117,6 +124,9 @@ export function GmRemoteIntegration({
   useEffect(() => {
     onSessionPublicIdChange?.(sessionPublicId);
   }, [onSessionPublicIdChange, sessionPublicId]);
+  useEffect(() => {
+    onRemoteSessionContextChange?.(sessionPublicId);
+  }, [onRemoteSessionContextChange, sessionPublicId]);
 
   return (
     <>
@@ -130,6 +140,7 @@ export function GmRemoteIntegration({
         station1MatchId={station1MatchId}
         station2MatchId={station2MatchId}
         torneoHandlers={torneoHandlers}
+        combatCommandHandlers={combatCommandHandlers}
         onRealtimeStatus={setRealtimeConnected}
       />
       {(initiativeHandleRef || initiativeState) && !onSessionPublicIdChange ? (
@@ -141,6 +152,7 @@ export function GmRemoteIntegration({
           active={initiativeActive}
           sessionId={initiativeSessionId}
           sessionTitle={initiativeSessionTitle}
+          combatCommand={combatCommandSnapshot}
         />
       ) : null}
       {forge ? (

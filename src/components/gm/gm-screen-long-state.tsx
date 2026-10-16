@@ -31,6 +31,8 @@ import {
 } from "@/components/gm/initiative-tracker";
 import { adjustInitiativeHp, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 import { normalizeCombatConditions } from "@/lib/combat-conditions";
+import { createRemoteCombatCommandController } from "@/lib/gm-remote/combat-command-controller";
+import type { RemoteCombatCommandSnapshot } from "@/lib/gm-remote/combat-command-remote";
 import {
   applyCombatHpMutation,
   buildInitiativeDraftState,
@@ -138,6 +140,11 @@ type LongSessionContextValue = {
   initiativeState: InitiativeState;
   setInitiativeState: Dispatch<SetStateAction<InitiativeState>>;
   initiativeRemoteHandlers: InitiativeRemoteCommandHandlers;
+  remoteCombatCommand: RemoteCombatCommandSnapshot | null;
+  handleRemoteCombatCommandRequest: (payload: Record<string, unknown>, remoteSessionPublicId: string) => void;
+  handleRemoteCombatCommandConfirm: (payload: Record<string, unknown>, remoteSessionPublicId: string) => void;
+  confirmRemoteCombatCommandOnPc: (operationIds?: string[]) => void;
+  onRemoteSessionContextChange: (remoteSessionPublicId: string | null) => void;
   xpState: LongSessionXpState;
   setXpState: (state: LongSessionXpState) => void;
   elapsedHours: number;
@@ -355,8 +362,27 @@ export function GmScreenLongStateProvider({
   const [selectedSessionId, setSelectedSessionIdState] = useState<string | null>(initialSessionId ?? null);
   const [attendance, setAttendanceState] = useState<Record<string, LongSessionAttendanceStatus>>({});
   const [initiativeState, setInitiativeState] = useState<InitiativeState>(emptyInitiativeState);
+  const [remoteCombatCommand, setRemoteCombatCommand] = useState<RemoteCombatCommandSnapshot | null>(null);
+  const remoteCombatCommandRef = useRef<RemoteCombatCommandSnapshot | null>(null);
+  remoteCombatCommandRef.current = remoteCombatCommand;
+  const selectedSessionRef = useRef(selectedSessionId);
+  selectedSessionRef.current = selectedSessionId;
+  const campaignIdRef = useRef(campaignId);
+  campaignIdRef.current = campaignId;
+  const remoteSessionPublicIdRef = useRef<string | null>(null);
   const initiativeRef = useRef(initiativeState);
   initiativeRef.current = initiativeState;
+  const commitInitiativeState = useCallback((next: InitiativeState) => {
+    initiativeRef.current = next;
+    setInitiativeState(next);
+  }, []);
+  const updateInitiativeState = useCallback((update: (current: InitiativeState) => InitiativeState) => {
+    commitInitiativeState(update(initiativeRef.current));
+  }, [commitInitiativeState]);
+  const setInitiativeStateSafely = useCallback<Dispatch<SetStateAction<InitiativeState>>>((action) => {
+    const next = typeof action === "function" ? action(initiativeRef.current) : action;
+    commitInitiativeState(next);
+  }, [commitInitiativeState]);
   const remoteHpProjectionRef = useRef<Map<string, number>>(new Map());
   remoteHpProjectionRef.current = new Map(initiativeState.entries.map((entry) => [entry.id, entry.hp]));
   const coreStatusSaveQueueRef = useRef(Promise.resolve());
@@ -378,28 +404,82 @@ export function GmScreenLongStateProvider({
         console.warn("[gm-remote] core_monster_status_sync_failed", error);
       });
   }, [campaignId]);
+  const saveRemoteCoreStatusRef = useRef(saveRemoteCoreStatus);
+  saveRemoteCoreStatusRef.current = saveRemoteCoreStatus;
+  const publishRemoteCombatCommand = useCallback((next: RemoteCombatCommandSnapshot | null) => {
+    remoteCombatCommandRef.current = next;
+    setRemoteCombatCommand(next);
+  }, []);
+
+  const commandController = useMemo(() => createRemoteCombatCommandController({
+    getContext: () => ({
+      campaignId: campaignIdRef.current,
+      sessionId: selectedSessionRef.current,
+      remoteSessionPublicId: remoteSessionPublicIdRef.current,
+      matchId: null,
+    }),
+    getState: () => initiativeRef.current,
+    setState: (nextState) => {
+      const previous = initiativeRef.current;
+      for (const entry of nextState.entries) {
+        const before = previous.entries.find((candidate) => candidate.id === entry.id);
+        if (before && before.hp !== entry.hp) saveRemoteCoreStatusRef.current(entry.id, entry.hp);
+      }
+      commitInitiativeState(nextState);
+    },
+    onChange: publishRemoteCombatCommand,
+    parseAi: async (text, state, stateSignature) => {
+      const result = await import("@/lib/actions/combat-command-ai-actions").then(({ interpretCombatCommandWithAiAction }) =>
+        interpretCombatCommandWithAiAction({
+          campaignId: campaignIdRef.current,
+          rawInput: text,
+          combatants: state.entries.map((entry) => ({ id: entry.id, name: entry.name, type: entry.type, hp: entry.hp, maxHp: entry.maxHp })),
+          stateSignatureAtCreation: stateSignature,
+        }));
+      return result;
+    },
+  }), [commitInitiativeState, publishRemoteCombatCommand]);
+  useEffect(() => {
+    commandController.onCampaignContextChange(campaignId);
+  }, [campaignId, commandController]);
+  useEffect(() => {
+    commandController.onSessionContextChange(selectedSessionId);
+  }, [selectedSessionId, commandController]);
+  const onRemoteSessionContextChange = useCallback((remoteSessionPublicId: string | null) => {
+    remoteSessionPublicIdRef.current = remoteSessionPublicId;
+    commandController.onRemoteSessionContextChange(remoteSessionPublicId);
+  }, [commandController]);
+  const handleRemoteCombatCommandRequest = useCallback((payload: Record<string, unknown>, remoteSessionPublicId: string) => {
+    void commandController.request(payload, remoteSessionPublicId);
+  }, [commandController]);
+  const handleRemoteCombatCommandConfirm = useCallback((payload: Record<string, unknown>, remoteSessionPublicId: string) => {
+    commandController.confirm(payload, remoteSessionPublicId);
+  }, [commandController]);
+  const confirmRemoteCombatCommandOnPc = useCallback((operationIds?: string[]) => {
+    commandController.confirmOnPc(operationIds);
+  }, [commandController]);
   const initiativeRemoteHandlers = useMemo<InitiativeRemoteCommandHandlers>(() => ({
     nextTurn: () => {
-      setInitiativeState((state) => transitionNextTurn(state));
+      updateInitiativeState(transitionNextTurn);
       resetTurnTimer(campaignId, true);
     },
     prevTurn: () => {
-      setInitiativeState((state) => advanceRemoteTurn(state, -1));
+      updateInitiativeState((state) => advanceRemoteTurn(state, -1));
       resetTurnTimer(campaignId, true);
     },
     toggleTurnTimer: () => toggleTurnTimer(campaignId),
     resetTurnTimer: () => resetTurnTimer(campaignId, false),
     resetRound: () => {
-      setInitiativeState((state) => ({ ...state, currentTurnIndex: 0, roundNumber: 1 }));
+      updateInitiativeState((state) => ({ ...state, currentTurnIndex: 0, roundNumber: 1 }));
       resetTurnTimer(campaignId, false);
     },
-    adjustDamage: (entryId, delta) => setInitiativeState((state) => ({
+    adjustDamage: (entryId, delta) => updateInitiativeState((state) => ({
       ...state,
       entries: state.entries.map((entry) => entry.id === entryId
         ? { ...entry, damageDealt: Math.max(0, (entry.damageDealt ?? 0) + delta) }
         : entry),
     })),
-    adjustDamageTaken: (entryId, delta) => setInitiativeState((state) => ({
+    adjustDamageTaken: (entryId, delta) => updateInitiativeState((state) => ({
       ...state,
       entries: state.entries.map((entry) => entry.id === entryId
         ? { ...entry, damageTaken: Math.max(0, (entry.damageTaken ?? 0) + delta) }
@@ -412,22 +492,22 @@ export function GmScreenLongStateProvider({
         const nextHp = Math.max(0, Math.min(currentHp + delta, entry.maxHp > 0 ? entry.maxHp : currentHp + delta));
         saveRemoteCoreStatus(entryId, nextHp);
       }
-      setInitiativeState((state) => adjustInitiativeHp(state, entryId, delta));
+      updateInitiativeState((state) => adjustInitiativeHp(state, entryId, delta));
     },
     setHp: (entryId, hp) => {
       saveRemoteCoreStatus(entryId, hp);
-      setInitiativeState((state) => applyCombatHpMutation(state, { kind: "set_exact", targetId: entryId, exactHp: hp }));
+      updateInitiativeState((state) => applyCombatHpMutation(state, { kind: "set_exact", targetId: entryId, exactHp: hp }));
     },
-    setConditions: (entryId, conditions) => setInitiativeState((state) =>
+    setConditions: (entryId, conditions) => updateInitiativeState((state) =>
       setCanonicalConditionsOnEntry(state, entryId, conditions)
     ),
-    toggleCondition: (entryId, condition) => setInitiativeState((state) =>
+    toggleCondition: (entryId, condition) => updateInitiativeState((state) =>
       toggleCombatStatusOnEntry(state, entryId, condition)
     ),
-    toggleMobileConcentration: (entryId) => setInitiativeState((state) =>
+    toggleMobileConcentration: (entryId) => updateInitiativeState((state) =>
       toggleMobileConcentrationOnEntry(state, entryId)
     ),
-    addCombatant: (combatant) => setInitiativeState((state) => {
+    addCombatant: (combatant) => updateInitiativeState((state) => {
       if (state.entries.some((entry) => entry.id === combatant.id)) return state;
       const activeId = state.entries[state.currentTurnIndex]?.id;
       const added: InitiativeEntry = {
@@ -451,10 +531,10 @@ export function GmScreenLongStateProvider({
         currentTurnIndex: activeIndex >= 0 ? activeIndex : state.currentTurnIndex,
       });
     }),
-    removeCombatant: (entryId) => setInitiativeState((state) =>
+    removeCombatant: (entryId) => updateInitiativeState((state) =>
       removeCombatantFromState(state, entryId)
     ),
-  }), [campaignId, saveRemoteCoreStatus]);
+  }), [campaignId, saveRemoteCoreStatus, updateInitiativeState]);
   const [xpState, setXpState] = useState<LongSessionXpState>(emptyXpState);
   const [elapsedHours, setElapsedHoursState] = useState(0);
   const [calendarBaseDate, setCalendarBaseDateState] = useState<FantasyCalendarDate>(DEFAULT_FANTASY_BASE_DATE);
@@ -473,11 +553,10 @@ export function GmScreenLongStateProvider({
   const concludeFight = useCallback(() => {
     if (!selectedSessionId || hydratedSessionId !== selectedSessionId) { toast.error("Seleziona una sessione e attendi il caricamento della bozza."); return false; }
     const xp = monsterXp(initiativeRef.current.entries);
-    initiativeRef.current = emptyInitiativeTrackerState();
+    commitInitiativeState(emptyInitiativeTrackerState());
     setXpState(current => ({...current, bankedMonsterXp: current.bankedMonsterXp + xp}));
-    setInitiativeState(initiativeRef.current);
     return true;
-  }, [selectedSessionId, hydratedSessionId]);
+  }, [commitInitiativeState, selectedSessionId, hydratedSessionId]);
 
   const refreshSessions = useCallback(async () => {
     setLoadingSessions(true);
@@ -555,7 +634,7 @@ export function GmScreenLongStateProvider({
     if (!selectedSessionId) {
       setSignups([]);
       setAttendanceState({});
-      setInitiativeState(emptyInitiativeState);
+      commitInitiativeState(emptyInitiativeState);
       setXpState(emptyXpState);
       setElapsedHoursState(0);
       setEconomyDraftState(emptyEconomyDraft);
@@ -609,7 +688,7 @@ export function GmScreenLongStateProvider({
         try {localStorage.setItem(`gm-screen-legacy-xp-imported-${campaignId}`,selectedSessionId);} catch { /* Keep existing copy. */ }
       }
       setAttendanceState({ ...defaults, ...(serverDraft?.attendance ?? {}), ...(stored?.attendance ?? {}) });
-      setInitiativeState(sanitizeInitiativeState(stored?.initiative));
+      commitInitiativeState(sanitizeInitiativeState(stored?.initiative));
       setXpState(restoredXp);
       setElapsedHoursState(
         stored?.elapsedHours != null && Number.isFinite(stored.elapsedHours)
@@ -626,7 +705,7 @@ export function GmScreenLongStateProvider({
     return () => {
       cancelled = true;
     };
-  }, [allCharacters, loadingCharacters, campaignId, selectedSessionId]);
+  }, [allCharacters, loadingCharacters, campaignId, selectedSessionId, commitInitiativeState]);
 
   const sessionCharacters = useMemo(() => {
     if (!signups.length) return [];
@@ -715,10 +794,12 @@ export function GmScreenLongStateProvider({
   }, [draftPaused,campaignId,selectedSessionId,hydratedSessionId,sessionCharacters,attendance,xpState,initiativeDraftState,elapsedHours,economyDraft,missionSelection]);
 
   const setSelectedSessionId = useCallback((sessionId: string | null) => {
+    commandController.onSessionContextChange(sessionId);
+    selectedSessionRef.current = sessionId;
     hydratedSessionRef.current = null;
     setHydratedSessionId(null);
     setSelectedSessionIdState(sessionId);
-  }, []);
+  }, [commandController]);
 
   const setAttendance = useCallback((playerId: string, value: LongSessionAttendanceStatus) => {
     setAttendanceState((current) => ({ ...current, [playerId]: value }));
@@ -764,12 +845,12 @@ export function GmScreenLongStateProvider({
       // ignore
     }
     setAttendanceState(buildDefaultAttendance(signups));
-    setInitiativeState(emptyInitiativeState);
+    commitInitiativeState(emptyInitiativeState);
     setXpState(emptyXpState);
     setElapsedHoursState(0);
     setEconomyDraftState(emptyEconomyDraft);
     setMissionSelectionState(emptyMissionSelection);
-  }, [campaignId, selectedSessionId, signups]);
+  }, [campaignId, selectedSessionId, signups, commitInitiativeState]);
 
   const updateCharacterCoinsLocally = useCallback(
     (
@@ -859,8 +940,13 @@ export function GmScreenLongStateProvider({
       attendance,
       setAttendance,
       initiativeState,
-      setInitiativeState,
+      setInitiativeState: setInitiativeStateSafely,
       initiativeRemoteHandlers,
+      remoteCombatCommand,
+      handleRemoteCombatCommandRequest,
+      handleRemoteCombatCommandConfirm,
+      confirmRemoteCombatCommandOnPc,
+      onRemoteSessionContextChange,
       xpState,
       setXpState,
       elapsedHours,
@@ -899,6 +985,11 @@ export function GmScreenLongStateProvider({
       hasUnsavedLocalState,
       initiativeState,
       initiativeRemoteHandlers,
+      remoteCombatCommand,
+      handleRemoteCombatCommandRequest,
+      handleRemoteCombatCommandConfirm,
+      confirmRemoteCombatCommandOnPc,
+      onRemoteSessionContextChange,
       loadingCharacters,
       loadingSessions,
       loadingSignups,
@@ -913,7 +1004,7 @@ export function GmScreenLongStateProvider({
       setAttendance,
       setEconomyDraft,
       setElapsedHours,
-      setInitiativeState,
+      setInitiativeStateSafely,
       setMissionSelection,
       setSelectedSessionId,
       signups,

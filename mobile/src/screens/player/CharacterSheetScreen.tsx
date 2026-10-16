@@ -32,7 +32,6 @@ import {
   BookOpen,
   Backpack,
   Eye,
-  Star,
   Award,
   Target,
   Wand2,
@@ -42,6 +41,8 @@ import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCampaign } from '../../contexts/CampaignContext';
 import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
+import { CharacterSheetV1 } from '../../lib/character-sheet';
+import { parseWeaponDamage } from '../../lib/weapon-damage';
 import { DiceRollerModal } from '../../components/player/DiceRollerModal';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import {
@@ -90,21 +91,25 @@ export const CharacterSheetScreen: React.FC = () => {
     savingThrows,
     skills,
     updateHp,
-    toggleInspiration,
-    spendHitDie,
     useFeature,
     shortRest,
     updateSpellSlot,
     updateCoins,
     updateDeathSaves,
     longRest,
+    shortRestWithHitDie,
+    refresh,
     saveError,
     isSaving,
   } = usePlayerCharacter();
 
   useEffect(() => {
-    if (saveError) Alert.alert('Salvataggio non riuscito', saveError);
-  }, [saveError]);
+    if (!saveError) return;
+    const conflicted = saveError.includes('cambiata su un altro dispositivo');
+    Alert.alert('Salvataggio non riuscito', saveError, conflicted
+      ? [{ text: 'Dopo', style: 'cancel' }, { text: 'Aggiorna scheda', onPress: () => { void refresh(); } }]
+      : [{ text: 'OK' }]);
+  }, [saveError, refresh]);
 
   const [activeTab, setActiveTab] = useState<SheetTab>('combat');
 
@@ -112,6 +117,7 @@ export const CharacterSheetScreen: React.FC = () => {
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
   const [isDiceModalOpen, setIsDiceModalOpen] = useState<boolean>(false);
   const [diceInitialDie, setDiceInitialDie] = useState<DieType>('d20');
+  const [diceInitialCount, setDiceInitialCount] = useState<number>(1);
   const [diceInitialMod, setDiceInitialMod] = useState<number>(0);
   const [diceInitialLabel, setDiceInitialLabel] = useState<string | undefined>(undefined);
 
@@ -135,38 +141,35 @@ export const CharacterSheetScreen: React.FC = () => {
 
   // Character stats
   const currentHp = safeCharacter.hit_points ?? 0;
-  const maxHp = safeCharacter.rules_snapshot?.max_hp ?? 42;
+  const maxHp = safeCharacter.rules_snapshot?.max_hp;
   const tempHp = safeCharacter.rules_snapshot?.temp_hp ?? 0;
   const deathSaves = safeCharacter.rules_snapshot?.death_saves ?? {
     successes: 0,
     failures: 0,
   };
-  const hitDice = safeCharacter.rules_snapshot?.hit_dice ?? {
-    total: safeCharacter.level ?? 4,
-    current: safeCharacter.level ?? 4,
-    die: '1d10',
-  };
-  const isInspired = Boolean(safeCharacter.rules_snapshot?.inspiration);
+  const hitDice = safeCharacter.rules_snapshot?.hit_dice;
   const spellSlots = safeCharacter.rules_snapshot?.spellSlots ?? [];
-  const usedSpellSlots = safeCharacter.rules_snapshot?.usedSpellSlots ?? {};
+  const usedSpellSlots = safeCharacter.rules_snapshot?.usedSpellSlots as Record<number, number> | undefined;
   const weapons: WeaponAttackEntry[] = safeCharacter.rules_snapshot?.weapons ?? [];
   const features: ClassFeatureEntry[] = safeCharacter.rules_snapshot?.features ?? [];
   const spells: SpellEntry[] = safeCharacter.rules_snapshot?.spells ?? [];
-  const proficiencies = safeCharacter.rules_snapshot?.proficiencies ?? {
-    armor: ['Tutte le armature', 'Scudi'],
-    weapons: ['Armi semplici', 'Armi da guerra'],
-    tools: ['Strumenti da fabbro'],
-    languages: ['Comune', 'Nanico'],
+  const proficiencies = (safeCharacter.rules_snapshot?.proficiencies ?? {}) as {
+    armor?: string[]; weapons?: string[]; tools?: string[]; languages?: string[];
   };
   const inventory: InventoryItemEntry[] = safeCharacter.rules_snapshot?.inventory ?? [];
-  const personality = safeCharacter.rules_snapshot?.personality ?? {
-    traits: '',
-    ideals: '',
-    bonds: '',
-    flaws: '',
-  };
+  const personality = safeCharacter.rules_snapshot?.personality as {
+    traits?: string; ideals?: string; bonds?: string; flaws?: string;
+  } | undefined;
+  const sheet = safeCharacter.rules_snapshot?.character_sheet as CharacterSheetV1 | undefined;
+  const legacySpellcasting = safeCharacter.rules_snapshot?.spellcasting as {
+    ability?: AbilityKey; saveDc?: number; attackBonus?: number;
+  } | undefined;
+  const spellAbility = sheet?.spellcastingAbility ?? legacySpellcasting?.ability;
+  const spellAbilityLabel: Record<AbilityKey, string> = { str: 'FOR', dex: 'DES', con: 'COS', int: 'INT', wis: 'SAG', cha: 'CAR' };
+  const spellSaveDc = sheet?.spellSaveDc ?? legacySpellcasting?.saveDc;
+  const spellAttackBonus = sheet?.spellAttackBonus ?? legacySpellcasting?.attackBonus;
 
-  const hpPercent = Math.max(0, Math.min(100, Math.round((currentHp / maxHp) * 100)));
+  const hpPercent = maxHp ? Math.max(0, Math.min(100, Math.round((currentHp / maxHp) * 100))) : 0;
 
   // Dynamic HP Bar color
   const hpBarColor = useMemo(() => {
@@ -177,54 +180,64 @@ export const CharacterSheetScreen: React.FC = () => {
 
   // Dice roll triggers
   const rollAbility = (ab: AbilityScoreEntry) => {
+    if (ab.modifier === undefined) return;
     setDiceInitialDie('d20');
+    setDiceInitialCount(1);
     setDiceInitialMod(ab.modifier);
     setDiceInitialLabel(`Prova di ${ab.name} (${ab.label} ${ab.modifier >= 0 ? '+' : ''}${ab.modifier})`);
     setIsDiceModalOpen(true);
   };
 
   const rollSavingThrow = (st: SavingThrowEntry) => {
+    if (st.bonus === undefined) return;
     setDiceInitialDie('d20');
+    setDiceInitialCount(1);
     setDiceInitialMod(st.bonus);
     setDiceInitialLabel(`Tiro Salvezza su ${st.name} (${st.label} ${st.bonus >= 0 ? '+' : ''}${st.bonus})`);
     setIsDiceModalOpen(true);
   };
 
   const rollSkill = (sk: SkillEntry) => {
+    if (sk.bonus === undefined) return;
     setDiceInitialDie('d20');
+    setDiceInitialCount(1);
     setDiceInitialMod(sk.bonus);
     setDiceInitialLabel(`Prova di ${sk.name} [${sk.abilityLabel}] (${sk.bonus >= 0 ? '+' : ''}${sk.bonus})`);
     setIsDiceModalOpen(true);
   };
 
   const rollInitiative = () => {
-    const initMod = safeCharacter.rules_snapshot?.initiative ?? 2;
+    const initMod = safeCharacter.rules_snapshot?.initiative;
+    if (typeof initMod !== 'number') return;
     setDiceInitialDie('d20');
+    setDiceInitialCount(1);
     setDiceInitialMod(initMod);
     setDiceInitialLabel(`Tiro Iniziativa (${initMod >= 0 ? '+' : ''}${initMod})`);
     setIsDiceModalOpen(true);
   };
 
   const rollWeaponAttack = (wp: WeaponAttackEntry) => {
+    if (wp.attackBonus === undefined) {
+      Alert.alert('Tiro per colpire non disponibile', 'Il bonus per colpire non è compilato nella scheda.');
+      return;
+    }
     setDiceInitialDie('d20');
+    setDiceInitialCount(1);
     setDiceInitialMod(wp.attackBonus);
     setDiceInitialLabel(`Attacco: ${wp.name} (${wp.attackBonus >= 0 ? '+' : ''}${wp.attackBonus})`);
     setIsDiceModalOpen(true);
   };
 
   const rollWeaponDamage = (wp: WeaponAttackEntry) => {
-    // Parse die from damage string (e.g. "1d8 + 3" -> d8 with modifier +3)
-    let die: DieType = 'd8';
-    let mod = 0;
-    const match = wp.damage.match(/(\d*)d(20|12|10|8|6|4|2)(?:\s*([+-])\s*(\d+))?/i);
-    if (match) {
-      die = `d${match[2]}` as DieType;
-      if (match[3] && match[4]) {
-        mod = parseInt(match[4], 10) * (match[3] === '-' ? -1 : 1);
-      }
+    const abilityMods = Object.fromEntries(abilityScores.flatMap((ability) => ability.modifier === undefined ? [] : [[ability.key, ability.modifier]])) as Partial<Record<AbilityKey, number>>;
+    const roll = parseWeaponDamage(wp.damage, safeCharacter.rules_snapshot?.abilities, abilityMods);
+    if (!roll) {
+      Alert.alert('Danno non calcolabile', `La formula “${wp.damage}” non è completa oppure richiede un modificatore non presente nella scheda.`);
+      return;
     }
-    setDiceInitialDie(die);
-    setDiceInitialMod(mod);
+    setDiceInitialDie(roll.die);
+    setDiceInitialCount(roll.diceCount);
+    setDiceInitialMod(roll.modifier);
     setDiceInitialLabel(`Danni: ${wp.name} (${wp.damage} ${wp.damageType})`);
     setIsDiceModalOpen(true);
   };
@@ -249,18 +262,30 @@ export const CharacterSheetScreen: React.FC = () => {
     }
   };
 
-  const handleSpendHitDie = () => {
-    if (hitDice.current <= 0) {
+  const handleSpendHitDie = async () => {
+    if (hitDice && hitDice.current <= 0) {
       Alert.alert('Dadi Vita Esauriti', 'Non hai più Dadi Vita disponibili per questo riposo.');
       return;
     }
-    const dieFaces = parseInt(hitDice.die.replace(/\D/g, ''), 10) || 10;
-    const conMod = abilityScores.find((a) => a.key === 'con')?.modifier ?? 0;
+    if (!hitDice || maxHp === undefined || safeCharacter.hit_points === null) {
+      Alert.alert('Dadi Vita non disponibili', 'Il numero di Dadi Vita o i PF massimi non sono compilati nella scheda.');
+      return;
+    }
+    const dieFaces = Number.parseInt(hitDice.die.match(/d(\d+)/i)?.[1] ?? '', 10);
+    if (!Number.isFinite(dieFaces) || dieFaces < 2) {
+      Alert.alert('Dado Vita non valido', `Controlla il dado registrato nella scheda (${hitDice.die}).`);
+      return;
+    }
+    const conMod = abilityScores.find((a) => a.key === 'con')?.modifier;
+    if (conMod === undefined) {
+      Alert.alert('Modificatore mancante', 'Il modificatore di Costituzione non è compilato: non posso calcolare la cura del Dado Vita.');
+      return;
+    }
     const roll = Math.floor(Math.random() * dieFaces) + 1;
     const healAmount = Math.max(1, roll + conMod);
 
-    spendHitDie(1);
-    updateHp(Math.min(maxHp, currentHp + healAmount));
+    const saved = await shortRestWithHitDie(Math.min(maxHp, currentHp + healAmount));
+    if (!saved) return;
     Alert.alert(
       'Riposo Breve: Dado Vita Speso',
       `Hai tirato 1${hitDice.die} (${roll}) + Mod. Costituzione (${conMod >= 0 ? '+' : ''}${conMod}) = +${healAmount} PF recuperati!`
@@ -269,6 +294,7 @@ export const CharacterSheetScreen: React.FC = () => {
 
   // Quick HP delta
   const handleQuickHp = (delta: number) => {
+    if (maxHp === undefined) return;
     if (delta < 0 && tempHp > 0) {
       const damage = Math.abs(delta);
       if (tempHp >= damage) {
@@ -289,6 +315,10 @@ export const CharacterSheetScreen: React.FC = () => {
       setIsCustomHpModalOpen(false);
       return;
     }
+    if (maxHp === undefined) {
+      setIsCustomHpModalOpen(false);
+      return;
+    }
     if (customHpAction === 'heal') {
       updateHp(Math.min(maxHp, currentHp + val));
     } else {
@@ -298,6 +328,10 @@ export const CharacterSheetScreen: React.FC = () => {
   };
 
   const handleTempHpSubmit = () => {
+    if (maxHp === undefined) {
+      setIsTempHpModalOpen(false);
+      return;
+    }
     const val = parseInt(tempHpInput, 10);
     if (!isNaN(val) && val >= 0) {
       updateHp(currentHp, val);
@@ -356,7 +390,7 @@ export const CharacterSheetScreen: React.FC = () => {
             Tavolo: {activeCampaign?.name || 'Campagna Selezionata'}
           </Text>
           <Text style={styles.noCharDescription}>
-            Non hai ancora una scheda PG assegnata a questo tavolo ({activeCampaign?.type ? activeCampaign.type.toUpperCase() : 'QUEST'}). Nel portale Barber & Dragons, il Game Master assegna le schede dei personaggi per ogni singola campagna.
+            Non hai ancora una scheda PG assegnata a questo tavolo ({activeCampaign?.type ? activeCampaign.type.toUpperCase() : 'CAMPAGNA'}). Nel portale Barber & Dragons, il Game Master assegna le schede dei personaggi per ogni singola campagna.
           </Text>
           <TouchableOpacity
             style={styles.selectCampaignMainBtn}
@@ -392,7 +426,7 @@ export const CharacterSheetScreen: React.FC = () => {
                   <View style={styles.otherCharInfo}>
                     <Text style={styles.otherCharName}>{char.name}</Text>
                     <Text style={styles.otherCharSub}>
-                      {char.character_class || 'Avventuriero'} • Lv. {char.level || 1}
+                      {char.character_class || 'Classe non compilata'} • Lv. {char.level ?? '—'}
                     </Text>
                     <View style={styles.otherCharCampBadge}>
                       <Text style={styles.otherCharCampText}>{campaignName}</Text>
@@ -432,7 +466,7 @@ export const CharacterSheetScreen: React.FC = () => {
               </View>
             )}
             <View style={styles.levelBadge}>
-              <Text style={styles.levelBadgeText}>Lv {safeCharacter.level ?? 1}</Text>
+              <Text style={styles.levelBadgeText}>Lv {sheet?.level ?? safeCharacter.level ?? '—'}</Text>
             </View>
           </TouchableOpacity>
 
@@ -459,10 +493,10 @@ export const CharacterSheetScreen: React.FC = () => {
             </TouchableOpacity>
 
             <Text style={styles.heroDetails} numberOfLines={1}>
-              {safeCharacter.character_class}
-              {safeCharacter.class_subclass ? ` (${safeCharacter.class_subclass})` : ''} •{' '}
-              {safeCharacter.race_slug ? safeCharacter.race_slug.replace('-', ' ') : 'Umano'}
+              {[safeCharacter.character_class && `${safeCharacter.character_class}${safeCharacter.class_subclass ? ` (${safeCharacter.class_subclass})` : ''}`, sheet?.raceLabel ?? (safeCharacter.race_slug ? safeCharacter.race_slug.replace('-', ' ') : null), sheet?.subraceLabel]
+                .filter(Boolean).join(' • ') || 'Dati identità non compilati'}
             </Text>
+            {sheet?.source && <Text style={styles.campaignSubtitle}>Scheda: {sheet.source === 'recovered' ? 'recuperata da documento' : sheet.source === 'generator' ? 'generatore' : 'compilata dal Master'}</Text>}
 
             <TouchableOpacity
               style={styles.campaignSelectBtn}
@@ -474,19 +508,6 @@ export const CharacterSheetScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
           </View>
-
-          {/* Inspiration Toggle */}
-          <TouchableOpacity
-            style={[styles.inspirationButton, isInspired && styles.inspirationActive]}
-            onPress={toggleInspiration}
-            disabled={isSaving}
-            activeOpacity={0.8}
-          >
-            <Star size={16} color={isInspired ? colors.void : colors.brassLight} />
-            <Text style={[styles.inspirationText, isInspired && styles.inspirationTextActive]}>
-              {isInspired ? 'ISPIRATO' : 'ISPIRA'}
-            </Text>
-          </TouchableOpacity>
         </View>
 
         {/* Rest Buttons Bar */}
@@ -497,7 +518,7 @@ export const CharacterSheetScreen: React.FC = () => {
             <Text style={styles.restPillText}>Riposo Breve</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.restPill, styles.restPillLong]} onPress={confirmLongRest} disabled={isSaving} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.restPill, styles.restPillLong]} onPress={confirmLongRest} disabled={isSaving || maxHp === undefined} activeOpacity={0.7}>
             <Sparkles size={12} color={colors.brassLight} />
             <Text style={styles.restPillTextLong}>Riposo Lungo</Text>
           </TouchableOpacity>
@@ -559,32 +580,37 @@ export const CharacterSheetScreen: React.FC = () => {
         {/* ================= TAB 1: COMBATTIMENTO & VITALI ================= */}
         {activeTab === 'combat' && (
           <View style={styles.tabContent}>
+            {sheet?.source === 'recovered' && (
+              (sheet.level !== undefined && safeCharacter.level !== null && sheet.level !== safeCharacter.level) ||
+              (sheet.characterName && sheet.characterName !== safeCharacter.name)
+            ) && <Text style={styles.emptyNotice}>{sheet.characterName && sheet.characterName !== safeCharacter.name ? `Nel PDF recuperato il nome è “${sheet.characterName}”; il record campagna riporta “${safeCharacter.name}”. ` : ''}{sheet.level !== undefined && safeCharacter.level !== null && sheet.level !== safeCharacter.level ? `Il PDF riporta livello ${sheet.level}; il record campagna riporta ${safeCharacter.level}. ` : ''}La scheda conserva e mostra i dati del PDF senza modificare il record campagna.</Text>}
             {/* Primary Vitals Triad: CA, Iniziativa, Velocità, Competenza */}
             <View style={styles.vitalsRow}>
               <View style={styles.vitalCard}>
                 <Shield size={18} color={colors.brassBase} />
-                <Text style={styles.vitalValue}>{safeCharacter.armor_class ?? 10}</Text>
+                <Text style={styles.vitalValue}>{safeCharacter.armor_class ?? '—'}</Text>
                 <Text style={styles.vitalLabel}>CLASSE ARMATURA</Text>
               </View>
 
-              <TouchableOpacity style={styles.vitalCard} onPress={rollInitiative} activeOpacity={0.75}>
+              <TouchableOpacity style={styles.vitalCard} onPress={rollInitiative} disabled={typeof safeCharacter.rules_snapshot?.initiative !== 'number'} activeOpacity={0.75}>
                 <Zap size={18} color={colors.brassLight} />
                 <Text style={styles.vitalValue}>
-                  {(safeCharacter.rules_snapshot?.initiative ?? 2) >= 0 ? '+' : ''}
-                  {safeCharacter.rules_snapshot?.initiative ?? 2}
+                  {typeof safeCharacter.rules_snapshot?.initiative === 'number'
+                    ? `${safeCharacter.rules_snapshot.initiative >= 0 ? '+' : ''}${safeCharacter.rules_snapshot.initiative}`
+                    : '—'}
                 </Text>
                 <Text style={styles.vitalLabel}>INIZIATIVA (TIRA)</Text>
               </TouchableOpacity>
 
               <View style={styles.vitalCard}>
                 <Footprints size={18} color={colors.parchmentLight} />
-                <Text style={styles.vitalValue}>{safeCharacter.rules_snapshot?.speed ?? '9 m'}</Text>
+                <Text style={styles.vitalValue}>{safeCharacter.rules_snapshot?.speed ?? '—'}</Text>
                 <Text style={styles.vitalLabel}>VELOCITÀ</Text>
               </View>
 
               <View style={styles.vitalCard}>
                 <Award size={18} color={colors.emerald} />
-                <Text style={styles.vitalValue}>+{proficiencyBonus}</Text>
+                <Text style={styles.vitalValue}>{proficiencyBonus === undefined ? '—' : `+${proficiencyBonus}`}</Text>
                 <Text style={styles.vitalLabel}>COMPETENZA</Text>
               </View>
             </View>
@@ -597,8 +623,8 @@ export const CharacterSheetScreen: React.FC = () => {
                   <Text style={styles.cardSectionTitle}>PUNTI FERITA (SALUTE)</Text>
                 </View>
                 <View style={styles.hpValuesPill}>
-                  <Text style={[styles.hpCurrentText, { color: hpBarColor }]}>{currentHp}</Text>
-                  <Text style={styles.hpMaxText}> / {maxHp} PF</Text>
+                  <Text style={[styles.hpCurrentText, { color: hpBarColor }]}>{safeCharacter.hit_points ?? '—'}</Text>
+                  <Text style={styles.hpMaxText}> / {maxHp ?? '—'} PF</Text>
                   {tempHp > 0 && <Text style={styles.tempHpBadge}> +{tempHp} TEMP</Text>}
                 </View>
               </View>
@@ -610,15 +636,15 @@ export const CharacterSheetScreen: React.FC = () => {
 
               {/* Quick Health Buttons */}
               <View style={styles.hpControlsRow}>
-                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(-5)} disabled={isSaving}>
+                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(-5)} disabled={isSaving || maxHp === undefined}>
                   <Text style={styles.hpDeltaDamageText}>-5</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(-1)} disabled={isSaving}>
+                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(-1)} disabled={isSaving || maxHp === undefined}>
                   <Text style={styles.hpDeltaDamageText}>-1</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.hpActionBtn}
-                  disabled={isSaving}
+                  disabled={isSaving || maxHp === undefined}
                   onPress={() => {
                     setCustomHpAction('damage');
                     setIsCustomHpModalOpen(true);
@@ -628,6 +654,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.hpActionBtn}
+                  disabled={isSaving || maxHp === undefined}
                   onPress={() => {
                     setCustomHpAction('heal');
                     setIsCustomHpModalOpen(true);
@@ -635,10 +662,10 @@ export const CharacterSheetScreen: React.FC = () => {
                 >
                   <Text style={styles.hpActionBtnHealText}>Cura</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(1)} disabled={isSaving}>
+                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(1)} disabled={isSaving || maxHp === undefined}>
                   <Text style={styles.hpDeltaHealText}>+1</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(5)} disabled={isSaving}>
+                <TouchableOpacity style={styles.hpDeltaBtn} onPress={() => handleQuickHp(5)} disabled={isSaving || maxHp === undefined}>
                   <Text style={styles.hpDeltaHealText}>+5</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tempHpBtn} onPress={() => setIsTempHpModalOpen(true)} disabled={isSaving}>
@@ -651,11 +678,11 @@ export const CharacterSheetScreen: React.FC = () => {
                 <View style={styles.hitDiceLeft}>
                   <Text style={styles.hitDiceTitle}>DADI VITA</Text>
                   <Text style={styles.hitDiceSub}>
-                    Disponibili: <Text style={styles.textWhite}>{hitDice.current} di {hitDice.total}</Text> ({hitDice.die})
+                    {hitDice ? <>Disponibili: <Text style={styles.textWhite}>{hitDice.current} di {hitDice.total}</Text> ({hitDice.die})</> : sheet?.hitDie ? `Risorse non salvate · ${sheet.hitDiceTotal ?? '—'} dadi ${sheet.hitDie}` : 'Dati Dadi Vita non compilati'}
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving} activeOpacity={0.75}>
-                  <Text style={styles.spendHitDieBtnText}>Spendi Dado ({hitDice.die})</Text>
+                <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving || !hitDice || maxHp === undefined} activeOpacity={0.75}>
+                  <Text style={styles.spendHitDieBtnText}>Spendi Dado{hitDice?.die ? ` (${hitDice.die})` : ''}</Text>
                 </TouchableOpacity>
               </View>
 
@@ -736,10 +763,10 @@ export const CharacterSheetScreen: React.FC = () => {
                     {wp.notes && <Text style={styles.weaponNotes}>{wp.notes}</Text>}
 
                     <View style={styles.weaponActionButtonsRow}>
-                      <TouchableOpacity style={styles.weaponHitBtn} onPress={() => rollWeaponAttack(wp)}>
+                      <TouchableOpacity style={styles.weaponHitBtn} onPress={() => rollWeaponAttack(wp)} disabled={wp.attackBonus === undefined}>
                         <Target size={14} color={colors.void} />
                         <Text style={styles.weaponHitBtnText}>
-                          COLPISCI ({wp.attackBonus >= 0 ? '+' : ''}{wp.attackBonus})
+                          COLPISCI ({wp.attackBonus === undefined ? '—' : `${wp.attackBonus >= 0 ? '+' : ''}${wp.attackBonus}`})
                         </Text>
                       </TouchableOpacity>
 
@@ -768,16 +795,16 @@ export const CharacterSheetScreen: React.FC = () => {
                   key={ab.key}
                   style={styles.abilityCard}
                   onPress={() => rollAbility(ab)}
+                  disabled={ab.modifier === undefined}
                   activeOpacity={0.75}
                 >
                   <Text style={styles.abilityLabel}>{ab.label}</Text>
                   <Text style={styles.abilityName}>{ab.name}</Text>
                   <Text style={styles.abilityModifier}>
-                    {ab.modifier >= 0 ? '+' : ''}
-                    {ab.modifier}
+                    {ab.modifier === undefined ? '—' : `${ab.modifier >= 0 ? '+' : ''}${ab.modifier}`}
                   </Text>
                   <View style={styles.abilityScorePill}>
-                    <Text style={styles.abilityScoreText}>{ab.score}</Text>
+                    <Text style={styles.abilityScoreText}>{ab.score ?? '—'}</Text>
                   </View>
                 </TouchableOpacity>
               ))}
@@ -786,19 +813,21 @@ export const CharacterSheetScreen: React.FC = () => {
             {/* 6 Saving Throws */}
             <View style={styles.sectionCard}>
               <Text style={styles.cardSectionTitle}>TIRI SALVEZZA</Text>
+              {savingThrows.every((st) => st.bonus === undefined) && <Text style={styles.emptyNotice}>Tiri salvezza non ancora compilati.</Text>}
+              {savingThrows.some((st) => st.bonus !== undefined && st.proficient === undefined) && <Text style={styles.emptyNotice}>Bonus recuperato dal documento; la competenza non è leggibile per tutte le voci.</Text>}
               <View style={styles.savesGrid}>
                 {savingThrows.map((st) => (
                   <TouchableOpacity
                     key={st.key}
                     style={styles.saveRow}
                     onPress={() => rollSavingThrow(st)}
+                    disabled={st.bonus === undefined}
                     activeOpacity={0.7}
                   >
                     <View style={[styles.profDot, st.proficient && styles.profDotActive]} />
                     <Text style={styles.saveName}>{st.name}</Text>
                     <Text style={[styles.saveBonus, st.proficient && styles.textGold]}>
-                      {st.bonus >= 0 ? '+' : ''}
-                      {st.bonus}
+                      {st.bonus === undefined ? '—' : `${st.bonus >= 0 ? '+' : ''}${st.bonus}`}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -809,15 +838,17 @@ export const CharacterSheetScreen: React.FC = () => {
             <View style={styles.sectionCard}>
               <View style={styles.cardHeaderRow}>
                 <Text style={styles.cardSectionTitle}>TUTTE LE 18 ABILITÀ</Text>
-                <Text style={styles.passivePerceptionLabel}>Percezione Passiva: {passivePerception}</Text>
+                <Text style={styles.passivePerceptionLabel}>Percezione Passiva: {passivePerception ?? '—'}</Text>
               </View>
 
               <View style={styles.skillsList}>
+                {skills.some((sk) => sk.bonus !== undefined && (sk.proficient === undefined || sk.expertise === undefined)) && <Text style={styles.emptyNotice}>Alcuni bonus sono salvati, ma gli indicatori di competenza o expertise non sono disponibili.</Text>}
                 {skills.map((sk) => (
                   <TouchableOpacity
                     key={sk.key}
                     style={styles.skillRow}
                     onPress={() => rollSkill(sk)}
+                    disabled={sk.bonus === undefined}
                     activeOpacity={0.7}
                   >
                     <View style={styles.skillLeft}>
@@ -840,8 +871,7 @@ export const CharacterSheetScreen: React.FC = () => {
                         sk.expertise && styles.textCyan,
                       ]}
                     >
-                      {sk.bonus >= 0 ? '+' : ''}
-                      {sk.bonus}
+                      {sk.bonus === undefined ? '—' : `${sk.bonus >= 0 ? '+' : ''}${sk.bonus}`}
                     </Text>
                   </TouchableOpacity>
                 ))}
@@ -856,26 +886,28 @@ export const CharacterSheetScreen: React.FC = () => {
             {/* Spellcasting Summary */}
             <View style={styles.spellHeaderRow}>
               <View style={styles.vitalCard}>
-                <Text style={styles.vitalValue}>INT</Text>
+                <Text style={styles.vitalValue}>{spellAbility ? spellAbilityLabel[spellAbility] : '—'}</Text>
                 <Text style={styles.vitalLabel}>CARATTERISTICA</Text>
               </View>
               <View style={styles.vitalCard}>
-                <Text style={styles.vitalValue}>CD 13</Text>
+                <Text style={styles.vitalValue}>{spellSaveDc === undefined || spellSaveDc === null ? '—' : `CD ${spellSaveDc}`}</Text>
                 <Text style={styles.vitalLabel}>CD SALVEZZA</Text>
               </View>
               <View style={styles.vitalCard}>
-                <Text style={styles.vitalValue}>+5</Text>
+                <Text style={styles.vitalValue}>{spellAttackBonus === undefined || spellAttackBonus === null ? '—' : `${spellAttackBonus >= 0 ? '+' : ''}${spellAttackBonus}`}</Text>
                 <Text style={styles.vitalLabel}>ATTACCO MAGICO</Text>
               </View>
             </View>
+            {sheet?.spellcastingClass && <Text style={styles.emptyNotice}>Classe incantatrice: {sheet.spellcastingClass}{sheet.spellsPrepared !== undefined ? ` · ${sheet.spellsPrepared} incantesimi preparati` : ''}{sheet.cantripsKnown !== undefined ? ` · ${sheet.cantripsKnown} trucchetti` : ''}</Text>}
 
             {/* Spell Slots by Level */}
             <View style={styles.sectionCard}>
               <Text style={styles.cardSectionTitle}>SLOT INCANTESIMI DISPONIBILI</Text>
               {spellSlots.length > 0 ? (
                 <View style={styles.spellSlotsGrid}>
+                  {usedSpellSlots === undefined && <Text style={styles.emptyNotice}>Gli slot massimi sono compilati, ma i consumi attuali non risultano salvati. Verificali col Master.</Text>}
                   {spellSlots.map((slot) => {
-                    const used = usedSpellSlots[slot.level] ?? 0;
+                    const used = usedSpellSlots?.[slot.level] ?? 0;
                     return (
                       <View key={`slot-${slot.level}`} style={styles.slotLevelCard}>
                         <Text style={styles.slotLevelTitle}>Livello {slot.level}°</Text>
@@ -902,10 +934,25 @@ export const CharacterSheetScreen: React.FC = () => {
               ) : (
                 <View style={styles.noSpellsBox}>
                   <Text style={styles.noSpellsText}>
-                    Gorath è un Guerriero puro (Campione). Le sue armi sono l’acciaio e il coraggio! Se giochi una classe magica o sottoclasse (es. Cavaliere Mistico, Mago, Chierico), qui troverai i tuoi slot e incantesimi.
+                    Slot e incantesimi non ancora compilati.
                   </Text>
                 </View>
               )}
+            </View>
+            <View style={styles.sectionCard}>
+              <Text style={styles.cardSectionTitle}>INCANTESIMI CONOSCIUTI / PREPARATI</Text>
+              {spells.length === 0 ? <Text style={styles.emptyNotice}>Elenco incantesimi non ancora compilato.</Text> : spells.map((spell) => (
+                <View key={spell.id} style={styles.featureCard}>
+                  <View style={styles.featureHeader}>
+                    <Text style={styles.featureName}>{spell.name}</Text>
+                    <Text style={styles.featureSourceText}>{spell.level === 0 ? 'TRUCCHETTO' : `LIVELLO ${spell.level}`}</Text>
+                  </View>
+                          {spell.summary && <Text style={styles.featureDesc}>{spell.summary}</Text>}
+                          {spell.description && spell.description !== spell.summary && <Text style={styles.featureDesc}>{spell.description}</Text>}
+                          {spell.components !== undefined && <Text style={styles.weaponProps}>Componenti: {spell.components || 'Nessuno indicato'}</Text>}
+                  {(spell.ritual || spell.concentration) && <Text style={styles.weaponProps}>{[spell.ritual && 'Rituale', spell.concentration && 'Concentrazione'].filter(Boolean).join(' • ')}</Text>}
+                </View>
+              ))}
             </View>
           </View>
         )}
@@ -915,6 +962,7 @@ export const CharacterSheetScreen: React.FC = () => {
           <View style={styles.tabContent}>
             {/* Features with Uses/Rest counters */}
             <Text style={styles.categorySubhead}>CAPACITÀ ATTIVE & RISORSE SPECIALI</Text>
+            {features.length === 0 && <Text style={styles.emptyNotice}>Privilegi e tratti non ancora compilati.</Text>}
             {features.map((feat) => {
               const hasUses = feat.usesMax !== undefined;
               return (
@@ -953,20 +1001,24 @@ export const CharacterSheetScreen: React.FC = () => {
               <Text style={styles.cardSectionTitle}>COMPETENZE & LINGUAGGI</Text>
               <View style={styles.profBlock}>
                 <Text style={styles.profTitle}>ARMATURE:</Text>
-                <Text style={styles.profValue}>{proficiencies.armor?.join(', ') || 'Nessuna'}</Text>
+                <Text style={styles.profValue}>{proficiencies.armor?.join(', ') || 'Non compilato'}</Text>
               </View>
               <View style={styles.profBlock}>
                 <Text style={styles.profTitle}>ARMI:</Text>
-                <Text style={styles.profValue}>{proficiencies.weapons?.join(', ') || 'Nessuna'}</Text>
+                <Text style={styles.profValue}>{proficiencies.weapons?.join(', ') || 'Non compilato'}</Text>
               </View>
               <View style={styles.profBlock}>
                 <Text style={styles.profTitle}>STRUMENTI:</Text>
-                <Text style={styles.profValue}>{proficiencies.tools?.join(', ') || 'Nessuno'}</Text>
+                <Text style={styles.profValue}>{proficiencies.tools?.join(', ') || 'Non compilato'}</Text>
               </View>
               <View style={styles.profBlock}>
                 <Text style={styles.profTitle}>LINGUAGGI:</Text>
-                <Text style={styles.profValue}>{proficiencies.languages?.join(', ') || 'Comune'}</Text>
+                <Text style={styles.profValue}>{proficiencies.languages?.join(', ') || 'Non compilato'}</Text>
               </View>
+              {sheet?.proficiencies !== undefined && <View style={styles.profBlock}>
+                <Text style={styles.profTitle}>ALTRE COMPETENZE:</Text>
+                <Text style={styles.profValue}>{sheet.proficiencies.join(', ') || 'Nessuna indicata'}</Text>
+              </View>}
             </View>
           </View>
         )}
@@ -1010,12 +1062,13 @@ export const CharacterSheetScreen: React.FC = () => {
               </View>
 
               <View style={styles.inventoryList}>
+                {inventory.length === 0 && <Text style={styles.emptyNotice}>Inventario non ancora compilato.</Text>}
                 {inventory.map((item) => (
                   <View key={item.id} style={styles.inventoryRow}>
                     <View style={styles.inventoryLeft}>
                       <Text style={styles.inventoryName}>{item.name}</Text>
                       <View style={styles.inventoryMeta}>
-                        <Text style={styles.inventoryQty}>Q.tà: {item.quantity}</Text>
+                        {item.quantity !== undefined && <Text style={styles.inventoryQty}>Q.tà: {item.quantity}</Text>}
                         {item.weight && <Text style={styles.inventoryWeight}>• {item.weight}</Text>}
                         {item.notes && <Text style={styles.inventoryNotes}>• {item.notes}</Text>}
                       </View>
@@ -1033,28 +1086,23 @@ export const CharacterSheetScreen: React.FC = () => {
             {/* Roleplay & Personality */}
             <View style={styles.sectionCard}>
               <Text style={styles.cardSectionTitle}>PERSONALITÀ & RETROSCENA D&D 5E</Text>
-              <View style={styles.bioBlock}>
-                <Text style={styles.bioTitle}>TRATTI CARATTERIALI:</Text>
-                <Text style={styles.bioText}>{personality.traits || 'Pronto a difendere i compagni.'}</Text>
-              </View>
-              <View style={styles.bioBlock}>
-                <Text style={styles.bioTitle}>IDEALE:</Text>
-                <Text style={styles.bioText}>{personality.ideals || 'Lealtà e onore verso la Gilda.'}</Text>
-              </View>
-              <View style={styles.bioBlock}>
-                <Text style={styles.bioTitle}>LEGAME:</Text>
-                <Text style={styles.bioText}>{personality.bonds || 'La mia taverna e i miei compagni di ventura.'}</Text>
-              </View>
-              <View style={styles.bioBlock}>
-                <Text style={styles.bioTitle}>DIFETTO:</Text>
-                <Text style={styles.bioText}>{personality.flaws || 'Testardo, non si ritira mai facilmente.'}</Text>
-              </View>
-              {safeCharacter.background && (
+              {sheet?.alignment && <BioRow title="ALLINEAMENTO" text={sheet.alignment} />}
+              {sheet?.age && <BioRow title="ETÀ" text={sheet.age} />}
+              {sheet?.height && <BioRow title="ALTEZZA" text={sheet.height} />}
+              {sheet?.weight && <BioRow title="PESO" text={sheet.weight} />}
+              {sheet?.sex && <BioRow title="SESSO" text={sheet.sex} />}
+              {personality?.traits && <BioRow title="TRATTI CARATTERIALI" text={personality.traits} />}
+              {personality?.ideals && <BioRow title="IDEALE" text={personality.ideals} />}
+              {personality?.bonds && <BioRow title="LEGAME" text={personality.bonds} />}
+              {personality?.flaws && <BioRow title="DIFETTO" text={personality.flaws} />}
+              {sheet?.backgroundLabel && <BioRow title="BACKGROUND" text={sheet.backgroundLabel} />}
+              {(sheet?.backgroundMd || (sheet?.backgroundLabel ? null : safeCharacter.background)) && (
                 <View style={styles.bioBlock}>
-                  <Text style={styles.bioTitle}>STORIA / BACKGROUND:</Text>
-                  <Text style={styles.bioText}>{safeCharacter.background}</Text>
+                  <Text style={styles.bioTitle}>{sheet?.backgroundMd ? 'DESCRIZIONE DEL BACKGROUND:' : 'BACKGROUND:'}</Text>
+                  <Text style={styles.bioText}>{sheet?.backgroundMd || safeCharacter.background}</Text>
                 </View>
               )}
+              {!sheet?.alignment && !sheet?.age && !sheet?.height && !sheet?.weight && !sheet?.sex && !personality?.traits && !personality?.ideals && !personality?.bonds && !personality?.flaws && !sheet?.backgroundLabel && !sheet?.backgroundMd && !safeCharacter.background && <Text style={styles.emptyNotice}>Dati personali e background non ancora compilati.</Text>}
             </View>
           </View>
         )}
@@ -1067,6 +1115,7 @@ export const CharacterSheetScreen: React.FC = () => {
         style={styles.fabDice}
         onPress={() => {
           setDiceInitialDie('d20');
+          setDiceInitialCount(1);
           setDiceInitialMod(0);
           setDiceInitialLabel('Tiro Libero Taverna');
           setIsDiceModalOpen(true);
@@ -1081,6 +1130,7 @@ export const CharacterSheetScreen: React.FC = () => {
         visible={isDiceModalOpen}
         onClose={() => setIsDiceModalOpen(false)}
         initialDie={diceInitialDie}
+        initialDiceCount={diceInitialCount}
         initialModifier={diceInitialMod}
         initialLabel={diceInitialLabel}
       />
@@ -1219,7 +1269,7 @@ export const CharacterSheetScreen: React.FC = () => {
                       <View style={styles.charSelectInfo}>
                         <Text style={styles.charSelectName}>{c.name}</Text>
                         <Text style={styles.charSelectSub}>
-                          {c.character_class || 'Avventuriero'} Lv.{c.level || 1} • {c.campaigns?.name ?? activeCampaign?.name}
+                          {c.character_class || 'Classe non compilata'} Lv.{c.level ?? '—'} • {c.campaigns?.name ?? activeCampaign?.name}
                         </Text>
                       </View>
                       {c.id === safeCharacter.id && <Check size={18} color={colors.brassBase} />}
@@ -1245,7 +1295,7 @@ export const CharacterSheetScreen: React.FC = () => {
                       <View style={styles.charSelectInfo}>
                         <Text style={styles.charSelectName}>{char.name}</Text>
                         <Text style={styles.charSelectSub}>
-                          {char.character_class || 'Avventuriero'} Lv.{char.level || 1} • {campaignName}
+                          {char.character_class || 'Classe non compilata'} Lv.{char.level ?? '—'} • {campaignName}
                         </Text>
                       </View>
                       <ChevronRight size={16} color={colors.brassBase} />
@@ -1266,6 +1316,15 @@ export const CharacterSheetScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+function BioRow({ title, text }: { title: string; text: string }) {
+  return (
+    <View style={styles.bioBlock}>
+      <Text style={styles.bioTitle}>{title}:</Text>
+      <Text style={styles.bioText}>{text}</Text>
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -1412,29 +1471,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.parchmentMuted,
     marginTop: 1,
-  },
-  inspirationButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 16,
-    backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.brassBase,
-  },
-  inspirationActive: {
-    backgroundColor: colors.brassBase,
-  },
-  inspirationText: {
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.5,
-    color: colors.brassLight,
-  },
-  inspirationTextActive: {
-    color: colors.void,
   },
   quickRestRow: {
     flexDirection: 'row',

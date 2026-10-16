@@ -42,6 +42,8 @@ import { usePlayerSessions } from '../../hooks/usePlayerSessions';
 import { DiceRollerModal } from '../../components/player/DiceRollerModal';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { GridCalendar } from '../../components/common/GridCalendar';
+import { ExpandableCampaignCard } from '../../components/common/ExpandableCampaignCard';
+import { PlayerSessionDetailModal } from '../../components/player/PlayerSessionDetailModal';
 import { Campaign, CampaignType, PlayerSession, Session } from '../../types';
 
 type SessionFilter = 'all' | 'mine' | 'available';
@@ -104,7 +106,7 @@ function formatSessionDate(dateStr: string) {
 export const PlayerHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { profile, user, role, switchMode } = useAuth();
-  const isAdmin = role === 'admin';
+  const canAccessGm = role === 'admin' || role === 'gm';
 
   const {
     campaigns,
@@ -125,6 +127,7 @@ export const PlayerHomeScreen: React.FC = () => {
 
   const {
     sessions,
+    allSessions,
     nextConfirmedSession,
     loading: sessionsLoading,
     refresh: refreshSessions,
@@ -140,6 +143,8 @@ export const PlayerHomeScreen: React.FC = () => {
   // Modals state
   const [isDiceModalOpen, setIsDiceModalOpen] = useState<boolean>(false);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
+  const [selectedSessionForDetail, setSelectedSessionForDetail] = useState<PlayerSession | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
 
   const displayName =
     profile?.display_name ||
@@ -255,10 +260,16 @@ export const PlayerHomeScreen: React.FC = () => {
     }
   };
 
+  const handleOpenSessionDetail = (session: PlayerSession | any) => {
+    setSelectedSessionForDetail(session as PlayerSession);
+    setIsDetailModalOpen(true);
+  };
+
   const handleSelectSession = (session: PlayerSession | Session) => {
     if (session.campaign_id && session.campaign_id !== activeCampaignId) {
       void selectCampaign(session.campaign_id);
     }
+    handleOpenSessionDetail(session);
   };
 
   return (
@@ -275,8 +286,8 @@ export const PlayerHomeScreen: React.FC = () => {
           />
         }
       >
-        {/* GM Mode Switcher Notice (Admin Only) */}
-        {isAdmin && (
+        {/* GM Mode Switcher Notice (Admin/GM) */}
+        {canAccessGm && (
           <View style={styles.gmNoticeBanner}>
             <View style={styles.gmNoticeLeft}>
               <Repeat size={16} color={colors.brassBase} />
@@ -437,9 +448,10 @@ export const PlayerHomeScreen: React.FC = () => {
         </View>
 
         <GridCalendar
-          sessions={sessions}
+          sessions={allSessions.length > 0 ? allSessions : sessions}
           activeCampaignId={activeCampaignId}
           onSelectSession={handleSelectSession}
+          onPlayerOpenSession={handleOpenSessionDetail}
           onSignUp={handleSignUp}
           onCancelSignUp={handleCancelSignUp}
           actionInProgressId={actionInProgressId}
@@ -503,66 +515,24 @@ export const PlayerHomeScreen: React.FC = () => {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Griglia/Carosello Campagne */}
-        {filteredCampaigns.slice(0, 4).map((camp) => {
-          const cType: CampaignType = camp.type || 'quest';
-          const badgeMeta = CAMPAIGN_TYPE_BADGES[cType] || CAMPAIGN_TYPE_BADGES.quest;
-          const isActive = camp.id === activeCampaignId;
-
-          return (
-            <View key={camp.id} style={[styles.campaignCard, isActive && styles.campaignCardActive]}>
-              <View style={styles.campaignCardBody}>
-                <View style={styles.campaignCardHeaderRow}>
-                  <View
-                    style={[
-                      styles.campaignTypeBadge,
-                      { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
-                    ]}
-                  >
-                    <Text style={[styles.campaignTypeBadgeText, { color: badgeMeta.text }]}>
-                      {badgeMeta.label}
-                    </Text>
-                  </View>
-
-                  {isActive && (
-                    <View style={styles.activePillBadge}>
-                      <Check size={11} color={colors.brassLight} />
-                      <Text style={styles.activePillBadgeText}>Campagna in Uso</Text>
-                    </View>
-                  )}
-                </View>
-
-                <Text style={styles.campaignCardTitle}>{camp.name}</Text>
-
-                {camp.description ? (
-                  <Text style={styles.campaignCardDesc} numberOfLines={2}>
-                    {camp.description}
-                  </Text>
-                ) : null}
-
-                <View style={styles.campaignCardFooter}>
-                  <TouchableOpacity
-                    style={[styles.selectCampBtn, isActive && styles.selectCampBtnActive]}
-                    onPress={() => handleSelectCampaign(camp)}
-                    activeOpacity={0.8}
-                  >
-                    {isActive ? (
-                      <>
-                        <Check size={13} color={colors.brassLight} />
-                        <Text style={styles.selectCampBtnActiveText}>Selezionata</Text>
-                      </>
-                    ) : (
-                      <>
-                        <Text style={styles.selectCampBtnText}>Imposta come Attiva</Text>
-                        <ChevronRight size={13} color={colors.void} />
-                      </>
-                    )}
-                  </TouchableOpacity>
-                </View>
-              </View>
-            </View>
-          );
-        })}
+        {/* Griglia/Carosello Campagne Expandabili 2 per riga */}
+        <View style={styles.campaignsGrid}>
+          {filteredCampaigns.map((camp) => {
+            const isActive = camp.id === activeCampaignId;
+            const nextCampSession = (allSessions || []).find(
+              (s) => s.campaign_id === camp.id && new Date(s.scheduled_at).getTime() >= Date.now() - 3600 * 1000
+            );
+            return (
+              <ExpandableCampaignCard
+                key={camp.id}
+                campaign={camp}
+                isActive={isActive}
+                onSelect={handleSelectCampaign}
+                upcomingSession={nextCampSession}
+              />
+            );
+          })}
+        </View>
 
         {/* 4. SCHEDA PG RAPIDA LIVE CON BARRA HP INTERATTIVA */}
         <View style={styles.sectionHeader}>
@@ -766,6 +736,18 @@ export const PlayerHomeScreen: React.FC = () => {
       <CampaignSelectorModal
         visible={isCampaignModalOpen}
         onClose={() => setIsCampaignModalOpen(false)}
+      />
+
+      {/* Player Session Detail & Sign-Up Modal */}
+      <PlayerSessionDetailModal
+        visible={isDetailModalOpen}
+        session={selectedSessionForDetail}
+        onClose={() => {
+          setIsDetailModalOpen(false);
+          setSelectedSessionForDetail(null);
+        }}
+        onSignUp={handleSignUp}
+        onCancelSignUp={handleCancelSignUp}
       />
     </SafeAreaView>
   );
@@ -1246,6 +1228,12 @@ const styles = StyleSheet.create({
   },
 
   // CAMPAIGNS OVERVIEW
+  campaignsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
+  },
   campaignCard: {
     backgroundColor: colors.stoneSurface,
     borderRadius: 12,

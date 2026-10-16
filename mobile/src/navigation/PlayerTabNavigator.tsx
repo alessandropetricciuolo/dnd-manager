@@ -42,7 +42,7 @@ const PlayerTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
   const { role, switchMode, signOut } = useAuth();
-  const isAdmin = role === 'admin';
+  const canAccessGm = role === 'admin' || role === 'gm';
 
   return (
     <Tab.Navigator
@@ -62,7 +62,7 @@ const PlayerTabs: React.FC = () => {
         headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
-            {isAdmin && (
+            {canAccessGm && (
               <TouchableOpacity
                 style={styles.gmSwitchButton}
                 onPress={() => switchMode('gm')}

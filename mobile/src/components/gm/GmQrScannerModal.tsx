@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -32,6 +32,13 @@ export const GmQrScannerModal: React.FC<GmQrScannerModalProps> = ({
   const [permission, requestPermission] = useCameraPermissions();
   const [torchEnabled, setTorchEnabled] = useState<boolean>(false);
   const [isScanningLocked, setIsScanningLocked] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!visible) {
+      setIsScanningLocked(false);
+      setTorchEnabled(false);
+    }
+  }, [visible]);
 
   const handleBarcodeScanned = (result: BarcodeScanningResult) => {
     if (isScanningLocked || !result?.data) return;
@@ -82,8 +89,8 @@ export const GmQrScannerModal: React.FC<GmQrScannerModalProps> = ({
 
               <Text style={styles.permissionTitle}>ACCESSO FOTOCAMERA</Text>
               <Text style={styles.permissionText}>
-                Per collegare istantaneamente il telecomando sonoro al tuo PC, inquadra il QR Code
-                mostrato sul sito. È necessario autorizzare l&apos;uso della fotocamera.
+                Per collegare Regia, Iniziativa e Audio allo stesso GM Screen, inquadra il QR
+                mostrato sul PC. È necessario autorizzare l&apos;uso della fotocamera.
               </Text>
 
               <TouchableOpacity
@@ -275,7 +282,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    backgroundColor: 'rgba(14, 17, 23, 0.85)',
+    backgroundColor: 'rgba(20, 18, 16, 0.88)',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 20,
@@ -292,7 +299,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: 'rgba(14, 17, 23, 0.85)',
+    backgroundColor: 'rgba(20, 18, 16, 0.88)',
     borderWidth: 1,
     borderColor: colors.brassDark,
     alignItems: 'center',
@@ -311,7 +318,7 @@ const styles = StyleSheet.create({
     width: SCAN_TARGET_SIZE,
     height: SCAN_TARGET_SIZE,
     borderWidth: 1.5,
-    borderColor: 'rgba(217, 168, 86, 0.4)',
+    borderColor: 'rgba(200, 157, 73, 0.4)',
     borderRadius: 14,
     backgroundColor: 'transparent',
     position: 'relative',
@@ -354,7 +361,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 14,
   },
   lockingFeedback: {
-    backgroundColor: 'rgba(11, 13, 16, 0.9)',
+    backgroundColor: 'rgba(11, 9, 8, 0.9)',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -382,7 +389,7 @@ const styles = StyleSheet.create({
     paddingBottom: 28,
   },
   manualEntryBtn: {
-    backgroundColor: 'rgba(14, 17, 23, 0.9)',
+    backgroundColor: 'rgba(20, 18, 16, 0.92)',
     borderWidth: 1,
     borderColor: colors.brassDark,
     paddingHorizontal: 16,

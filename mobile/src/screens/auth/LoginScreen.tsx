@@ -203,6 +203,28 @@ export const LoginScreen: React.FC = () => {
                 {isResettingPassword ? 'INVIO DEL LINK…' : 'HAI DIMENTICATO LA PASSWORD?'}
               </Text>
             </TouchableOpacity>
+
+            {__DEV__ && (
+              <View style={{ marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(212,175,55,0.15)', width: '100%', gap: 8 }}>
+                <Text style={{ color: colors.parchmentMuted, fontSize: 11, textAlign: 'center', letterSpacing: 0.5, fontWeight: '600' }}>
+                  MODALITÀ SVILUPPO LOCALE
+                </Text>
+                <View style={{ flexDirection: 'row', gap: 8 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: '#3b82f6', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
+                    onPress={() => signIn('player@demo.com', 'demo1234')}
+                  >
+                    <Text style={{ color: '#60a5fa', fontSize: 12, fontWeight: '700' }}>🛡️ Giocatore Demo</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: 'rgba(217,119,6,0.15)', borderWidth: 1, borderColor: '#d97706', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
+                    onPress={() => signIn('gm@demo.com', 'demo1234')}
+                  >
+                    <Text style={{ color: '#fbbf24', fontSize: 12, fontWeight: '700' }}>👑 Master Demo</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
           </View>
 
           {/* Footer Info */}

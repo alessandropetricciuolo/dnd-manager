@@ -26,6 +26,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useGmCampaigns } from '../../hooks/useGmCampaigns';
 import { CAMPAIGN_TYPE_BADGES } from '../../contexts/CampaignContext';
 import { GridCalendar } from '../../components/common/GridCalendar';
+import { ExpandableCampaignCard } from '../../components/common/ExpandableCampaignCard';
 import { GmCreateSessionModal } from '../../components/gm/GmCreateSessionModal';
 import { GmSessionSignupsModal } from '../../components/gm/GmSessionSignupsModal';
 import { GmSessionsManagerModal } from '../../components/gm/GmSessionsManagerModal';
@@ -41,6 +42,7 @@ export const GmHomeScreen: React.FC = () => {
     activeCampaign,
     selectCampaign,
     sessions,
+    allGuildSessions,
     characters,
     isRefreshing,
     refreshSessionData,
@@ -67,8 +69,9 @@ export const GmHomeScreen: React.FC = () => {
   }, [refreshCampaigns, refreshSessionData]);
 
   // Statistics
-  const completedSessionsCount = sessions.filter((s) => s.status === 'completed').length;
-  const scheduledSessionsCount = sessions.filter((s) => s.status === 'scheduled').length;
+  const totalSessionsList = allGuildSessions && allGuildSessions.length > 0 ? allGuildSessions : sessions;
+  const completedSessionsCount = totalSessionsList.filter((s) => s.status === 'completed').length;
+  const scheduledSessionsCount = totalSessionsList.filter((s) => s.status === 'scheduled').length;
 
   // Filtered Campaigns
   const filteredCampaigns = useMemo(() => {
@@ -86,15 +89,16 @@ export const GmHomeScreen: React.FC = () => {
     }
   };
 
+  const handleOpenSignups = (sess: Session) => {
+    setSelectedSessionForSignups(sess);
+    setSignupsModalVisible(true);
+  };
+
   const handleSelectSession = (sess: Session) => {
     if (sess.campaign_id && sess.campaign_id !== activeCampaign?.id) {
       void selectCampaign(sess.campaign_id);
     }
-  };
-
-  const handleOpenSignups = (sess: Session) => {
-    setSelectedSessionForSignups(sess);
-    setSignupsModalVisible(true);
+    handleOpenSignups(sess);
   };
 
   return (
@@ -120,7 +124,7 @@ export const GmHomeScreen: React.FC = () => {
               <Text style={styles.switchBannerSub}>Benvenuto, Master {gmName}</Text>
             </View>
           </View>
-          {role === 'admin' && (
+          {(role === 'admin' || role === 'gm') && (
             <TouchableOpacity
               style={styles.switchButton}
               onPress={() => switchMode('player')}
@@ -187,7 +191,7 @@ export const GmHomeScreen: React.FC = () => {
             </View>
             <Text style={styles.regiaBannerTitle}>Regia Live del Master</Text>
             <Text style={styles.regiaBannerSub}>
-              Monitor vitali party ({characters.length} PG), modificatori PF rapido e combat tracker
+              Sessione e party in sola lettura, più combattimento e audio collegati al GM Screen
             </Text>
           </View>
           <ChevronRight size={18} color={colors.brassLight} />
@@ -202,7 +206,7 @@ export const GmHomeScreen: React.FC = () => {
         </View>
 
         <GridCalendar
-          sessions={sessions}
+          sessions={allGuildSessions && allGuildSessions.length > 0 ? allGuildSessions : sessions}
           activeCampaignId={activeCampaign?.id}
           isGmView={true}
           onSelectSession={handleSelectSession}
@@ -270,74 +274,27 @@ export const GmHomeScreen: React.FC = () => {
           </TouchableOpacity>
         </ScrollView>
 
-        {/* Elenco Campagne */}
-        {filteredCampaigns.map((camp) => {
-          const cType: CampaignType = camp.type || 'quest';
-          const badgeMeta = CAMPAIGN_TYPE_BADGES[cType] || CAMPAIGN_TYPE_BADGES.quest;
-          const isActive = camp.id === activeCampaign?.id;
+        {/* Elenco Campagne con Copertina ed Espansione al Tap */}
+        <View style={styles.campaignsGrid}>
+          {filteredCampaigns.map((camp) => {
+            const isActive = camp.id === activeCampaign?.id;
+            const nextCampSession = (allGuildSessions || []).find(
+              (s) => s.campaign_id === camp.id && s.status === 'scheduled'
+            );
 
-          return (
-            <TouchableOpacity
-              key={camp.id}
-              style={[styles.campaignCard, isActive && styles.campaignCardActive]}
-              onPress={() => handleSelectCampaign(camp)}
-              activeOpacity={0.85}
-            >
-              <View style={styles.campaignCardBody}>
-                <View style={styles.campaignCardHeaderRow}>
-                  <View
-                    style={[
-                      styles.campaignTypeBadge,
-                      { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
-                    ]}
-                  >
-                    <Text style={[styles.campaignTypeBadgeText, { color: badgeMeta.text }]}>
-                      {badgeMeta.label}
-                    </Text>
-                  </View>
-
-                  {isActive ? (
-                    <View style={styles.activePill}>
-                      <Check size={11} color={colors.void} />
-                      <Text style={styles.activePillText}>IN REGIA</Text>
-                    </View>
-                  ) : (
-                    <TouchableOpacity
-                      style={styles.selectCampPill}
-                      onPress={() => handleSelectCampaign(camp)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.selectCampPillText}>Seleziona per Regia</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-
-                <Text style={styles.campaignCardTitle}>{camp.name}</Text>
-                {camp.description ? (
-                  <Text style={styles.campaignCardDesc} numberOfLines={2}>
-                    {camp.description}
-                  </Text>
-                ) : null}
-
-                <View style={styles.campaignCardFooter}>
-                  <View style={styles.campFooterMeta}>
-                    <Crown size={12} color={colors.brassLight} />
-                    <Text style={styles.campFooterMetaText}>
-                      {camp.is_public ? 'Campagna Pubblica' : 'Campagna Privata'}
-                    </Text>
-                  </View>
-
-                  <View style={styles.campFooterMeta}>
-                    <Users size={12} color={colors.parchmentMuted} />
-                    <Text style={styles.campFooterMetaText}>
-                      {isActive ? 'Attiva al Tavolo' : 'Tocca per attivare'}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            </TouchableOpacity>
-          );
-        })}
+            return (
+              <ExpandableCampaignCard
+                key={camp.id}
+                campaign={camp}
+                isActive={isActive}
+                onSelect={handleSelectCampaign}
+                isGmView={true}
+                onNavigateRegia={() => navigation.navigate('Regia')}
+                upcomingSession={nextCampSession}
+              />
+            );
+          })}
+        </View>
       </ScrollView>
 
       {/* Create New Session Modal */}
@@ -591,6 +548,12 @@ const styles = StyleSheet.create({
   },
   filterPillTextActive: {
     color: colors.brassLight,
+  },
+  campaignsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    rowGap: 12,
   },
   campaignCard: {
     backgroundColor: colors.stoneSurface,

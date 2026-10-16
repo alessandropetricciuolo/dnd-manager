@@ -14,7 +14,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0B0D10"
+      "backgroundColor": "#0B0908"
     },
     "ios": {
       "supportsTablet": false,
@@ -26,11 +26,11 @@
       "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#0B0D10"
+        "backgroundColor": "#0B0908"
       },
       "userInterfaceStyle": "dark",
       "package": "com.barberanddragons.mobile",
-      "versionCode": 4,
+      "versionCode": 5,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"
@@ -39,6 +39,14 @@
     "plugins": [
       "expo-dev-client",
       "expo-secure-store",
+      [
+        "expo-speech-recognition",
+        {
+          "microphonePermission": "Consenti a Barber & Dragons di usare il microfono per dettare comandi al GM Screen.",
+          "speechRecognitionPermission": "Consenti a Barber & Dragons di trascrivere la dettatura per il GM Screen.",
+          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox", "com.google.android.tts"]
+        }
+      ],
       "expo-asset",
       "expo-font",
       [

@@ -5,6 +5,13 @@ import { gmRemoteRateLimit } from "@/lib/gm-remote/rate-limit";
 import { parseRemotePostBody, isRecord } from "@/lib/gm-remote/protocol";
 import { validateGmRemoteSession } from "@/lib/gm-remote/validate-remote-session";
 import { isInitiativeRemoteType, isValidInitiativeRemotePayload } from "@/lib/gm-remote/initiative-commands";
+import {
+  GM_REMOTE_COMBAT_CONFIRM_TYPE,
+  GM_REMOTE_COMBAT_REQUEST_TYPE,
+  isRemoteCombatCommandFresh,
+  parseRemoteCombatCommandConfirm,
+  parseRemoteCombatCommandRequest,
+} from "@/lib/gm-remote/combat-command-remote";
 
 const RATE_MAX = 120;
 const RATE_WINDOW_MS = 60_000;
@@ -46,6 +53,33 @@ export async function POST(req: NextRequest, context: RouteParams) {
 
   const admin = createSupabaseAdminClient() as SupabaseClient<any>;
   const payloadJson = isRecord(envelope.payload) ? envelope.payload : {};
+
+  if (envelope.type === GM_REMOTE_COMBAT_REQUEST_TYPE) {
+    const request = parseRemoteCombatCommandRequest(payloadJson);
+    if (!request) return NextResponse.json({ ok: false, error: "invalid_combat_request" }, { status: 400 });
+    if (!isRemoteCombatCommandFresh(envelope.issued_at)) {
+      return NextResponse.json({ ok: false, error: "stale_combat_request" }, { status: 409 });
+    }
+    if (request.campaign_id !== v.session.campaign_id || request.match_id !== null) {
+      return NextResponse.json({ ok: false, error: "combat_context_mismatch" }, { status: 409 });
+    }
+  }
+
+  if (envelope.type === GM_REMOTE_COMBAT_CONFIRM_TYPE) {
+    const confirmation = parseRemoteCombatCommandConfirm(payloadJson);
+    if (!confirmation) return NextResponse.json({ ok: false, error: "invalid_combat_confirmation" }, { status: 400 });
+    if (!isRemoteCombatCommandFresh(envelope.issued_at)) {
+      return NextResponse.json({ ok: false, error: "stale_combat_confirmation" }, { status: 409 });
+    }
+    if (confirmation.campaign_id !== v.session.campaign_id || confirmation.match_id !== null) {
+      return NextResponse.json({ ok: false, error: "combat_context_mismatch" }, { status: 409 });
+    }
+  }
+  if (envelope.type.startsWith("combat.") &&
+    envelope.type !== GM_REMOTE_COMBAT_REQUEST_TYPE &&
+    envelope.type !== GM_REMOTE_COMBAT_CONFIRM_TYPE) {
+    return NextResponse.json({ ok: false, error: "unknown_combat_command" }, { status: 400 });
+  }
 
   if (
     envelope.type.startsWith("initiative.") &&

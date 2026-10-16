@@ -53,11 +53,10 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
-  // Strict role isolation:
-  // - Admin can switch between GM and Player
-  // - GM is strictly locked to GM view
-  // - Player is strictly locked to Player view
-  const effectiveMode = role === 'admin' ? activeMode : (role === 'gm' ? 'gm' : 'player');
+  // Role view navigation:
+  // - Admin and GM can switch between GM Plancia and Player view
+  // - Player is locked to Player view
+  const effectiveMode = (role === 'admin' || role === 'gm') ? activeMode : 'player';
 
   // Authenticated: Wrap with CampaignProvider and route according to effective mode
   return (

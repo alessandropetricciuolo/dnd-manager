@@ -24,21 +24,21 @@ export const CAMPAIGN_TYPE_BADGES: Record<
 > = {
   oneshot: {
     label: 'ONE SHOT',
-    bg: 'rgba(168, 85, 247, 0.15)',
-    border: 'rgba(168, 85, 247, 0.4)',
-    text: '#C084FC',
+    bg: 'rgba(34, 197, 94, 0.16)',
+    border: 'rgba(34, 197, 94, 0.45)',
+    text: '#22C55E',
   },
   quest: {
     label: 'QUEST',
-    bg: 'rgba(59, 130, 246, 0.15)',
-    border: 'rgba(59, 130, 246, 0.4)',
-    text: '#60A5FA',
+    bg: 'rgba(168, 85, 247, 0.16)',
+    border: 'rgba(168, 85, 247, 0.45)',
+    text: '#C084FC',
   },
   long: {
     label: 'CAMPAGNA LONG',
-    bg: 'rgba(217, 119, 6, 0.15)',
-    border: 'rgba(217, 119, 6, 0.45)',
-    text: '#FBBF24',
+    bg: 'rgba(250, 204, 21, 0.16)',
+    border: 'rgba(250, 204, 21, 0.45)',
+    text: '#FACC15',
   },
   torneo: {
     label: 'TORNEO',
@@ -194,6 +194,33 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
           console.warn('[CampaignContext] Player fetch error:', error.message);
         }
         campaignList = (data as Campaign[]) || [];
+      }
+
+      if (campaignList.length === 0) {
+        campaignList = [
+          {
+            id: 'demo-camp-1',
+            gm_id: user?.id || 'demo-gm-uuid-1234',
+            name: 'Le Ombre di Waterdeep',
+            description: 'Intrighi politici e pericoli nei vicoli oscuri della Città degli Splendori.',
+            is_public: true,
+            type: 'quest',
+            image_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+          {
+            id: 'demo-camp-2',
+            gm_id: 'other-gm-id',
+            name: 'La Corona di Pietra',
+            description: 'Una spedizione sotterranea verso i picchi innevati di Monte Drago.',
+            is_public: true,
+            type: 'long',
+            image_url: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          },
+        ];
       }
 
       // Load player's assigned characters across all campaigns

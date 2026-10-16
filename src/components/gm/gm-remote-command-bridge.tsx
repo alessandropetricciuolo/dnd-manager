@@ -8,6 +8,12 @@ import { applyTorneoRemoteCommand, type TorneoRemoteHandlers } from "@/lib/gm-re
 import { isRecord } from "@/lib/gm-remote/protocol";
 import type { GmAudioForgeControls } from "@/lib/gm-audio-forge/use-gm-audio-forge";
 import type { InitiativeTrackerHandle } from "@/components/gm/initiative-tracker";
+import { GM_REMOTE_COMBAT_CONFIRM_TYPE, GM_REMOTE_COMBAT_REQUEST_TYPE } from "@/lib/gm-remote/combat-command-remote";
+
+export type RemoteCombatCommandBridgeHandlers = {
+  request: (payload: Record<string, unknown>, remoteSessionPublicId: string) => void;
+  confirm: (payload: Record<string, unknown>, remoteSessionPublicId: string) => void;
+};
 
 type Props = {
   campaignId: string;
@@ -20,6 +26,7 @@ type Props = {
   station1MatchId?: string | null;
   station2MatchId?: string | null;
   torneoHandlers?: TorneoRemoteHandlers | null;
+  combatCommandHandlers?: RemoteCombatCommandBridgeHandlers;
   onRealtimeStatus: (connected: boolean) => void;
 };
 
@@ -64,6 +71,7 @@ export function GmRemoteCommandBridge({
   station1MatchId,
   station2MatchId,
   torneoHandlers,
+  combatCommandHandlers,
   onRealtimeStatus,
 }: Props) {
   const seenRef = useRef(new Set<string>());
@@ -124,6 +132,15 @@ export function GmRemoteCommandBridge({
             }
             const pl = parsePayloadCell(row.payload);
 
+            if (type === GM_REMOTE_COMBAT_REQUEST_TYPE) {
+              combatCommandHandlers?.request(pl, sessionPublicId);
+              return;
+            }
+            if (type === GM_REMOTE_COMBAT_CONFIRM_TYPE) {
+              combatCommandHandlers?.confirm(pl, sessionPublicId);
+              return;
+            }
+
             if (torneoRef.current && applyTorneoRemoteCommand(torneoRef.current, type, pl)) {
               return;
             }
@@ -171,7 +188,7 @@ export function GmRemoteCommandBridge({
       channelRef.current = null;
       if (ch) void supabase.removeChannel(ch);
     };
-  }, [campaignId, initiativeHandlers, sessionPublicId, onRealtimeStatus]);
+  }, [campaignId, combatCommandHandlers, initiativeHandlers, sessionPublicId, onRealtimeStatus]);
 
   return null;
 }

@@ -17,6 +17,7 @@ export interface GmCampaignContextType {
   campaigns: Campaign[];
   activeCampaign: Campaign | null;
   sessions: Session[];
+  allGuildSessions: Session[];
   activeSession: Session | null;
   characters: Character[];
   isLoading: boolean;
@@ -52,12 +53,35 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   } = useCampaign();
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [allGuildSessions, setAllGuildSessions] = useState<Session[]>([]);
   const [activeSession, setActiveSession] = useState<Session | null>(null);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [demoSignupsMap, setDemoSignupsMap] = useState<Record<string, SessionSignupDetail[]>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Load ALL guild sessions across all campaigns (for calendar & overview)
+  const loadAllGuildSessions = useCallback(async () => {
+    try {
+      const { data, error: err } = await supabase
+        .from('sessions')
+        .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
+        .order('scheduled_at', { ascending: true });
+
+      if (err) {
+        console.warn('[GmCampaignContext] allGuildSessions error:', err.message);
+      } else if (data) {
+        setAllGuildSessions(data as Session[]);
+      }
+    } catch (e) {
+      console.warn('[GmCampaignContext] loadAllGuildSessions catch:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadAllGuildSessions();
+  }, [loadAllGuildSessions]);
 
   // Load Sessions and Characters for the active campaign
   const loadCampaignDetails = useCallback(async (campaignId: string) => {
@@ -72,7 +96,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       // Fetch real sessions for this campaign
       const { data: sessionRows, error: sessErr } = await supabase
         .from('sessions')
-        .select('*')
+        .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
         .eq('campaign_id', campaignId)
         .order('scheduled_at', { ascending: false });
 
@@ -138,14 +162,15 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     [sessions]
   );
 
-  // Refresh current campaign session/characters data
+  // Refresh current campaign session/characters data and guild sessions
   const refreshSessionData = useCallback(async () => {
-    if (activeCampaign) {
-      setIsRefreshing(true);
-      await loadCampaignDetails(activeCampaign.id);
-      setIsRefreshing(false);
-    }
-  }, [activeCampaign, loadCampaignDetails]);
+    setIsRefreshing(true);
+    await Promise.all([
+      activeCampaign ? loadCampaignDetails(activeCampaign.id) : Promise.resolve(),
+      loadAllGuildSessions(),
+    ]);
+    setIsRefreshing(false);
+  }, [activeCampaign, loadCampaignDetails, loadAllGuildSessions]);
 
   // Save character HP through the revision-checked mobile endpoint before updating local UI.
   const updateCharacterHp = useCallback(
@@ -632,6 +657,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       campaigns,
       activeCampaign,
       sessions,
+      allGuildSessions,
       activeSession,
       characters,
       isLoading,
@@ -656,6 +682,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
       campaigns,
       activeCampaign,
       sessions,
+      allGuildSessions,
       activeSession,
       characters,
       isLoading,

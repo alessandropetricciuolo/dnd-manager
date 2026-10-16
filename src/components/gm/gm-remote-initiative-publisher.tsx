@@ -10,6 +10,7 @@ import {
   type InitiativeRemoteSnapshot,
 } from "@/lib/gm-remote/initiative-commands";
 import type { InitiativeTrackerHandle, InitiativeTrackerState } from "@/components/gm/initiative-tracker";
+import type { RemoteCombatCommandSnapshot } from "@/lib/gm-remote/combat-command-remote";
 
 const HEARTBEAT_MS = 5_000;
 const SAMPLE_MS = 400;
@@ -25,6 +26,7 @@ type Props = {
   sessionTitle?: string | null;
   torneoActiveMatch?: InitiativeRemoteSnapshot["activeMatch"];
   torneoMatchId?: string | null;
+  combatCommand?: RemoteCombatCommandSnapshot | null;
 };
 
 /** Publishes the provider's authoritative tracker. Sampling catches rapid edits without
@@ -39,11 +41,12 @@ export function GmRemoteInitiativePublisher({
   sessionTitle,
   torneoActiveMatch,
   torneoMatchId,
+  combatCommand,
 }: Props) {
   const latestStateRef = useRef(state);
   latestStateRef.current = state;
-  const latestMetadataRef = useRef({ sessionId, sessionTitle, torneoActiveMatch, torneoMatchId });
-  latestMetadataRef.current = { sessionId, sessionTitle, torneoActiveMatch, torneoMatchId };
+  const latestMetadataRef = useRef({ sessionId, sessionTitle, torneoActiveMatch, torneoMatchId, combatCommand });
+  latestMetadataRef.current = { sessionId, sessionTitle, torneoActiveMatch, torneoMatchId, combatCommand };
 
   useEffect(() => {
     if (!sessionPublicId || !active) return;
@@ -52,6 +55,7 @@ export function GmRemoteInitiativePublisher({
     let publishing = false;
     let pending = false;
     let lastSignature = "";
+    let lastCommandSignature = "";
     let lastPublishedAt = 0;
     const publish = async () => {
       const current = initiativeHandleRef?.current?.getState() ?? latestStateRef.current;
@@ -68,10 +72,12 @@ export function GmRemoteInitiativePublisher({
         metadata.torneoActiveMatch ?? undefined,
         metadata.torneoMatchId ?? undefined,
         metadata.sessionId ?? null,
-        metadata.sessionTitle ?? null
+        metadata.sessionTitle ?? null,
+        metadata.combatCommand ?? null
       );
       const signature = initiativeRemoteSnapshotSignature(snapshot);
-      const changed = signature !== lastSignature;
+      const commandSignature = JSON.stringify(snapshot.combatCommand ?? null);
+      const changed = signature !== lastSignature || commandSignature !== lastCommandSignature;
       const heartbeatDue = Date.now() - lastPublishedAt >= HEARTBEAT_MS;
       if (!changed && !heartbeatDue) return;
       if (Date.now() - lastPublishedAt < MIN_PUBLISH_INTERVAL_MS) return;
@@ -84,6 +90,7 @@ export function GmRemoteInitiativePublisher({
         const res = await publishGmRemoteInitiativeSnapshot(campaignId, sessionPublicId, snapshot);
         if (res.success) {
           lastSignature = signature;
+          lastCommandSignature = commandSignature;
           lastPublishedAt = Date.now();
           if (metadata.torneoMatchId && changed) {
             await saveTorneoMatchInitiativeAction(campaignId, metadata.torneoMatchId, trackerState);
