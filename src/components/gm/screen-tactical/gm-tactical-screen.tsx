@@ -33,10 +33,19 @@ export function GmTacticalScreen({
   const long = useGmScreenLongStateOptional();
   const initiativeRef = useRef<InitiativeTrackerHandle>(null!);
   const [activeCombatant, setActiveCombatant] = useState<InitiativeEntry | null>(null);
+  const [allCombatants, setAllCombatants] = useState<InitiativeEntry[]>([]);
 
   const handleEnrichMonster = useCallback((id: string, body: string) => {
     initiativeRef.current?.enrichMonster?.(id, body);
   }, []);
+
+  const handleActiveCombatantChange = useCallback(
+    (active: InitiativeEntry | null, all?: InitiativeEntry[]) => {
+      setActiveCombatant(active);
+      if (all) setAllCombatants(all);
+    },
+    []
+  );
 
   return (
     <div
@@ -59,7 +68,7 @@ export function GmTacticalScreen({
               value={long.initiativeState}
               onChange={long.setInitiativeState}
               defaultDisplay="table"
-              onActiveCombatantChange={setActiveCombatant}
+              onActiveCombatantChange={handleActiveCombatantChange}
               onConcludeFight={long.concludeFight}
             />
           ) : (
@@ -68,7 +77,7 @@ export function GmTacticalScreen({
               campaignId={campaignId}
               campaignType={campaignType}
               defaultDisplay="table"
-              onActiveCombatantChange={setActiveCombatant}
+              onActiveCombatantChange={handleActiveCombatantChange}
             />
           )}
         </div>
@@ -81,8 +90,10 @@ export function GmTacticalScreen({
         <ActiveCombatantCard
           entry={activeCombatant}
           campaignId={campaignId}
+          allCombatants={allCombatants.map((e) => ({ id: e.id, name: e.name, type: e.type }))}
           onUpdateHp={(id, delta) => initiativeRef.current?.adjustHp(id, delta)}
           onSetHp={(id, hp) => initiativeRef.current?.updateHp(id, hp)}
+          onSetTempHp={(id, tempHp) => initiativeRef.current?.setTempHp(id, tempHp)}
           onToggleReaction={(id) => initiativeRef.current?.toggleReaction(id)}
           onSpendSlot={(id, lvl) => initiativeRef.current?.spendSlot(id, lvl)}
           onRestoreSlot={(id, lvl) => initiativeRef.current?.restoreSlot(id, lvl)}
@@ -91,6 +102,14 @@ export function GmTacticalScreen({
           onToggleDeathSaveFail={(id) => initiativeRef.current?.toggleDeathSaveFail(id)}
           onUpdateNote={(id, note) => initiativeRef.current?.updateNote(id, note)}
           onUpdateConditions={(id, conds) => initiativeRef.current?.updateConditions(id, conds)}
+          onAddEffect={(payload) => initiativeRef.current?.addEffect(payload)}
+          onRemoveEffect={(entryId, effectId) => initiativeRef.current?.removeEffect(entryId, effectId)}
+          onConsumeEffect={(entryId, effectId) => initiativeRef.current?.consumeEffect?.(entryId, effectId)}
+          onStartConcentration={(payload) => initiativeRef.current?.startConcentration(payload)}
+          onBreakConcentration={(casterId) => initiativeRef.current?.breakConcentration(casterId)}
+          onUpdateSavingThrowBonus={(entryId, ability, bonus) =>
+            initiativeRef.current?.updateSavingThrowBonus(entryId, ability, bonus)
+          }
           onEnrichMonster={handleEnrichMonster}
           onOpenWikiStatblock={(entityId) => {
             if (entityId && typeof window !== "undefined") {

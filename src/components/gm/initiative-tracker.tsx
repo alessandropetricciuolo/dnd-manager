@@ -47,6 +47,9 @@ import {
   Zap,
   CheckCircle2,
   Info,
+  Sparkles,
+  Shield,
+  AlertTriangle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -61,7 +64,11 @@ import {
   spellSlotsForCharacter,
 } from "@/lib/combat-spell-slots";
 import { ConditionsCell } from "@/components/gm/conditions-cell";
-import { normalizeCombatConditions, type CombatConditionId } from "@/lib/combat-conditions";
+import {
+  getCombatStatusDefinition,
+  normalizeCombatConditions,
+  type CombatConditionId,
+} from "@/lib/combat-conditions";
 import { SpellSlotsCell } from "@/components/gm/spell-slots-cell";
 import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
@@ -69,15 +76,63 @@ import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-c
 import { useGmScreenViewActive } from "./gm-screen-view";
 import { publishFightProjection } from "@/lib/fight-mode/broadcast";
 import { openProjectionWindow as openPopoutProjection } from "@/lib/browser/projection-window";
-import type { SavingThrowsMap, CombatReaction } from "@/lib/fight-mode/types";
+import type {
+  SavingThrowsMap,
+  SavingThrowsSource,
+  CombatReaction,
+  CombatEffectInstance,
+  CombatEffectDuration,
+  CombatEffectSavePrompt,
+  ActiveConcentration,
+  PendingConcentrationCheck,
+  FightProjectionEffectBadge,
+  PendingSaveReminder,
+  TurnAdvanceUndoSnapshot,
+  StructuredPcWeapon,
+  StructuredPcSpell,
+  CommandUndoSnapshot,
+  CombatCommandProposal,
+} from "@/lib/fight-mode/types";
 import {
   estimatePcSaves,
+  extractStructuredPcSaves,
   parseMonsterStatsFromMarkdown,
   DEFAULT_OPPORTUNITY_ATTACK,
   isCompleteMonsterStatblock,
 } from "@/lib/fight-mode/stats-helper";
+import {
+  reconcileEntryEffectsAndConditions,
+  normalizeActiveConcentration,
+  normalizePendingConcentrationChecks,
+  normalizePendingSaveReminders,
+  initiativeStateSyncSignature,
+  computeEffectiveArmorClass,
+  startCombatantConcentration,
+  breakCombatantConcentration,
+  addCombatEffectInstances,
+  removeCombatEffectInstance,
+  toggleCombatStatusOnEntry,
+  setCanonicalConditionsOnEntry,
+  toggleMobileConcentrationOnEntry,
+  applyCombatHpMutation,
+  resolvePendingConcentrationCheck,
+  resolvePendingSaveReminder,
+  consumeSingleUseEffect,
+  transitionNextTurn,
+  undoAdvanceTurn,
+  updateCombatantSavingThrowBonus,
+  setCombatantDeadState,
+  removeCombatantFromState,
+  applyCombatCommandProposal,
+  undoLastCommand,
+  type AddCombatEffectPayload,
+  type ApplyCombatCommandResult,
+  type UndoCombatCommandResult,
+} from "@/lib/fight-mode/state-transitions";
+import { extractStructuredPcCombatData } from "@/lib/fight-mode/sheet-combat-extractor";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTurnTimer } from "@/lib/fight-mode/turn-timer";
+import { CombatCommandBar } from "@/components/gm/screen-tactical/combat-command-bar";
 
 function isDeadMonster(e: InitiativeEntry | undefined | null): boolean {
   if (!e) return false;
@@ -85,6 +140,20 @@ function isDeadMonster(e: InitiativeEntry | undefined | null): boolean {
     return Boolean(e.isDead) || (typeof e.hp === "number" && e.hp <= 0);
   }
   return Boolean(e.isDead);
+}
+
+function toProjectionEffects(entry: InitiativeEntry): FightProjectionEffectBadge[] {
+  return (entry.activeEffects ?? []).map((eff) => {
+    const def = getCombatStatusDefinition(eff.statusId);
+    return {
+      effectId: eff.effectId,
+      statusId: eff.statusId,
+      label: eff.label,
+      category: def?.category ?? "custom",
+      ...(eff.sourceName ? { sourceName: eff.sourceName } : {}),
+      isConcentration: Boolean(eff.concentrationId),
+    };
+  });
 }
 
 export type TorneoMegatimerControls = {
@@ -106,6 +175,8 @@ export type InitiativeEntry = {
   armorClass: number;
   hp: number;
   maxHp: number;
+  /** Punti ferita temporanei (non cumulabili, assorbono il danno prima dei PF reali). */
+  tempHp?: number;
   initiative: number;
   playerId?: string;
   /** Ritratto PG (URL immagine scheda). */
@@ -129,19 +200,35 @@ export type InitiativeEntry = {
   teamColor?: string;
   /** Slot incantesimo in combattimento (caster). */
   spellSlots?: CombatSpellSlots;
+  /** Derivazione automatica delle sole 15 condizioni canoniche da activeEffects. */
   conditions?: CombatConditionId[];
+  /** Istanze attive di condizioni, buff, stati tattici e stati custom. */
+  activeEffects?: CombatEffectInstance[];
+  /** Concentrazione attiva mantenuta da questo combattente. */
+  activeConcentration?: ActiveConcentration | null;
   /** FIGHT MODE: tracciamento reazione usata in questo round */
   usedReaction?: boolean;
   /** FIGHT MODE: catalogo reazioni note/disponibili (es. da statblock o Attacco di Opportunità) */
   availableReactions?: CombatReaction[];
   /** FIGHT MODE: tiri salvezza D&D 5e (FOR, DES, COS, INT, SAG, CAR) */
   savingThrows?: SavingThrowsMap;
+  /** FIGHT MODE: origine dei tiri salvezza ('sheet' = dati strutturati, 'estimated' = stima classe, 'manual' = inserito da GM) */
+  savingThrowsSource?: SavingThrowsSource;
   /** FIGHT MODE: tiri salvezza contro la morte per PG a 0 PF */
   deathSaves?: { success: number; fail: number };
   /** FIGHT MODE: annotazione rapida inline */
   noteText?: string;
   /** FIGHT MODE: Statblock markdown memorizzato per rendering istantaneo */
   contentBody?: string;
+  /** Dati armi strutturate dalla scheda */
+  weapons?: StructuredPcWeapon[];
+  weaponsSource?: "sheet" | "fallback" | "empty";
+  /** CD tiri salvezza incantesimi da scheda */
+  spellSaveDc?: number | null;
+  /** Bonus attacco incantesimi da scheda */
+  spellAttackBonus?: number | null;
+  /** Incantesimi conosciuti/a disposizione da scheda (escluso spellsListMd) */
+  spells?: StructuredPcSpell[];
 };
 
 export type InitiativeTrackerState = {
@@ -152,6 +239,16 @@ export type InitiativeTrackerState = {
   /** Secondi trascorsi nel turno corrente. */
   turnElapsedSeconds: number;
   isTurnTimerRunning: boolean;
+  /** Coda FIFO dei check di concentrazione pendenti. */
+  pendingConcentrationChecks?: PendingConcentrationCheck[];
+  /** Promemoria attivi per tiri salvezza di inizio/fine turno legati a effetti */
+  pendingSaveReminders?: PendingSaveReminder[];
+  /** Snapshot per l'annullamento sicuro dell'ultimo avanzamento di turno */
+  lastAdvanceUndoSnapshot?: TurnAdvanceUndoSnapshot | null;
+  /** Elenco degli ID delle proposte di comando già applicate per prevenire doppie applicazioni */
+  appliedProposalIds?: string[];
+  /** Snapshot per l'annullamento dell'ultimo comando applicato */
+  lastCommandUndoSnapshot?: CommandUndoSnapshot | null;
 };
 
 export function emptyInitiativeTrackerState(): InitiativeTrackerState {
@@ -161,14 +258,35 @@ export function emptyInitiativeTrackerState(): InitiativeTrackerState {
     roundNumber: 1,
     turnElapsedSeconds: 120,
     isTurnTimerRunning: false,
+    pendingConcentrationChecks: [],
+    pendingSaveReminders: [],
+    lastAdvanceUndoSnapshot: null,
+    appliedProposalIds: [],
+    lastCommandUndoSnapshot: null,
   };
 }
 
 function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
   const spellSlots = normalizeCombatSpellSlots(entry.spellSlots);
+  const reconciled = reconcileEntryEffectsAndConditions(
+    entry.id,
+    entry.activeEffects,
+    entry.conditions
+  );
+  const activeConcentration = normalizeActiveConcentration(entry.activeConcentration, entry.id);
+  const savingThrowsSource: SavingThrowsSource =
+    entry.savingThrowsSource === "sheet" ||
+    entry.savingThrowsSource === "estimated" ||
+    entry.savingThrowsSource === "manual"
+      ? entry.savingThrowsSource
+      : "estimated";
+
   return {
     ...entry,
-    conditions: normalizeCombatConditions(entry.conditions),
+    tempHp: Math.max(0, Math.trunc(entry.tempHp ?? 0)),
+    conditions: reconciled.conditions,
+    activeEffects: reconciled.activeEffects,
+    activeConcentration,
     damageDealt: Math.max(0, Math.trunc(entry.damageDealt ?? 0)),
     damageTaken: Math.max(0, Math.trunc(entry.damageTaken ?? 0)),
     usedReaction: Boolean(entry.usedReaction),
@@ -180,6 +298,7 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
       : entry.type === "pc"
       ? estimatePcSaves(entry.characterClass)
       : { for: 0, des: 0, cos: 0, int: 0, sag: 0, car: 0 },
+    savingThrowsSource,
     deathSaves: entry.deathSaves
       ? {
           success: Math.min(3, Math.max(0, Math.trunc(entry.deathSaves.success ?? 0))),
@@ -188,6 +307,11 @@ function normalizeInitiativeEntry(entry: InitiativeEntry): InitiativeEntry {
       : { success: 0, fail: 0 },
     noteText: typeof entry.noteText === "string" ? entry.noteText : "",
     contentBody: typeof entry.contentBody === "string" ? entry.contentBody : undefined,
+    weapons: Array.isArray(entry.weapons) ? entry.weapons : undefined,
+    weaponsSource: entry.weaponsSource === "sheet" || entry.weaponsSource === "fallback" || entry.weaponsSource === "empty" ? entry.weaponsSource : undefined,
+    spellSaveDc: typeof entry.spellSaveDc === "number" ? entry.spellSaveDc : null,
+    spellAttackBonus: typeof entry.spellAttackBonus === "number" ? entry.spellAttackBonus : null,
+    spells: Array.isArray(entry.spells) ? entry.spells : undefined,
     ...(spellSlots ? { spellSlots } : { spellSlots: undefined }),
   };
 }
@@ -197,6 +321,14 @@ export function sanitizeInitiativeTrackerState(
 ): InitiativeTrackerState {
   if (!input || !Array.isArray(input.entries)) return emptyInitiativeTrackerState();
   const entries = input.entries.map(normalizeInitiativeEntry);
+  const pendingConcentrationChecks = normalizePendingConcentrationChecks(
+    input.pendingConcentrationChecks,
+    entries
+  );
+  const pendingSaveReminders = normalizePendingSaveReminders(
+    input.pendingSaveReminders,
+    entries
+  );
   return {
     entries,
     currentTurnIndex:
@@ -209,6 +341,13 @@ export function sanitizeInitiativeTrackerState(
         ? Math.trunc(input.turnElapsedSeconds)
         : 120,
     isTurnTimerRunning: Boolean(input.isTurnTimerRunning),
+    pendingConcentrationChecks,
+    pendingSaveReminders,
+    lastAdvanceUndoSnapshot: input.lastAdvanceUndoSnapshot ?? null,
+    appliedProposalIds: Array.isArray(input.appliedProposalIds)
+      ? input.appliedProposalIds.filter((id): id is string => typeof id === "string")
+      : [],
+    lastCommandUndoSnapshot: input.lastCommandUndoSnapshot ?? null,
   };
 }
 
@@ -221,28 +360,7 @@ function formatTurnElapsed(seconds: number): string {
 
 const STORAGE_KEY_PREFIX = "gm-screen-initiative-";
 
-/** Signature per sync parent/DB: esclude turnElapsedSeconds (tick ogni secondo). */
-export function initiativeStateSyncSignature(state: InitiativeTrackerState): string {
-  return JSON.stringify({
-    entries: state.entries.map((e) => ({
-      id: e.id,
-      hp: e.hp,
-      maxHp: e.maxHp,
-      initiative: e.initiative,
-      damageDealt: e.damageDealt ?? 0,
-      damageTaken: e.damageTaken ?? 0,
-      isDead: e.isDead,
-      usedReaction: e.usedReaction ? 1 : 0,
-      deathSaves: e.deathSaves ? `${e.deathSaves.success}/${e.deathSaves.fail}` : "0/0",
-      noteText: e.noteText ?? "",
-      spellSlots: e.spellSlots?.remaining,
-      conditions: normalizeCombatConditions(e.conditions),
-    })),
-    currentTurnIndex: state.currentTurnIndex,
-    roundNumber: state.roundNumber,
-    isTurnTimerRunning: state.isTurnTimerRunning,
-  });
-}
+export { initiativeStateSyncSignature };
 
 export function initiativeStatesSyncEqual(
   a: InitiativeTrackerState,
@@ -264,6 +382,7 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.armorClass !== right.armorClass ||
       left.hp !== right.hp ||
       left.maxHp !== right.maxHp ||
+      (left.tempHp ?? 0) !== (right.tempHp ?? 0) ||
       left.initiative !== right.initiative ||
       left.playerId !== right.playerId ||
       left.entityId !== right.entityId ||
@@ -280,7 +399,13 @@ function areInitiativeEntriesEqual(a: InitiativeEntry[], b: InitiativeEntry[]) {
       left.teamId !== right.teamId ||
       left.teamName !== right.teamName ||
       left.teamColor !== right.teamColor ||
-      JSON.stringify(normalizeCombatConditions(left.conditions)) !== JSON.stringify(normalizeCombatConditions(right.conditions)) ||
+      left.savingThrowsSource !== right.savingThrowsSource ||
+      JSON.stringify(left.savingThrows ?? null) !== JSON.stringify(right.savingThrows ?? null) ||
+      JSON.stringify(normalizeCombatConditions(left.conditions)) !==
+        JSON.stringify(normalizeCombatConditions(right.conditions)) ||
+      JSON.stringify(left.activeEffects ?? []) !== JSON.stringify(right.activeEffects ?? []) ||
+      JSON.stringify(left.activeConcentration ?? null) !==
+        JSON.stringify(right.activeConcentration ?? null) ||
       !combatSpellSlotsEqual(left.spellSlots, right.spellSlots)
     ) {
       return false;
@@ -342,7 +467,7 @@ type InitiativeTrackerProps = {
   onConcludeFight?: () => boolean | void | Promise<boolean | void>;
   onBankExp?: (exp: number) => void | Promise<void>;
   /** FIGHT MODE: notifica al parent del combattente attivo per la card spotlight */
-  onActiveCombatantChange?: (entry: InitiativeEntry | null) => void;
+  onActiveCombatantChange?: (entry: InitiativeEntry | null, allEntries?: InitiativeEntry[]) => void;
   /** FIGHT MODE: display di default ('table' o 'tactical') */
   defaultDisplay?: "tactical" | "table";
 };
@@ -353,6 +478,7 @@ export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
   closeFight: () => void;
   updateHp: (entryId: string, hp: number) => void;
   adjustHp: (entryId: string, delta: number) => void;
+  setTempHp: (entryId: string, tempHp: number) => void;
   spendSlot: (entryId: string, level: number) => void;
   restoreSlot: (entryId: string, level: number) => void;
   resetSlots: (entryId: string) => void;
@@ -360,8 +486,32 @@ export type InitiativeTrackerHandle = InitiativeRemoteCommandHandlers & {
   toggleDeathSaveFail: (entryId: string) => void;
   updateNote: (entryId: string, noteText: string) => void;
   updateConditions: (entryId: string, conditions: CombatConditionId[]) => void;
+  addEffect: (payload: {
+    entryId: string;
+    statusId: string;
+    customLabel?: string;
+    sourceCasterId?: string;
+    sourceName?: string;
+    isConcentration?: boolean;
+    duration?: CombatEffectDuration | null;
+    savePrompt?: CombatEffectSavePrompt | null;
+  }) => void;
+  removeEffect: (entryId: string, effectId: string) => void;
+  consumeEffect?: (entryId: string, effectId: string) => void;
+  startConcentration: (payload: {
+    casterId: string;
+    spellName: string;
+    targetIds?: string[];
+    linkedStatusId?: string;
+    customEffectLabel?: string;
+  }) => void;
+  breakConcentration: (casterId: string) => void;
+  resolveConcentrationCheck: (checkId: string, outcome: "passed" | "failed") => void;
+  updateSavingThrowBonus: (entryId: string, ability: keyof SavingThrowsMap, bonus: number) => void;
   addRemoteCombatant: (combatant: InitiativeRemoteCombatant) => void;
   enrichMonster?: (entryId: string, fullStatblock: string) => void;
+  applyCombatCommand?: (proposal: CombatCommandProposal, selectedOpIds?: string[]) => ApplyCombatCommandResult;
+  undoLastCombatCommand?: () => UndoCombatCommandResult;
 };
 
 export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeTrackerProps>(
@@ -392,6 +542,15 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const isControlled = typeof onChange === "function" && value != null;
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
+  const [pendingConcentrationChecks, setPendingConcentrationChecks] = useState<
+    PendingConcentrationCheck[]
+  >([]);
+  const [pendingSaveReminders, setPendingSaveReminders] = useState<PendingSaveReminder[]>([]);
+  const [lastAdvanceUndoSnapshot, setLastAdvanceUndoSnapshot] = useState<TurnAdvanceUndoSnapshot | null>(null);
+  const [appliedProposalIds, setAppliedProposalIds] = useState<string[]>([]);
+  const [lastCommandUndoSnapshot, setLastCommandUndoSnapshot] = useState<CommandUndoSnapshot | null>(null);
+  const [editingConBonusCheckId, setEditingConBonusCheckId] = useState<string | null>(null);
+  const [conBonusDraft, setConBonusDraft] = useState<string>("");
   const [trackerDisplay, setTrackerDisplay] = useState<"tactical" | "table">(defaultDisplay);
   const [currentTurnIndex, setCurrentTurnIndex] = useState(0);
   const [roundNumber, setRoundNumber] = useState(1);
@@ -407,7 +566,10 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     },
     [turnTimer]
   );
-  const [editingCell, setEditingCell] = useState<{ id: string; field: "name" | "hp" | "initiative" | "armorClass" } | null>(null);
+  const [editingCell, setEditingCell] = useState<{
+    id: string;
+    field: "name" | "hp" | "tempHp" | "initiative" | "armorClass";
+  } | null>(null);
   const [addPcOpen, setAddPcOpen] = useState(false);
   const [addMonsterOpen, setAddMonsterOpen] = useState(false);
   const [pcList, setPcList] = useState<
@@ -448,8 +610,50 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       roundNumber: overrides?.roundNumber ?? roundNumber,
       turnElapsedSeconds: overrides?.turnElapsedSeconds ?? turnElapsedSeconds,
       isTurnTimerRunning: overrides?.isTurnTimerRunning ?? isTurnTimerRunning,
+      pendingConcentrationChecks:
+        overrides?.pendingConcentrationChecks ?? pendingConcentrationChecks,
+      pendingSaveReminders:
+        overrides?.pendingSaveReminders ?? pendingSaveReminders,
+      lastAdvanceUndoSnapshot:
+        overrides?.lastAdvanceUndoSnapshot !== undefined
+          ? overrides.lastAdvanceUndoSnapshot
+          : lastAdvanceUndoSnapshot,
+      appliedProposalIds:
+        overrides?.appliedProposalIds ?? appliedProposalIds,
+      lastCommandUndoSnapshot:
+        overrides?.lastCommandUndoSnapshot !== undefined
+          ? overrides.lastCommandUndoSnapshot
+          : lastCommandUndoSnapshot,
     }),
-    [currentTurnIndex, entries, isTurnTimerRunning, roundNumber, turnElapsedSeconds]
+    [
+      appliedProposalIds,
+      currentTurnIndex,
+      entries,
+      isTurnTimerRunning,
+      lastAdvanceUndoSnapshot,
+      lastCommandUndoSnapshot,
+      pendingConcentrationChecks,
+      pendingSaveReminders,
+      roundNumber,
+      turnElapsedSeconds,
+    ]
+  );
+
+  const applyTransition = useCallback(
+    (updater: (prev: InitiativeTrackerState) => InitiativeTrackerState): InitiativeTrackerState => {
+      const next = updater(trackerRef.current);
+      trackerRef.current = next;
+      setEntries(next.entries);
+      setCurrentTurnIndex(next.currentTurnIndex);
+      setRoundNumber(next.roundNumber);
+      setPendingConcentrationChecks(next.pendingConcentrationChecks ?? []);
+      setPendingSaveReminders(next.pendingSaveReminders ?? []);
+      setLastAdvanceUndoSnapshot(next.lastAdvanceUndoSnapshot ?? null);
+      setAppliedProposalIds(next.appliedProposalIds ?? []);
+      setLastCommandUndoSnapshot(next.lastCommandUndoSnapshot ?? null);
+      return next;
+    },
+    []
   );
 
   useEffect(() => {
@@ -464,11 +668,25 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     const metaChanged =
       prev.currentTurnIndex !== next.currentTurnIndex ||
       prev.roundNumber !== next.roundNumber;
-    if (!entriesChanged && !metaChanged) return;
+    const checksChanged =
+      JSON.stringify(prev.pendingConcentrationChecks ?? []) !==
+      JSON.stringify(next.pendingConcentrationChecks ?? []);
+    const remindersChanged =
+      JSON.stringify(prev.pendingSaveReminders ?? []) !==
+      JSON.stringify(next.pendingSaveReminders ?? []);
+    const proposalLedgerChanged = JSON.stringify(prev.appliedProposalIds ?? []) !== JSON.stringify(next.appliedProposalIds ?? []);
+    const commandUndoChanged = JSON.stringify(prev.lastCommandUndoSnapshot ?? null) !== JSON.stringify(next.lastCommandUndoSnapshot ?? null);
+    if (!entriesChanged && !metaChanged && !checksChanged && !remindersChanged && !proposalLedgerChanged && !commandUndoChanged) return;
     skipControlledEchoRef.current = true;
     lastControlledParentSigRef.current = initiativeStateSyncSignature(next);
+    trackerRef.current = next;
     if (entriesChanged) setEntries(next.entries);
-    if (metaChanged || entriesChanged) {
+    if (checksChanged) setPendingConcentrationChecks(next.pendingConcentrationChecks ?? []);
+    if (remindersChanged) setPendingSaveReminders(next.pendingSaveReminders ?? []);
+    setLastAdvanceUndoSnapshot(next.lastAdvanceUndoSnapshot ?? null);
+    setAppliedProposalIds(next.appliedProposalIds ?? []);
+    setLastCommandUndoSnapshot(next.lastCommandUndoSnapshot ?? null);
+    if (metaChanged || entriesChanged || proposalLedgerChanged || commandUndoChanged) {
       setCurrentTurnIndex(next.currentTurnIndex);
       setRoundNumber(next.roundNumber);
     }
@@ -487,9 +705,15 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         : emptyInitiativeTrackerState();
       restoringStorageRef.current = true;
       restoringProjectionRef.current = true;
+      trackerRef.current = restored;
       setEntries(restored.entries);
       setCurrentTurnIndex(restored.currentTurnIndex);
       setRoundNumber(restored.roundNumber);
+      setPendingConcentrationChecks(restored.pendingConcentrationChecks ?? []);
+      setPendingSaveReminders(restored.pendingSaveReminders ?? []);
+      setLastAdvanceUndoSnapshot(restored.lastAdvanceUndoSnapshot ?? null);
+      setAppliedProposalIds(restored.appliedProposalIds ?? []);
+      setLastCommandUndoSnapshot(restored.lastCommandUndoSnapshot ?? null);
     } catch {
       // ignore
     }
@@ -542,6 +766,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     isControlled,
     isTurnTimerRunning,
     onChange,
+    pendingConcentrationChecks,
     roundNumber,
     storageKey,
     turnElapsedSeconds,
@@ -553,88 +778,110 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     onTrackerStateChange?.(buildTrackerState());
   }, [buildTrackerState, onTrackerStateChange, isControlled]);
 
-
   const updateEntry = useCallback(
     (id: string, updates: Partial<InitiativeEntry>) => {
-      setEntries((prev) =>
-        prev.map((e) => (e.id === id ? { ...e, ...updates } : e))
-      );
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => (e.id === id ? { ...e, ...updates } : e)),
+      }));
+    },
+    [applyTransition]
+  );
+
+  const removeEntry = useCallback(
+    (id: string) => {
+      applyTransition((prev) => removeCombatantFromState(prev, id));
+    },
+    [applyTransition]
+  );
+
+  const addRemoteCombatant = useCallback(
+    (combatant: InitiativeRemoteCombatant) => {
+      applyTransition((prev) => {
+        if (prev.entries.some((entry) => entry.id === combatant.id)) return prev;
+        const entry = normalizeInitiativeEntry({
+          id: combatant.id,
+          name: combatant.name,
+          type: combatant.type,
+          armorClass: combatant.ac,
+          hp: combatant.hp,
+          maxHp: combatant.maxHp,
+          tempHp: 0,
+          initiative: combatant.initiative,
+          conditions: combatant.conditions,
+          isDead: combatant.hp <= 0,
+          damageDealt: 0,
+          damageTaken: 0,
+        });
+        return {
+          ...prev,
+          entries: [...prev.entries, entry].sort((a, b) => b.initiative - a.initiative),
+        };
+      });
+    },
+    [applyTransition]
+  );
+
+  /** Restituisce il prossimo nome con numero progressivo (es. "Goblin" -> "Goblin 2", "Goblin 2" -> "Goblin 3"). */
+  const getNextDuplicateName = useCallback(
+    (currentName: string, allEntries: InitiativeEntry[]): string => {
+      const match = currentName.match(/^(.+?)\s+(\d+)$/);
+      const baseName = match ? match[1].trim() : currentName;
+      let maxNum = 0;
+      for (const e of allEntries) {
+        if (e.name === baseName) maxNum = Math.max(maxNum, 1);
+        const m = e.name.match(
+          new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+(\\d+)$`)
+        );
+        if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
+      }
+      return maxNum === 0 ? `${baseName} 2` : `${baseName} ${maxNum + 1}`;
     },
     []
   );
 
-  const removeEntry = useCallback((id: string) => {
-    setEntries((prev) => {
-      const next = prev.filter((e) => e.id !== id);
-      setCurrentTurnIndex((i) => (next.length === 0 ? 0 : Math.min(i, next.length - 1)));
-      return next;
-    });
-  }, []);
-
-  const addRemoteCombatant = useCallback((combatant: InitiativeRemoteCombatant) => {
-    setEntries((prev) => {
-      if (prev.some((entry) => entry.id === combatant.id)) return prev;
-      const entry = normalizeInitiativeEntry({
-        id: combatant.id,
-        name: combatant.name,
-        type: combatant.type,
-        armorClass: combatant.ac,
-        hp: combatant.hp,
-        maxHp: combatant.maxHp,
-        initiative: combatant.initiative,
-        conditions: combatant.conditions,
-        isDead: combatant.hp <= 0,
-        damageDealt: 0,
-        damageTaken: 0,
+  const duplicateEntry = useCallback(
+    (entry: InitiativeEntry) => {
+      const newName = getNextDuplicateName(entry.name, entries);
+      const newId = generateId();
+      applyTransition((prev) => {
+        const cloned = normalizeInitiativeEntry({
+          ...entry,
+          id: newId,
+          name: newName,
+          damageDealt: 0,
+          damageTaken: 0,
+          activeEffects: undefined,
+          activeConcentration: null,
+          ...(entry.spellSlots
+            ? { spellSlots: resetCombatSpellSlots(entry.spellSlots) }
+            : {}),
+        });
+        return {
+          ...prev,
+          entries: [...prev.entries, cloned],
+        };
       });
-      return [...prev, entry].sort((a, b) => b.initiative - a.initiative);
-    });
-  }, []);
-
-  /** Restituisce il prossimo nome con numero progressivo (es. "Goblin" -> "Goblin 2", "Goblin 2" -> "Goblin 3"). */
-  const getNextDuplicateName = useCallback((currentName: string, allEntries: InitiativeEntry[]): string => {
-    const match = currentName.match(/^(.+?)\s+(\d+)$/);
-    const baseName = match ? match[1].trim() : currentName;
-    let maxNum = 0;
-    for (const e of allEntries) {
-      if (e.name === baseName) maxNum = Math.max(maxNum, 1);
-      const m = e.name.match(new RegExp(`^${baseName.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\s+(\\d+)$`));
-      if (m) maxNum = Math.max(maxNum, parseInt(m[1], 10));
-    }
-    return maxNum === 0 ? `${baseName} 2` : `${baseName} ${maxNum + 1}`;
-  }, []);
-
-  const duplicateEntry = useCallback((entry: InitiativeEntry) => {
-    const newName = getNextDuplicateName(entry.name, entries);
-    setEntries((prev) => [
-      ...prev,
-      {
-        ...entry,
-        id: generateId(),
-        name: newName,
-        damageDealt: 0,
-        ...(entry.spellSlots
-          ? { spellSlots: resetCombatSpellSlots(entry.spellSlots) }
-          : {}),
-      },
-    ]);
-  }, [entries, getNextDuplicateName]);
+    },
+    [applyTransition, entries, getNextDuplicateName]
+  );
 
   const sortByInitiative = useCallback(() => {
-    setEntries((prev) =>
-      [...prev].sort((a, b) => b.initiative - a.initiative)
-    );
-    setCurrentTurnIndex(0);
-    setRoundNumber(1);
+    applyTransition((prev) => ({
+      ...prev,
+      entries: [...prev.entries].sort((a, b) => b.initiative - a.initiative),
+      currentTurnIndex: 0,
+      roundNumber: 1,
+    }));
     turnTimer.reset(false);
-  }, [turnTimer]);
+  }, [applyTransition, turnTimer]);
 
   const [fastDmgInputs, setFastDmgInputs] = useState<Record<string, string>>({});
 
   // Notifica combattente attivo alla plancia tattica
   useEffect(() => {
     const active = entries[currentTurnIndex] ?? null;
-    onActiveCombatantChange?.(active);
+    onActiveCombatantChange?.(active, entries);
   }, [entries, currentTurnIndex, onActiveCombatantChange]);
 
   // Only the visible tracker publishes; hidden copies must not overwrite it.
@@ -664,6 +911,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       characterClass?: string | null;
       portraitUrl?: string | null;
       conditions: CombatConditionId[];
+      activeEffects?: FightProjectionEffectBadge[];
+      activeConcentrationSpell?: string | null;
       order: number;
     }> = [];
 
@@ -681,6 +930,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           characterClass: item.characterClass,
           portraitUrl: item.portraitUrl,
           conditions: normalizeCombatConditions(item.conditions),
+          activeEffects: toProjectionEffects(item),
+          activeConcentrationSpell: item.activeConcentration?.spellName ?? null,
           order: stepCount,
         });
       }
@@ -699,6 +950,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             characterClass: active.characterClass,
             portraitUrl: active.portraitUrl,
             conditions: normalizeCombatConditions(active.conditions),
+            activeEffects: toProjectionEffects(active),
+            activeConcentrationSpell: active.activeConcentration?.spellName ?? null,
             noteText: active.noteText,
             usedReaction: active.usedReaction,
           }
@@ -710,68 +963,66 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   const nextTurn = useCallback(() => {
     if (entries.length === 0) return;
-    // Auto-reset reazioni ad ogni cambio turno
-    setEntries((prev) =>
-      prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
-    );
-    setCurrentTurnIndex((i) => {
-      let next = i;
-      let roundsToAdd = 0;
-      let attempts = 0;
-      do {
-        next = (next + 1) % entries.length;
-        if (next === 0) {
-          roundsToAdd++;
-        }
-        attempts++;
-      } while (isDeadMonster(entries[next]) && attempts < entries.length);
-
-      if (roundsToAdd > 0) {
-        setRoundNumber((r) => r + roundsToAdd);
-      }
-      return next;
-    });
+    applyTransition((prev) => transitionNextTurn(prev));
     if (!megatimerActive) {
       turnTimer.reset(true);
     }
-  }, [entries, megatimerActive, turnTimer]);
+  }, [applyTransition, entries.length, megatimerActive, turnTimer]);
+
+  const handleUndoAdvance = useCallback(() => {
+    applyTransition((prev) => {
+      const res = undoAdvanceTurn(prev);
+      if (!res.undone) {
+        toast.error(res.message);
+        return prev;
+      }
+      toast.success(res.message);
+      return res.nextState;
+    });
+  }, [applyTransition]);
 
   const prevTurn = useCallback(() => {
     if (entries.length === 0) return;
-    setEntries((prev) =>
-      prev.map((e) => (e.usedReaction ? { ...e, usedReaction: false } : e))
-    );
-    setCurrentTurnIndex((i) => {
-      let prev = i;
+    applyTransition((prev) => {
+      if (prev.entries.length === 0) return prev;
+      const nextEntries = prev.entries.map((e) =>
+        e.usedReaction ? { ...e, usedReaction: false } : e
+      );
+      let prevIdx = prev.currentTurnIndex;
       let roundsToSub = 0;
       let attempts = 0;
       do {
-        const wasZero = prev === 0;
-        prev = prev === 0 ? entries.length - 1 : prev - 1;
+        const wasZero = prevIdx === 0;
+        prevIdx = prevIdx === 0 ? nextEntries.length - 1 : prevIdx - 1;
         if (wasZero) {
           roundsToSub++;
         }
         attempts++;
-      } while (isDeadMonster(entries[prev]) && attempts < entries.length);
+      } while (isDeadMonster(nextEntries[prevIdx]) && attempts < nextEntries.length);
 
-      if (roundsToSub > 0) {
-        setRoundNumber((r) => Math.max(1, r - roundsToSub));
-      }
-      return prev;
+      return {
+        ...prev,
+        entries: nextEntries,
+        currentTurnIndex: prevIdx,
+        roundNumber: Math.max(1, prev.roundNumber - roundsToSub),
+      };
     });
     if (!megatimerActive) {
       turnTimer.reset(true);
     }
-  }, [entries, megatimerActive, turnTimer]);
+  }, [applyTransition, entries.length, megatimerActive, turnTimer]);
 
   const handleSelectTurn = useCallback(
     (idx: number) => {
-      setCurrentTurnIndex(idx);
+      applyTransition((prev) => ({
+        ...prev,
+        currentTurnIndex: idx,
+      }));
       if (!megatimerActive) {
         turnTimer.reset(true);
       }
     },
-    [megatimerActive, turnTimer]
+    [applyTransition, megatimerActive, turnTimer]
   );
 
   const toggleTurnTimer = useCallback(() => {
@@ -792,159 +1043,227 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   }, [megatimerActive, torneoMegatimer, turnTimer]);
 
   const resetRoundCounter = useCallback(() => {
-    setRoundNumber(1);
-    setCurrentTurnIndex(0);
+    applyTransition((prev) => ({
+      ...prev,
+      roundNumber: 1,
+      currentTurnIndex: 0,
+    }));
     turnTimer.reset(false);
-  }, [turnTimer]);
+  }, [applyTransition, turnTimer]);
 
-  const adjustDamageDealt = useCallback((entryId: string, delta: number) => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entryId
-          ? { ...e, damageDealt: Math.max(0, (e.damageDealt ?? 0) + delta) }
-          : e
-      )
-    );
-  }, []);
+  const adjustDamageDealt = useCallback(
+    (entryId: string, delta: number) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) =>
+          e.id === entryId
+            ? { ...e, damageDealt: Math.max(0, (e.damageDealt ?? 0) + delta) }
+            : e
+        ),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const adjustDamageTaken = useCallback((entryId: string, delta: number) => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entryId
-          ? { ...e, damageTaken: Math.max(0, (e.damageTaken ?? 0) + delta) }
-          : e
-      )
-    );
-  }, []);
+  const adjustDamageTaken = useCallback(
+    (entryId: string, delta: number) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) =>
+          e.id === entryId
+            ? { ...e, damageTaken: Math.max(0, (e.damageTaken ?? 0) + delta) }
+            : e
+        ),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const toggleReaction = useCallback((entryId: string) => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entryId ? { ...e, usedReaction: !e.usedReaction } : e
-      )
-    );
-  }, []);
+  const toggleReaction = useCallback(
+    (entryId: string) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) =>
+          e.id === entryId ? { ...e, usedReaction: !e.usedReaction } : e
+        ),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const toggleDeathSaveSuccess = useCallback((entryId: string) => {
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.id !== entryId) return e;
-        const cur = e.deathSaves?.success ?? 0;
-        const next = cur >= 3 ? 0 : cur + 1;
-        return {
-          ...e,
-          deathSaves: {
-            success: next,
-            fail: e.deathSaves?.fail ?? 0,
-          },
-        };
-      })
-    );
-  }, []);
+  const toggleDeathSaveSuccess = useCallback(
+    (entryId: string) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => {
+          if (e.id !== entryId) return e;
+          const cur = e.deathSaves?.success ?? 0;
+          const next = cur >= 3 ? 0 : cur + 1;
+          return {
+            ...e,
+            deathSaves: {
+              success: next,
+              fail: e.deathSaves?.fail ?? 0,
+            },
+          };
+        }),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const toggleDeathSaveFail = useCallback((entryId: string) => {
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.id !== entryId) return e;
-        const cur = e.deathSaves?.fail ?? 0;
+  const toggleDeathSaveFail = useCallback(
+    (entryId: string) => {
+      applyTransition((prev) => {
+        const target = prev.entries.find((e) => e.id === entryId);
+        if (!target) return prev;
+        const cur = target.deathSaves?.fail ?? 0;
         const next = cur >= 3 ? 0 : cur + 1;
         const nextDead = next >= 3;
-        return {
-          ...e,
-          isDead: nextDead ? true : e.isDead,
-          deathSaves: {
-            success: e.deathSaves?.success ?? 0,
-            fail: next,
-          },
+        let nextState: InitiativeTrackerState = {
+          ...prev,
+          entries: prev.entries.map((e) =>
+            e.id === entryId
+              ? {
+                  ...e,
+                  isDead: nextDead ? true : e.isDead,
+                  deathSaves: {
+                    success: e.deathSaves?.success ?? 0,
+                    fail: next,
+                  },
+                }
+              : e
+          ),
         };
-      })
-    );
-  }, []);
+        if (nextDead) {
+          nextState = breakCombatantConcentration(nextState, entryId);
+        }
+        return nextState;
+      });
+    },
+    [applyTransition]
+  );
 
-  const updateNote = useCallback((entryId: string, noteText: string) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === entryId ? { ...e, noteText } : e))
-    );
-  }, []);
+  const updateNote = useCallback(
+    (entryId: string, noteText: string) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => (e.id === entryId ? { ...e, noteText } : e)),
+      }));
+    },
+    [applyTransition]
+  );
 
   const applyHpChange = useCallback(
     async (entryId: string, nextHp: number) => {
-      const entry = entries.find((e) => e.id === entryId);
-      if (!entry) return;
-      const clamped = Math.max(0, Math.min(nextHp, entry.maxHp > 0 ? entry.maxHp : nextHp));
-      setEntries((prev) =>
-        prev.map((e) => {
-          if (e.id !== entryId) return e;
-          const maxHp = e.maxHp > 0 ? e.maxHp : Math.max(e.maxHp, clamped);
-          const nextDead =
-            e.type === "monster" || e.type === "custom" ? clamped === 0 : e.isDead;
-          return { ...e, hp: clamped, maxHp, isDead: nextDead };
+      const nextState = applyTransition((prev) =>
+        applyCombatHpMutation(prev, {
+          targetId: entryId,
+          kind: "set_exact",
+          exactHp: nextHp,
         })
       );
-      if (isLongCampaign && entry.entityId && entry.isCore) {
+      const updated = nextState.entries.find((e) => e.id === entryId);
+      if (updated && isLongCampaign && updated.entityId && updated.isCore) {
         const res = await setWikiEntityGlobalStatus(
-          entry.entityId,
+          updated.entityId,
           campaignId,
-          clamped === 0 ? "dead" : "alive"
+          updated.hp === 0 ? "dead" : "alive"
         );
         if (res.success) toast.success(res.message);
       }
     },
-    [entries, isLongCampaign, campaignId]
+    [applyTransition, isLongCampaign, campaignId]
   );
 
   const adjustHp = useCallback(
     async (entryId: string, delta: number) => {
-      const entry = entries.find((e) => e.id === entryId);
-      if (!entry) return;
-      await applyHpChange(entryId, entry.hp + delta);
+      if (delta === 0) return;
+      const nextState = applyTransition((prev) =>
+        applyCombatHpMutation(prev, {
+          targetId: entryId,
+          kind: delta < 0 ? "damage" : "heal",
+          amount: Math.abs(delta),
+        })
+      );
+      const updated = nextState.entries.find((e) => e.id === entryId);
+      if (updated && isLongCampaign && updated.entityId && updated.isCore) {
+        const res = await setWikiEntityGlobalStatus(
+          updated.entityId,
+          campaignId,
+          updated.hp === 0 ? "dead" : "alive"
+        );
+        if (res.success) toast.success(res.message);
+      }
     },
-    [entries, applyHpChange]
+    [applyTransition, isLongCampaign, campaignId]
+  );
+
+  const setTempHp = useCallback(
+    (entryId: string, tempHp: number) => {
+      applyTransition((prev) =>
+        applyCombatHpMutation(prev, {
+          targetId: entryId,
+          kind: "set_temp_hp",
+          tempHp,
+        })
+      );
+    },
+    [applyTransition]
   );
 
   const handleFastDmgSubmit = useCallback(
     async (entry: InitiativeEntry, valStr: string) => {
       const amount = parseInt(valStr.trim(), 10);
       if (Number.isNaN(amount) || amount === 0) return;
-      const nextHp = entry.hp - amount;
-      await applyHpChange(entry.id, nextHp);
-      if (amount > 0) {
-        adjustDamageTaken(entry.id, amount);
-      }
+      // amount > 0 = danno effettivo subito; amount < 0 = cura
+      await adjustHp(entry.id, -amount);
       setFastDmgInputs((prev) => ({ ...prev, [entry.id]: "" }));
     },
-    [applyHpChange, adjustDamageTaken]
+    [adjustHp]
   );
 
-  const spendSpellSlot = useCallback((entryId: string, level: number) => {
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.id !== entryId || !e.spellSlots) return e;
-        const next = spendCombatSpellSlot(e.spellSlots, level);
-        return next ? { ...e, spellSlots: next } : e;
-      })
-    );
-  }, []);
+  const spendSpellSlot = useCallback(
+    (entryId: string, level: number) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => {
+          if (e.id !== entryId || !e.spellSlots) return e;
+          const next = spendCombatSpellSlot(e.spellSlots, level);
+          return next ? { ...e, spellSlots: next } : e;
+        }),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const restoreSpellSlot = useCallback((entryId: string, level: number) => {
-    setEntries((prev) =>
-      prev.map((e) => {
-        if (e.id !== entryId || !e.spellSlots) return e;
-        const next = restoreCombatSpellSlot(e.spellSlots, level);
-        return next ? { ...e, spellSlots: next } : e;
-      })
-    );
-  }, []);
+  const restoreSpellSlot = useCallback(
+    (entryId: string, level: number) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => {
+          if (e.id !== entryId || !e.spellSlots) return e;
+          const next = restoreCombatSpellSlot(e.spellSlots, level);
+          return next ? { ...e, spellSlots: next } : e;
+        }),
+      }));
+    },
+    [applyTransition]
+  );
 
-  const resetEntrySpellSlots = useCallback((entryId: string) => {
-    setEntries((prev) =>
-      prev.map((e) =>
-        e.id === entryId && e.spellSlots
-          ? { ...e, spellSlots: resetCombatSpellSlots(e.spellSlots) }
-          : e
-      )
-    );
-  }, []);
+  const resetEntrySpellSlots = useCallback(
+    (entryId: string) => {
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) =>
+          e.id === entryId && e.spellSlots
+            ? { ...e, spellSlots: resetCombatSpellSlots(e.spellSlots) }
+            : e
+        ),
+      }));
+    },
+    [applyTransition]
+  );
 
   const openProjectionWindow = useCallback(async () => {
     if (typeof window === "undefined") return;
@@ -962,8 +1281,11 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     if (entries.length > 0) {
       setLastResetState({ ...buildTrackerState(), at: Date.now() });
     }
-    if (isControlled) onChange?.(emptyInitiativeTrackerState());
+    const emptyState = emptyInitiativeTrackerState();
+    trackerRef.current = emptyState;
+    if (isControlled) onChange?.(emptyState);
     setEntries([]);
+    setPendingConcentrationChecks([]);
     setCurrentTurnIndex(0);
     setRoundNumber(1);
     turnTimer.reset(false);
@@ -980,96 +1302,226 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     if (concludingFightRef.current) return;
     concludingFightRef.current = true;
     try {
-    if (entries.length === 0) {
-      toast.error("Nessun combattimento attivo da chiudere.");
-      return;
-    }
-
-    // Calcola l'EXP dei mostri con isDead: true o hp <= 0
-    const deadMonsters = entries.filter(
-      (e) => (e.type === "monster" || e.type === "custom") && (e.isDead || e.hp <= 0)
-    );
-    const totalExp = deadMonsters.reduce((acc, m) => acc + (m.exp ?? 0), 0);
-
-    if (onConcludeFight) {
-      if (await onConcludeFight() === false) return;
-    } else if (campaignType === "long" && onBankExp) {
-      await onBankExp(totalExp);
-      if (totalExp > 0) {
-        toast.success(`Combattimento chiuso! ${totalExp} EXP bancati per la sessione.`);
-      } else {
-        toast.info("Combattimento chiuso! Nessun mostro sconfitto con valore EXP.");
+      if (entries.length === 0) {
+        toast.error("Nessun combattimento attivo da chiudere.");
+        return;
       }
-    } else if (totalExp > 0) {
-      const key = `gm-screen-session-xp-${campaignId}`;
-      let previous;
-      try { previous = JSON.parse(localStorage.getItem(key) ?? '{"version":2,"extraXpManual":0,"bankedMonsterXp":0,"perCharacter":{}}');
-      localStorage.setItem(key, JSON.stringify({...previous, bankedMonsterXp: (previous.bankedMonsterXp ?? 0) + totalExp}));
-      } catch { toast.error("EXP non salvata. Il combattimento resta disponibile."); return; }
-      window.dispatchEvent(new Event("gm-session-xp-changed"));
-      toast.success(`Combattimento chiuso! Totale mostri sconfitti: ${totalExp} EXP.`);
-    } else {
-      toast.info("Combattimento chiuso!");
-    }
 
-    resetTracker();
-    setLastResetState(null);
-    } catch { toast.error("Scontro non concluso: riprova il salvataggio."); }
-    finally { concludingFightRef.current = false; }
+      // Calcola l'EXP dei mostri con isDead: true o hp <= 0
+      const deadMonsters = entries.filter(
+        (e) => (e.type === "monster" || e.type === "custom") && (e.isDead || e.hp <= 0)
+      );
+      const totalExp = deadMonsters.reduce((acc, m) => acc + (m.exp ?? 0), 0);
+
+      if (onConcludeFight) {
+        if ((await onConcludeFight()) === false) return;
+      } else if (campaignType === "long" && onBankExp) {
+        await onBankExp(totalExp);
+        if (totalExp > 0) {
+          toast.success(`Combattimento chiuso! ${totalExp} EXP bancati per la sessione.`);
+        } else {
+          toast.info("Combattimento chiuso! Nessun mostro sconfitto con valore EXP.");
+        }
+      } else if (totalExp > 0) {
+        const key = `gm-screen-session-xp-${campaignId}`;
+        let previous;
+        try {
+          previous = JSON.parse(
+            localStorage.getItem(key) ??
+              '{"version":2,"extraXpManual":0,"bankedMonsterXp":0,"perCharacter":{}}'
+          );
+          localStorage.setItem(
+            key,
+            JSON.stringify({
+              ...previous,
+              bankedMonsterXp: (previous.bankedMonsterXp ?? 0) + totalExp,
+            })
+          );
+        } catch {
+          toast.error("EXP non salvata. Il combattimento resta disponibile.");
+          return;
+        }
+        window.dispatchEvent(new Event("gm-session-xp-changed"));
+        toast.success(`Combattimento chiuso! Totale mostri sconfitti: ${totalExp} EXP.`);
+      } else {
+        toast.info("Combattimento chiuso!");
+      }
+
+      resetTracker();
+      setLastResetState(null);
+    } catch {
+      toast.error("Scontro non concluso: riprova il salvataggio.");
+    } finally {
+      concludingFightRef.current = false;
+    }
   }, [entries, campaignType, campaignId, onBankExp, onConcludeFight, resetTracker]);
 
-  const updateConditions = useCallback((entryId: string, conditions: CombatConditionId[]) => {
-    setEntries((prev) =>
-      prev.map((e) => (e.id === entryId ? { ...e, conditions } : e))
-    );
-  }, []);
+  const updateConditions = useCallback(
+    (entryId: string, conditions: CombatConditionId[]) => {
+      applyTransition((prev) => setCanonicalConditionsOnEntry(prev, entryId, conditions));
+    },
+    [applyTransition]
+  );
 
-  const toggleCondition = useCallback((entryId: string, condition: CombatConditionId) => {
-    setEntries((prev) => prev.map((entry) => {
-      if (entry.id !== entryId) return entry;
-      const current = normalizeCombatConditions(entry.conditions);
-      return {
-        ...entry,
-        conditions: normalizeCombatConditions(
-          current.includes(condition)
-            ? current.filter((item) => item !== condition)
-            : [...current, condition]
-        ),
+  const toggleCondition = useCallback(
+    (entryId: string, condition: CombatConditionId) => {
+      applyTransition((prev) => toggleCombatStatusOnEntry(prev, entryId, condition));
+    },
+    [applyTransition]
+  );
+
+  const toggleMobileConcentration = useCallback(
+    (entryId: string) => {
+      applyTransition((prev) => toggleMobileConcentrationOnEntry(prev, entryId));
+    },
+    [applyTransition]
+  );
+
+  const handleAddEffect = useCallback(
+    (payload: AddCombatEffectPayload) => {
+      applyTransition((prev) => addCombatEffectInstances(prev, payload));
+    },
+    [applyTransition]
+  );
+
+  const handleRemoveEffect = useCallback(
+    (entryId: string, effectId: string) => {
+      applyTransition((prev) => removeCombatEffectInstance(prev, entryId, effectId));
+    },
+    [applyTransition]
+  );
+
+  const handleConsumeEffect = useCallback(
+    (entryId: string, effectId: string) => {
+      applyTransition((prev) => consumeSingleUseEffect(prev, entryId, effectId));
+    },
+    [applyTransition]
+  );
+
+  const handleStartConcentration = useCallback(
+    (payload: {
+      casterId: string;
+      spellName: string;
+      targetIds?: string[];
+      linkedStatusId?: string;
+      customEffectLabel?: string;
+    }) => {
+      applyTransition((prev) => startCombatantConcentration(prev, payload));
+    },
+    [applyTransition]
+  );
+
+  const handleBreakConcentration = useCallback(
+    (casterId: string) => {
+      applyTransition((prev) => breakCombatantConcentration(prev, casterId));
+    },
+    [applyTransition]
+  );
+
+  const handleResolveConcentrationCheck = useCallback(
+    (checkId: string, outcome: "passed" | "failed") => {
+      applyTransition((prev) => resolvePendingConcentrationCheck(prev, checkId, outcome));
+    },
+    [applyTransition]
+  );
+
+  const handleUpdateSavingThrowBonus = useCallback(
+    (entryId: string, ability: keyof SavingThrowsMap, bonus: number) => {
+      applyTransition((prev) => updateCombatantSavingThrowBonus(prev, entryId, ability, bonus));
+    },
+    [applyTransition]
+  );
+
+  const enrichMonster = useCallback(
+    (entryId: string, fullStatblock: string) => {
+      if (!fullStatblock?.trim()) return;
+      const parsedStats = parseMonsterStatsFromMarkdown(fullStatblock);
+      applyTransition((prev) => ({
+        ...prev,
+        entries: prev.entries.map((e) => {
+          const cleanCurrent = e.name.replace(/\s+\d+$/, "").trim().toLowerCase();
+          const targetEntry = prev.entries.find((x) => x.id === entryId);
+          const targetClean = targetEntry?.name.replace(/\s+\d+$/, "").trim().toLowerCase();
+          const isTarget =
+            e.id === entryId ||
+            (targetClean &&
+              cleanCurrent === targetClean &&
+              (!e.contentBody || !isCompleteMonsterStatblock(e.contentBody)));
+          if (!isTarget) return e;
+
+          const hasParsedSaves =
+            parsedStats?.savingThrows &&
+            Object.values(parsedStats.savingThrows).some((v) => v !== 0);
+          const newSaves =
+            e.savingThrowsSource === "manual"
+              ? e.savingThrows
+              : hasParsedSaves
+              ? parsedStats!.savingThrows
+              : e.savingThrows;
+          const newSavesSource: SavingThrowsSource =
+            e.savingThrowsSource === "manual"
+              ? "manual"
+              : hasParsedSaves
+              ? "sheet"
+              : e.savingThrowsSource ?? "estimated";
+          const newReactions =
+            parsedStats?.reactions && parsedStats.reactions.length > 0
+              ? parsedStats.reactions
+              : e.availableReactions;
+
+          return {
+            ...e,
+            contentBody: fullStatblock,
+            savingThrows: newSaves,
+            savingThrowsSource: newSavesSource,
+            availableReactions: newReactions,
+          };
+        }),
+      }));
+    },
+    [applyTransition]
+  );
+
+  const handleApplyCombatCommand = useCallback(
+    (proposal: CombatCommandProposal, selectedOpIds?: string[]): ApplyCombatCommandResult => {
+      let result: ApplyCombatCommandResult = {
+        nextState: trackerRef.current,
+        success: false,
+        message: "",
       };
-    }));
-  }, []);
+      applyTransition((prev) => {
+        const res = applyCombatCommandProposal(prev, proposal, selectedOpIds);
+        result = res;
+        if (!res.success) {
+          toast.error(res.message);
+          return prev;
+        }
+        toast.success(res.message);
+        return res.nextState;
+      });
+      return result;
+    },
+    [applyTransition]
+  );
 
-  const enrichMonster = useCallback((entryId: string, fullStatblock: string) => {
-    if (!fullStatblock?.trim()) return;
-    const parsedStats = parseMonsterStatsFromMarkdown(fullStatblock);
-    setEntries((prev) =>
-      prev.map((e) => {
-        const cleanCurrent = e.name.replace(/\s+\d+$/, "").trim().toLowerCase();
-        const targetEntry = prev.find((x) => x.id === entryId);
-        const targetClean = targetEntry?.name.replace(/\s+\d+$/, "").trim().toLowerCase();
-        const isTarget =
-          e.id === entryId ||
-          (targetClean && cleanCurrent === targetClean && (!e.contentBody || !isCompleteMonsterStatblock(e.contentBody)));
-        if (!isTarget) return e;
-
-        const newSaves =
-          parsedStats?.savingThrows && Object.values(parsedStats.savingThrows).some((v) => v !== 0)
-            ? parsedStats.savingThrows
-            : e.savingThrows;
-        const newReactions =
-          parsedStats?.reactions && parsedStats.reactions.length > 0
-            ? parsedStats.reactions
-            : e.availableReactions;
-
-        return {
-          ...e,
-          contentBody: fullStatblock,
-          savingThrows: newSaves,
-          availableReactions: newReactions,
-        };
-      })
-    );
-  }, []);
+  const handleUndoLastCombatCommand = useCallback((): UndoCombatCommandResult => {
+    let result: UndoCombatCommandResult = {
+      nextState: trackerRef.current,
+      undone: false,
+      message: "",
+    };
+    applyTransition((prev) => {
+      const res = undoLastCommand(prev);
+      result = res;
+      if (!res.undone) {
+        toast.error(res.message);
+        return prev;
+      }
+      toast.success(res.message);
+      return res.nextState;
+    });
+    return result;
+  }, [applyTransition]);
 
   useImperativeHandle(
     ref,
@@ -1083,8 +1535,27 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       adjustDamageTaken,
       adjustHp: (id: string, delta: number) => void adjustHp(id, delta),
       setHp: (id: string, hp: number) => void applyHpChange(id, hp),
+      setTempHp,
       setConditions: updateConditions,
       toggleCondition,
+      toggleMobileConcentration,
+      addEffect: (p) =>
+        handleAddEffect({
+          targetIds: [p.entryId],
+          statusId: p.statusId,
+          customLabel: p.customLabel,
+          sourceCasterId: p.sourceCasterId,
+          sourceName: p.sourceName,
+          linkToConcentration: p.isConcentration,
+          duration: p.duration,
+          savePrompt: p.savePrompt,
+        }),
+      removeEffect: handleRemoveEffect,
+      consumeEffect: handleConsumeEffect,
+      startConcentration: handleStartConcentration,
+      breakConcentration: handleBreakConcentration,
+      resolveConcentrationCheck: handleResolveConcentrationCheck,
+      updateSavingThrowBonus: handleUpdateSavingThrowBonus,
       addCombatant: addRemoteCombatant,
       removeCombatant: removeEntry,
       getState: () => buildTrackerState(),
@@ -1101,15 +1572,28 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       addRemoteCombatant,
       removeEntry,
       enrichMonster,
+      applyCombatCommand: handleApplyCombatCommand,
+      undoLastCombatCommand: handleUndoLastCombatCommand,
     }),
     [
       addRemoteCombatant,
       removeEntry,
       toggleCondition,
+      toggleMobileConcentration,
+      handleAddEffect,
+      handleRemoveEffect,
+      handleConsumeEffect,
+      handleStartConcentration,
+      handleBreakConcentration,
+      handleResolveConcentrationCheck,
+      handleUpdateSavingThrowBonus,
+      handleApplyCombatCommand,
+      handleUndoLastCombatCommand,
       adjustDamageDealt,
       adjustDamageTaken,
       adjustHp,
       applyHpChange,
+      setTempHp,
       buildTrackerState,
       enrichMonster,
       handleCloseFight,
@@ -1133,7 +1617,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     if (!lastResetState) return;
     const { at: _at, ...restored } = lastResetState;
     const sanitized = sanitizeInitiativeTrackerState(restored);
+    trackerRef.current = sanitized;
     setEntries(sanitized.entries);
+    setPendingConcentrationChecks(sanitized.pendingConcentrationChecks ?? []);
     setCurrentTurnIndex(sanitized.currentTurnIndex);
     setRoundNumber(sanitized.roundNumber);
     if (sanitized.isTurnTimerRunning) {
@@ -1211,35 +1697,54 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         class_subclass: spellSlotInput?.class_subclass ?? null,
         level: spellSlotInput?.level ?? 1,
       });
-      const saves = estimatePcSaves(characterClass, spellSlotInput?.level ?? 1);
-      setEntries((prev) => [
+      const extractedSaves = extractStructuredPcSaves(
+        spellSlotInput?.rules_snapshot ?? null,
+        characterClass,
+        spellSlotInput?.level ?? 1
+      );
+      const pcCombatData = extractStructuredPcCombatData(
+        spellSlotInput?.rules_snapshot ?? null,
+        characterClass,
+        spellSlotInput?.level ?? 1
+      );
+      applyTransition((prev) => ({
         ...prev,
-        {
-          id: generateId(),
-          name,
-          type: "pc",
-          characterClass: characterClass ?? null,
-          armorClass: Math.max(0, armorClass ?? 0),
-          hp,
-          maxHp: hp,
-          initiative: 0,
-          playerId: characterId,
-          portraitUrl: spellSlotInput?.portrait_url ?? null,
-          damageDealt: 0,
-          damageTaken: 0,
-          usedReaction: false,
-          availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
-          savingThrows: saves,
-          deathSaves: { success: 0, fail: 0 },
-          noteText: "",
-          ...(spellSlots ? { spellSlots } : {}),
-          ...(team
-            ? { teamId: team.teamId, teamName: team.teamName, teamColor: team.teamColor }
-            : {}),
-        },
-      ]);
+        entries: [
+          ...prev.entries,
+          normalizeInitiativeEntry({
+            id: generateId(),
+            name,
+            type: "pc",
+            characterClass: characterClass ?? null,
+            armorClass: Math.max(0, armorClass ?? 0),
+            hp,
+            maxHp: hp,
+            tempHp: 0,
+            initiative: 0,
+            playerId: characterId,
+            portraitUrl: spellSlotInput?.portrait_url ?? null,
+            damageDealt: 0,
+            damageTaken: 0,
+            usedReaction: false,
+            availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
+            savingThrows: extractedSaves.savingThrows,
+            savingThrowsSource: extractedSaves.source,
+            weapons: pcCombatData.weapons,
+            weaponsSource: pcCombatData.source,
+            spellSaveDc: pcCombatData.spellSaveDc,
+            spellAttackBonus: pcCombatData.spellAttackBonus,
+            spells: pcCombatData.spells,
+            deathSaves: { success: 0, fail: 0 },
+            noteText: "",
+            ...(spellSlots ? { spellSlots } : {}),
+            ...(team
+              ? { teamId: team.teamId, teamName: team.teamName, teamColor: team.teamColor }
+              : {}),
+          }),
+        ],
+      }));
     },
-    [characterTeamMap]
+    [applyTransition, characterTeamMap]
   );
 
   const addSelectedPcs = useCallback(() => {
@@ -1294,6 +1799,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       const parsedStats = monster.contentBody
         ? parseMonsterStatsFromMarkdown(monster.contentBody)
         : null;
+      const hasParsedSaves =
+        parsedStats?.savingThrows &&
+        Object.values(parsedStats.savingThrows).some((v) => v !== 0);
       const monsterSaves: SavingThrowsMap = parsedStats?.savingThrows ?? {
         for: 0,
         des: 0,
@@ -1309,34 +1817,41 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
       const newEntries: InitiativeEntry[] = [];
       for (let i = 0; i < count; i++) {
-        newEntries.push({
-          id: generateId(),
-          name: count > 1 ? `${monster.name} ${i + 1}` : monster.name,
-          type: "monster",
-          armorClass: monster.armorClass ?? 0,
-          hp: monster.hp,
-          maxHp: monster.hp,
-          initiative: 0,
-          isDead: false,
-          portraitUrl: monster.imageUrl ?? null,
-          damageDealt: 0,
-          damageTaken: 0,
-          usedReaction: false,
-          availableReactions: monsterReactions,
-          savingThrows: monsterSaves,
-          deathSaves: { success: 0, fail: 0 },
-          noteText: "",
-          entityId: monster.id,
-          contentBody: monster.contentBody ?? undefined,
-          ...(typeof monster.xp_value === "number" && monster.xp_value > 0
-            ? { exp: monster.xp_value }
-            : {}),
-          ...(isLongCampaign && monster.is_core && { isCore: true }),
-        });
+        newEntries.push(
+          normalizeInitiativeEntry({
+            id: generateId(),
+            name: count > 1 ? `${monster.name} ${i + 1}` : monster.name,
+            type: "monster",
+            armorClass: monster.armorClass ?? 0,
+            hp: monster.hp,
+            maxHp: monster.hp,
+            tempHp: 0,
+            initiative: 0,
+            isDead: false,
+            portraitUrl: monster.imageUrl ?? null,
+            damageDealt: 0,
+            damageTaken: 0,
+            usedReaction: false,
+            availableReactions: monsterReactions,
+            savingThrows: monsterSaves,
+            savingThrowsSource: hasParsedSaves ? "sheet" : "estimated",
+            deathSaves: { success: 0, fail: 0 },
+            noteText: "",
+            entityId: monster.id,
+            contentBody: monster.contentBody ?? undefined,
+            ...(typeof monster.xp_value === "number" && monster.xp_value > 0
+              ? { exp: monster.xp_value }
+              : {}),
+            ...(isLongCampaign && monster.is_core && { isCore: true }),
+          })
+        );
       }
-      setEntries((prev) => [...prev, ...newEntries]);
+      applyTransition((prev) => ({
+        ...prev,
+        entries: [...prev.entries, ...newEntries],
+      }));
     },
-    [isLongCampaign]
+    [applyTransition, isLongCampaign]
   );
 
   const addSelectedMonsters = useCallback(() => {
@@ -1362,18 +1877,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       if (!entry || (entry.type !== "monster" && entry.type !== "custom")) return;
 
       const nextDead = !entry.isDead;
-      const revivedHp = entry.maxHp > 0 ? 1 : Math.max(1, entry.hp);
-      setEntries((prev) =>
-        prev.map((item) =>
-          item.id === entryId
-            ? {
-                ...item,
-                isDead: nextDead,
-                hp: nextDead ? 0 : revivedHp,
-              }
-            : item
-        )
-      );
+      applyTransition((prev) => setCombatantDeadState(prev, entryId, nextDead));
 
       if (isLongCampaign && entry.entityId && entry.isCore) {
         const res = await setWikiEntityGlobalStatus(
@@ -1384,7 +1888,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         if (res.success) toast.success(res.message);
       }
     },
-    [campaignId, entries, isLongCampaign]
+    [applyTransition, campaignId, entries, isLongCampaign]
   );
 
   const openAddCustom = useCallback(() => {
@@ -1405,33 +1909,42 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     const hp = Number.isNaN(hpNum) ? 0 : hpNum;
     const armorClass = Number.isNaN(acNum) ? 0 : acNum;
     const initiative = Number.isNaN(initNum) ? 0 : initNum;
-    setEntries((prev) => [
+    applyTransition((prev) => ({
       ...prev,
-      {
-        id: generateId(),
-        name,
-        type: "custom",
-        armorClass,
-        hp,
-        maxHp: hp,
-        initiative,
-        isDead: false,
-        damageDealt: 0,
-        damageTaken: 0,
-        usedReaction: false,
-        availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
-        savingThrows: { for: 0, des: 0, cos: 0, int: 0, sag: 0, car: 0 },
-        deathSaves: { success: 0, fail: 0 },
-        noteText: "",
-        ...(customGs && { gs: customGs }),
-        ...(customExp > 0 && { exp: customExp }),
-      },
-    ]);
+      entries: [
+        ...prev.entries,
+        normalizeInitiativeEntry({
+          id: generateId(),
+          name,
+          type: "custom",
+          armorClass,
+          hp,
+          maxHp: hp,
+          tempHp: 0,
+          initiative,
+          isDead: false,
+          damageDealt: 0,
+          damageTaken: 0,
+          usedReaction: false,
+          availableReactions: [{ ...DEFAULT_OPPORTUNITY_ATTACK }],
+          savingThrows: { for: 0, des: 0, cos: 0, int: 0, sag: 0, car: 0 },
+          savingThrowsSource: "estimated",
+          deathSaves: { success: 0, fail: 0 },
+          noteText: "",
+          ...(customGs && { gs: customGs }),
+          ...(customExp > 0 && { exp: customExp }),
+        }),
+      ],
+    }));
     setAddCustomOpen(false);
-  }, [customName, customHp, customAc, customInit, customGs, customExp]);
+  }, [applyTransition, customName, customHp, customAc, customInit, customGs, customExp]);
 
   const handleCellSave = useCallback(
-    async (id: string, field: "name" | "hp" | "initiative" | "armorClass", value: string) => {
+    async (
+      id: string,
+      field: "name" | "hp" | "tempHp" | "initiative" | "armorClass",
+      value: string
+    ) => {
       if (field === "name") {
         updateEntry(id, { name: value.trim() || "Senza nome" });
       } else {
@@ -1439,6 +1952,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         const v = Number.isNaN(num) ? 0 : num;
         if (field === "hp") {
           await applyHpChange(id, v);
+        } else if (field === "tempHp") {
+          setTempHp(id, Math.max(0, v));
         } else if (field === "armorClass") {
           updateEntry(id, { armorClass: Math.max(0, v) });
         } else {
@@ -1447,7 +1962,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       }
       setEditingCell(null);
     },
-    [updateEntry, applyHpChange]
+    [updateEntry, applyHpChange, setTempHp]
   );
 
   const hpColor = (entry: InitiativeEntry) => {
@@ -1504,6 +2019,18 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 <SkipForward className="mr-1 h-3 w-3" />
                 Turno Succ.
               </Button>
+              {lastAdvanceUndoSnapshot ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 border-sky-500/60 bg-sky-950/40 px-2 text-xs text-sky-200 hover:bg-sky-600/30 font-semibold"
+                  onClick={handleUndoAdvance}
+                  title="Annulla l'ultimo avanzamento di turno (se non sono intervenute modifiche successive)"
+                >
+                  <RotateCcw className="mr-1 h-3 w-3 text-sky-400" />
+                  Annulla avanzamento
+                </Button>
+              ) : null}
               <Button
                 variant="outline"
                 size="sm"
@@ -1777,6 +2304,244 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             ) : null}
           </div>
         ) : null}
+
+        {/* BARRA COMANDI TATTICI: VOCE PUSH-TO-TALK, TEXT INPUT, ANALISI DETERMINISTICA / IA ASSISTITA */}
+        <CombatCommandBar
+          state={buildTrackerState()}
+          onApplyProposal={handleApplyCombatCommand}
+          onUndoLastCommand={handleUndoLastCombatCommand}
+          campaignId={campaignId}
+          className="my-1"
+        />
+
+        {/* CODA FIFO CHECK CONCENTRAZIONE PENDENTI */}
+        {pendingConcentrationChecks.length > 0 ? (
+          <div
+            data-testid="concentration-checks-banner"
+            className="space-y-1.5 rounded-lg border border-fuchsia-500/60 bg-fuchsia-950/35 p-2.5 shadow-lg"
+          >
+            <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wider text-fuchsia-200">
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-fuchsia-300 animate-pulse" />
+                Tiri Salvezza su Concentrazione Pendenti ({pendingConcentrationChecks.length})
+              </span>
+              <span className="text-[10px] font-normal normal-case text-fuchsia-300/80">
+                CD = max(10, ⌊danno / 2⌋)
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {pendingConcentrationChecks.map((check) => {
+                const isEstimated =
+                  !check.conSaveSource || check.conSaveSource === "estimated";
+                const formattedCon =
+                  check.conSaveBonus >= 0
+                    ? `+${check.conSaveBonus}`
+                    : `${check.conSaveBonus}`;
+                const minD20 = Math.max(1, check.dc - check.conSaveBonus);
+                const isEditingBonus = editingConBonusCheckId === check.checkId;
+
+                return (
+                  <div
+                    key={check.checkId}
+                    data-testid={`concentration-check-item-${check.checkId}`}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded border border-fuchsia-500/40 bg-zinc-950/85 px-2.5 py-2 text-xs"
+                  >
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-bold text-fuchsia-100">{check.casterName}</span>
+                        <span className="text-zinc-400">concentrato su</span>
+                        <span className="rounded bg-fuchsia-900/60 border border-fuchsia-500/40 px-1.5 py-0.5 font-semibold text-fuchsia-200">
+                          🔮 {check.spellName}
+                        </span>
+                        <span className="rounded bg-red-950/70 border border-red-700/40 px-1.5 py-0.5 font-mono text-[11px] text-red-200">
+                          Danno: {check.damageTaken} PF →{" "}
+                          <strong className="text-amber-300">CD {check.dc}</strong>
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2 text-[11px]">
+                        <span className="font-mono text-zinc-300">
+                          TS COS:{" "}
+                          <strong className="text-amber-300">{formattedCon}</strong>{" "}
+                          <span className="text-zinc-400">(dado ≥ {minD20})</span>
+                        </span>
+
+                        {isEstimated ? (
+                          <span
+                            className="inline-flex items-center gap-1 rounded border border-amber-500/50 bg-amber-950/60 px-1.5 py-0.5 text-[10px] font-medium text-amber-200"
+                            title="Il bonus TS COS non era presente nei dati strutturati della scheda: verifica o inserisci il valore reale del personaggio."
+                          >
+                            <AlertTriangle className="h-3 w-3 text-amber-400 shrink-0" />
+                            TS COS non strutturato (stima: {formattedCon})
+                          </span>
+                        ) : (
+                          <span className="rounded border border-emerald-600/40 bg-emerald-950/50 px-1.5 py-0.5 text-[10px] text-emerald-300">
+                            {check.conSaveSource === "manual" ? "COS manuale" : "COS da scheda"}
+                          </span>
+                        )}
+
+                        {isEditingBonus ? (
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const parsed = parseInt(conBonusDraft, 10);
+                              if (!Number.isNaN(parsed)) {
+                                handleUpdateSavingThrowBonus(check.casterId, "cos", parsed);
+                              }
+                              setEditingConBonusCheckId(null);
+                            }}
+                            className="inline-flex items-center gap-1"
+                          >
+                            <Input
+                              type="number"
+                              value={conBonusDraft}
+                              onChange={(e) => setConBonusDraft(e.target.value)}
+                              className="h-6 w-14 bg-zinc-900 border-amber-500/60 px-1 text-center font-mono text-[11px] text-amber-100"
+                              autoFocus
+                            />
+                            <Button
+                              type="submit"
+                              size="sm"
+                              className="h-6 bg-amber-600 px-2 text-[10px] font-bold text-zinc-950 hover:bg-amber-500"
+                            >
+                              Salva COS
+                            </Button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingConBonusCheckId(null)}
+                              className="text-[10px] text-zinc-400 hover:text-zinc-200 px-1"
+                            >
+                              Annulla
+                            </button>
+                          </form>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setConBonusDraft(String(check.conSaveBonus));
+                              setEditingConBonusCheckId(check.checkId);
+                            }}
+                            className="rounded border border-zinc-700 bg-zinc-900 px-1.5 py-0.5 text-[10px] text-amber-300 hover:border-amber-500/50 hover:bg-zinc-800"
+                          >
+                            ✎ Imposta bonus COS
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Button
+                        type="button"
+                        size="sm"
+                        data-testid={`concentration-check-pass-${check.checkId}`}
+                        onClick={() => handleResolveConcentrationCheck(check.checkId, "passed")}
+                        className="h-7 bg-emerald-700 px-2.5 text-xs font-bold text-white hover:bg-emerald-600"
+                        title="TS Superato: mantieni la concentrazione attiva"
+                      >
+                        ✓ Superato
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        data-testid={`concentration-check-fail-${check.checkId}`}
+                        onClick={() => handleResolveConcentrationCheck(check.checkId, "failed")}
+                        className="h-7 bg-red-700 px-2.5 text-xs font-bold text-white hover:bg-red-600"
+                        title="TS Fallito: interrompi concentrazione e rimuovi gli effetti collegati"
+                      >
+                        ✕ Fallito
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
+
+        {/* BANNER PROMEMORIA TIRI SALVEZZA PENDENTI (INIZIO / FINE TURNO) */}
+        {pendingSaveReminders.length > 0 ? (
+          <div
+            data-testid="save-reminders-banner"
+            className="space-y-1.5 rounded-lg border border-amber-500/60 bg-amber-950/35 p-2.5 shadow-lg"
+          >
+            <div className="flex items-center justify-between gap-2 text-[11px] font-bold uppercase tracking-wider text-amber-200">
+              <span className="flex items-center gap-1.5">
+                <AlertTriangle className="h-3.5 w-3.5 text-amber-400 animate-pulse" />
+                Tiri Salvezza di Fine / Inizio Turno ({pendingSaveReminders.length})
+              </span>
+              <span className="text-[10px] font-normal normal-case text-amber-300/80">
+                Verifica se l&apos;effetto termina o persiste
+              </span>
+            </div>
+            <div className="space-y-1.5">
+              {pendingSaveReminders.map((reminder) => {
+                const formattedBonus =
+                  reminder.saveBonus >= 0 ? `+${reminder.saveBonus}` : `${reminder.saveBonus}`;
+                const timingLabel =
+                  reminder.timing === "turn_start" ? "Inizio Turno" : "Fine Turno";
+                const abilityLabel = reminder.ability.toUpperCase();
+
+                return (
+                  <div
+                    key={reminder.reminderId}
+                    data-testid={`save-reminder-item-${reminder.reminderId}`}
+                    className="flex flex-wrap items-center justify-between gap-2 rounded border border-amber-500/40 bg-zinc-950/85 px-2.5 py-2 text-xs"
+                  >
+                    <div className="min-w-0 flex-1 space-y-1">
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="font-bold text-amber-100">{reminder.targetName}</span>
+                        <span className="text-zinc-400">subisce</span>
+                        <span className="rounded bg-amber-900/60 border border-amber-500/40 px-1.5 py-0.5 font-semibold text-amber-200">
+                          {reminder.label}
+                        </span>
+                        <span className="rounded bg-zinc-900 border border-zinc-700 px-1.5 py-0.5 text-[10px] font-mono text-zinc-300">
+                          {timingLabel}
+                        </span>
+                        <span className="rounded bg-amber-950/70 border border-amber-700/40 px-1.5 py-0.5 font-mono text-[11px] text-amber-200">
+                          TS {abilityLabel} → <strong className="text-amber-300">CD {reminder.dc}</strong> (Bonus: {formattedBonus})
+                        </span>
+                        {reminder.sourceName && (
+                          <span className="text-[10px] text-zinc-400 italic">
+                            Fonte: {reminder.sourceName}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 border-emerald-600/60 bg-emerald-950/60 text-emerald-200 hover:bg-emerald-600/30 text-xs font-semibold px-2.5"
+                        onClick={() => {
+                          applyTransition((prev) =>
+                            resolvePendingSaveReminder(prev, reminder.reminderId, "passed")
+                          );
+                          toast.success(`TS ${reminder.label} per ${reminder.targetName}: Superato!`);
+                        }}
+                      >
+                        ✓ Superato
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="h-7 border-red-600/60 bg-red-950/60 text-red-200 hover:bg-red-600/30 text-xs font-semibold px-2.5"
+                        onClick={() => {
+                          applyTransition((prev) =>
+                            resolvePendingSaveReminder(prev, reminder.reminderId, "failed")
+                          );
+                          toast.error(`TS ${reminder.label} per ${reminder.targetName}: Fallito!`);
+                        }}
+                      >
+                        ✕ Fallito
+                      </Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ) : null}
       </header>
 
       {trackerDisplay === "tactical" ? (
@@ -1785,22 +2550,17 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
             entries={entries}
             currentTurnIndex={currentTurnIndex}
             onSelectTurn={handleSelectTurn}
-            onUpdateHp={(id, delta) => {
-              const e = entries.find((x) => x.id === id);
-              if (e) void applyHpChange(id, e.hp + delta);
-            }}
+            onUpdateHp={(id, delta) => void adjustHp(id, delta)}
             onSetHp={(id, hp) => void applyHpChange(id, hp)}
+            onSetTempHp={setTempHp}
             onSetInitiative={(id, initiative) => updateEntry(id, { initiative })}
             onSetAc={(id, armorClass) => updateEntry(id, { armorClass: Math.max(0, armorClass) })}
             onToggleDead={(id) => void toggleDead(id)}
-            onToggleCondition={(id, cId) => {
-              const e = entries.find((x) => x.id === id);
-              if (e) {
-                const cur = normalizeCombatConditions(e.conditions);
-                const next = cur.includes(cId) ? cur.filter((x) => x !== cId) : [...cur, cId];
-                updateEntry(id, { conditions: next });
-              }
-            }}
+            onToggleCondition={(id, cId) => toggleCondition(id, cId)}
+            onAddEffect={handleAddEffect}
+            onRemoveEffect={handleRemoveEffect}
+            onBreakConcentration={handleBreakConcentration}
+            onConsumeEffect={handleConsumeEffect}
             onOpenMonsterStat={onOpenMonsterStat}
             onDeleteEntry={removeEntry}
             onToggleReaction={toggleReaction}
@@ -1865,7 +2625,23 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                 </TableCell>
               </TableRow>
             ) : (
-              entries.map((entry, index) => (
+              entries.map((entry, index) => {
+                const acInfo = computeEffectiveArmorClass(entry.armorClass, entry.activeEffects);
+                const acModified = acInfo.effectiveAc !== acInfo.baseAc;
+                const acTooltipParts = [`CA Base: ${acInfo.baseAc}`];
+                if (acInfo.flatDelta !== 0) {
+                  acTooltipParts.push(
+                    `Modificatori effetti: ${acInfo.flatDelta > 0 ? `+${acInfo.flatDelta}` : acInfo.flatDelta}`
+                  );
+                }
+                if (acInfo.coverBonus > 0) {
+                  acTooltipParts.push(`Copertura: +${acInfo.coverBonus}`);
+                }
+                if (acInfo.formulaHints.length > 0) {
+                  acTooltipParts.push(`Nota formula: ${acInfo.formulaHints.join("; ")}`);
+                }
+
+                return (
                 <TableRow
                   key={entry.id}
                   className={cn(
@@ -1971,7 +2747,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                             size="sm"
                             className="h-8 w-8 border-amber-600/30 bg-zinc-900/60 px-0 text-zinc-200 hover:bg-amber-600/20"
                             onClick={() => void adjustHp(entry.id, -1)}
-                            title="-1 HP"
+                            title="-1 HP (Danno)"
                           >
                             -
                           </Button>
@@ -1984,7 +2760,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                             onClick={() =>
                               setEditingCell({ id: entry.id, field: "hp" })
                             }
-                            title="Clicca per inserire un valore preciso"
+                            title="Clicca per rettificare manualmente i PF esatti (non attiva TS concentrazione)"
                           >
                             {entry.maxHp > 0 ? `${entry.hp}/${entry.maxHp}` : entry.hp}
                           </button>
@@ -1994,30 +2770,75 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                             size="sm"
                             className="h-8 w-8 border-amber-600/30 bg-zinc-900/60 px-0 text-zinc-200 hover:bg-amber-600/20"
                             onClick={() => void adjustHp(entry.id, +1)}
-                            title="+1 HP"
+                            title="+1 HP (Cura)"
                           >
                             +
                           </Button>
                         </div>
-                        <form
-                          onSubmit={(e) => {
-                            e.preventDefault();
-                            const val = fastDmgInputs[entry.id] ?? "";
-                            if (val) void handleFastDmgSubmit(entry, val);
-                          }}
-                          className="flex items-center gap-1 mt-0.5"
-                        >
-                          <Input
-                            type="text"
-                            placeholder="±danno"
-                            value={fastDmgInputs[entry.id] ?? ""}
-                            onChange={(e) =>
-                              setFastDmgInputs((prev) => ({ ...prev, [entry.id]: e.target.value }))
-                            }
-                            className="h-6 w-20 bg-zinc-800/90 px-1 py-0 text-center font-mono text-[10px] text-zinc-200 border-zinc-700 placeholder:text-zinc-500"
-                            title="Inserisci danni subiti (es. 12) o cura (es. -5) e premi Invio"
-                          />
-                        </form>
+
+                        {/* PF Temporanei + Input Rapido Danno/Cura */}
+                        <div className="flex flex-wrap items-center gap-1 mt-0.5">
+                          <form
+                            onSubmit={(e) => {
+                              e.preventDefault();
+                              const val = fastDmgInputs[entry.id] ?? "";
+                              if (val) void handleFastDmgSubmit(entry, val);
+                            }}
+                            className="flex items-center gap-1"
+                          >
+                            <Input
+                              type="text"
+                              placeholder="±danno"
+                              value={fastDmgInputs[entry.id] ?? ""}
+                              onChange={(e) =>
+                                setFastDmgInputs((prev) => ({ ...prev, [entry.id]: e.target.value }))
+                              }
+                              className="h-6 w-16 bg-zinc-800/90 px-1 py-0 text-center font-mono text-[10px] text-zinc-200 border-zinc-700 placeholder:text-zinc-500"
+                              title="Inserisci danni subiti (es. 12) o cura (es. -5) e premi Invio"
+                            />
+                          </form>
+
+                          {editingCell?.id === entry.id && editingCell?.field === "tempHp" ? (
+                            <Input
+                              type="number"
+                              min={0}
+                              defaultValue={entry.tempHp ?? 0}
+                              autoFocus
+                              onBlur={(e) => handleCellSave(entry.id, "tempHp", e.target.value)}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") {
+                                  handleCellSave(
+                                    entry.id,
+                                    "tempHp",
+                                    (e.target as HTMLInputElement).value
+                                  );
+                                } else if (e.key === "Escape") {
+                                  setEditingCell(null);
+                                }
+                              }}
+                              className="h-6 w-14 bg-cyan-950/90 border-cyan-500/60 px-1 text-center font-mono text-[10px] text-cyan-100"
+                            />
+                          ) : (entry.tempHp ?? 0) > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setEditingCell({ id: entry.id, field: "tempHp" })}
+                              className="rounded border border-cyan-500/50 bg-cyan-950/70 px-1.5 py-0.5 font-mono text-[10px] font-bold text-cyan-300 hover:bg-cyan-900/70"
+                              title="Punti Ferita Temporanei attivi (assorbono il danno prima dei PF reali). Clicca per modificare."
+                            >
+                              +{entry.tempHp} temp
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setEditingCell({ id: entry.id, field: "tempHp" })}
+                              className="rounded border border-zinc-700/70 bg-zinc-900/70 px-1.5 py-0.5 font-mono text-[9px] text-zinc-400 hover:border-cyan-600/50 hover:text-cyan-300"
+                              title="Imposta Punti Ferita Temporanei"
+                            >
+                              +Temp
+                            </button>
+                          )}
+                        </div>
+
                         {entry.type === "pc" && entry.hp <= 0 && (
                           <div className="flex flex-col gap-0.5 rounded bg-zinc-950/80 p-1 border border-red-900/40 text-[10px]">
                             <div className="flex items-center justify-between gap-1">
@@ -2100,10 +2921,28 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                     ) : (
                       <button
                         type="button"
-                        className="min-w-[2rem] rounded px-1.5 py-0.5 text-left text-xs font-medium text-zinc-200 transition-colors hover:bg-zinc-700/80"
+                        className={cn(
+                          "min-w-[2rem] rounded px-1.5 py-0.5 text-left text-xs font-medium transition-colors hover:bg-zinc-700/80",
+                          acModified
+                            ? acInfo.effectiveAc > acInfo.baseAc
+                              ? "text-cyan-300 font-bold"
+                              : "text-rose-300 font-bold"
+                            : "text-zinc-200"
+                        )}
                         onClick={() => setEditingCell({ id: entry.id, field: "armorClass" })}
+                        title={acTooltipParts.join(" · ")}
                       >
-                        {entry.armorClass}
+                        <span>{acInfo.effectiveAc}</span>
+                        {acModified && (
+                          <span className="ml-0.5 text-[9px] text-zinc-400 font-normal">
+                            ({acInfo.baseAc})
+                          </span>
+                        )}
+                        {acInfo.formulaHints.length > 0 && (
+                          <span className="ml-0.5 text-[9px] text-amber-400" title={acInfo.formulaHints.join("; ")}>
+                            *
+                          </span>
+                        )}
                       </button>
                     )}
                   </TableCell>
@@ -2149,25 +2988,36 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                   </TableCell>
                   <TableCell className="px-2 py-1.5 align-middle">
                     {entry.savingThrows ? (
-                      <div className="grid grid-cols-3 gap-x-1.5 gap-y-0.5 text-[10px] font-mono leading-tight max-w-[120px]">
-                        <span className="truncate text-zinc-400" title={`FOR ${entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}`}>
-                          FOR <span className={entry.savingThrows.for > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}</span>
-                        </span>
-                        <span className="truncate text-zinc-400" title={`DES ${entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}`}>
-                          DES <span className={entry.savingThrows.des > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}</span>
-                        </span>
-                        <span className="truncate text-zinc-400" title={`COS ${entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}`}>
-                          COS <span className={entry.savingThrows.cos > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}</span>
-                        </span>
-                        <span className="truncate text-zinc-400" title={`INT ${entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}`}>
-                          INT <span className={entry.savingThrows.int > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}</span>
-                        </span>
-                        <span className="truncate text-zinc-400" title={`SAG ${entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}`}>
-                          SAG <span className={entry.savingThrows.sag > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}</span>
-                        </span>
-                        <span className="truncate text-zinc-400" title={`CAR ${entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}`}>
-                          CAR <span className={entry.savingThrows.car > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}</span>
-                        </span>
+                      <div className="space-y-0.5">
+                        <div className="grid grid-cols-3 gap-x-1.5 gap-y-0.5 text-[10px] font-mono leading-tight max-w-[120px]">
+                          <span className="truncate text-zinc-400" title={`FOR ${entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}`}>
+                            FOR <span className={entry.savingThrows.for > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.for >= 0 ? `+${entry.savingThrows.for}` : entry.savingThrows.for}</span>
+                          </span>
+                          <span className="truncate text-zinc-400" title={`DES ${entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}`}>
+                            DES <span className={entry.savingThrows.des > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.des >= 0 ? `+${entry.savingThrows.des}` : entry.savingThrows.des}</span>
+                          </span>
+                          <span className="truncate text-zinc-400" title={`COS ${entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}`}>
+                            COS <span className={entry.savingThrows.cos > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.cos >= 0 ? `+${entry.savingThrows.cos}` : entry.savingThrows.cos}</span>
+                          </span>
+                          <span className="truncate text-zinc-400" title={`INT ${entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}`}>
+                            INT <span className={entry.savingThrows.int > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.int >= 0 ? `+${entry.savingThrows.int}` : entry.savingThrows.int}</span>
+                          </span>
+                          <span className="truncate text-zinc-400" title={`SAG ${entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}`}>
+                            SAG <span className={entry.savingThrows.sag > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.sag >= 0 ? `+${entry.savingThrows.sag}` : entry.savingThrows.sag}</span>
+                          </span>
+                          <span className="truncate text-zinc-400" title={`CAR ${entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}`}>
+                            CAR <span className={entry.savingThrows.car > 0 ? "text-amber-300 font-semibold" : "text-zinc-300"}>{entry.savingThrows.car >= 0 ? `+${entry.savingThrows.car}` : entry.savingThrows.car}</span>
+                          </span>
+                        </div>
+                        {(!entry.savingThrowsSource || entry.savingThrowsSource === "estimated") && (
+                          <div
+                            className="text-[9px] text-amber-400/90 flex items-center gap-0.5"
+                            title="Tiri salvezza stimati (non presenti nei dati strutturati della scheda)"
+                          >
+                            <AlertTriangle className="h-2.5 w-2.5 shrink-0" />
+                            <span>Stimati</span>
+                          </div>
+                        )}
                       </div>
                     ) : (
                       <span className="text-[10px] text-zinc-600">—</span>
@@ -2222,7 +3072,20 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                     </div>
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
-                    <ConditionsCell name={entry.name} value={entry.conditions} onChange={(conditions) => updateEntry(entry.id, { conditions })} />
+                    <ConditionsCell
+                      entryId={entry.id}
+                      name={entry.name}
+                      value={entry.conditions}
+                      activeEffects={entry.activeEffects}
+                      activeConcentration={entry.activeConcentration}
+                      allCombatants={entries.map((e) => ({ id: e.id, name: e.name, type: e.type }))}
+                      onChange={(conditions) => updateConditions(entry.id, conditions)}
+                      onAddEffect={handleAddEffect}
+                      onRemoveEffect={(effId) => handleRemoveEffect(entry.id, effId)}
+                      onStartConcentration={handleStartConcentration}
+                      onBreakConcentration={() => handleBreakConcentration(entry.id)}
+                      onConsumeEffect={(effId) => handleConsumeEffect(entry.id, effId)}
+                    />
                   </TableCell>
                   <TableCell className="px-2 py-1.5">
                     <div className="flex flex-col items-start gap-1">
@@ -2369,7 +3232,8 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
                     </div>
                   </TableCell>
                 </TableRow>
-              ))
+                );
+              })
             )}
           </TableBody>
         </Table>

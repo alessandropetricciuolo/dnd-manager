@@ -1,5 +1,12 @@
 import type { InitiativeTrackerState } from "@/components/gm/initiative-tracker";
 import { normalizeCombatConditions, type CombatConditionId } from "@/lib/combat-conditions";
+import {
+  applyCombatHpMutation,
+  computeEffectiveArmorClass,
+  normalizeActiveConcentration,
+  normalizeCombatEffectInstance,
+} from "@/lib/fight-mode/state-transitions";
+import type { ActiveConcentration, CombatEffectInstance } from "@/lib/fight-mode/types";
 
 export const GM_REMOTE_INITIATIVE_TYPES = [
   "initiative.next_turn",
@@ -39,17 +46,22 @@ export type InitiativeRemoteSnapshot = {
     type: "pc" | "monster" | "custom";
     hp: number;
     maxHp: number;
+    tempHp?: number;
     damageDealt: number;
     damageTaken: number;
     initiative: number;
     ac?: number;
+    effectiveAc?: number;
     conditions?: CombatConditionId[];
+    activeEffects?: CombatEffectInstance[];
+    activeConcentration?: ActiveConcentration | null;
     isDead?: boolean;
     teamId?: string;
     teamName?: string;
     teamColor?: string;
     spellSlotsRemaining?: Array<{ level: number; count: number }>;
   }>;
+  pendingConcentrationChecksCount?: number;
   activeMatch?: {
     teamA: { id: string; name: string; color: string; damageTotal: number };
     teamB: { id: string; name: string; color: string; damageTotal: number };
@@ -68,23 +80,30 @@ export function toInitiativeRemoteSnapshot(
   sessionId?: string | null,
   sessionTitle?: string | null
 ): InitiativeRemoteSnapshot {
-  const entries = state.entries.map((e) => ({
-    id: e.id,
-    name: e.name,
-    type: e.type,
-    hp: e.hp,
-    maxHp: e.maxHp,
-    damageDealt: e.damageDealt ?? 0,
-    damageTaken: e.damageTaken ?? 0,
-    initiative: e.initiative,
-    ac: e.armorClass,
-    conditions: normalizeCombatConditions(e.conditions),
-    isDead: e.isDead,
-    ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
-    ...(e.spellSlots?.remaining?.length
-      ? { spellSlotsRemaining: e.spellSlots.remaining }
-      : {}),
-  }));
+  const entries = state.entries.map((e) => {
+    const acCalc = computeEffectiveArmorClass(e.armorClass, e.activeEffects);
+    return {
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      hp: e.hp,
+      maxHp: e.maxHp,
+      ...(typeof e.tempHp === "number" && e.tempHp > 0 ? { tempHp: e.tempHp } : {}),
+      damageDealt: e.damageDealt ?? 0,
+      damageTaken: e.damageTaken ?? 0,
+      initiative: e.initiative,
+      ac: e.armorClass,
+      ...(acCalc.effectiveAc !== e.armorClass ? { effectiveAc: acCalc.effectiveAc } : {}),
+      conditions: normalizeCombatConditions(e.conditions),
+      ...(e.activeEffects?.length ? { activeEffects: e.activeEffects } : {}),
+      ...(e.activeConcentration ? { activeConcentration: e.activeConcentration } : {}),
+      isDead: e.isDead,
+      ...(e.teamId ? { teamId: e.teamId, teamName: e.teamName, teamColor: e.teamColor } : {}),
+      ...(e.spellSlots?.remaining?.length
+        ? { spellSlotsRemaining: e.spellSlots.remaining }
+        : {}),
+    };
+  });
 
   let matchSummary = activeMatch ?? null;
   if (!matchSummary && entries.some((e) => e.teamId)) {
@@ -123,6 +142,9 @@ export function toInitiativeRemoteSnapshot(
     ...(sessionTitle !== undefined ? { sessionTitle } : {}),
     ...(matchId ? { matchId } : {}),
     entries,
+    ...(state.pendingConcentrationChecks?.length
+      ? { pendingConcentrationChecksCount: state.pendingConcentrationChecks.length }
+      : {}),
     activeMatch: matchSummary,
     currentTurnIndex: state.currentTurnIndex,
     roundNumber: state.roundNumber,
@@ -151,17 +173,33 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
       const typeRaw = r.type;
       if (!id || !name || (typeRaw !== "pc" && typeRaw !== "monster" && typeRaw !== "custom")) return null;
       const type = typeRaw as "pc" | "monster" | "custom";
+      const activeEffects = Array.isArray(r.activeEffects)
+        ? r.activeEffects
+            .map((eff) => normalizeCombatEffectInstance(eff, id))
+            .filter((eff): eff is CombatEffectInstance => eff !== null)
+        : undefined;
+      const activeConcentration = normalizeActiveConcentration(r.activeConcentration, id);
+      const tempHp =
+        typeof r.tempHp === "number" && Number.isFinite(r.tempHp) && r.tempHp > 0
+          ? Math.trunc(r.tempHp)
+          : undefined;
       return {
         id,
         name,
         type,
         hp: typeof r.hp === "number" ? r.hp : 0,
         maxHp: typeof r.maxHp === "number" ? r.maxHp : 0,
+        ...(tempHp ? { tempHp } : {}),
         damageDealt: typeof r.damageDealt === "number" ? Math.max(0, r.damageDealt) : 0,
         damageTaken: typeof r.damageTaken === "number" ? Math.max(0, r.damageTaken) : 0,
         initiative: typeof r.initiative === "number" ? r.initiative : 0,
         ac: typeof r.ac === "number" && Number.isFinite(r.ac) ? r.ac : undefined,
+        ...(typeof r.effectiveAc === "number" && Number.isFinite(r.effectiveAc)
+          ? { effectiveAc: r.effectiveAc }
+          : {}),
         conditions: normalizeCombatConditions(r.conditions),
+        ...(activeEffects?.length ? { activeEffects } : {}),
+        ...(activeConcentration ? { activeConcentration } : {}),
         isDead: r.isDead === true,
         ...(typeof r.teamId === "string" && r.teamId
           ? {
@@ -198,12 +236,19 @@ export function parseInitiativeRemoteSnapshot(raw: unknown): InitiativeRemoteSna
   const matchId = typeof o.matchId === "string" && o.matchId.trim() ? o.matchId.trim() : undefined;
   const sessionId = typeof o.sessionId === "string" && o.sessionId.trim() ? o.sessionId.trim() : null;
   const sessionTitle = typeof o.sessionTitle === "string" && o.sessionTitle.trim() ? o.sessionTitle.trim() : null;
+  const pendingConcentrationChecksCount =
+    typeof o.pendingConcentrationChecksCount === "number" &&
+    Number.isFinite(o.pendingConcentrationChecksCount) &&
+    o.pendingConcentrationChecksCount > 0
+      ? Math.trunc(o.pendingConcentrationChecksCount)
+      : undefined;
 
   return {
     ...(Object.hasOwn(o, "sessionId") ? { sessionId } : {}),
     ...(Object.hasOwn(o, "sessionTitle") ? { sessionTitle } : {}),
     ...(matchId ? { matchId } : {}),
     entries,
+    ...(pendingConcentrationChecksCount ? { pendingConcentrationChecksCount } : {}),
     activeMatch,
     currentTurnIndex: typeof o.currentTurnIndex === "number" ? o.currentTurnIndex : 0,
     roundNumber: typeof o.roundNumber === "number" ? Math.max(1, o.roundNumber) : 1,
@@ -225,6 +270,7 @@ export type InitiativeRemoteCommandHandlers = {
   adjustHp: (entryId: string, delta: number) => void;
   setConditions: (entryId: string, conditions: CombatConditionId[]) => void;
   toggleCondition: (entryId: string, condition: CombatConditionId) => void;
+  toggleMobileConcentration?: (entryId: string) => void;
   addCombatant: (combatant: InitiativeRemoteCombatant) => void;
   removeCombatant: (entryId: string) => void;
 };
@@ -278,8 +324,9 @@ export function isValidInitiativeRemotePayload(type: string, payload: Record<str
       return normalized.length === payload.conditions.length && new Set(payload.conditions).size === payload.conditions.length;
     }
     case "initiative.toggle_condition":
-      return boundedEntryId(payload.entry_id) && typeof payload.condition === "string" &&
-        normalizeCombatConditions([payload.condition]).length === 1;
+      if (!boundedEntryId(payload.entry_id) || typeof payload.condition !== "string") return false;
+      if (payload.condition === "concentrato") return true;
+      return normalizeCombatConditions([payload.condition]).length === 1;
     case "initiative.add_combatant":
       return parseCombatant(payload.combatant) !== null;
     case "initiative.remove_combatant":
@@ -350,6 +397,10 @@ export function applyInitiativeRemoteCommand(
     }
     case "initiative.toggle_condition": {
       const id = typeof payload.entry_id === "string" ? payload.entry_id : "";
+      if (id && payload.condition === "concentrato") {
+        handlers.toggleMobileConcentration?.(id);
+        return true;
+      }
       const condition = normalizeCombatConditions([payload.condition])[0];
       if (id && condition) handlers.toggleCondition(id, condition);
       return true;
@@ -371,21 +422,28 @@ export function applyInitiativeRemoteCommand(
   }
 }
 
-/** Pure delta helper; callers apply it inside a functional update to avoid stale HP reads. */
+/**
+ * Pure delta helper; callers apply it inside a functional update to avoid stale HP reads.
+ * Delegates to applyCombatHpMutation so negative deltas (damage) consume tempHp and queue concentration checks.
+ */
 export function adjustInitiativeHp(
   state: InitiativeTrackerState,
   entryId: string,
   delta: number
 ): InitiativeTrackerState {
-  return {
-    ...state,
-    entries: state.entries.map((entry) => {
-      if (entry.id !== entryId) return entry;
-      const unclamped = entry.hp + delta;
-      const nextHp = Math.max(0, Math.min(unclamped, entry.maxHp > 0 ? entry.maxHp : unclamped));
-      const maxHp = entry.maxHp > 0 ? entry.maxHp : Math.max(entry.maxHp, nextHp);
-      const isDead = entry.type === "monster" || entry.type === "custom" ? nextHp === 0 : entry.isDead;
-      return { ...entry, hp: nextHp, maxHp, isDead };
-    }),
-  };
+  const intDelta = Math.trunc(delta);
+  if (intDelta === 0) return state;
+  if (intDelta < 0) {
+    return applyCombatHpMutation(state, {
+      kind: "damage",
+      targetId: entryId,
+      amount: Math.abs(intDelta),
+    });
+  }
+  return applyCombatHpMutation(state, {
+    kind: "heal",
+    targetId: entryId,
+    amount: intDelta,
+  });
 }
+

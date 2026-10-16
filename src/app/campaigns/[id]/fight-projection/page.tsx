@@ -6,7 +6,7 @@ import Image from "next/image";
 import { Maximize2, Minimize2, Shield, Sparkles, Swords, Timer, User, Volume2 } from "lucide-react";
 import { useTurnTimer } from "@/lib/fight-mode/turn-timer";
 import { useFightProjectionSync } from "@/lib/fight-mode/broadcast";
-import { COMBAT_CONDITIONS } from "@/lib/combat-conditions";
+import { COMBAT_CONDITIONS, getCombatStatusDefinition } from "@/lib/combat-conditions";
 import { playDeepBellSound } from "@/lib/fight-mode/bell";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +28,7 @@ const CONDITION_ICONS: Record<string, string> = {
   invisibile: "👻",
   paralizzato: "❄️",
   pietrificato: "🗿",
+  "privo-di-sensi": "💤",
   privo_di_sensi: "💤",
   prono: "⬇️",
   spaventato: "😱",
@@ -98,6 +99,15 @@ export default function FightProjectionPage() {
 
   const active = state?.activeCombatant;
   const upcoming = state?.upcomingTurns ?? [];
+
+  const activeBadges =
+    active?.activeEffects && active.activeEffects.length > 0
+      ? active.activeEffects
+      : (active?.conditions ?? []).map((cId) => ({
+          effectId: `cond-${cId}`,
+          statusId: cId,
+          label: COMBAT_CONDITIONS.find((c) => c.id === cId)?.label ?? cId,
+        }));
 
   return (
     <div
@@ -277,24 +287,29 @@ export default function FightProjectionPage() {
                       </div>
                     </div>
 
-                    {/* Condizioni / Stati Attivi Grandi */}
-                    {active.conditions && active.conditions.length > 0 ? (
+                    {/* Concentrazione & Stati Attivi Grandi */}
+                    {(active.activeConcentrationSpell || activeBadges.length > 0) ? (
                       <div className="flex flex-col gap-2 w-full">
                         <span className="font-cinzel text-xs xl:text-sm font-bold uppercase tracking-wider text-zinc-400">
-                          Condizioni Attive
+                          Stati e Concentrazione Attivi
                         </span>
                         <div className="flex flex-wrap gap-2.5">
-                          {active.conditions.map((cId) => {
-                            const condObj = COMBAT_CONDITIONS.find((c) => c.id === cId);
-                            const icon = CONDITION_ICONS[cId] ?? "•";
-                            const label = condObj?.label ?? cId;
+                          {active.activeConcentrationSpell ? (
+                            <div className="flex items-center gap-2 rounded-xl border border-amber-400/70 bg-amber-950/80 px-3.5 py-1.5 text-sm xl:text-base text-amber-200 shadow-md font-bold">
+                              <Sparkles className="h-4 w-4 text-amber-400" />
+                              <span>Concentrato: {active.activeConcentrationSpell}</span>
+                            </div>
+                          ) : null}
+                          {activeBadges.map((badge) => {
+                            const def = getCombatStatusDefinition(badge.statusId);
+                            const icon = def?.icon ?? CONDITION_ICONS[badge.statusId] ?? "✨";
                             return (
                               <div
-                                key={cId}
+                                key={badge.effectId}
                                 className="flex items-center gap-2 rounded-xl border border-amber-500/50 bg-amber-950/60 px-3.5 py-1.5 text-sm xl:text-base text-amber-200 shadow-md font-bold"
                               >
                                 <span className="text-lg xl:text-xl">{icon}</span>
-                                <span>{label}</span>
+                                <span>{badge.label}</span>
                               </div>
                             );
                           })}
@@ -333,6 +348,14 @@ export default function FightProjectionPage() {
                 <div className="flex flex-1 flex-col gap-3 overflow-y-auto pr-1">
                   {upcoming.map((u, idx) => {
                     const isNext = idx === 0;
+                    const upcomingBadges =
+                      u.activeEffects && u.activeEffects.length > 0
+                        ? u.activeEffects
+                        : (u.conditions ?? []).map((cId) => ({
+                            effectId: `cond-${cId}`,
+                            statusId: cId,
+                            label: COMBAT_CONDITIONS.find((c) => c.id === cId)?.label ?? cId,
+                          }));
                     return (
                       <div
                         key={`${u.id}-${idx}`}
@@ -388,18 +411,30 @@ export default function FightProjectionPage() {
                             {u.characterClass || (u.type === "pc" ? "Eroe Giocatore" : "Avversario")}
                           </p>
 
-                          {/* Condizioni miniature se presenti */}
-                          {u.conditions && u.conditions.length > 0 ? (
-                            <div className="flex flex-wrap gap-1 mt-1">
-                              {u.conditions.map((cId) => (
+                          {/* Condizioni / Effetti miniature se presenti */}
+                          {(u.activeConcentrationSpell || upcomingBadges.length > 0) ? (
+                            <div className="flex flex-wrap items-center gap-1 mt-1">
+                              {u.activeConcentrationSpell ? (
                                 <span
-                                  key={cId}
-                                  className="text-xs"
-                                  title={COMBAT_CONDITIONS.find((c) => c.id === cId)?.label ?? cId}
+                                  className="rounded border border-amber-500/50 bg-amber-950/70 px-1 py-0.5 text-[9px] font-bold text-amber-200"
+                                  title={`Concentrato: ${u.activeConcentrationSpell}`}
                                 >
-                                  {CONDITION_ICONS[cId] ?? "•"}
+                                  🔮 {u.activeConcentrationSpell}
                                 </span>
-                              ))}
+                              ) : null}
+                              {upcomingBadges.map((b) => {
+                                const def = getCombatStatusDefinition(b.statusId);
+                                const icon = def?.icon ?? CONDITION_ICONS[b.statusId] ?? "✨";
+                                return (
+                                  <span
+                                    key={b.effectId}
+                                    className="rounded border border-amber-700/30 bg-black/40 px-1 py-0.5 text-[10px] text-amber-100"
+                                    title={b.label}
+                                  >
+                                    {icon} {b.label}
+                                  </span>
+                                );
+                              })}
                             </div>
                           ) : null}
                         </div>
@@ -415,3 +450,4 @@ export default function FightProjectionPage() {
     </div>
   );
 }
+

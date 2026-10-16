@@ -4,7 +4,11 @@ import type { createSupabaseServerClient as createServerClientFactory } from "@/
 
 type RequestSupabaseClient = Awaited<ReturnType<typeof createServerClientFactory>>;
 
-export const getRequestAuthContextForClient = cache(async (supabase: RequestSupabaseClient) => {
+// React 18 does not expose cache() in every runtime (including the Node test runner).
+// Keep request memoization when provided by the runtime, while remaining callable otherwise.
+const safeCache = typeof cache === "function" ? cache : (<T extends (...args: any[]) => any>(fn: T): T => fn);
+
+export const getRequestAuthContextForClient = safeCache(async (supabase: RequestSupabaseClient) => {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -24,7 +28,7 @@ export const getRequestAuthContextForClient = cache(async (supabase: RequestSupa
  * Auth and role data shared by server components during one render request.
  * React cache is request scoped, so no identity or role is retained between users.
  */
-export const getRequestAuthContext = cache(async () => {
+export const getRequestAuthContext = safeCache(async () => {
   const supabase = await createSupabaseServerClient();
   return getRequestAuthContextForClient(supabase);
 });

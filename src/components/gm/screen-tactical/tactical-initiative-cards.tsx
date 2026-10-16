@@ -6,8 +6,10 @@ import {
   Heart,
   Shield,
   Skull,
+  Sparkles,
   Swords,
   Trash2,
+  X,
   Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +18,8 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
@@ -24,7 +28,18 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { COMBAT_CONDITIONS, type CombatConditionId } from "@/lib/combat-conditions";
+import {
+  COMBAT_CONDITIONS,
+  COMBAT_STATUS_CATALOG,
+  getCombatStatusDefinition,
+  isSingleUseStatus,
+  type CombatConditionId,
+} from "@/lib/combat-conditions";
+import {
+  computeEffectiveArmorClass,
+  reconcileEntryEffectsAndConditions,
+  type AddCombatEffectPayload,
+} from "@/lib/fight-mode/state-transitions";
 import type { InitiativeEntry } from "@/components/gm/initiative-tracker";
 
 type TacticalInitiativeCardsProps = {
@@ -37,10 +52,15 @@ type TacticalInitiativeCardsProps = {
   onSort?: () => void;
   onUpdateHp: (id: string, delta: number) => void;
   onSetHp: (id: string, hp: number) => void;
+  onSetTempHp?: (id: string, tempHp: number) => void;
   onSetInitiative?: (id: string, initiative: number) => void;
   onSetAc?: (id: string, ac: number) => void;
   onToggleDead?: (id: string) => void;
   onToggleCondition: (id: string, conditionId: CombatConditionId) => void;
+  onAddEffect?: (payload: AddCombatEffectPayload) => void;
+  onRemoveEffect?: (targetId: string, effectId: string) => void;
+  onConsumeEffect?: (targetId: string, effectId: string) => void;
+  onBreakConcentration?: (casterId: string) => void;
   onOpenMonsterStat?: (entry: { id: string; name: string; entityId?: string }) => void;
   onDeleteEntry?: (id: string) => void;
   onOpenAddModal?: () => void;
@@ -59,6 +79,7 @@ const CONDITION_ICONS: Record<string, { icon: string; color: string }> = {
   invisibile: { icon: "👻", color: "text-sky-300" },
   paralizzato: { icon: "❄️", color: "text-cyan-300" },
   pietrificato: { icon: "🗿", color: "text-stone-400" },
+  "privo-di-sensi": { icon: "💤", color: "text-indigo-300" },
   privo_di_sensi: { icon: "💤", color: "text-indigo-300" },
   prono: { icon: "⬇️", color: "text-orange-400" },
   spaventato: { icon: "😱", color: "text-rose-400" },
@@ -72,10 +93,15 @@ export function TacticalInitiativeCards({
   onSelectTurn,
   onUpdateHp,
   onSetHp,
+  onSetTempHp,
   onSetInitiative,
   onSetAc,
   onToggleDead,
   onToggleCondition,
+  onAddEffect,
+  onRemoveEffect,
+  onConsumeEffect,
+  onBreakConcentration,
   onOpenMonsterStat,
   onDeleteEntry,
   onToggleReaction,
@@ -104,8 +130,16 @@ export function TacticalInitiativeCards({
             const isCurrent = index === currentTurnIndex;
             const maxHp = Math.max(1, entry.maxHp || entry.hp || 1);
             const currentHp = entry.hp;
+            const tempHp = Math.max(0, entry.tempHp ?? 0);
             const hpPct = Math.max(0, Math.min(100, (currentHp / maxHp) * 100));
             const isDead = Boolean(entry.isDead || currentHp <= 0);
+            const acCalc = computeEffectiveArmorClass(entry.armorClass, entry.activeEffects);
+            const reconciled = reconcileEntryEffectsAndConditions(
+              entry.id,
+              entry.activeEffects,
+              entry.conditions
+            );
+            const effects = reconciled.activeEffects;
 
             return (
               <div
@@ -173,17 +207,27 @@ export function TacticalInitiativeCards({
                             />
                           </div>
                         ) : (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingHpId(entry.id);
-                              setHpDraft(String(entry.hp));
-                            }}
-                            className="font-mono text-xs font-bold text-parchment-100 hover:text-amber-300"
-                            title="Clicca per modificare PF"
-                          >
-                            {entry.hp} <span className="text-zinc-500 font-normal">/ {maxHp}</span>
-                          </button>
+                          <div className="flex items-center gap-1">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingHpId(entry.id);
+                                setHpDraft(String(entry.hp));
+                              }}
+                              className="font-mono text-xs font-bold text-parchment-100 hover:text-amber-300"
+                              title="Clicca per modificare PF"
+                            >
+                              {entry.hp} <span className="text-zinc-500 font-normal">/ {maxHp}</span>
+                            </button>
+                            {tempHp > 0 ? (
+                              <span
+                                className="rounded bg-cyan-950/90 border border-cyan-500/40 px-1 py-0.5 font-mono text-[9px] font-bold text-cyan-300"
+                                title={`Punti Ferita Temporanei: +${tempHp}`}
+                              >
+                                +{tempHp}
+                              </span>
+                            ) : null}
+                          </div>
                         )}
                       </div>
 
@@ -278,12 +322,29 @@ export function TacticalInitiativeCards({
                           }}
                           className={cn(
                             "tactical-ac-shield transition-all",
-                            onSetAc && "hover:ring-1 hover:ring-amber-500/60 cursor-pointer"
+                            onSetAc && "hover:ring-1 hover:ring-amber-500/60 cursor-pointer",
+                            acCalc.effectiveAc > acCalc.baseAc && "ring-1 ring-emerald-500/60",
+                            acCalc.effectiveAc < acCalc.baseAc && "ring-1 ring-rose-500/60"
                           )}
-                          title={`Classe Armatura: ${entry.armorClass}${onSetAc ? " (Clicca per modificare)" : ""}`}
+                          title={`CA effettiva: ${acCalc.effectiveAc} (base ${acCalc.baseAc}${
+                            acCalc.flatDelta !== 0
+                              ? `, mod ${acCalc.flatDelta > 0 ? `+${acCalc.flatDelta}` : acCalc.flatDelta}`
+                              : ""
+                          }${acCalc.coverBonus > 0 ? `, copertura +${acCalc.coverBonus}` : ""}${
+                            acCalc.formulaHints.length > 0 ? ` · ${acCalc.formulaHints.join(", ")}` : ""
+                          })`}
                         >
-                          <span className="font-cinzel text-xs font-black text-parchment-100">
-                            {entry.armorClass}
+                          <span
+                            className={cn(
+                              "font-cinzel text-xs font-black",
+                              acCalc.effectiveAc > acCalc.baseAc
+                                ? "text-emerald-300"
+                                : acCalc.effectiveAc < acCalc.baseAc
+                                ? "text-rose-300"
+                                : "text-parchment-100"
+                            )}
+                          >
+                            {acCalc.effectiveAc}
                           </span>
                         </button>
                       )}
@@ -347,7 +408,7 @@ export function TacticalInitiativeCards({
                     </div>
                   </div>
 
-                  {/* Riga Inferiore: Tiri Salvezza (TS) & Condizioni */}
+                  {/* Riga Inferiore: Tiri Salvezza (TS), Concentrazione & Stati */}
                   <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-brass-base/10">
                     {/* Tiri Salvezza TS: FOR, DES, COS, INT, SAG, CAR */}
                     <div className="flex items-center gap-1 flex-wrap">
@@ -367,7 +428,9 @@ export function TacticalInitiativeCards({
                                 ? "border-amber-600/50 bg-amber-950/40 text-amber-300 font-bold"
                                 : "border-brass-base/20 bg-[#120d09] text-zinc-400"
                             )}
-                            title={`Tiro Salvezza ${stat.toUpperCase()}: ${sign}`}
+                            title={`Tiro Salvezza ${stat.toUpperCase()}: ${sign}${
+                              entry.savingThrowsSource === "estimated" ? " (stimato)" : ""
+                            }`}
                           >
                             <span className="text-[8px] uppercase font-cinzel opacity-75">{stat}</span>
                             <span>{sign}</span>
@@ -376,53 +439,153 @@ export function TacticalInitiativeCards({
                       })}
                     </div>
 
-                    {/* Vitals: Condizioni */}
+                    {/* Vitals: Concentrazione & Stati */}
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mr-0.5">
-                        Condizioni:
-                      </span>
-                      {entry.conditions && entry.conditions.length > 0 ? (
-                        entry.conditions.map((cond) => {
-                          const meta = CONDITION_ICONS[cond] ?? { icon: "•", color: "text-amber-200" };
-                          return (
+                      {entry.activeConcentration ? (
+                        <span
+                          className="inline-flex h-4 items-center gap-1 rounded border border-amber-500/60 bg-amber-950/80 px-1.5 text-[9px] font-semibold text-amber-200"
+                          title={`Concentrato su: ${entry.activeConcentration.spellName}`}
+                        >
+                          <Sparkles className="h-2.5 w-2.5 text-amber-400" />
+                          <span className="max-w-[85px] truncate">
+                            Conc: {entry.activeConcentration.spellName}
+                          </span>
+                          {onBreakConcentration ? (
                             <button
-                              key={cond}
                               type="button"
-                              onClick={() => onToggleCondition(entry.id, cond as CombatConditionId)}
-                              className={cn(
-                                "flex h-4 items-center gap-0.5 rounded border border-amber-700/30 bg-[#1d140d] px-1 text-[9px] hover:bg-red-950/40",
-                                meta.color
-                              )}
-                              title={`Rimuovi condizione: ${cond}`}
+                              onClick={() => onBreakConcentration(entry.id)}
+                              className="hover:text-red-300"
+                              title="Interrompi concentrazione"
                             >
-                              <span>{meta.icon}</span>
-                              <span className="text-[8px] capitalize">{cond.slice(0, 4)}</span>
+                              <X className="h-2.5 w-2.5" />
                             </button>
+                          ) : null}
+                        </span>
+                      ) : null}
+
+                      <span className="text-[9px] font-cinzel font-bold text-brass-light/80 uppercase tracking-wider mr-0.5">
+                        Stati:
+                      </span>
+                      {effects.length > 0 ? (
+                        effects.map((eff) => {
+                          const def = getCombatStatusDefinition(eff.statusId);
+                          const icon = def?.icon ?? CONDITION_ICONS[eff.statusId]?.icon ?? "✨";
+                          const color =
+                            def?.colorClass ??
+                            CONDITION_ICONS[eff.statusId]?.color ??
+                            "text-purple-200 border-purple-500/40 bg-purple-950/60";
+                          const isSingleUse = isSingleUseStatus(eff.statusId);
+                          return (
+                            <div key={eff.effectId} className="flex items-center gap-0.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (onRemoveEffect) {
+                                    onRemoveEffect(entry.id, eff.effectId);
+                                  } else {
+                                    onToggleCondition(entry.id, eff.statusId as CombatConditionId);
+                                  }
+                                }}
+                                className={cn(
+                                  "flex h-4 items-center gap-0.5 rounded border px-1 text-[9px] hover:bg-red-950/60",
+                                  color
+                                )}
+                                title={`Rimuovi ${eff.label}${eff.sourceName ? ` (${eff.sourceName})` : ""}`}
+                              >
+                                <span>{icon}</span>
+                                <span className="text-[8px] truncate max-w-[56px]">{eff.label}</span>
+                                {eff.concentrationId ? (
+                                  <span className="text-[7px] font-mono text-amber-300">C</span>
+                                ) : null}
+                                {eff.duration?.remainingTurns !== undefined && eff.duration.remainingTurns !== null ? (
+                                  <span className="text-[7px] font-mono opacity-80">
+                                    {eff.duration.remainingTurns}t
+                                  </span>
+                                ) : null}
+                                {eff.duration?.anchorRemoved ? (
+                                  <span className="text-[7px] text-amber-400" title="Ancora rimossa dal combattimento">
+                                    ⚠️
+                                  </span>
+                                ) : null}
+                              </button>
+                              {isSingleUse && onConsumeEffect ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onConsumeEffect(entry.id, eff.effectId);
+                                  }}
+                                  className="h-4 px-1 rounded bg-amber-500/20 border border-amber-500/50 text-[8px] text-amber-300 hover:bg-amber-500/40 font-mono font-bold"
+                                  title={`Consuma singola istanza di ${eff.label}`}
+                                >
+                                  ⚡
+                                </button>
+                              ) : null}
+                            </div>
                           );
                         })
                       ) : (
                         <span className="text-[10px] font-serif text-zinc-600 italic mr-1">—</span>
                       )}
 
-                      {/* Dropdown Aggiungi Condizione */}
+                      {/* Dropdown Aggiungi Stato / Buff / Tattico */}
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <button
                             type="button"
                             className="h-4 w-4 rounded-full border border-brass-base/30 bg-[#22160d] text-[10px] text-brass-light hover:bg-brass-base/20 flex items-center justify-center"
-                            title="Aggiungi condizione"
+                            title="Aggiungi stato o buff"
                           >
                             +
                           </button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent className="max-h-56 overflow-y-auto border-brass-base/40 bg-[#140f0c] text-parchment-100">
-                          {COMBAT_CONDITIONS.map((c) => (
+                        <DropdownMenuContent className="max-h-64 w-56 overflow-y-auto border-brass-base/40 bg-[#140f0c] text-parchment-100">
+                          <DropdownMenuLabel className="text-[10px] text-rose-300">
+                            🔴 Condizioni e Debuff
+                          </DropdownMenuLabel>
+                          {COMBAT_STATUS_CATALOG.filter((s) => s.category === "condition").map((c) => (
                             <DropdownMenuItem
                               key={c.id}
-                              onClick={() => onToggleCondition(entry.id, c.id as CombatConditionId)}
+                              onClick={() => {
+                                if (onAddEffect) {
+                                  onAddEffect({ targetIds: [entry.id], statusId: c.id });
+                                } else if (COMBAT_CONDITIONS.some((cc) => cc.id === c.id)) {
+                                  onToggleCondition(entry.id, c.id as CombatConditionId);
+                                }
+                              }}
                               className="text-xs cursor-pointer hover:bg-brass-base/20 hover:text-brass-light"
                             >
-                              {c.label}
+                              {c.icon} {c.label}
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator className="bg-brass-base/20" />
+                          <DropdownMenuLabel className="text-[10px] text-emerald-300">
+                            🟢 Buff Benefici
+                          </DropdownMenuLabel>
+                          {COMBAT_STATUS_CATALOG.filter((s) => s.category === "buff").map((c) => (
+                            <DropdownMenuItem
+                              key={c.id}
+                              onClick={() =>
+                                onAddEffect?.({ targetIds: [entry.id], statusId: c.id })
+                              }
+                              className="text-xs cursor-pointer hover:bg-brass-base/20 hover:text-brass-light"
+                            >
+                              {c.icon} {c.label}
+                            </DropdownMenuItem>
+                          ))}
+                          <DropdownMenuSeparator className="bg-brass-base/20" />
+                          <DropdownMenuLabel className="text-[10px] text-sky-300">
+                            🔵 Stati Tattici
+                          </DropdownMenuLabel>
+                          {COMBAT_STATUS_CATALOG.filter((s) => s.category === "tactical").map((c) => (
+                            <DropdownMenuItem
+                              key={c.id}
+                              onClick={() =>
+                                onAddEffect?.({ targetIds: [entry.id], statusId: c.id })
+                              }
+                              className="text-xs cursor-pointer hover:bg-brass-base/20 hover:text-brass-light"
+                            >
+                              {c.icon} {c.label}
                             </DropdownMenuItem>
                           ))}
                         </DropdownMenuContent>

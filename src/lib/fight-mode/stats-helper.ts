@@ -74,6 +74,80 @@ export function estimatePcSaves(
 }
 
 /**
+ * Estrae i tiri salvezza espliciti da rules_snapshot.character_sheet (se presenti e validi).
+ * Un modificatore di caratteristica non viene trattato come tiro salvezza: può mancare
+ * competenza e non rappresenta il valore effettivo. Se i TS non sono presenti, restituisce la stima
+ * segnalando esplicitamente `source: "estimated"` (così il tracker e i check di concentrazione
+ * possono avvisare il GM e permettere l'inserimento/correzione manuale).
+ */
+export function extractStructuredPcSaves(
+  rulesSnapshot: unknown,
+  characterClass: string | null | undefined,
+  level: number = 1
+): { savingThrows: SavingThrowsMap; source: "sheet" | "estimated" } {
+  const fallback = estimatePcSaves(characterClass, level);
+  if (!rulesSnapshot) {
+    return { savingThrows: fallback, source: "estimated" };
+  }
+
+  let obj: Record<string, unknown> | null = null;
+  if (typeof rulesSnapshot === "string") {
+    try {
+      const parsed = JSON.parse(rulesSnapshot);
+      if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+        obj = parsed as Record<string, unknown>;
+      }
+    } catch {
+      obj = null;
+    }
+  } else if (typeof rulesSnapshot === "object" && !Array.isArray(rulesSnapshot)) {
+    obj = rulesSnapshot as Record<string, unknown>;
+  }
+
+  const sheet = obj?.character_sheet;
+  if (!sheet || typeof sheet !== "object" || Array.isArray(sheet)) {
+    return { savingThrows: fallback, source: "estimated" };
+  }
+
+  const sheetRecord = sheet as Record<string, unknown>;
+  const rawSaves = sheetRecord.savingThrows;
+  const rawMods = sheetRecord.abilityMods;
+
+  const readSave = (key: "str" | "dex" | "con" | "int" | "wis" | "cha"): number | null => {
+    if (rawSaves && typeof rawSaves === "object" && !Array.isArray(rawSaves)) {
+      const item = (rawSaves as Record<string, unknown>)[key];
+      if (item && typeof item === "object" && !Array.isArray(item)) {
+        const val = (item as Record<string, unknown>).value;
+        if (typeof val === "number" && Number.isFinite(val)) {
+          return Math.trunc(val);
+        }
+      }
+    }
+    return null;
+  };
+
+  const str = readSave("str");
+  const dex = readSave("dex");
+  const con = readSave("con");
+  const int = readSave("int");
+  const wis = readSave("wis");
+  const cha = readSave("cha");
+
+  return {
+    savingThrows: {
+      for: str ?? fallback.for,
+      des: dex ?? fallback.des,
+      cos: con ?? fallback.cos,
+      int: int ?? fallback.int,
+      sag: wis ?? fallback.sag,
+      car: cha ?? fallback.car,
+    },
+    source: [str, dex, con, int, wis, cha].every((value) => value !== null) ? "sheet" : "estimated",
+  };
+}
+
+
+/**
  * Estrae tiri salvezza e reazioni da uno statblock markdown o testo di un mostro.
  */
 export function parseMonsterStatsFromMarkdown(markdown: string): {

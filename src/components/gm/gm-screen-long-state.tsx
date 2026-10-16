@@ -31,6 +31,15 @@ import {
 } from "@/components/gm/initiative-tracker";
 import { adjustInitiativeHp, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 import { normalizeCombatConditions } from "@/lib/combat-conditions";
+import {
+  applyCombatHpMutation,
+  buildInitiativeDraftState,
+  removeCombatantFromState,
+  setCanonicalConditionsOnEntry,
+  toggleCombatStatusOnEntry,
+  toggleMobileConcentrationOnEntry,
+  transitionNextTurn,
+} from "@/lib/fight-mode/state-transitions";
 import { resetTurnTimer, toggleTurnTimer } from "@/lib/fight-mode/turn-timer";
 import {
   DEFAULT_FANTASY_BASE_DATE,
@@ -371,7 +380,7 @@ export function GmScreenLongStateProvider({
   }, [campaignId]);
   const initiativeRemoteHandlers = useMemo<InitiativeRemoteCommandHandlers>(() => ({
     nextTurn: () => {
-      setInitiativeState((state) => advanceRemoteTurn(state, 1));
+      setInitiativeState((state) => transitionNextTurn(state));
       resetTurnTimer(campaignId, true);
     },
     prevTurn: () => {
@@ -407,34 +416,17 @@ export function GmScreenLongStateProvider({
     },
     setHp: (entryId, hp) => {
       saveRemoteCoreStatus(entryId, hp);
-      setInitiativeState((state) => ({
-        ...state,
-        entries: state.entries.map((entry) => {
-          if (entry.id !== entryId) return entry;
-          const nextHp = Math.max(0, Math.min(hp, entry.maxHp > 0 ? entry.maxHp : hp));
-          const maxHp = entry.maxHp > 0 ? entry.maxHp : Math.max(entry.maxHp, nextHp);
-          const isDead = entry.type === "monster" || entry.type === "custom" ? nextHp === 0 : entry.isDead;
-          return { ...entry, hp: nextHp, maxHp, isDead };
-        }),
-      }));
+      setInitiativeState((state) => applyCombatHpMutation(state, { kind: "set_exact", targetId: entryId, exactHp: hp }));
     },
-    setConditions: (entryId, conditions) => setInitiativeState((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === entryId
-        ? { ...entry, conditions: normalizeCombatConditions(conditions) }
-        : entry),
-    })),
-    toggleCondition: (entryId, condition) => setInitiativeState((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => {
-        if (entry.id !== entryId) return entry;
-        const current = normalizeCombatConditions(entry.conditions);
-        const next = current.includes(condition)
-          ? current.filter((item) => item !== condition)
-          : [...current, condition];
-        return { ...entry, conditions: normalizeCombatConditions(next) };
-      }),
-    })),
+    setConditions: (entryId, conditions) => setInitiativeState((state) =>
+      setCanonicalConditionsOnEntry(state, entryId, conditions)
+    ),
+    toggleCondition: (entryId, condition) => setInitiativeState((state) =>
+      toggleCombatStatusOnEntry(state, entryId, condition)
+    ),
+    toggleMobileConcentration: (entryId) => setInitiativeState((state) =>
+      toggleMobileConcentrationOnEntry(state, entryId)
+    ),
     addCombatant: (combatant) => setInitiativeState((state) => {
       if (state.entries.some((entry) => entry.id === combatant.id)) return state;
       const activeId = state.entries[state.currentTurnIndex]?.id;
@@ -453,17 +445,15 @@ export function GmScreenLongStateProvider({
       };
       const entries = [...state.entries, added].sort((a, b) => b.initiative - a.initiative);
       const activeIndex = entries.findIndex((entry) => entry.id === activeId);
-      return { ...state, entries, currentTurnIndex: activeIndex >= 0 ? activeIndex : state.currentTurnIndex };
+      return sanitizeInitiativeTrackerState({
+        ...state,
+        entries,
+        currentTurnIndex: activeIndex >= 0 ? activeIndex : state.currentTurnIndex,
+      });
     }),
-    removeCombatant: (entryId) => setInitiativeState((state) => {
-      const removedIndex = state.entries.findIndex((entry) => entry.id === entryId);
-      if (removedIndex < 0) return state;
-      const entries = state.entries.filter((entry) => entry.id !== entryId);
-      let currentTurnIndex = state.currentTurnIndex;
-      if (removedIndex < currentTurnIndex) currentTurnIndex -= 1;
-      if (currentTurnIndex >= entries.length) currentTurnIndex = Math.max(0, entries.length - 1);
-      return { ...state, entries, currentTurnIndex };
-    }),
+    removeCombatant: (entryId) => setInitiativeState((state) =>
+      removeCombatantFromState(state, entryId)
+    ),
   }), [campaignId, saveRemoteCoreStatus]);
   const [xpState, setXpState] = useState<LongSessionXpState>(emptyXpState);
   const [elapsedHours, setElapsedHoursState] = useState(0);
@@ -688,7 +678,17 @@ export function GmScreenLongStateProvider({
     }
   }, [hydratedSessionId, attendance, campaignId, economyDraft, elapsedHours, initiativeState, missionSelection, selectedSessionId, xpState]);
 
-  const initiativeDraftState = useMemo(() => ({entries:initiativeState.entries,currentTurnIndex:initiativeState.currentTurnIndex,roundNumber:initiativeState.roundNumber,isTurnTimerRunning:initiativeState.isTurnTimerRunning,turnElapsedSeconds:0}), [initiativeState.entries,initiativeState.currentTurnIndex,initiativeState.roundNumber,initiativeState.isTurnTimerRunning]);
+  const initiativeDraftState = useMemo(() => buildInitiativeDraftState({
+    entries: initiativeState.entries,
+    currentTurnIndex: initiativeState.currentTurnIndex,
+    roundNumber: initiativeState.roundNumber,
+    isTurnTimerRunning: initiativeState.isTurnTimerRunning,
+    pendingConcentrationChecks: initiativeState.pendingConcentrationChecks,
+    pendingSaveReminders: initiativeState.pendingSaveReminders,
+    lastAdvanceUndoSnapshot: initiativeState.lastAdvanceUndoSnapshot,
+    appliedProposalIds: initiativeState.appliedProposalIds,
+    lastCommandUndoSnapshot: initiativeState.lastCommandUndoSnapshot,
+  }), [initiativeState.entries, initiativeState.currentTurnIndex, initiativeState.roundNumber, initiativeState.isTurnTimerRunning, initiativeState.pendingConcentrationChecks, initiativeState.pendingSaveReminders, initiativeState.lastAdvanceUndoSnapshot, initiativeState.appliedProposalIds, initiativeState.lastCommandUndoSnapshot]);
   useEffect(() => {
     if (draftPaused || !selectedSessionId || hydratedSessionId !== selectedSessionId || !readableSessionsRef.current.has(selectedSessionId)) return;
     const computed = computeSessionXpAwards({characters:sessionCharacters, attendance, xpState, initiativeEntries:initiativeDraftState.entries});
