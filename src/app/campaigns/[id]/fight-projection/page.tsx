@@ -150,10 +150,10 @@ export default function FightProjectionPage() {
             type="button"
             onClick={(e) => {
               e.stopPropagation();
-              playDeepBellSound();
+              playDeepBellSound({ force: true });
             }}
             className="flex h-9 w-9 items-center justify-center rounded-lg border border-amber-600/30 bg-[#160d07] text-amber-300 transition-colors hover:border-amber-500 hover:bg-amber-950/80"
-            title="Test Rintocco Campana Grave"
+            title="Test 2 Rintocchi Campana (Do2)"
           >
             <Volume2 className="h-4 w-4" />
           </button>

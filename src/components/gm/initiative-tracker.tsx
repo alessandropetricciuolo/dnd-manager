@@ -132,6 +132,7 @@ import {
 import { extractStructuredPcCombatData } from "@/lib/fight-mode/sheet-combat-extractor";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useTurnTimer } from "@/lib/fight-mode/turn-timer";
+import { playDeepBellSound } from "@/lib/fight-mode/bell";
 import { CombatCommandBar } from "@/components/gm/screen-tactical/combat-command-bar";
 
 function isDeadMonster(e: InitiativeEntry | undefined | null): boolean {
@@ -566,6 +567,19 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     },
     [turnTimer]
   );
+
+  // 2 Rintocchi di campana (Do2) al termine del timer del GM screen
+  const prevTurnSecondsRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!viewActive) return;
+    const current = turnElapsedSeconds;
+    const prev = prevTurnSecondsRef.current;
+    prevTurnSecondsRef.current = current;
+
+    if (prev !== null && prev > 0 && current === 0 && isTurnTimerRunning) {
+      playDeepBellSound();
+    }
+  }, [viewActive, turnElapsedSeconds, isTurnTimerRunning]);
   const [editingCell, setEditingCell] = useState<{
     id: string;
     field: "name" | "hp" | "tempHp" | "initiative" | "armorClass";
