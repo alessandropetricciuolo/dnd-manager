@@ -512,6 +512,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               <Link href={`/campaigns/${campaign.id}/gm-only/scene-workspace`}>Scene tattiche V2</Link>
             </Button>
             <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
+              <Link href={`/campaigns/${campaign.id}/gm-only/wiki-geografica`}>Wiki geografica</Link>
+            </Button>
+            <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
               <Link href={`/campaigns/${campaign.id}/gm-only/concept-map`}>Mappa concettuale</Link>
             </Button>
             <Button asChild size="sm" variant="ghost" className="h-9 text-barber-paper/85 hover:bg-barber-gold/10 hover:text-barber-gold">
