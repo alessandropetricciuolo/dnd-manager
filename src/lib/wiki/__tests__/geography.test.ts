@@ -7,6 +7,64 @@ const map = (id: string, parentId: string | null = null, wikiEntityId: string | 
 const edge = (id: string, sourceId: string, label: string, targetMapId: string | null, targetId: string | null = null): GeographyRelationship => ({ id, sourceId, label, targetMapId, targetId });
 const data = (entities: GeographyEntity[], maps: GeographyMap[], relationships: GeographyRelationship[]): WikiGeographyData => ({ campaignName: "Test", entities, maps, relationships });
 
+test("nested Wiki places and their workers reach the city with a readable route", () => {
+  const input = data([entity("worker"), { ...entity("shop"), type: "location" }, { ...entity("district"), type: "lore" }], [map("city", "continent"), map("continent")], [
+    edge("work", "worker", "Lavora presso", null, "shop"),
+    edge("shop", "shop", "Si trova in", null, "district"),
+    edge("district", "district", "Si trova in", "city"),
+  ]);
+  const index = buildGeographyIndex(input);
+  assert.deepEqual(getGeographyContext(input, index, "city").local.find(e => e.id === "worker")?.labels, ["Lavora presso · tramite shop → district"]);
+  assert.equal(getGeographyContext(input, index, "continent").local.length, 3);
+  assert.deepEqual(getUnplacedGeography(input, index), []);
+  assert.equal(getGeographyNeighbors(input, index, { kind: "map", id: "city" }).some(n => n.entry.id === "worker"), false);
+});
+
+test("membership, proximity and another person's residence never propagate location", () => {
+  const input = data([entity("member"), entity("owner"), { ...entity("guild"), type: "lore" }, { ...entity("shop"), type: "location" }], [map("city")], [
+    edge("membership", "member", "Membro", null, "guild"),
+    edge("activity", "guild", "Opera a", "city"),
+    edge("legacy", "shop", "Lavora qui", null, "owner"),
+    edge("home", "owner", "Vive a", "city"),
+    edge("near", "member", "Vicino a", "city"),
+  ]);
+  const index = buildGeographyIndex(input);
+  assert.deepEqual(getGeographyContext(input, index, "city").local.map(e => e.id), ["guild", "owner"]);
+  assert.deepEqual(getUnplacedGeography(input, index).map(e => e.id), ["member", "shop"]);
+});
+
+test("containment chains terminate safely and invisible intermediate places do not leak", () => {
+  const input = data([entity("worker"), { ...entity("a"), type: "location" }, { ...entity("b"), type: "location" }], [map("city")], [
+    edge("work", "worker", "Lavora presso", null, "a"), edge("a", "a", "Contiene", null, "b"),
+    edge("b", "b", "Contiene", null, "a"), edge("hidden", "a", "Si trova in", null, "secret"),
+  ]);
+  const index = buildGeographyIndex(input);
+  assert.deepEqual(getGeographyContext(input, index, "city").local, []);
+  assert.equal(getUnplacedGeography(input, index).length, 3);
+});
+
+test("house-family residence and inverse staff roles retain their geographic meaning", () => {
+  const input = data([entity("child"), entity("cook"), { ...entity("house"), type: "location" }], [map("city")], [
+    edge("home", "child", "Vive nella casa famiglia", null, "house"),
+    edge("staff", "house", "Capocuoca", null, "cook"),
+    edge("place", "house", "Si trova in", "city"),
+  ]);
+  const index = buildGeographyIndex(input);
+  assert.deepEqual(getGeographyContext(input, index, "city").local.map(e => e.id), ["child", "cook", "house"]);
+  const [link] = getGeographyLinks(input, index, { kind: "wiki", id: "cook" });
+  assert.equal(link.source.id, "house");
+  assert.equal(link.target.id, "cook");
+});
+
+test("superseded entries remain distinct and carry their editorial status", () => {
+  const input = data([{ ...entity("old"), status: "deprecated" }, { ...entity("current"), status: "canonical" }], [map("city")], [
+    edge("old", "old", "Opera a", "city"), edge("current", "current", "Opera a", "city"),
+  ]);
+  const local = getGeographyContext(input, buildGeographyIndex(input), "city").local;
+  assert.equal(local.length, 2);
+  assert.equal(local.find(e => e.id === "old")?.status, "deprecated");
+});
+
 test("mentions, origin and historical events do not become a current location", () => {
   for (const label of ["Menzionato nel testo", "Continente di origine", "Luogo di nascita", "Luogo del risveglio di Aurelian", "collegato", "Appartiene alla gilda"]) assert.equal(isGeographicRelationship(label), false, label);
   const input = data([entity("npc")], [map("city")], [edge("r", "npc", "Menzionato nel testo", "city")]);

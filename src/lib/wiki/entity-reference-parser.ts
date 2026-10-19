@@ -12,6 +12,11 @@ export type ParsedEntityReference = {
 
 const AUTO_REFERENCE_LABEL = "Menzionato nel testo";
 
+function hasCapitalInitial(text: string): boolean {
+  const first = text.trim().charAt(0);
+  return first !== first.toLowerCase() && first === first.toUpperCase();
+}
+
 /** Normalizza per confronto nomi (case/accents insensitive). */
 export function normalizeEntityNameKey(name: string): string {
   return name
@@ -138,7 +143,12 @@ export function extractEntityReferencesFromText(
   for (const entry of sortedByName) {
     const escaped = entry.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const nameRe = new RegExp(`(?<![\\w/\\[])${escaped}(?![\\w\\]])`, "gi");
-    if (nameRe.test(text)) {
+    // A one-word proper name must retain its capital initial in plain prose.
+    // Otherwise “aria e acqua” links to the NPC Aria. Explicit links above
+    // remain case-insensitive, including deliberately lower-case mentions.
+    const matches = [...text.matchAll(nameRe)];
+    const singleProperName = !/\s/.test(entry.name.trim()) && hasCapitalInitial(entry.name);
+    if (matches.some(match => !singleProperName || hasCapitalInitial(match[0]))) {
       add({
         targetType: entry.kind === "map" ? "map" : "wiki",
         targetId: entry.id,

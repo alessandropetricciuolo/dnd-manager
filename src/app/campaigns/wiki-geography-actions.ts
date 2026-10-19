@@ -35,7 +35,7 @@ export async function getWikiGeographyData(campaignId: string): Promise<{ succes
     const { supabase, isAdmin, campaign } = await authorize(campaignId);
     const [entities, maps, relationships] = await Promise.all([
       allRows((from, to) => {
-        let query = supabase.from("wiki_entities").select("id, name, type, image_url, telegram_fallback_id, admin_only")
+        let query = supabase.from("wiki_entities").select("id, name, type, image_url, telegram_fallback_id, admin_only, mcp_status")
           .eq("campaign_id", campaignId).eq("is_campaign_document", false).is("archived_at", null).order("id").range(from, to);
         if (!isAdmin) query = query.eq("admin_only", false);
         return query;
@@ -53,7 +53,7 @@ export async function getWikiGeographyData(campaignId: string): Promise<{ succes
     const mapIds = new Set(maps.map(map => map.id));
     return { success: true, data: {
       campaignName: campaign.name,
-      entities: entities.map(entity => ({ id: entity.id, name: entity.name, type: entity.type, imageUrl: entity.image_url, telegramFallbackId: entity.telegram_fallback_id, adminOnly: Boolean(entity.admin_only) })),
+      entities: entities.map(entity => ({ id: entity.id, name: entity.name, type: entity.type, imageUrl: entity.image_url, telegramFallbackId: entity.telegram_fallback_id, adminOnly: Boolean(entity.admin_only), status: entity.mcp_status ?? undefined })),
       maps: maps.map(map => ({ id: map.id, name: map.name, mapType: map.map_type, parentId: map.parent_map_id, wikiEntityId: entityIds.has(map.wiki_entity_id) ? map.wiki_entity_id : null, imageUrl: map.image_url, adminOnly: Boolean(map.admin_only) })),
       relationships: relationships.filter(relationship => entityIds.has(relationship.source_id) && (relationship.target_id ? entityIds.has(relationship.target_id) : relationship.target_map_id ? mapIds.has(relationship.target_map_id) : false))
         .map(relationship => ({ id: relationship.id, sourceId: relationship.source_id, targetId: relationship.target_id, targetMapId: relationship.target_map_id, label: relationship.label ?? "" })),

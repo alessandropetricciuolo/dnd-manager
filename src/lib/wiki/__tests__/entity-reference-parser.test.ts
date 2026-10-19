@@ -11,6 +11,16 @@ const catalog = [
   { id: "m1", name: "Mappa del Dungeon", kind: "map" as const },
 ];
 
+test("common lower-case words do not become one-word proper names", () => {
+  const names = [{ id: "aria", name: "Aria", kind: "wiki" as const }];
+  for (const text of ["l’aria si riempie", "Genasi dell’aria", "un’aria riservata", "respirare aria e acqua"]) {
+    assert.deepEqual(extractEntityReferencesFromText(text, names), []);
+  }
+  for (const text of ["Aria accompagna i fondatori", "[[aria]]", "@aria"]) {
+    assert.equal(extractEntityReferencesFromText(text, names)[0]?.targetId, "aria");
+  }
+});
+
 test("wikilink [[Nome]]", () => {
   const refs = extractEntityReferencesFromText("Il guerriero [[Tharion]] vive qui.", catalog, "x");
   assert.equal(refs.length, 1);
