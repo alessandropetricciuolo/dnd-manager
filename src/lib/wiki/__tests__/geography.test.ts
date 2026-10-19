@@ -7,6 +7,22 @@ const map = (id: string, parentId: string | null = null, wikiEntityId: string | 
 const edge = (id: string, sourceId: string, label: string, targetMapId: string | null, targetId: string | null = null): GeographyRelationship => ({ id, sourceId, label, targetMapId, targetId });
 const data = (entities: GeographyEntity[], maps: GeographyMap[], relationships: GeographyRelationship[]): WikiGeographyData => ({ campaignName: "Test", entities, maps, relationships });
 
+test("venue staff roles locate workers while ownership and temporary roles stay separate", () => {
+  const input = data([entity("Lidia"), entity("Marta"), entity("owner"), entity("visitor"), { ...entity("venue"), type: "location" }], [map("city")], [
+    edge("manager", "Lidia", "Responsabile di sala", null, "venue"),
+    edge("innkeeper", "Marta", "Proprietaria e locandiera", null, "venue"),
+    edge("property", "owner", "Proprietaria", null, "venue"),
+    edge("temporary", "visitor", "Responsabile di sala durante la cena", null, "venue"),
+    edge("place", "venue", "Si trova in", "city"),
+  ]);
+  const index = buildGeographyIndex(input);
+  const local = getGeographyContext(input, index, "city").local;
+  assert.deepEqual(local.map(e => e.id), ["Lidia", "Marta", "venue"]);
+  assert.deepEqual(local.find(e => e.id === "Lidia")?.labels, ["Responsabile di sala · tramite venue"]);
+  assert.deepEqual(local.find(e => e.id === "Marta")?.labels, ["Proprietaria e locandiera · tramite venue"]);
+  assert.equal(getGeographyNeighbors(input, index, { kind: "map", id: "city" }).some(n => n.entry.id === "Lidia"), false);
+});
+
 test("nested Wiki places and their workers reach the city with a readable route", () => {
   const input = data([entity("worker"), { ...entity("shop"), type: "location" }, { ...entity("district"), type: "lore" }], [map("city", "continent"), map("continent")], [
     edge("work", "worker", "Lavora presso", null, "shop"),

@@ -60,13 +60,14 @@ const LOCATION_LABELS = new Set([
   "risiede presso", "vive nella casa famiglia", "opera nel catino",
   "sede operativa al civico 30", "ufficio distaccato", "mercato cittadino",
   "cameriera", "cameriere", "capocuoca", "capocuoco", "locandiere", "dirige la locanda",
+  "responsabile di sala", "proprietaria e locandiera",
 ]);
 const IDENTITY_LABELS = new Set([
   "lore", "mappa della bottega", "mappa cittadina esistente", "mappa cittadina",
   "mappa della citta", "mappa del luogo", "entita cittadina", "interno della banca",
 ]);
 const CONTAINMENT_LABELS = new Set(["contiene", "comprende", "ospita", "distretto cittadino", "distretto portuale"]);
-const STAFF_LABELS = new Set(["cameriera", "cameriere", "capocuoca", "capocuoco", "locandiere", "dirige la locanda"]);
+const STAFF_LABELS = new Set(["cameriera", "cameriere", "capocuoca", "capocuoco", "locandiere", "dirige la locanda", "responsabile di sala", "proprietaria e locandiera"]);
 
 export function isGeographicRelationship(label: string): boolean {
   return LOCATION_LABELS.has(normalizeGeographyLabel(label));
