@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, ChevronRight, Globe, ImageIcon, Loader2, LockKeyhole, MapPin, MonitorPlay, RefreshCw, Search, UserRound } from "lucide-react";
 import { getWikiGeographyData, getWikiGeographyDetail, type WikiGeographyDetail } from "@/app/campaigns/wiki-geography-actions";
-import { buildGeographyIndex, geographyKey, getGeographyContext, getGeographyEntry, getGeographyLinks, getGeographyPath, getUnplacedGeography, type GeographyEntry, type GeographyIndex, type GeographyMap, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
+import { buildGeographyIndex, geographyKey, getGeographyContext, getGeographyEntry, getGeographyLinks, getGeographyPath, getGeographyWikiIds, getUnplacedGeography, type GeographyEntry, type GeographyIndex, type GeographyMap, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
 import { getWikiImages } from "@/lib/wiki/images";
 import { DualSourceImage } from "@/components/dual-source-image";
 import { WikiGeographyRelations } from "./wiki-geography-relations";
@@ -126,6 +126,7 @@ function Dossier({ campaignId, data, index, selected, revision, onSelect }: { ca
   if (!entry) return <p className={styles.empty}>Questa voce non è più disponibile. Seleziona un’altra voce.</p>;
   const current = detail?.key === key ? detail : null;
   const wikiId = selected.kind === "wiki" ? selected.id : pairedWikiId;
+  const otherWikiIds = wikiId ? getGeographyWikiIds(index, { kind: "wiki", id: wikiId }).filter(id => id !== wikiId) : [];
   const mapViewUrl = `/campaigns/${campaignId}/maps/${selected.id}/view`;
   const wikiViewUrl = (imageId: string) => `/campaigns/${campaignId}/gm-only/regia-immagini/proiezione?items=${encodeURIComponent(imageId)}`;
   const images = [
@@ -148,6 +149,7 @@ function Dossier({ campaignId, data, index, selected, revision, onSelect }: { ca
     <p className={styles.eyebrow}>Voce selezionata</p>
     <div className={styles.identity}>{entry.imageUrl || entry.telegramFallbackId ? <div className={styles.portrait}><DualSourceImage driveUrl={entry.imageUrl} telegramFallbackId={entry.telegramFallbackId} alt="" sizes="55px" width={55} height={64} /></div> : null}<div><h3>{entry.name}</h3><span className={styles.meta}>{selected.kind === "map" ? "Atlante" : "Wiki"}{entry.adminOnly ? " · Solo Admin" : ""}{entry.status === "deprecated" ? " · Voce superata" : ""}</span></div></div>
     <Link href={originalUrl} target="_blank" rel="noopener noreferrer" className={styles.textButton}>Apri la voce originale ↗</Link>
+    {otherWikiIds.map(id => <button key={id} type="button" className={styles.textButton} onClick={() => onSelect({ kind: "wiki", id })}>Altra scheda dello stesso luogo: {index.entities.get(id)!.name}</button>)}
     {!current ? <p className={styles.empty} role="status"><Loader2 className="mr-2 inline h-4 w-4 animate-spin" />Caricamento del dossier…</p> : current.error ? <p className={styles.empty} role="alert">{current.error}</p> : <>
       {images.length ? <><div className={styles.gallery}><button type="button" onClick={() => setImageOpen(true)}><ImageIcon className="mr-1 inline h-4 w-4" aria-hidden="true" />Apri immagine</button><button type="button" onClick={() => void project()}><MonitorPlay className="mr-1 inline h-4 w-4" aria-hidden="true" />Proietta</button></div>{images.length > 1 ? <div className={styles.gallery} aria-label="Scegli immagine">{images.map((item, position) => <button key={item.id} type="button" aria-pressed={position === imageIndex} aria-label={`Immagine ${position + 1}: ${item.title}`} onClick={() => setImageIndex(position)}>{position + 1}</button>)}</div> : null}</> : null}
       {projectionError ? <p role="alert" className={styles.empty}>{projectionError}</p> : null}

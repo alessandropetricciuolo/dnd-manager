@@ -7,6 +7,49 @@ const map = (id: string, parentId: string | null = null, wikiEntityId: string | 
 const edge = (id: string, sourceId: string, label: string, targetMapId: string | null, targetId: string | null = null): GeographyRelationship => ({ id, sourceId, label, targetMapId, targetId });
 const data = (entities: GeographyEntity[], maps: GeographyMap[], relationships: GeographyRelationship[]): WikiGeographyData => ({ campaignName: "Test", entities, maps, relationships });
 
+test("explicit aliases share placement and direct links without duplicating a place", () => {
+  const input = data([{ ...entity("Catino"), type: "location" }, { ...entity("Sotto"), type: "lore" }, entity("Goro"), entity("Pippo")], [map("Portico")], [
+    edge("alias", "Catino", "Stesso luogo", null, "Sotto"),
+    edge("reverse-alias", "Sotto", "Stesso luogo", null, "Catino"),
+    edge("place", "Sotto", "Si trova in", "Portico"),
+    edge("goro", "Goro", "Opera a", null, "Catino"),
+    edge("pippo", "Pippo", "Opera a", null, "Sotto"),
+  ]);
+  const index = buildGeographyIndex(input);
+  assert.equal(geographyIdentityKey(index, { kind: "wiki", id: "Catino" }), geographyIdentityKey(index, { kind: "wiki", id: "Sotto" }));
+  const local = getGeographyContext(input, index, "Portico").local;
+  assert.deepEqual(local.map(e => e.id), ["Catino", "Goro", "Pippo"]);
+  assert.equal(local[0].name, "Catino / Sotto");
+  assert.deepEqual(getUnplacedGeography(input, index), []);
+  const links = getGeographyLinks(input, index, { kind: "wiki", id: "Catino" });
+  assert.deepEqual(new Set(links.map(l => l.relationshipId)), new Set(["place", "goro", "pippo"]));
+  const [neighbor] = getGeographyNeighbors(input, index, { kind: "wiki", id: "Pippo" });
+  assert.equal(neighbor.entry.id, "Catino");
+});
+
+test("alias identity can anchor through an Atlas map, but conflicting maps stay ambiguous", () => {
+  const entities = [{ ...entity("a"), type: "location" }, { ...entity("b"), type: "lore" }];
+  const input = data(entities, [map("map", null, "b")], [edge("alias", "a", "Stesso luogo", null, "b")]);
+  const index = buildGeographyIndex(input);
+  assert.equal(index.wikiToMap.get("a"), "map");
+  assert.equal(index.wikiToMap.get("b"), "map");
+  assert.equal(index.mapToWiki.get("map"), "a");
+  const conflicting = data(entities, [map("one", null, "a"), map("two", null, "b")], input.relationships);
+  assert.equal(buildGeographyIndex(conflicting).wikiToMap.size, 0);
+});
+
+test("aliases never merge people, missing endpoints or mere containment", () => {
+  for (const label of ["Stesso luogo", "Contiene"]) {
+    const input = data([{ ...entity("place"), type: "location" }, entity("person")], [], [edge("invalid", "place", label, null, "person"), edge("hidden", "place", "Stesso luogo", null, "secret")]);
+    const index = buildGeographyIndex(input);
+    assert.notEqual(geographyIdentityKey(index, { kind: "wiki", id: "place" }), geographyIdentityKey(index, { kind: "wiki", id: "person" }));
+    assert.equal(index.entities.has("secret"), false);
+    assert.equal(index.placeWikiIds.get("place")?.length, 1);
+  }
+  const input = data([{ ...entity("a"), type: "location" }, { ...entity("b"), type: "location" }], [], [edge("contains", "a", "Contiene", null, "b")]);
+  assert.equal(buildGeographyIndex(input).placeWikiIds.size, 2);
+});
+
 test("venue staff roles locate workers while ownership and temporary roles stay separate", () => {
   const input = data([entity("Lidia"), entity("Marta"), entity("owner"), entity("visitor"), { ...entity("venue"), type: "location" }], [map("city")], [
     edge("manager", "Lidia", "Responsabile di sala", null, "venue"),

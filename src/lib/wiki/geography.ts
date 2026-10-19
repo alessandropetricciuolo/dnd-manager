@@ -69,6 +69,10 @@ const IDENTITY_LABELS = new Set([
 const CONTAINMENT_LABELS = new Set(["contiene", "comprende", "ospita", "distretto cittadino", "distretto portuale"]);
 const STAFF_LABELS = new Set(["cameriera", "cameriere", "capocuoca", "capocuoco", "locandiere", "dirige la locanda", "responsabile di sala", "proprietaria e locandiera"]);
 
+function isPlaceAlias(label: string): boolean {
+  return normalizeGeographyLabel(label) === "stesso luogo";
+}
+
 export function isGeographicRelationship(label: string): boolean {
   return LOCATION_LABELS.has(normalizeGeographyLabel(label));
 }
@@ -84,35 +88,66 @@ export function geographyKey(selection: GeographySelection): string {
 export function buildGeographyIndex(data: WikiGeographyData) {
   const maps = new Map(data.maps.map(map => [map.id, map]));
   const entities = new Map(data.entities.map(entity => [entity.id, entity]));
+  const parents = new Map(data.entities.map(entity => [entity.id, entity.id]));
+  const root = (id: string): string => {
+    let current = id;
+    while (parents.get(current) && parents.get(current) !== current) current = parents.get(current)!;
+    return current;
+  };
+  for (const relationship of data.relationships) {
+    if (!relationship.targetId || !isPlaceAlias(relationship.label)) continue;
+    const source = entities.get(relationship.sourceId), target = entities.get(relationship.targetId);
+    // An explicit place alias never merges people, missing or hidden endpoints.
+    if (!source || !target || !["location", "lore"].includes(source.type) || !["location", "lore"].includes(target.type)) continue;
+    const a = root(source.id), b = root(target.id);
+    if (a !== b) parents.set(b, a);
+  }
+  const groups = new Map<string, string[]>();
+  for (const entity of data.entities) groups.set(root(entity.id), [...(groups.get(root(entity.id)) ?? []), entity.id]);
+  const wikiToPlace = new Map<string, string>();
+  const placeWikiIds = new Map<string, string[]>();
+  for (const ids of groups.values()) {
+    ids.sort((a, b) => Number(entities.get(b)!.type === "location") - Number(entities.get(a)!.type === "location") || a.localeCompare(b));
+    const representative = ids[0];
+    placeWikiIds.set(representative, ids);
+    for (const id of ids) wikiToPlace.set(id, representative);
+  }
   const candidates = new Map<string, Set<string>>();
+  const addCandidate = (wikiId: string, mapId: string) => {
+    const placeId = wikiToPlace.get(wikiId)!;
+    const set = candidates.get(placeId) ?? new Set<string>();
+    set.add(mapId);
+    candidates.set(placeId, set);
+  };
   for (const map of data.maps) {
     if (map.wikiEntityId && entities.has(map.wikiEntityId)) {
-      const set = candidates.get(map.wikiEntityId) ?? new Set<string>();
-      set.add(map.id);
-      candidates.set(map.wikiEntityId, set);
+      addCandidate(map.wikiEntityId, map.id);
     }
   }
   for (const relationship of data.relationships) {
     if (!relationship.targetMapId || !maps.has(relationship.targetMapId) || !entities.has(relationship.sourceId) || !isGeographyIdentity(relationship.label)) continue;
-    const set = candidates.get(relationship.sourceId) ?? new Set<string>();
-    set.add(relationship.targetMapId);
-    candidates.set(relationship.sourceId, set);
+    addCandidate(relationship.sourceId, relationship.targetMapId);
   }
   const wikiToMap = new Map<string, string>();
   for (const [wikiId, ids] of candidates) {
     // Do not merge identities when the data points to several different maps.
-    if (ids.size === 1) wikiToMap.set(wikiId, [...ids][0]);
+    if (ids.size === 1) for (const id of placeWikiIds.get(wikiId)!) wikiToMap.set(id, [...ids][0]);
   }
   const mapToWiki = new Map<string, string>();
   for (const map of data.maps) {
-    const ids = [...wikiToMap].filter(([, mapId]) => mapId === map.id).map(([wikiId]) => wikiId);
-    if (map.wikiEntityId && wikiToMap.get(map.wikiEntityId) === map.id) mapToWiki.set(map.id, map.wikiEntityId);
+    const ids = [...new Set([...wikiToMap].filter(([, mapId]) => mapId === map.id).map(([wikiId]) => wikiToPlace.get(wikiId)!))];
+    if (map.wikiEntityId && wikiToMap.get(map.wikiEntityId) === map.id) mapToWiki.set(map.id, wikiToPlace.get(map.wikiEntityId)!);
     else if (ids.length === 1) mapToWiki.set(map.id, ids[0]);
   }
-  return { maps, entities, wikiToMap, mapToWiki };
+  return { maps, entities, wikiToMap, mapToWiki, wikiToPlace, placeWikiIds };
 }
 
 export type GeographyIndex = ReturnType<typeof buildGeographyIndex>;
+
+export function getGeographyWikiIds(index: GeographyIndex, selection: GeographySelection): string[] {
+  if (selection.kind === "wiki") return index.placeWikiIds.get(index.wikiToPlace.get(selection.id) ?? selection.id) ?? [];
+  return [...index.wikiToMap].filter(([, mapId]) => mapId === selection.id).map(([wikiId]) => wikiId);
+}
 
 export function getGeographyPath(index: GeographyIndex, id: string): GeographyMap[] {
   const path: GeographyMap[] = [];
@@ -130,7 +165,8 @@ export function getGeographyEntry(index: GeographyIndex, selection: GeographySel
   if (selection.kind === "wiki") {
     const entity = index.entities.get(selection.id);
     if (!entity) return null;
-    return { ...selection, ...entity, labels: [] };
+    const aliases = getGeographyWikiIds(index, selection).map(id => index.entities.get(id)!);
+    return { ...selection, ...entity, name: aliases.map(alias => alias.name).join(" / ") || entity.name, adminOnly: aliases.some(alias => alias.adminOnly), labels: [] };
   }
   const map = index.maps.get(selection.id);
   if (!map) return null;
@@ -148,7 +184,12 @@ function targetMap(index: GeographyIndex, relationship: GeographyRelationship): 
 function geographicPlacements(data: WikiGeographyData, index: GeographyIndex) {
   type Step = { target: GeographySelection; label: string; structural: boolean };
   const outgoing = new Map<string, Step[]>();
-  const add = (id: string, step: Step) => outgoing.set(id, [...(outgoing.get(id) ?? []), step]);
+  const add = (id: string, step: Step) => {
+    const source = index.wikiToPlace.get(id) ?? id;
+    const target = step.target.kind === 'wiki' ? { kind: 'wiki' as const, id: index.wikiToPlace.get(step.target.id) ?? step.target.id } : step.target;
+    if (target.kind === 'wiki' && target.id === source) return;
+    outgoing.set(source, [...(outgoing.get(source) ?? []), { ...step, target }]);
+  };
   for (const r of data.relationships) {
     if (!index.entities.has(r.sourceId)) continue;
     const label = normalizeGeographyLabel(r.label);
@@ -169,6 +210,7 @@ function geographicPlacements(data: WikiGeographyData, index: GeographyIndex) {
   }
   const result = new Map<string, Map<string, string[]>>();
   for (const entity of data.entities) {
+    if (index.wikiToPlace.get(entity.id) !== entity.id) continue;
     const placements = new Map<string, string[]>();
     const walk = (selection: GeographySelection, labels: string[], via: string[], seen: Set<string>) => {
       const key = geographyKey(selection);
@@ -207,8 +249,8 @@ export function getGeographyContext(data: WikiGeographyData, index: GeographyInd
     if (labels) local.push({ ...getGeographyEntry(index, { kind: 'wiki', id })!, labels });
   }
   for (const r of data.relationships) {
-    if (targetMap(index, r) !== mapId || isGeographyIdentity(r.label) || isGeographicRelationship(r.label)) continue;
-    const entry = getGeographyEntry(index, { kind: 'wiki', id: r.sourceId });
+    if (targetMap(index, r) !== mapId || isGeographyIdentity(r.label) || isPlaceAlias(r.label) || isGeographicRelationship(r.label)) continue;
+    const entry = getGeographyEntry(index, { kind: 'wiki', id: index.wikiToPlace.get(r.sourceId) ?? r.sourceId });
     if (!entry) continue;
     const existing = references.get(entry.id);
     references.set(entry.id, { ...entry, labels: [...new Set([...(existing?.labels ?? []), r.label])] });
@@ -223,7 +265,7 @@ export function getGeographyContext(data: WikiGeographyData, index: GeographyInd
 
 export function getUnplacedGeography(data: WikiGeographyData, index: GeographyIndex): GeographyEntry[] {
   const placements = geographicPlacements(data, index);
-  return data.entities.filter(entity => !placements.get(entity.id)?.size && !index.wikiToMap.has(entity.id))
+  return data.entities.filter(entity => index.wikiToPlace.get(entity.id) === entity.id && !placements.get(entity.id)?.size && !index.wikiToMap.has(entity.id))
     .map(entity => getGeographyEntry(index, { kind: 'wiki', id: entity.id })!)
     .sort((a, b) => a.name.localeCompare(b.name, 'it'));
 }
@@ -238,7 +280,7 @@ export type GeographyLink = {
 /** The same place may have a Wiki entry and an Atlas map, but is one visual node. */
 export function geographyIdentityKey(index: GeographyIndex, selection: GeographySelection): string {
   const mapId = selection.kind === "wiki" ? index.wikiToMap.get(selection.id) : undefined;
-  return mapId ? `map:${mapId}` : geographyKey(selection);
+  return mapId ? `map:${mapId}` : selection.kind === "wiki" ? `wiki:${index.wikiToPlace.get(selection.id) ?? selection.id}` : geographyKey(selection);
 }
 
 export type GeographyNeighbor = {
@@ -256,7 +298,7 @@ export function getGeographyNeighbors(data: WikiGeographyData, index: GeographyI
     const key = geographyIdentityKey(index, other);
     if (key === rootKey) continue;
     const mapId = other.kind === "wiki" ? index.wikiToMap.get(other.id) : undefined;
-    const entry = mapId ? getGeographyEntry(index, { kind: "map", id: mapId })! : other;
+    const entry = mapId ? getGeographyEntry(index, { kind: "map", id: mapId })! : other.kind === "wiki" ? getGeographyEntry(index, { kind: "wiki", id: index.wikiToPlace.get(other.id) ?? other.id })! : other;
     const neighbor = neighbors.get(key) ?? { entry, relations: [] };
     neighbor.relations.push({ id: link.relationshipId, label: link.label, direction, sourceName: link.source.name, targetName: link.target.name });
     neighbors.set(key, neighbor);
@@ -265,7 +307,7 @@ export function getGeographyNeighbors(data: WikiGeographyData, index: GeographyI
 }
 
 export function getGeographyLinks(data: WikiGeographyData, index: GeographyIndex, selection: GeographySelection): GeographyLink[] {
-  const wikiIds = new Set<string>(selection.kind === "wiki" ? [selection.id] : []);
+  const wikiIds = new Set<string>(getGeographyWikiIds(index, selection));
   const mapIds = new Set<string>(selection.kind === "map" ? [selection.id] : []);
   if (selection.kind === "wiki") {
     const mapId = index.wikiToMap.get(selection.id);
@@ -280,7 +322,7 @@ export function getGeographyLinks(data: WikiGeographyData, index: GeographyIndex
     const target = relationship.targetMapId ? getGeographyEntry(index, { kind: "map", id: relationship.targetMapId }) : relationship.targetId ? getGeographyEntry(index, { kind: "wiki", id: relationship.targetId }) : null;
     if (!source || !target) return [];
     const sourceKey = geographyIdentityKey(index, source), targetKey = geographyIdentityKey(index, target);
-    if (sourceKey === targetKey && isGeographyIdentity(relationship.label)) return [];
+    if (sourceKey === targetKey && (isGeographyIdentity(relationship.label) || isPlaceAlias(relationship.label))) return [];
     const key = `${sourceKey}:${targetKey}:${normalizeGeographyLabel(relationship.label)}`;
     if (seen.has(key)) return [];
     seen.add(key);
