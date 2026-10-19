@@ -35,7 +35,7 @@ function NeighborBranch({ neighbor, ancestors, ...shared }: SharedProps & { neig
     </span>)}</div>
     <RelationNode entry={neighbor.entry} selected={shared.selected} onRead={shared.onRead} />
     {repeated ? <p className={styles.networkRepeated}>Già presente nel percorso</p> : neighbors.length ? continueFromHere ? <button type="button" className={styles.networkToggle} onClick={() => shared.onStartFrom(neighbor.entry)}><CornerDownRight className="h-3.5 w-3.5" aria-hidden="true" />Prosegui da questa voce</button> : <button type="button" className={styles.networkToggle} aria-expanded={expanded} aria-label={`${expanded ? "Chiudi" : "Espandi"} collegamenti di ${neighbor.entry.name}`} onClick={() => setExpanded(value => !value)}>
-      {expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}{expanded ? "Chiudi collegamenti" : `Collegamenti (${neighbors.length})`}
+      {expanded ? <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" /> : <ChevronRight className="h-3.5 w-3.5" aria-hidden="true" />}{expanded ? "Chiudi" : `Legami (${neighbors.length})`}
     </button> : null}
     {expanded && !repeated ? <NeighborList {...shared} neighbors={neighbors} ancestors={[...ancestors, key]} /> : null}
   </li>;
@@ -70,7 +70,7 @@ export function WikiGeographyCityGroups({ mapId, ...shared }: SharedProps & { ma
 
 function CityGroup({ entry, members, mapId, ...shared }: SharedProps & { entry: GeographyEntry; members: GeographyNeighbor[]; mapId: string }) {
   const [open, setOpen] = useState(false);
-  return <div className={styles.cityGroup}>
+  return <div className={cn(styles.cityGroup, open && styles.cityGroupOpen)}>
     <div className={styles.cityGroupHeader}>
       <button type="button" className={styles.cityGroupToggle} aria-expanded={open} aria-label={`${open ? "Chiudi" : "Espandi"} gruppo ${entry.name}`} onClick={() => setOpen(value => !value)}>
         {open ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}<span>{members.length}</span>
