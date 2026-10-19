@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ArrowDown, ArrowLeft, ArrowRight, BookOpen, ChevronRight, Globe, ImageIcon, Loader2, LockKeyhole, MapPin, MonitorPlay, RefreshCw, Search, UserRound } from "lucide-react";
 import { getWikiGeographyData, getWikiGeographyDetail, type WikiGeographyDetail } from "@/app/campaigns/wiki-geography-actions";
-import { buildGeographyIndex, geographyKey, getGeographyContext, getGeographyEntry, getGeographyLinks, getGeographyPath, getGeographyWikiIds, getUnplacedGeography, type GeographyEntry, type GeographyIndex, type GeographyMap, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
+import { buildGeographyIndex, geographyKey, getGeographyCityGroups, getGeographyContext, getGeographyEntry, getGeographyLinks, getGeographyPath, getGeographyWikiIds, getUnplacedGeography, type GeographyEntry, type GeographyIndex, type GeographyMap, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
 import { getWikiImages } from "@/lib/wiki/images";
 import { DualSourceImage } from "@/components/dual-source-image";
-import { WikiGeographyRelations } from "./wiki-geography-relations";
+import { WikiGeographyCityGroups, WikiGeographyRelations } from "./wiki-geography-relations";
 import { EntityContent } from "@/components/wiki/entity-content";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 import { openProjectionWindow } from "@/lib/browser/projection-window";
@@ -176,6 +176,7 @@ export function WikiGeography({ campaignId, initialData, initialError }: { campa
   const inspector = useRef<HTMLElement>(null);
   const path = placeId ? getGeographyPath(index, placeId) : [];
   const context = useMemo(() => placeId ? getGeographyContext(data, index, placeId) : { children: [], local: [], references: [] }, [data, index, placeId]);
+  const cityGroups = useMemo(() => placeId && index.maps.get(placeId)?.mapType === "city" ? getGeographyCityGroups(data, index, placeId) : null, [data, index, placeId]);
   const unplaced = useMemo(() => getUnplacedGeography(data, index), [data, index]);
   const otherMaps = data.maps.filter(map => {
     if (map.mapType === "world") return false;
@@ -225,7 +226,11 @@ export function WikiGeography({ campaignId, initialData, initialError }: { campa
     <div className={styles.workspace}><main className={styles.content}>
       <div className={styles.contextHeading}><div><nav className={styles.breadcrumb} aria-label="Percorso del luogo">{path.map((map, i) => <span key={map.id}>{i ? <ChevronRight className="mr-1 inline h-3 w-3" aria-hidden="true" /> : null}<button type="button" onClick={() => navigate({ kind: "map", id: map.id }, false)}>{map.name}</button></span>)}</nav><h2>{placeId ? index.maps.get(placeId)?.name : "Voci della campagna"}</h2></div>{history.length ? <button type="button" className={styles.textButton} onClick={back}>← Torna alla voce precedente</button> : null}</div>
       {networkRoot ? <WikiGeographyRelations key={`${geographyKey(networkRoot)}:${revision}`} root={networkRoot} data={data} index={index} selected={selected} onRead={readRelated} onStartFrom={selection => navigate(selection, false)} /> : null}
-      <div className={styles.groups}><EntryGroup key={`${placeId}:children`} title="Luoghi nell’Atlante" entries={context.children} selected={selected} onSelect={selection => navigate(selection, false)} /><EntryGroup key={`${placeId}:local`} title="Voci nel luogo" entries={context.local} selected={selected} onSelect={navigate} /></div>
+      {cityGroups && placeId ? <>
+        <WikiGeographyCityGroups key={`${placeId}:${revision}:groups`} mapId={placeId} data={data} index={index} selected={selected} onRead={readRelated} onStartFrom={selection => navigate(selection, false)} />
+        <EntryGroup key={`${placeId}:${revision}:remaining`} title="Altre voci della città" entries={cityGroups.remaining} selected={selected} onSelect={readRelated} />
+        <details key={`${placeId}:all`} className={styles.references}><summary>Tutte le voci e i luoghi della città</summary><div className={styles.groups}><EntryGroup key={`${placeId}:children`} title="Luoghi nell’Atlante" entries={context.children} selected={selected} onSelect={selection => navigate(selection, false)} /><EntryGroup key={`${placeId}:local`} title="Voci nel luogo" entries={context.local} selected={selected} onSelect={navigate} /></div></details>
+      </> : <div className={styles.groups}><EntryGroup key={`${placeId}:children`} title="Luoghi nell’Atlante" entries={context.children} selected={selected} onSelect={selection => navigate(selection, false)} /><EntryGroup key={`${placeId}:local`} title="Voci nel luogo" entries={context.local} selected={selected} onSelect={navigate} /></div>}
       <details key={`${placeId}:references`} className={styles.references}><summary>Citazioni e altri legami ({context.references.length})</summary><p className={styles.empty}>Questi collegamenti non stabiliscono una presenza nel luogo.</p><EntryGroup key={`${placeId}:reference-list`} title="Voci collegate" entries={context.references} selected={selected} onSelect={navigate} /></details>
     </main><aside ref={inspector} className={styles.inspector} aria-label="Dossier della voce" aria-live="polite">{selected ? <Dossier campaignId={campaignId} data={data} index={index} selected={selected} revision={revision} onSelect={readRelated} /> : <p className={styles.empty}>Seleziona una voce per leggere il dossier.</p>}</aside></div>
     <details className={styles.other}><summary>Altri luoghi e voci senza collocazione geografica ({otherMaps.length + unplaced.length})</summary><div className={styles.otherSections}><EntryGroup title="Luoghi senza padre accessibile" entries={otherMaps.map(map => getGeographyEntry(index, { kind: "map", id: map.id })!)} selected={selected} onSelect={selection => navigate(selection, false)} /><div><label className={styles.search}><Search className="h-4 w-4 shrink-0" aria-hidden="true" /><input type="search" aria-label="Cerca fra le voci senza collocazione" placeholder="Cerca fra queste voci…" value={unplacedQuery} onChange={event => setUnplacedQuery(event.target.value)} /></label><EntryGroup key={unplacedQuery} title="Voci senza collocazione esplicita" entries={unplaced.filter(entry => entry.name.toLocaleLowerCase("it").includes(unplacedQuery.toLocaleLowerCase("it")))} selected={selected} onSelect={navigate} /></div></div></details>

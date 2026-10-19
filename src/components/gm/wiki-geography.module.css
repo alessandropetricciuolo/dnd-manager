@@ -104,3 +104,12 @@
 @media (max-width: 480px) { .heading, .content, .inspector { padding: 18px 14px; } .tree { padding: 0 14px 20px; } .branches, .cityNodes { grid-template-columns: repeat(2, minmax(0, 1fr)); } .groups, .referenceList { grid-template-columns: 1fr; } .toolbar { width: 100%; } .title { font-size: 24px; } .other { padding-inline: 14px; } }
 @media (pointer: coarse) { .textButton { min-height: 44px; } }
 @media (max-width: 480px) { .networkBranches { padding-left: 11px; margin-left: 7px; } .networkBranch::before { left: -12px; width: 8px; } .networkToggle { min-height: 44px; } }
+
+.cityGroups { margin: 16px 0; }
+.cityGroup { border-left: 1px solid var(--geo-line); margin: 0 0 8px 8px; padding-left: 12px; position: relative; }
+.cityGroup::before { content: ""; position: absolute; left: 0; top: 25px; width: 12px; border-top: 1px solid var(--geo-line); }
+.cityGroupHeader { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.cityGroupHeader > :last-child { flex: 1; min-width: 0; }
+.cityGroupToggle { display: flex; gap: 5px; align-items: center; padding: 10px 6px; color: var(--geo-accent); flex-shrink: 0; }
+.cityGroupToggle:focus-visible { outline: 2px solid var(--geo-accent); outline-offset: 2px; }
+.cityGroupMembers { margin-left: 14px; min-width: 0; }

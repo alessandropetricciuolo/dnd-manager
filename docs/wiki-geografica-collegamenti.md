@@ -82,3 +82,9 @@ Questo messaggio è una consegna preparata: non è stato inviato ad altri agenti
 - Componente React effettivo verificato in un’anteprima isolata con i dati acquisiti per il mockup e letture simulate: navigazione, ritorno, dossier e immagini. Nessun errore console; nessuno scorrimento orizzontale a 1440, 768 e 390 px.
 - Il percorso reale senza autenticazione reindirizza al login. Completata anche la verifica locale autenticata Admin sul caso Locanda → Dan → Patrizio/Ella: espansione del ramo, lettura di Patrizio nel dossier senza perdere il percorso e visualizzazione del ritorno circolare. Nessun errore console e nessuno scorrimento laterale a 390 px. Non è una prova browser con un account GM distinto, che rimane coperto dai test di autorizzazione lato server.
 - Nessuna migrazione o scrittura dei dati della campagna. Modifiche preesistenti al progetto mobile e altri file estranei preservati. La pubblicazione del codice è separata dalla revisione delle relazioni e non applica correzioni ai dati.
+
+## Rami sotto le città
+
+La vista cittadina raccoglie luoghi e organizzazioni con membri, fondatori, personale o abitanti esplicitamente collegati. I rami sono chiusi inizialmente e mostrano il numero di voci; il nome apre il dossier, la freccia apre il ramo. La stessa voce può apparire in più gruppi senza duplicare il record. Le persone già raccolte nei gruppi non compaiono anche fra le altre voci cittadine; la lista completa resta disponibile in «Tutte le voci e i luoghi della città».
+
+I gruppi sono una presentazione delle relazioni esistenti, non modificano la collocazione geografica. «Menzionato nel testo», rapporti storici, ostilità e apprendistati futuri non stabiliscono appartenenza attuale: restano accessibili attraverso tutti i legami della voce. Una mappa e una voce omonime continuano a essere distinte in assenza di un collegamento di identità esplicito.

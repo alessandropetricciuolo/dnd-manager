@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { buildGeographyIndex, geographyIdentityKey, getGeographyContext, getGeographyLinks, getGeographyNeighbors, getGeographyPath, getUnplacedGeography, isGeographicRelationship, type GeographyEntity, type GeographyMap, type GeographyRelationship, type WikiGeographyData } from "../geography";
+import { buildGeographyIndex, geographyIdentityKey, getGeographyCityGroups, getGeographyContext, getGeographyLinks, getGeographyNeighbors, getGeographyPath, getUnplacedGeography, isGeographicRelationship, type GeographyEntity, type GeographyMap, type GeographyRelationship, type WikiGeographyData } from "../geography";
 
 const entity = (id: string, name = id): GeographyEntity => ({ id, name, type: "npc", imageUrl: null, telegramFallbackId: null, adminOnly: false });
 const map = (id: string, parentId: string | null = null, wikiEntityId: string | null = null): GeographyMap => ({ id, name: id, parentId, wikiEntityId, mapType: "city", imageUrl: null, adminOnly: false });
@@ -242,4 +242,36 @@ test("neighbors omit inaccessible endpoints and do not mutate the stored graph",
   const before = JSON.stringify(input);
   assert.deepEqual(getGeographyNeighbors(input, buildGeographyIndex(input), { kind: "wiki", id: "visible" }), []);
   assert.equal(JSON.stringify(input), before);
+});
+
+test("city hubs group explicit members, preserve multiple memberships and leave mentions visible", () => {
+  const input = data([{ ...entity("guild"), type: "lore" }, { ...entity("home"), type: "location" }, entity("member"), entity("mention"), entity("future")], [map("city")], [
+    edge("g", "guild", "Sede cittadina", "city"), edge("h", "home", "Si trova in", "city"),
+    edge("m", "member", "Vive a", "city"), edge("n", "mention", "Vive a", "city"),
+    edge("join", "member", "Membro", null, "guild"), edge("live", "member", "Vive nella casa famiglia", null, "home"),
+    edge("mention", "mention", "Menzionato nel testo", null, "guild"),
+    edge("future", "future", "Svolgerà l’apprendistato presso", null, "guild"),
+    edge("hidden", "inaccessible", "Membro", null, "guild"),
+  ]);
+  const before = JSON.stringify(input);
+  const index = buildGeographyIndex(input);
+  const result = getGeographyCityGroups(input, index, "city");
+  assert.equal(result.groups.length, 2);
+  for (const group of result.groups) assert.deepEqual(group.members.map(member => member.entry.id), ["member"]);
+  assert.deepEqual(result.remaining.map(entry => entry.id), ["mention"]);
+  assert.ok(getGeographyContext(input, index, "city").local.some(entry => entry.id === "member"));
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("city venue groups contain objects and inverse staff roles with exact saved labels", () => {
+  const input = data([{ ...entity("venue"), type: "location" }, entity("worker"), { ...entity("object"), type: "item" }], [map("city")], [
+    edge("place", "venue", "Si trova in", "city"),
+    edge("staff", "venue", "Cameriera", null, "worker"),
+    edge("object", "object", "Si trova in", null, "venue"),
+  ]);
+  const { groups, remaining } = getGeographyCityGroups(input, buildGeographyIndex(input), "city");
+  assert.equal(groups.length, 1);
+  assert.deepEqual(new Set(groups[0].members.map(member => member.entry.id)), new Set(["worker", "object"]));
+  assert.equal(groups[0].members.find(member => member.entry.id === "worker")!.relations[0].direction, "out");
+  assert.equal(remaining.length, 0);
 });

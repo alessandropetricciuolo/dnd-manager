@@ -288,6 +288,44 @@ export type GeographyNeighbor = {
   relations: { id: string; label: string; direction: "out" | "in"; sourceName: string; targetName: string }[];
 };
 
+const GROUP_MEMBER_LABELS = new Set([
+  "membro", "membro dei", "membro di", "appartiene alla gilda", "fondatore", "cofondatore",
+  "fondatore e tutore", "lavora per", "vive nella casa famiglia", "risiede presso", "lavora presso",
+  "cameriera", "cameriere", "locandiere", "capocuoco", "capocuoca", "responsabile di sala",
+  "capo della banda", "luogotenente e capo delle zanne", "contabile e stratega economica",
+]);
+const GROUP_CONTAINS_LABELS = new Set(["ha come membro", "contiene", "comprende", "ospita", "proprietaria della spezieria", "referente dei moli"]);
+
+/** Presentation groups only: never infer membership from mentions or a shared city. */
+export function getGeographyCityGroups(data: WikiGeographyData, index: GeographyIndex, mapId: string) {
+  const context = getGeographyContext(data, index, mapId);
+  const candidates = new Map<string, GeographyEntry>();
+  for (const entry of [...context.children, ...context.local]) {
+    if (entry.kind === "wiki" && !["lore", "location"].includes(entry.type ?? "")) continue;
+    candidates.set(geographyIdentityKey(index, entry), entry);
+  }
+  const cityKey = geographyIdentityKey(index, { kind: "map", id: mapId });
+  const groups = [...candidates.values()].flatMap(entry => {
+    const members = getGeographyNeighbors(data, index, entry).flatMap(neighbor => {
+      if (geographyIdentityKey(index, neighbor.entry) === cityKey) return [];
+      const relations = neighbor.relations.filter(relation =>
+        (relation.direction === "in" && (GROUP_MEMBER_LABELS.has(normalizeGeographyLabel(relation.label)) || isGeographicRelationship(relation.label))) ||
+        (relation.direction === "out" && (GROUP_CONTAINS_LABELS.has(normalizeGeographyLabel(relation.label)) ||
+          (neighbor.entry.type === "npc" && STAFF_LABELS.has(normalizeGeographyLabel(relation.label))))));
+      return relations.length ? [{ ...neighbor, relations }] : [];
+    });
+    return members.length ? [{ entry, members }] : [];
+  });
+  // Hubs remain at city level even when they also belong to another hub.
+  const hubKeys = new Set(groups.map(group => geographyIdentityKey(index, group.entry)));
+  const nestedKeys = new Set(groups.flatMap(group => group.members.map(member => geographyIdentityKey(index, member.entry))));
+  const remaining = [...context.children, ...context.local].filter(entry => {
+    const key = geographyIdentityKey(index, entry);
+    return !hubKeys.has(key) && !nestedKeys.has(key);
+  });
+  return { groups, remaining: [...new Map(remaining.map(entry => [geographyIdentityKey(index, entry), entry])).values()] };
+}
+
 /** Only direct, stored edges. Second hops are obtained by expanding a neighbor. */
 export function getGeographyNeighbors(data: WikiGeographyData, index: GeographyIndex, selection: GeographySelection): GeographyNeighbor[] {
   const rootKey = geographyIdentityKey(index, selection);

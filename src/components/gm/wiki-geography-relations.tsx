@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ChevronDown, ChevronRight, CornerDownRight } from "lucide-react";
-import { getGeographyEntry, getGeographyNeighbors, geographyIdentityKey, type GeographyEntry, type GeographyIndex, type GeographyNeighbor, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
+import { getGeographyCityGroups, getGeographyEntry, getGeographyNeighbors, geographyIdentityKey, type GeographyEntry, type GeographyIndex, type GeographyNeighbor, type GeographySelection, type WikiGeographyData } from "@/lib/wiki/geography";
 import { DualSourceImage } from "@/components/dual-source-image";
 import { cn } from "@/lib/utils";
 import styles from "./wiki-geography.module.css";
@@ -58,4 +58,25 @@ export function WikiGeographyRelations({ root, ...shared }: SharedProps & { root
     </button>
     {open ? <><p className={styles.networkLegend}>↓ dalla voce sopra · ↑ verso la voce sopra</p><div className={cn(styles.networkRoot, styles.networkRootNode)}><RelationNode entry={entry} selected={shared.selected} onRead={shared.onRead} /></div>{neighbors.length ? <NeighborList {...shared} neighbors={neighbors} ancestors={[geographyIdentityKey(shared.index, root)]} /> : <p className={styles.empty}>Nessun collegamento registrato.</p>}</> : null}
   </section>;
+}
+
+export function WikiGeographyCityGroups({ mapId, ...shared }: SharedProps & { mapId: string }) {
+  const { groups } = useMemo(() => getGeographyCityGroups(shared.data, shared.index, mapId), [shared.data, shared.index, mapId]);
+  return groups.length ? <section className={styles.cityGroups} aria-label="Luoghi e organizzazioni della città">
+    <h3 className={styles.groupHeading}>Luoghi e organizzazioni<span>{groups.length}</span></h3>
+    {groups.map(({ entry, members }) => <CityGroup key={geographyIdentityKey(shared.index, entry)} {...shared} entry={entry} members={members} mapId={mapId} />)}
+  </section> : null;
+}
+
+function CityGroup({ entry, members, mapId, ...shared }: SharedProps & { entry: GeographyEntry; members: GeographyNeighbor[]; mapId: string }) {
+  const [open, setOpen] = useState(false);
+  return <div className={styles.cityGroup}>
+    <div className={styles.cityGroupHeader}>
+      <button type="button" className={styles.cityGroupToggle} aria-expanded={open} aria-label={`${open ? "Chiudi" : "Espandi"} gruppo ${entry.name}`} onClick={() => setOpen(value => !value)}>
+        {open ? <ChevronDown className="h-4 w-4" aria-hidden="true" /> : <ChevronRight className="h-4 w-4" aria-hidden="true" />}<span>{members.length}</span>
+      </button>
+      <RelationNode entry={entry} selected={shared.selected} onRead={shared.onRead} />
+    </div>
+    {open ? <div className={styles.cityGroupMembers}><NeighborList {...shared} neighbors={members} ancestors={[geographyIdentityKey(shared.index, { kind: "map", id: mapId }), geographyIdentityKey(shared.index, entry)]} /><button type="button" className={styles.textButton} onClick={() => shared.onStartFrom(entry)}>Esplora tutti i legami di {entry.name} →</button></div> : null}
+  </div>;
 }
