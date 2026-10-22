@@ -15,12 +15,13 @@ test("image contracts require a scoped parent and bounded pagination, never arbi
   assert.throws(() => validate({ operation: "read_map_image", args: { campaign_id: campaign } }));
 });
 
-test("parent authorization happens before any fetch; existing service rejects cross-campaign and non-admin reads", async () => {
+test("parent authorization happens before any fetch; service rejects non-admin and missing campaigns", async () => {
   let fetched = false;
   await assert.rejects(readSiteImages(auth, "read_entity_images", { campaign_id: campaign, entity_id: id }, async () => { throw new Error("Forbidden"); }, async () => { fetched = true; return png; }));
   assert.equal(fetched, false);
   process.env.MCP_CAMPAIGN_ID = campaign;
-  for (const [actor, scope] of [[{ ...auth, isAdmin: false }, campaign], [auth, id]] as const) {
+  const missingCampaign = { ...auth, db: { from: () => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) } } as any;
+  for (const [actor, scope] of [[{ ...auth, isAdmin: false }, campaign], [missingCampaign, id]] as const) {
     await assert.rejects(executeContent(actor, { operation: "read_entity_images", args: { campaign_id: scope, entity_id: id } }, { fetchImage: async () => { fetched = true; return png; } }));
   }
   assert.equal(fetched, false);

@@ -377,3 +377,29 @@ test("MCP moves campaign documents with revision lock and never releases Admin p
   assert.deepEqual(restore.calls.find(call => call[0] === "update")?.[1], { admin_only: true, is_campaign_document: false });
   assert.throws(() => validate({ operation: "update_entity", args: { campaign_id: campaign, entity_id: entityId, revision: 2, is_campaign_document: "yes" } }), ApiError);
 });
+
+
+test("Admin can read any existing campaign without the drafts flag or configured scope", async () => {
+  process.env.MCP_CAMPAIGN_ID = campaign;
+  const other = "99999999-9999-4999-8999-999999999999";
+  for (const flag of [false, true]) {
+    const data = fakeDb([{ id: other, admin_drafts_enabled: flag }, []]);
+    const result: any = await executeContent(admin(data.db), { operation: "search_lore", args: { campaign_id: other, query: "Chateau" } });
+    assert.deepEqual(result.entities, []);
+    assert(data.calls.some(call => call[0] === "eq" && call[1] === "campaign_id" && call[2] === other));
+  }
+  delete process.env.MCP_CAMPAIGN_ID;
+  const missing = fakeDb([null]);
+  await assert.rejects(executeContent(admin(missing.db), { operation: "search_lore", args: { campaign_id: other, query: "Chateau" } }), (error: any) => error.status === 404);
+  const allowed = fakeDb([{ id: other, admin_drafts_enabled: false }, []]);
+  await executeContent(admin(allowed.db), { operation: "search_lore", args: { campaign_id: other, query: "Chateau" } });
+});
+
+test("session access requires campaign ownership or Admin, not a global GM role", async () => {
+  const stranger = fakeDb([{ role: "gm" }, { id: campaign, gm_id: "someone-else", admin_drafts_enabled: false }]);
+  await assert.rejects(executeContent(nonAdmin(stranger.db), { operation: "list_sessions", args: { campaign_id: campaign } }), (error: any) => error.status === 404);
+  const owner = nonAdmin(null);
+  owner.db = fakeDb([{ role: "gm" }, { id: campaign, gm_id: owner.userId, admin_drafts_enabled: false }, []]).db;
+  const result: any = await executeContent(owner, { operation: "list_sessions", args: { campaign_id: campaign } }, { createAdmin: () => owner.db });
+  assert.deepEqual(result.sessions, []);
+});

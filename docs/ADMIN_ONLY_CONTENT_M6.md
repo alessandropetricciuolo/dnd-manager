@@ -1,3 +1,5 @@
+> Aggiornamento 22 ottobre 2026: il connettore personale Admin ora accede a tutte le campagne esistenti tramite il client autenticato e le policy del database. `MCP_CAMPAIGN_ID` non limita più contenuti, immagini, asset o sessioni. `admin_drafts_enabled` non condiziona più l'accesso MCP generale; restano attivi i vincoli database sulla creazione e conversione di contenuti Solo Admin. Le sessioni richiedono Admin o proprietà della campagna. Le indicazioni single-scope sotto descrivono l'implementazione originale, superata da questo aggiornamento.
+
 # M6 — MCP personale Admin-only
 
 Stato: implementata e verificata localmente; nessuna migration remota, deploy o push.

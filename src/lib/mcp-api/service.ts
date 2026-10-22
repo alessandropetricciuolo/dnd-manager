@@ -33,16 +33,15 @@ function checked<T>(result: { data: T; error: unknown }): T {
   return result.data;
 }
 
-function assertMcpScope(auth: McpAuthContext, campaignId: string): void {
-  // The personal connector is deliberately single-scope. The UUID is config, never caller authority.
-  if (!auth.isAdmin || !process.env.MCP_CAMPAIGN_ID || process.env.MCP_CAMPAIGN_ID !== campaignId) throw notFound();
+function assertMcpScope(auth: McpAuthContext): void {
+  // Campaign IDs select data; the verified Admin role grants connector access.
+  if (!auth.isAdmin) throw notFound();
 }
 
 async function authorizeSessionMcp(auth: McpAuthContext, campaignId: string) {
-  if (!process.env.MCP_CAMPAIGN_ID || process.env.MCP_CAMPAIGN_ID !== campaignId) throw notFound();
   const profile = checked(await auth.db.from("profiles").select("role").eq("id", auth.userId).maybeSingle());
   const campaign = checked(await auth.db.from("campaigns").select("id,gm_id,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
-  if (!campaign || campaign.admin_drafts_enabled !== true || !(profile?.role === "gm" || profile?.role === "admin" || campaign.gm_id === auth.userId)) throw notFound();
+  if (!campaign || !(profile?.role === "admin" || campaign.gm_id === auth.userId)) throw notFound();
   return campaign;
 }
 
@@ -178,9 +177,9 @@ async function executeSessionOperation(auth: McpAuthContext, operation: string, 
   return { success: true, session: sessionRead.data, xp_ledger: awardsRead.data ?? [], hours: { requested: hours, characters: hourLedger, verified: true }, message: "Session, XP and character hours closed atomically and verified." };
 }
 
-async function getEnabledCampaign(db: SupabaseClient, campaignId: string): Promise<{ id: string; type: string }> {
+async function getAccessibleCampaign(db: SupabaseClient, campaignId: string): Promise<{ id: string; type: string }> {
   const campaign = checked(await db.from("campaigns").select("id,type,admin_drafts_enabled").eq("id", campaignId).maybeSingle());
-  if (!campaign || campaign.admin_drafts_enabled !== true) throw notFound();
+  if (!campaign) throw notFound();
   return campaign;
 }
 
@@ -195,8 +194,8 @@ export async function executeContent(
     return readSiteImages(auth, operation, a, (request): Promise<any> => executeContent(auth, request, deps), deps.fetchImage);
   }
   const uploadImage = deps.uploadImage ?? uploadImageToTelegram;
-  assertMcpScope(auth, a.campaign_id);
-  const campaign = await getEnabledCampaign(auth.db, a.campaign_id);
+  assertMcpScope(auth);
+  const campaign = await getAccessibleCampaign(auth.db, a.campaign_id);
   const adminOnlyRequested = a.admin_only === true;
 
   if (isMissionOperation(operation)) return executeMissionOperation(auth.db, operation, a);
