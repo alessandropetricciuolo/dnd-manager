@@ -641,52 +641,117 @@ Ecco una lista degli incantesimi da consultare per imparare un incantesimo da ar
 
 Tutti gli incantesimi sono inclusi anche nel Player's Handbook, a esclusione di quelli contrassegnati da un asterisco (descritti nel capitolo 3) o due asterischi (descritti nella Guida Omnicomprensiva di Xanathar).
 
-## TRUCCHETTI (LIVELLO 0) 1° LIVELLO
+## TRUCCHETTI (LIVELLO 0)
 
-|  Creare Falò** | Allarme (rituale)  |
-| --- | --- |
-|  Dordo di Fuoco | Assorbire Elementi**  |
-|  Fiotto Acido | Cedula Morbida  |
-|  Frusta di Spine | Camuffare Se Stesso  |
-|  Guida | Catapulta**  |
-|  Lama Roboante* | Cura Ferite  |
-|  Lama Verdefiamma* | Identificare (rituale)  |
-|  Lenza Elettrizzante* | Individuazione  |
-|  Luce | del Magico (rituale)  |
-|  Luci Danzanti | Luminescenza  |
-|  Mano Magico | Miscela Caustica di Tasha*  |
-|  Messaggio | Posso Veloce  |
-|  Morsa del Celo** | Purificare Cibo e Bevande  |
-|  Pietra Magica** | Ritirata Rapido  |
-|  Prestidigitazione | Soltare  |
-|  Raggio di Celo | Sentuario  |
-|  Resistenza | Trabocchetto**  |
-|  Riparare | Unto  |
-|  Rambo di Tuono** | Vita Fahata  |
-|  Salvare i Morenti |   |
-|  Spruzzo Velenoso | 2° LIVELLO  |
-|  Stretto Felgerante | Aiuto  |
-|  Turbine di Spade* | Alterare Se Stesse  |
-|   | Arma Magica  |
-|   | Bacca Magica (rituale)  |
+Creare Falò
+Dardo di Fuoco
+Fiotto Acido
+Frusta di Spine
+Guida
+Lama Roboante
+Lama Verdefiamma
+Lenza Elettrizzante
+Luce
+Luci Danzanti
+Mano Magica
+Messaggio
+Morsa del Gelo
+Pietra Magica
+Prestidigitazione
+Raggio di Gelo
+Resistenza
+Riparare
+Rombo di Tuono
+Salvare i Morenti
+Spruzzo Velenoso
+Stretta Folgorante
+Turbine di Spade
+
+## 1° LIVELLO
+
+Allarme (rituale)
+Assorbire Elementi
+Caduta Morbida
+Camuffare Se Stesso
+Catapulta
+Cura Ferite
+Identificare (rituale)
+Individuazione del Magico (rituale)
+Luminescenza
+Miscela Caustica di Tasha
+Passo Veloce
+Purificare Cibo e Bevande
+Ritirata Rapida
+Saltare
+Santuario
+Trabocchetto
+Unto
+Vita Falsata
+
+## 2° LIVELLO
+
+Aiuto
+Alterare Se Stesso
+Arma Magica
+Bocca Magica (rituale)
+Caratteristica Potenziata
+Fiamma Perenne
+Ingrandire/Ridurre
+Invisibilità
+Levitazione
+Movimenti del Ragno
+Pirotecnica
+Protezione dai Veleni
+Ragnatela
+Riscaldare il Metallo
+Ristorare Inferiore
+Scritta Celeste (rituale)
+Scurovisione
+Serratura Arcana
+Sfocatura
+Trucco della Corda
+Vedere Invisibilità
 
 ## 3° LIVELLO
 
 Arma Elementale
-Camminare sull'Acqua (rituale)
+Camminare sull’Acqua (rituale)
+Creare Cibo e Acqua
+Dissolvi Magie
+Fortezza della Mente
+Frecce Infuocate
+Glifo di Interdizione
+Intermittenza
+Protezione dall’Energia
+Respirare Sott’Acqua (rituale)
+Rinascita
+Servitore Minuscolo
+Sonnellino
+Velocità
+Volare
 
-|  Creare Cibo e Acqua | Absoluta Perfezione  |
-| --- | --- |
-|  Dissolvi Magie | Anima Elementale  |
-|  Fortezza della Mente* | Sfera Elastica di Otiluke  |
-|  Freccce Infusione | 3° LIVELLO  |
-|  Cumminare | Abilità Potenziata**  |
-|  Fiortezzine dall'Energia | Anima Oggetti  |
-|   | Creazione  |
-|   | Mano di Bigby  |
-|   | Muro di Pietra  |
-|   | Ristorare Superiore  |
-|   | Trasmutore Roccia**  |
+## 4° LIVELLO
+
+Anatema Elementale
+Fabbricare
+Libertà di Movimento
+Occhio Arcano
+Pelle di Pietra
+Santuario Privato di Mordenkainen
+Scolpire Pietra
+Scrigno Segreto di Leomund
+Segugio Fedele di Mordenkainen
+Sfera Elastica di Otiluke
+
+## 5° LIVELLO
+
+Abilità Potenziata
+Animare Oggetti
+Creazione
+Mano di Bigby
+Muro di Pietra
+Ristorare Superiore
+Trasmutare Roccia
 
 # INFONDERE NEGLI OGGETTI
 
