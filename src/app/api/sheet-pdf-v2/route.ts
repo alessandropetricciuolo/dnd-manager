@@ -1,0 +1,42 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { z } from 'zod';
+import { getRequestAuthContext } from '@/utils/supabase/request-auth-context';
+import { generateSheetAction } from '@/lib/actions/generator-actions';
+import { renderExperimentalBardSheet } from '@/lib/pdf/experimental-bard-sheet';
+import { ALL_SKILL_KEYS } from '@/lib/sheet-generator/skill-rules';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+const schema = z.object({
+  input: z.record(z.string().max(48_000)).refine((v) => Object.keys(v).length <= 30),
+  bonusSkills: z.array(z.enum(ALL_SKILL_KEYS)).max(3).default([]),
+});
+export async function POST(req: Request) {
+  const { user, profile } = await getRequestAuthContext();
+  if (!user) return Response.json({ error: 'Accesso richiesto.' }, { status: 401 });
+  if (!['gm', 'admin'].includes(profile?.role ?? '')) return Response.json({ error: 'Riservato a Master e Admin.' }, { status: 403 });
+  const raw = await req.text();
+  if (Buffer.byteLength(raw) > 120_000) return Response.json({ error: 'Richiesta troppo grande.' }, { status: 413 });
+  let json: unknown;
+  try { json = JSON.parse(raw); } catch { return Response.json({ error: 'Richiesta non valida.' }, { status: 400 }); }
+  const parsed = schema.safeParse(json);
+  if (!parsed.success || parsed.data.input.classLabel !== 'Bardo') return Response.json({ error: 'La V2 richiede i dati di un Bardo.' }, { status: 400 });
+  const form = new FormData();
+  for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
+  // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
+  const result = await generateSheetAction(form);
+  if (!result.success || !result.sheet) return Response.json({ error: result.message }, { status: 400 });
+  try {
+    const logo = await fs.readFile(path.join(process.cwd(), 'public/logo.png'));
+    const bytes = await renderExperimentalBardSheet(result.sheet, logo, {
+      bonusSkills: parsed.data.bonusSkills,
+      story: result.includeBackgroundStoryInPdf ? result.characterStory ?? '' : '',
+      quickManualSections: result.quickManualSections ?? [],
+    });
+    return new Response(Buffer.from(bytes), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="scheda-bardo-v2.pdf"', 'Cache-Control': 'no-store' } });
+  } catch (error) {
+    console.error('[sheet-pdf-v2]', error);
+    return Response.json({ error: error instanceof Error ? error.message : 'Generazione PDF V2 non riuscita.' }, { status: 422 });
+  }
+}
