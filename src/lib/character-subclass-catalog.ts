@@ -5,7 +5,7 @@
  */
 
 import type { ClassSupplementRulesSource } from "@/lib/character-build-catalog";
-import { PHB_BOOK_KEY, PHB_MD_FILE } from "@/lib/character-build-catalog";
+import { PHB_BOOK_KEY, PHB_MD_FILE, VAN_RICHTEN_MD_FILE, VAN_RICHTEN_BOOK_KEY } from "@/lib/character-build-catalog";
 import type { WikiManualBookKey } from "@/lib/manual-book-catalog";
 
 export type SubclassCatalogEntry = {
@@ -764,6 +764,11 @@ const XGE_TCE_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
 export const SUPPLEMENT_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
   ...PHB_SUBCLASS_OPTIONS,
   ...XGE_TCE_SUBCLASS_OPTIONS,
+  {
+    slug: "vrgr-bardo-spiriti", parentClassLabel: "Bardo", label: "Collegio degli Spiriti",
+    sectionHeadings: H("BARDO: COLLEGIO DEGLI SPIRITI"),
+    supplementRulesSource: { markdownFile: VAN_RICHTEN_MD_FILE, manualBookKey: VAN_RICHTEN_BOOK_KEY },
+  },
 ];
 
 /** Suffix breve per menu (es. scheda PG). */
@@ -772,6 +777,7 @@ export function subclassCatalogSourceSuffix(entry: SubclassCatalogEntry): string
   if (k === "player_handbook") return "PHB";
   if (k === "xanathar") return "XGE";
   if (k === "tasha") return "TCE";
+  if (k === "van_richten_ravenloft") return "VRGR";
   return entry.supplementRulesSource.markdownFile.replace(/\.md$/i, "");
 }
 

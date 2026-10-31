@@ -3,11 +3,14 @@
 import { useState } from "react";
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
 import { SKILL_LABELS } from "@/lib/sheet-generator/bard-print-model";
+import { BARD_FIGHTING_STYLES, type BardFightingStyle } from "@/lib/sheet-generator/bard-colleges";
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [bonusSkills, setBonusSkills] = useState<SkillKey[] | null>(null);
+  const [fightingStyle,setFightingStyle]=useState<BardFightingStyle>('Duellare');
+  const swords=sheet.level>=3&&/spade/i.test(sheet.classSubclass??'');
   const lore = sheet.level >= 3 && /sapienza/i.test(sheet.classSubclass ?? "");
   const available = (Object.keys(sheet.skills) as SkillKey[]).filter((k) => !sheet.skills[k].proficient);
   const chosen = bonusSkills ?? available.slice(0, 3);
@@ -17,7 +20,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [] }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -36,6 +39,11 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
         {SKILL_LABELS[key]}
       </label>)}</div>
     </fieldset>}
+    {swords&&<label className="block text-sm">Stile di combattimento
+      <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fightingStyle} disabled={busy} onChange={e=>setFightingStyle(e.target.value as BardFightingStyle)}>
+        {BARD_FIGHTING_STYLES.map(style=><option key={style}>{style}</option>)}
+      </select>
+    </label>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
     <button type="button" onClick={download} disabled={busy || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">
       {busy ? "Preparazione della scheda V2…" : "Genera scheda V2"}

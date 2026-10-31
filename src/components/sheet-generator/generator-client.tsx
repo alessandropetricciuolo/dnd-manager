@@ -79,7 +79,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
   const formRef = useRef<HTMLFormElement>(null);
 
   const race = RACE_OPTIONS.find((r) => r.slug === selectedRaceSlug) ?? null;
-  const classSubclasses = supplementSubclassesForClass(selectedClass).filter((s) => !v2 || /^(Collegio della Sapienza|Collegio del Valore)$/.test(s.label));
+  const classSubclasses = supplementSubclassesForClass(selectedClass);
   const returnLabel = useMemo(() => {
     if (!initial.returnTo) return "Torna indietro";
     try {

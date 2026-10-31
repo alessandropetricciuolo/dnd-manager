@@ -5,12 +5,15 @@ import { getRequestAuthContext } from '@/utils/supabase/request-auth-context';
 import { generateSheetAction } from '@/lib/actions/generator-actions';
 import { renderExperimentalBardSheet } from '@/lib/pdf/experimental-bard-sheet';
 import { ALL_SKILL_KEYS } from '@/lib/sheet-generator/skill-rules';
+import { BARD_FIGHTING_STYLES } from '@/lib/sheet-generator/bard-colleges';
+import { loadBardCollegeFeatures, addBardCollegeGrantedSpells } from '@/lib/server/bard-college-source';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 const schema = z.object({
   input: z.record(z.string().max(48_000)).refine((v) => Object.keys(v).length <= 30),
   bonusSkills: z.array(z.enum(ALL_SKILL_KEYS)).max(3).default([]),
+  fightingStyle: z.enum(BARD_FIGHTING_STYLES).optional(),
 });
 export async function POST(req: Request) {
   const { user, profile } = await getRequestAuthContext();
@@ -29,8 +32,13 @@ export async function POST(req: Request) {
   if (!result.success || !result.sheet) return Response.json({ error: result.message }, { status: 400 });
   try {
     const logo = await fs.readFile(path.join(process.cwd(), 'public/logo.png'));
-    const bytes = await renderExperimentalBardSheet(result.sheet, logo, {
+    const origin=new URL(req.url).origin;
+    const sheet=await addBardCollegeGrantedSpells(result.sheet,origin);
+    const collegeFeatures=await loadBardCollegeFeatures(sheet,origin);
+    const bytes = await renderExperimentalBardSheet(sheet, logo, {
       bonusSkills: parsed.data.bonusSkills,
+      collegeFeatures,
+      fightingStyle: parsed.data.fightingStyle,
       story: result.includeBackgroundStoryInPdf ? result.characterStory ?? '' : '',
       quickManualSections: result.quickManualSections ?? [],
     });

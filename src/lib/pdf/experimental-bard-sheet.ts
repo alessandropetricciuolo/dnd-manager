@@ -2,10 +2,11 @@ import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf
 import type { GeneratedCharacterSheet, SkillKey, AbilityKey } from '@/lib/sheet-generator/types';
 import { buildBardPrintModel, printPlainText, SKILL_LABELS, type BardPrintFeature } from '@/lib/sheet-generator/bard-print-model';
 import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
+import type { BardFightingStyle } from '@/lib/sheet-generator/bard-colleges';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
 import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
 
-export type BardSheetPrintOptions = { bonusSkills?: SkillKey[]; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
+export type BardSheetPrintOptions = { bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
 const sign=(n:number)=>n>=0?`+${n}`:`${n}`;
 
@@ -25,7 +26,7 @@ export function wrapSheetText(value:string,font:PDFFont,size:number,width:number
 }
 
 export async function renderExperimentalBardSheet(original:GeneratedCharacterSheet,logoBytes:Uint8Array,options:BardSheetPrintOptions={}){
-  const model=buildBardPrintModel(original,options.bonusSkills);const s=model.sheet;
+  const model=buildBardPrintModel(original,options.bonusSkills,options.collegeFeatures,options.fightingStyle);const s=model.sheet;
   const doc=await PDFDocument.create();doc.setTitle(`${s.characterName} - Bardo V2`);
   const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.TimesRomanBold),logo=await doc.embedPng(logoBytes);
   const clean=(v:unknown)=>sanitizeTextForStandardPdfFont(String(v??''));
@@ -86,7 +87,7 @@ export async function renderExperimentalBardSheet(original:GeneratedCharacterShe
       frame(reference,27,refY,541,height,title+(part?' (continua)':''));chunk.forEach((l,i)=>text(reference,42,refY-39-i*12,l,9));refY-=height+12;part++;
     }
   };
-  continuation.forEach(f=>section(f.title,f.body));
+  continuation.forEach(f=>section(f.title,`Fonte: ${f.source}\n\n${f.body}`));
   if(s.weaponRows.length>3)section('Altri attacchi',s.weaponRows.slice(3).map(a=>`${a.name}: ${a.toHit} / ${a.damage} (${a.type})`).join('\n'));
   section('Identità',[`Nome: ${s.characterName}`,`Razza: ${s.raceLabel}${s.subraceLabel?' / '+s.subraceLabel:''}`,`Classe: Bardo ${s.level} / ${s.classSubclass??'Nessun collegio'}`,`Allineamento: ${s.alignment??'-'} / Età: ${s.age??'-'} / Sesso: ${s.sex??'-'}`,`Altezza: ${s.height??'-'} / Peso: ${s.weight??'-'}`].join('\n'));
   section('Linguaggi e competenze',[...s.languages,...s.armorProficiencies,...s.weaponProficiencies,...s.toolProficiencies].join(', '));
@@ -109,6 +110,8 @@ export async function renderExperimentalBardSheet(original:GeneratedCharacterShe
   if(!s.spells.length)text(spellPage!,32,640,'Nessun incantesimo selezionato.');
   if(options.story?.trim()){reference=newPage('STORIA DEL PERSONAGGIO');refY=704;section('Storia',options.story);}
   if(options.quickManualSections?.length){reference=newPage('MANUALE RAPIDO');refY=704;options.quickManualSections.forEach(f=>section(f.title,f.body));}
-  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / Bardo V2 / ${i===0?'Testi sintetici: scheda Bardo V1.4':'Regole: Manuale del Giocatore'} / ${i+1} di ${doc.getPageCount()}`,7));
+  const book=model.college?.supplementRulesSource.manualBookKey;
+  const rules=book==='xanathar'?'PHB + Xanathar':book==='tasha'?'PHB + Tasha':book==='van_richten_ravenloft'?'PHB + Van Richten':'Manuale del Giocatore';
+  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / Bardo V2 / ${i===0?'Testi sintetici: scheda Bardo V1.4':`Regole: ${rules}`} / ${i+1} di ${doc.getPageCount()}`,7));
   return doc.save();
 }

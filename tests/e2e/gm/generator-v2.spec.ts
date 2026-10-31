@@ -20,6 +20,7 @@ test.describe('Generatore Bardo V2', () => {
       await page.waitForURL('**/dashboard**'); await page.goto('/generator-v2');
     }
     await expect(page.getByRole('heading', { name: 'Generatore V2 · Bardo' })).toBeVisible();
+    await expect(page.locator('#classSubclass option')).toHaveCount(9);
     await page.locator('#characterName').fill('Bardo V2 verifica');
     await page.locator('#raceSlug').selectOption('halfling');
     await page.locator('#backgroundSlug').selectOption('intrattenitore');
@@ -58,5 +59,23 @@ test.describe('Generatore Bardo V2', () => {
     }
     const invalid = await page.request.post('/api/sheet-pdf-v2', { data: { sheet: { classLabel: 'Bardo', classFeaturesMd: 'Regola inventata' } } });
     expect(invalid.status()).toBe(400);
+  });
+
+  test('tutti i collegi dei manuali e i due stili delle Spade producono un PDF',async({page})=>{
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2');
+    if(page.url().includes('/login')){
+      const credentials=JSON.parse(fs.readFileSync('tests/e2e/.auth/credentials.json','utf8')).admin;
+      await page.locator('#email').fill(credentials.email);await page.locator('#password').fill(credentials.password);
+      await page.getByRole('button',{name:'Entra nella Taverna'}).click();await page.waitForURL('**/dashboard**');
+    }
+    for(const college of ['Collegio del Valore','Collegio dei Sussurri',"Collegio dell'Incanto",'Collegio delle Spade',"Collegio dell'Eloquenza",'Collegio della Creazione','Collegio degli Spiriti']){
+      for(const fightingStyle of college==='Collegio delle Spade'?['Duellare','Combattere con Due Armi']:[undefined]){
+      const response=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Bardo',characterName:college,raceSlug:'halfling',backgroundSlug:'intrattenitore',classSubclass:college,level:'6'},bonusSkills:[],...(fightingStyle?{fightingStyle}:{})}});
+      expect(response.status(),college+': '+(response.status()!==200?await response.text():'')).toBe(200);
+      const bytes=await response.body();expect(bytes.subarray(0,5).toString()).toBe('%PDF-');
+      if(college.includes('Eloquenza')||college.includes('Creazione')||college.includes('Spiriti'))fs.writeFileSync(test.info().outputPath(college.replace(/[^a-z]/gi,'-')+'.pdf'),bytes);
+      }
+    }
   });
 });
