@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { PDFDocument, StandardFonts } from 'pdf-lib';
 import { buildGeneratedCharacterSheet } from '../build-engine';
 import { buildBardPrintModel } from '../bard-print-model';
+import { bardReferenceCards } from '../bard-reference-copy';
 import { renderExperimentalBardSheet, wrapSheetText } from '@/lib/pdf/experimental-bard-sheet';
 import type { SkillKey } from '../types';
 
@@ -52,4 +53,14 @@ test('Bard V2: wrapping preserves long tokens and all text',async()=>{
   const lines=wrapSheetText(text,font,9,100);
   assert.ok(lines.every(l=>font.widthOfTextAtSize(l,9)<=100));
   assert.equal(lines.join('').replace(/\s/g,''),text.replace(/\s/g,''));
+});
+
+test('Bard V2: reference copy is fixed, level-gated and uses the agreed Countercharm correction',()=>{
+  assert.deepEqual(bardReferenceCards(5).map(c=>c.title),['Ispirazione Bardica','Canto di Riposo','Maestria']);
+  assert.ok(!bardReferenceCards(4)[0].body.includes('riposo breve'));
+  assert.ok(bardReferenceCards(5)[0].body.includes('Recuperi i dadi di Ispirazione Bardica anche dopo un riposo breve.'));
+  assert.equal(bardReferenceCards(5)[1].body,'Se durante un riposo breve utilizzi una musica o un’orazione lenitiva, chi è in grado di sentirti guadagna un dado extra di Punti Ferita se ha speso almeno un dado vita durante il riposo. Il tipo di dado aumenta con l’avanzare di livello.');
+  const counter=bardReferenceCards(6).find(c=>c.title==='Controfascino')!;
+  assert.ok(counter.body.endsWith('Puoi porvi fine volontariamente (non è richiesta un’azione per farlo).'));
+  assert.ok(!counter.body.includes('devi effettuare un’azione'));
 });

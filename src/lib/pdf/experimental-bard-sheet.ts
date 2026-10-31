@@ -1,8 +1,9 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import type { GeneratedCharacterSheet, SkillKey, AbilityKey } from '@/lib/sheet-generator/types';
 import { buildBardPrintModel, printPlainText, SKILL_LABELS, type BardPrintFeature } from '@/lib/sheet-generator/bard-print-model';
+import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
-import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield } from './fantasy-sheet-graphics';
+import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
 
 export type BardSheetPrintOptions = { bonusSkills?: SkillKey[]; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
@@ -34,36 +35,49 @@ export async function renderExperimentalBardSheet(original:GeneratedCharacterShe
   const frame=(p:PDFPage,x:number,top:number,width:number,height:number,title:string)=>{drawFantasyFrame(p,{x,y:top-height,width,height});banner(p,x+7,top-7,width-14,title);};
   const newPage=(title:string)=>{
     const p=doc.addPage([W,H]);drawFantasyFrame(p,{x:18,y:30,width:W-36,height:H-48});
-    const scale=Math.min(124/logo.width,64/logo.height);p.drawImage(logo,{x:27,y:751,width:logo.width*scale,height:logo.height*scale});
-    fit(p,170,797,s.characterName,390,17,bold);fit(p,170,777,`Bardo ${s.level} / ${s.classSubclass??'Nessun collegio'}`,390,10);
-    fit(p,170,759,`${s.subraceLabel??s.raceLabel} / ${s.backgroundLabel}`,390,9);banner(p,27,738,541,title);return p;
+    const scale=Math.min(124/logo.width,68/logo.height);p.drawImage(logo,{x:27,y:748,width:logo.width*scale,height:logo.height*scale});
+    drawFantasyFrame(p,{x:164,y:746,width:404,height:68});
+    const rule=(x:number,y:number,xx:number,yy:number)=>p.drawLine({start:{x,y},end:{x:xx,y:yy},thickness:.45});
+    rule(167,792,565,792);rule(167,770,565,770);
+    rule(294,792,294,770);rule(435,792,435,770);rule(197,770,197,749);rule(272,770,272,749);rule(526,770,526,749);
+    text(p,173,805,'NOME',6);fit(p,173,795,s.characterName,385,12,bold);
+    text(p,173,784,'RAZZA',6);fit(p,173,773,s.subraceLabel??s.raceLabel,114,8.5);
+    text(p,301,784,'BACKGROUND',6);fit(p,301,773,s.backgroundLabel,126,8.5);
+    text(p,443,784,'ALLINEAMENTO',6);fit(p,443,773,s.alignment??'-',115,8.5);
+    drawBardEmblem(p,{x:168,y:747,width:27,height:22});
+    text(p,204,762,'CLASSE',6);text(p,204,750,'BARDO',11,bold);
+    text(p,280,762,'SOTTOCLASSE',6);fit(p,280,750,s.classSubclass??'-',237,9);
+    text(p,534,762,'LIVELLO',5.5);text(p,541,750,s.level,11,bold);
+    banner(p,27,738,541,title);return p;
   };
   const first=newPage('SCHEDA DEL PERSONAGGIO - V2');
   const names:Record<AbilityKey,string>={str:'FORZA',dex:'DESTREZZA',con:'COSTITUZIONE',int:'INTELLIGENZA',wis:'SAGGEZZA',cha:'CARISMA'};
   const groups:Record<AbilityKey,SkillKey[]>={str:['athletics'],dex:['acrobatics','stealth','sleight_of_hand'],con:[],int:['arcana','investigation','nature','religion','history'],wis:['animal_handling','insight','medicine','perception','survival'],cha:['deception','intimidation','performance','persuasion']};
   let y=704;
-  for(const key of Object.keys(names) as AbilityKey[]){const height=58+groups[key].length*12;frame(first,27,y,148,height,names[key]);
-    text(first,37,y-44,`${s.abilities[key]} (${sign(s.abilityMods[key])})`,13,bold);text(first,105,y-43,`TS ${sign(s.savingThrows[key].value)}`);
-    groups[key].forEach((skill,i)=>{const v=s.skills[skill];fit(first,36,y-60-i*12,`${v.expertise?'M':v.proficient?'C':'-'} ${SKILL_LABELS[skill]}`,111,7.8);text(first,151,y-60-i*12,sign(v.value),7.8);});y-=height+8;
+  for(const key of Object.keys(names) as AbilityKey[]){const height=Math.max(76,58+groups[key].length*11);
+    drawFantasyAbility(first,{x:27,y:y-height,width:175,height},{title:names[key],score:s.abilities[key],modifier:s.abilityMods[key],savingThrow:s.savingThrows[key].value,
+      skills:groups[key].map(skill=>{const v=s.skills[skill];return {label:SKILL_LABELS[skill],value:v.value,marker:v.expertise?'M':v.proficient?'C':'-'};})},font,bold);
+    y-=height+8;
   }
   text(first,28,80,`Competenza ${sign(s.proficiencyBonus)} / Percezione ${s.passivePerception}`,7);text(first,28,66,'C: competenza / M: maestria',7);
   text(first,28,51,'Indebolimento ____ / Ispirazione ____',7);
-  frame(first,185,704,175,71,'DIFESE');text(first,196,663,`CA ${s.armorClass} / Iniz. ${sign(s.initiative)}`,11);text(first,196,645,`Velocità ${s.speed}`);
-  frame(first,185,623,175,112,'PUNTI FERITA E DADI VITA');text(first,196,580,`Massimi ${s.hpMax}`,13,bold);text(first,196,555,'Attuali ______  Temporanei ______');text(first,196,535,`${s.hitDiceTotal} ${s.hitDie} / Dadi usati ____`);
-  frame(first,185,501,175,73,'SALVEZZA DA MORTE');text(first,196,459,'Successi');text(first,196,442,'Fallimenti');
-  drawFantasyTracker(first,{x:262,y:454,width:80,height:16},3);drawFantasyTracker(first,{x:262,y:437,width:80,height:16},3);
-  frame(first,185,418,175,86,'ATTACCHI');s.weaponRows.slice(0,3).forEach((a,i)=>fit(first,195,380-i*14,`${a.name} ${a.toHit} / ${a.damage}`,155,8));
-  frame(first,185,322,175,105,'ISPIRAZIONE BARDICA');drawFantasyShield(first,{x:199,y:234,width:40,height:53},model.die,bold);
-  drawFantasyTracker(first,{x:252,y:249,width:96,height:34},model.uses);text(first,250,237,`${model.uses} utilizzi`);
-  text(first,195,225,s.level>=5?'Recupero: riposo breve o lungo':'Recupero: riposo lungo',7.5);
-  frame(first,185,207,175,153,'MAGIA E RISORSE');text(first,195,170,`CD ${s.spellSaveDc} / Attacco ${sign(s.spellAttackBonus??0)}`);
-  if(s.level>=2)text(first,195,156,`Canto di riposo: ${model.restDie}`);
-  Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const col=i>=5?1:0,row=i%5,x=195+col*78,sy=139-row*15;text(first,x,sy,`${level}°`);drawFantasyTracker(first,{x:x+19,y:sy-4,width:62,height:16},count);});
-  const priority=['ISPIRAZIONE BARDICA','FONTE DI ISPIRAZIONE','PAROLE TAGLIENTI','ISPIRAZIONE IN COMBATTIMENTO','CANTO DI RIPOSO'];
-  const ordered=[...model.features].sort((a,b)=>{const pa=priority.indexOf(a.title.toUpperCase()),pb=priority.indexOf(b.title.toUpperCase());return(pa<0?99:pa)-(pb<0?99:pb);});
-  let ry=704;const continuation:BardPrintFeature[]=[];
-  for(const f of ordered){const lines=wrapSheetText(f.body,font,8,177),height=43+lines.length*10;if(ry-height<89){continuation.push(f);continue;}frame(first,370,ry,198,height,f.title);lines.forEach((l,i)=>text(first,381,ry-40-i*10,l));ry-=height+9;}
-  text(first,380,Math.max(65,ry-6),continuation.length?'Altre capacità nelle pagine seguenti.':'Capacità del livello attuale.',7);
+  frame(first,212,704,168,71,'DIFESE');text(first,223,663,`CA ${s.armorClass} / Iniz. ${sign(s.initiative)}`,11);text(first,223,645,`Velocità ${s.speed}`);
+  frame(first,212,623,168,112,'PUNTI FERITA E DADI VITA');text(first,223,580,`Massimi ${s.hpMax}`,13,bold);text(first,223,555,'Attuali ______  Temporanei ______');text(first,223,535,`${s.hitDiceTotal} ${s.hitDie} / Dadi usati ____`);
+  frame(first,212,501,168,73,'SALVEZZA DA MORTE');text(first,223,459,'Successi');text(first,223,442,'Fallimenti');
+  drawFantasyTracker(first,{x:289,y:454,width:80,height:16},3);drawFantasyTracker(first,{x:289,y:437,width:80,height:16},3);
+  frame(first,212,418,168,86,'ATTACCHI');s.weaponRows.slice(0,3).forEach((a,i)=>fit(first,222,380-i*14,`${a.name} ${a.toHit} / ${a.damage}`,155,8));
+  frame(first,212,322,168,105,'ISPIRAZIONE BARDICA');drawFantasyShield(first,{x:226,y:234,width:40,height:53},model.die,bold);
+  drawFantasyTracker(first,{x:279,y:249,width:96,height:34},model.uses);text(first,277,237,`${model.uses} utilizzi`);
+  text(first,222,225,s.level>=5?'Recupero: riposo breve o lungo':'Recupero: riposo lungo',7.5);
+  frame(first,212,207,168,153,'MAGIA E RISORSE');text(first,222,170,`CD ${s.spellSaveDc} / Attacco ${sign(s.spellAttackBonus??0)}`);
+  if(s.level>=2)text(first,222,156,`Canto di riposo: ${model.restDie}`);
+  Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const col=i>=5?1:0,row=i%5,x=222+col*75,sy=139-row*15;text(first,x,sy,`${level}°`);drawFantasyTracker(first,{x:x+19,y:sy-4,width:60,height:16},count);});
+  // Fixed reference-sheet wording for standard class cards; full PHB descriptions remain in the appendix.
+  const cards=bardReferenceCards(s.level);let ry=704;
+  for(const card of cards){const lines=wrapSheetText(card.body,font,8.5,157),height=43+lines.length*10.5;if(ry-height<89)continue;
+    frame(first,390,ry,178,height,card.title);lines.forEach((l,i)=>text(first,401,ry-40-i*10.5,l,8.5));ry-=height+9;}
+  const continuation:BardPrintFeature[]=[...model.features];
+  text(first,400,Math.max(65,ry-6),'Testi completi nelle pagine seguenti.',7);
   let reference=newPage('PRIVILEGI, TRATTI E DOTAZIONE'),refY=704;
   const section=(title:string,value:string)=>{
     const pending=wrapSheetText(value||'Nessun dato disponibile.',font,9,509);let part=0;
@@ -95,6 +109,6 @@ export async function renderExperimentalBardSheet(original:GeneratedCharacterShe
   if(!s.spells.length)text(spellPage!,32,640,'Nessun incantesimo selezionato.');
   if(options.story?.trim()){reference=newPage('STORIA DEL PERSONAGGIO');refY=704;section('Storia',options.story);}
   if(options.quickManualSections?.length){reference=newPage('MANUALE RAPIDO');refY=704;options.quickManualSections.forEach(f=>section(f.title,f.body));}
-  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / Bardo V2 / Manuale del Giocatore / ${i+1} di ${doc.getPageCount()}`,7));
+  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / Bardo V2 / ${i===0?'Testi sintetici: scheda Bardo V1.4':'Regole: Manuale del Giocatore'} / ${i+1} di ${doc.getPageCount()}`,7));
   return doc.save();
 }

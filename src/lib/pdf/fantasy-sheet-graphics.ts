@@ -66,3 +66,42 @@ export async function drawBarberDragonsLogo(doc: PDFDocument, page: PDFPage, png
   const scale=Math.min(b.width/logo.width,b.height/logo.height);
   page.drawImage(logo,{x:b.x,y:b.y+b.height-logo.height*scale,width:logo.width*scale,height:logo.height*scale});
 }
+
+/** A monochrome lute badge drawn as vectors, usable at any print resolution. */
+export function drawBardEmblem(page: PDFPage, b: FantasyBox) {
+  const scale = Math.min(b.width / 36, b.height / 36);
+  const cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * scale, borderColor: INK, borderWidth: .7 });
+  page.drawEllipse({ x: cx, y: cy - 6 * scale, xScale: 6 * scale, yScale: 8 * scale, color: INK });
+  page.drawRectangle({ x: cx - 1.5 * scale, y: cy - 2 * scale, width: 3 * scale, height: 15 * scale, color: INK });
+  page.drawRectangle({ x: cx - 2.5 * scale, y: cy + 10 * scale, width: 5 * scale, height: 4 * scale, color: INK });
+  page.drawCircle({ x: cx, y: cy - 5 * scale, size: 2 * scale, color: rgb(1, 1, 1) });
+  for (const dx of [-.6, .6]) page.drawLine({ start: { x: cx + dx * scale, y: cy - 11 * scale }, end: { x: cx + dx * scale, y: cy + 11 * scale }, color: rgb(.7, .7, .7), thickness: .3 * scale });
+  for (const dy of [8, 11]) stroke(page, cx - 3 * scale, cy + dy * scale, cx + 3 * scale, cy + dy * scale, .6);
+}
+
+/** Score above a larger modifier; saves and skills form a separate side-by-side column. */
+export function drawFantasyAbility(page: PDFPage, b: FantasyBox, data: {
+  title: string; score: number; modifier: number; savingThrow: number;
+  skills: Array<{ label: string; value: number; marker: string }>;
+}, font: PDFFont, titleFont: PDFFont) {
+  const top = b.y + b.height;
+  const sign = (n: number) => n >= 0 ? `+${n}` : `${n}`;
+  drawFantasyFrame(page, b);
+  drawFantasyBanner(page, { x: b.x + 7, y: top - 27, width: b.width - 14, height: 20 }, data.title, titleFont, 9);
+  const center = b.x + 25;
+  const score = String(data.score), modifier = sign(data.modifier);
+  page.drawText(score, { x: center - font.widthOfTextAtSize(score, 12) / 2, y: top - 44, size: 12, font, color: INK });
+  page.drawText(modifier, { x: center - titleFont.widthOfTextAtSize(modifier, 25) / 2, y: top - 69, size: 25, font: titleFont, color: INK });
+  stroke(page, b.x + 49, top - 33, b.x + 49, b.y + 10, .35);
+  const rows = [{ label: 'Tiro salvezza', value: data.savingThrow, marker: '' }, ...data.skills];
+  rows.forEach((row, i) => {
+    const y = top - 40 - i * 11;
+    const label = `${row.marker ? row.marker + ' ' : ''}${row.label}`;
+    const width = b.width - 83;
+    const size = Math.min(8, width / Math.max(1, font.widthOfTextAtSize(label, 1)));
+    page.drawText(label, { x: b.x + 56, y, size, font, color: INK });
+    const value = sign(row.value);
+    page.drawText(value, { x: b.x + b.width - 9 - font.widthOfTextAtSize(value, 8), y, size: 8, font, color: INK });
+  });
+}
