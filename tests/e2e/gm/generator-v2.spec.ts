@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
 
-test.describe('Generatore Bardo V2', () => {
+test.describe('Generatore V2', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   test.beforeEach(async ({ context, request }) => {
     if (process.env.SHEET_V2_ISOLATED_TEST) {
@@ -19,7 +19,7 @@ test.describe('Generatore Bardo V2', () => {
       await page.getByRole('button', { name: 'Entra nella Taverna' }).click();
       await page.waitForURL('**/dashboard**'); await page.goto('/generator-v2');
     }
-    await expect(page.getByRole('heading', { name: 'Generatore V2 · Bardo' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Generatore V2' })).toBeVisible();
     await expect(page.locator('#classSubclass option')).toHaveCount(9);
     await page.locator('#characterName').fill('Bardo V2 verifica');
     await page.locator('#raceSlug').selectOption('halfling');
@@ -44,7 +44,35 @@ test.describe('Generatore Bardo V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
     await page.goto('/generator');
     await expect(page.getByRole('heading', { name: 'Generatore Schede D&D (HTML)' })).toBeVisible();
-    await expect(page.getByRole('link', { name: 'Prova il Generatore V2 del Bardo' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'Prova il Generatore V2' })).toBeVisible();
+  });
+
+
+  test('Barbaro: selezione dei totem e download; tutti i sette cammini esportano',async({page})=>{
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2?classLabel=Barbaro');
+    await expect(page.locator('#classLabel')).toHaveValue('Barbaro');
+    await expect(page.locator('#classSubclass option')).toHaveCount(8);
+    await page.locator('#characterName').fill('Barbaro V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');await page.locator('#backgroundSlug').selectOption('soldato');
+    const totem=await page.locator('#classSubclass option').filter({hasText:'Combattente Totemico'}).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(totem!);await page.locator('#level').fill('14');
+    await page.getByRole('button',{name:'Genera Scheda',exact:true}).click();
+    await page.getByRole('button',{name:'Conferma e genera PDF'}).click();
+    const section=page.getByRole('region',{name:'Esportazione scheda V2'});
+    await section.getByLabel('Spirito Totemico (livello 3)').selectOption('Lupo');
+    await section.getByLabel('Aspetto della Bestia (livello 6)').selectOption('Orso');
+    await section.getByLabel('Sintonia Totemica (livello 14)').selectOption('Aquila');
+    const pending=page.waitForEvent('download');await section.getByRole('button',{name:'Genera scheda V2',exact:true}).click();
+    const download=await pending;expect(await download.failure()).toBeNull();await download.saveAs(test.info().outputPath('barbaro-totemico-v2.pdf'));
+    for(const path of ['Cammino del Berserker','Cammino del Combattente Totemico','Cammino del Guardiano Ancestrale',"Cammino dell'Araldo della Tempesta",'Cammino dello Zelota','Cammino della Bestia','Cammino della Magia Selvaggia']){
+      const response=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Barbaro',characterName:path,raceSlug:'umano',backgroundSlug:'soldato',classSubclass:path,level:'20'}}});
+      expect(response.status(),path+': '+(response.status()!==200?await response.text():'')).toBe(200);expect((await response.body()).subarray(0,5).toString()).toBe('%PDF-');
+    }
+    const invalidChoice=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Barbaro',characterName:'Test',raceSlug:'umano',backgroundSlug:'soldato',classSubclass:'Cammino del Berserker',level:'5'},barbarianChoices:{storm:'Mare'}}});
+    expect(invalidChoice.status()).toBe(422);
+    await page.screenshot({path:test.info().outputPath('barbaro-v2-desktop.png'),fullPage:true});
+    await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
   });
 
   test('endpoint rifiuta una scheda arbitraria e richieste anonime', async ({ page, playwright }) => {

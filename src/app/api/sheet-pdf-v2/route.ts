@@ -3,7 +3,9 @@ import path from 'node:path';
 import { z } from 'zod';
 import { getRequestAuthContext } from '@/utils/supabase/request-auth-context';
 import { generateSheetAction } from '@/lib/actions/generator-actions';
-import { renderExperimentalBardSheet } from '@/lib/pdf/experimental-bard-sheet';
+import { renderCharacterSheetV2 } from '@/lib/pdf/character-sheet-v2';
+import { loadBarbarianEvidence, addBarbarianGrantedSpells } from '@/lib/server/barbarian-source';
+import { TOTEM_ANIMALS, STORM_ENVIRONMENTS } from '@/lib/sheet-generator/barbarian-paths';
 import { ALL_SKILL_KEYS } from '@/lib/sheet-generator/skill-rules';
 import { BARD_FIGHTING_STYLES } from '@/lib/sheet-generator/bard-colleges';
 import { loadBardCollegeFeatures, addBardCollegeGrantedSpells } from '@/lib/server/bard-college-source';
@@ -14,6 +16,7 @@ const schema = z.object({
   input: z.record(z.string().max(48_000)).refine((v) => Object.keys(v).length <= 30),
   bonusSkills: z.array(z.enum(ALL_SKILL_KEYS)).max(3).default([]),
   fightingStyle: z.enum(BARD_FIGHTING_STYLES).optional(),
+  barbarianChoices:z.object({totemSpirit:z.enum(TOTEM_ANIMALS).optional(),totemAspect:z.enum(TOTEM_ANIMALS).optional(),totemAttunement:z.enum(TOTEM_ANIMALS).optional(),storm:z.enum(STORM_ENVIRONMENTS).optional(),zealotDamage:z.enum(['Radiosi','Necrotici']).optional()}).strict().optional(),
 });
 export async function POST(req: Request) {
   const { user, profile } = await getRequestAuthContext();
@@ -24,7 +27,7 @@ export async function POST(req: Request) {
   let json: unknown;
   try { json = JSON.parse(raw); } catch { return Response.json({ error: 'Richiesta non valida.' }, { status: 400 }); }
   const parsed = schema.safeParse(json);
-  if (!parsed.success || parsed.data.input.classLabel !== 'Bardo') return Response.json({ error: 'La V2 richiede i dati di un Bardo.' }, { status: 400 });
+  if (!parsed.success || !['Bardo','Barbaro'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di un Bardo o un Barbaro.' }, { status: 400 });
   const form = new FormData();
   for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
   // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
@@ -33,16 +36,20 @@ export async function POST(req: Request) {
   try {
     const logo = await fs.readFile(path.join(process.cwd(), 'public/logo.png'));
     const origin=new URL(req.url).origin;
-    const sheet=await addBardCollegeGrantedSpells(result.sheet,origin);
-    const collegeFeatures=await loadBardCollegeFeatures(sheet,origin);
-    const bytes = await renderExperimentalBardSheet(sheet, logo, {
+    const bard=result.sheet.classLabel==='Bardo';
+    if((bard&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
+    const sheet=bard?await addBardCollegeGrantedSpells(result.sheet,origin):await addBarbarianGrantedSpells(result.sheet,origin);
+    const collegeFeatures=bard?await loadBardCollegeFeatures(sheet,origin):undefined;
+    const barbarianEvidence=bard?undefined:await loadBarbarianEvidence(sheet,origin);
+    const bytes = await renderCharacterSheetV2(sheet, logo, {
+      barbarianEvidence,barbarianChoices:parsed.data.barbarianChoices,
       bonusSkills: parsed.data.bonusSkills,
       collegeFeatures,
       fightingStyle: parsed.data.fightingStyle,
       story: result.includeBackgroundStoryInPdf ? result.characterStory ?? '' : '',
       quickManualSections: result.quickManualSections ?? [],
     });
-    return new Response(Buffer.from(bytes), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="scheda-bardo-v2.pdf"', 'Cache-Control': 'no-store' } });
+    return new Response(Buffer.from(bytes), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="scheda-${bard?'bardo':'barbaro'}-v2.pdf"`, 'Cache-Control': 'no-store' } });
   } catch (error) {
     console.error('[sheet-pdf-v2]', error);
     return Response.json({ error: error instanceof Error ? error.message : 'Generazione PDF V2 non riuscita.' }, { status: 422 });

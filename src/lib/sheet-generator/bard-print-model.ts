@@ -1,5 +1,6 @@
 import type { AbilityKey, GeneratedCharacterSheet, SkillKey } from './types';
-import { sanitizeTextForStandardPdfFont } from '@/lib/pdf/winansi-text';
+import { extractLeveledFeatures as extractFeatures, normalizeFeatureTitle as normalize, type PrintFeature as BardPrintFeature } from './manual-feature-text';
+export { printPlainText, type PrintFeature as BardPrintFeature } from './manual-feature-text';
 import { bardCollegeFromLabel, extractBardCollegeFeatures, type BardFightingStyle } from './bard-colleges';
 
 export const SKILL_LABELS: Record<SkillKey, string> = {
@@ -12,38 +13,10 @@ const SKILL_ABILITIES: Record<SkillKey, AbilityKey> = {
   athletics:'str', acrobatics:'dex', stealth:'dex', sleight_of_hand:'dex', arcana:'int', investigation:'int', nature:'int', religion:'int', history:'int',
   animal_handling:'wis', insight:'wis', medicine:'wis', perception:'wis', survival:'wis', deception:'cha', intimidation:'cha', performance:'cha', persuasion:'cha',
 };
-export type BardPrintFeature = { title: string; body: string; level: number; source: string };
-
-export function printPlainText(markdown: string): string {
-  return sanitizeTextForStandardPdfFont(markdown.replace(/!\[[^\]]*\]\([^)]*\)/g, '')
-    .replace(/^\s*\|[\s:|\-]+\|\s*$/gm,'')
-    .replace(/<\/(?:tr|p)>/gi,'\n').replace(/<\/(?:td|th)>/gi,' | ').replace(/<[^>]+>/g,' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/^#{1,6}\s+/gm,'').replace(/\*|`/g,'')
-    .replace(/(?:^|\n)CAPITOLO\s+\d+\s*\|[^\n]*(?:\n\d{1,3})?/g,'')
-    .replace(/(?:^|\n)\d{1,3}\s*\nCAPITOLO\s+\d+\s*\|[^\n]*/g,'')
-    .replace(/\n{3,}/g,'\n\n').trim());
-}
-
-function normalize(s: string) { return s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toUpperCase().trim(); }
 const CLASS_LEVELS: Record<string, number> = {
   'ISPIRAZIONE BARDICA':1,'FACTOTUM':2,'CANTO DI RIPOSO':2,'MAESTRIA':3,'AUMENTO DEI PUNTEGGI DI CARATTERISTICA':4,
   'FONTE DI ISPIRAZIONE':5,'CONTROFASCINO':6,'SEGRETI MAGICI':10,'ISPIRAZIONE SUPERIORE':20,
 };
-
-function extractFeatures(md: string, levels: Record<string, number>, level: number, source: string): BardPrintFeature[] {
-  return md.split(/(?=^#{1,6}\s)/m).flatMap((part) => {
-    const m=part.match(/^#{1,6}\s+([^\n]+)\n([\s\S]*)/);
-    if(!m) return [];
-    const unlock=levels[normalize(m[1])];
-    if(!unlock || unlock>level) return [];
-    // Remove only whole future-unlock paragraphs, preserving the other source sentences verbatim.
-    const paragraphs=printPlainText(m[2]).split(/\n\s*\n/).filter((p) => {
-      const future=p.match(/^(?:Al|Dal|A partire dal|Quando arriva al)\s+(\d+)[°º]?\s+livello/i);
-      return !future || Number(future[1])<=level;
-    });
-    return paragraphs.join('\n\n').trim() ? [{title:m[1].trim(),body:paragraphs.join('\n\n'),level:unlock,source}] : [];
-  });
-}
 
 export function buildBardPrintModel(original: GeneratedCharacterSheet, bonusSkills: SkillKey[] = [], collegeEvidence?:BardPrintFeature[], fightingStyle?:BardFightingStyle) {
   if(original.classLabel!=='Bardo') throw new Error('La scheda V2 supporta per ora il Bardo.');

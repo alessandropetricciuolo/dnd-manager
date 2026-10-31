@@ -105,3 +105,14 @@ export function drawFantasyAbility(page: PDFPage, b: FantasyBox, data: {
     page.drawText(value, { x: b.x + b.width - 9 - font.widthOfTextAtSize(value, 8), y, size: 8, font, color: INK });
   });
 }
+
+/** Double-bladed axe badge, using the same monochrome vector language as the lute. */
+export function drawBarbarianEmblem(page:PDFPage,b:FantasyBox){
+  const k=Math.min(b.width,b.height)/36,cx=b.x+b.width/2,cy=b.y+b.height/2;
+  page.drawCircle({x:cx,y:cy,size:17*k,borderColor:INK,borderWidth:.7});
+  stroke(page,cx,cy-13*k,cx,cy+12*k,2*k);
+  for(const d of [-1,1]){
+    const points=[[cx,cy+9*k],[cx+d*10*k,cy+13*k],[cx+d*12*k,cy+3*k],[cx+d*9*k,cy-2*k],[cx,cy+3*k]];
+    points.forEach((p,i)=>{const q=points[(i+1)%points.length];stroke(page,p[0],p[1],q[0],q[1],1.5*k);});
+  }
+}

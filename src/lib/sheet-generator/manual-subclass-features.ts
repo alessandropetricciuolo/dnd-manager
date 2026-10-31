@@ -1,0 +1,32 @@
+import { CLASS_OPTIONS } from '@/lib/character-build-catalog';
+import { SUPPLEMENT_SUBCLASS_OPTIONS, type SubclassCatalogEntry } from '@/lib/character-subclass-catalog';
+import { wikiManualBookLabel } from '@/lib/manual-book-catalog';
+import type { PrintFeature } from './manual-feature-text';
+const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim().toUpperCase();
+
+export function extractManualSubclassFeatures(raw:string, college:SubclassCatalogEntry, level:number, specs:Array<[string,number]>):PrintFeature[] {
+  if(!specs)throw new Error('Sottoclasse non supportata dalla V2.');
+  const lines=raw.replace(/\r/g,'').replace(/<\/table>\s*(#{1,6}\s+)/gi,'</table>\n\n$1').split('\n');
+  const headings=lines.flatMap((line,index)=>{const m=line.match(/^#{1,6}\s+(.+?)\s*$/);return m?[{title:m[1],key:norm(m[1]),index}]:[];});
+  const start=headings.find(h=>college.sectionHeadings.some(s=>norm(s)===h.key));
+  if(!start)throw new Error(`Sezione ${college.label} non trovata in ${college.supplementRulesSource.markdownFile}.`);
+  const stops=new Set([
+    ...SUPPLEMENT_SUBCLASS_OPTIONS.filter(c=>c.slug!==college.slug&&c.supplementRulesSource.markdownFile===college.supplementRulesSource.markdownFile).flatMap(c=>c.sectionHeadings.map(norm)),
+    ...CLASS_OPTIONS.map(c=>norm(c.label)), 'WARLOCK: IL NON MORTO',
+  ]);
+  const end=headings.find(h=>h.index>start.index&&stops.has(h.key))?.index??lines.length;
+  const expected=new Map(specs.map(([title,unlock])=>[norm(title),{title,unlock}]));
+  const starts=headings.filter(h=>h.index>start.index&&h.index<end&&expected.has(h.key));
+  const found=new Set(starts.map(h=>h.key));
+  for(const [title,unlock] of specs)if(unlock<=level&&!found.has(norm(title)))throw new Error(`Privilegio ${title} non trovato nel manuale: impossibile completare ${college.label}.`);
+  return starts.flatMap((h,i)=>{
+    const spec=expected.get(h.key)!;if(spec.unlock>level)return [];
+    const body=lines.slice(h.index+1,starts[i+1]?.index??end).join('\n')
+      .replace(/^#{1,6}\s+Privilegio del (?:Collegio|Cammino)[^\n]*\n/gim,'')
+      .replace(/^\*?Privilegio del (?:Collegio|Cammino)[^\n]*\*?\s*$/gim,'')
+      .replace(/^Scansionato con CamScanner\s*$/gm,'').trim();
+    if(!body)throw new Error(`Testo vuoto per ${spec.title}.`);
+    return [{title:spec.title,body,level:spec.unlock,source:`${wikiManualBookLabel(college.supplementRulesSource.manualBookKey)} / ${college.label} / ${college.supplementRulesSource.markdownFile}`}];
+  });
+}
+

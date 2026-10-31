@@ -37,7 +37,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
       characterName: searchParams.get("characterName") ?? "",
       raceSlug: searchParams.get("raceSlug") ?? "",
       subraceSlug: searchParams.get("subraceSlug") ?? "",
-      classLabel: v2 ? "Bardo" : searchParams.get("classLabel") ?? "",
+      classLabel: v2 ? (["Bardo","Barbaro"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
       classSubclass: searchParams.get("classSubclass") ?? "",
       backgroundSlug: searchParams.get("backgroundSlug") ?? "",
       level: searchParams.get("level") ?? "1",
@@ -338,10 +338,10 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
               {returnLabel}
             </button>
           </div>
-          {!v2 && <a href="/generator-v2" className="inline-block rounded border border-barber-gold/40 px-3 py-2 text-sm text-barber-gold">Prova il Generatore V2 del Bardo</a>}
+          {!v2 && <a href="/generator-v2" className="inline-block rounded border border-barber-gold/40 px-3 py-2 text-sm text-barber-gold">Prova il Generatore V2</a>}
           <h1 className="flex items-center gap-2 text-2xl font-semibold text-barber-gold">
             <Sparkles className="h-5 w-5" />
-            {v2 ? "Generatore V2 · Bardo" : "Generatore Schede D&D (HTML)"}
+            {v2 ? "Generatore V2" : "Generatore Schede D&D (HTML)"}
           </h1>
           <p className="text-sm text-barber-paper/70">
             Flusso deterministico con revisione delle scelte: competenze, incantesimi, stile di
@@ -349,7 +349,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
           </p>
         </header>
 
-        {v2 && <p className="mb-5 text-sm text-barber-paper/75">Laboratorio di stampa fantasy del Bardo. Scegli il personaggio, conferma le opzioni e scarica la scheda V2.</p>}
+        {v2 && <p className="mb-5 text-sm text-barber-paper/75">Laboratorio di stampa fantasy: Bardo e Barbaro. Scegli il personaggio, conferma le opzioni e scarica la scheda V2.</p>}
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="characterName" className="text-sm font-medium text-barber-paper">
@@ -432,7 +432,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
                 <option value="" disabled>
                   Seleziona classe
                 </option>
-                {(v2 ? CLASS_OPTIONS.filter((c) => c.label === "Bardo") : CLASS_OPTIONS).map((c) => (
+                {(v2 ? CLASS_OPTIONS.filter((c) => ["Bardo","Barbaro"].includes(c.label)) : CLASS_OPTIONS).map((c) => (
                   <option key={c.slug} value={c.label}>
                     {c.label}
                   </option>
@@ -649,7 +649,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
             ))}
           </div>
         )}
-        {sheet && v2Input && sheet.classLabel === "Bardo" && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
+        {sheet && v2Input && ["Bardo","Barbaro"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
         {sheet && (
           <GeneratedSheetView
             sheet={sheet}
