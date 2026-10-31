@@ -20,6 +20,10 @@ export function SheetBuildChoicesPanel({ preview, level, disabled, onChange }: P
   const groups = useMemo(() => {
     const map = new Map<string, BuildChoiceSlot[]>();
     for (const s of slots) {
+      const activeId=s.id.replace(/^artificer-(?:state|resistance)-/,'artificer-active-');
+      const assignment=slots.find(v=>v.id===activeId)?.value;
+      if(s.id.startsWith('artificer-state-')&&!assignment)continue;
+      if(s.id.startsWith('artificer-resistance-')&&!assignment?.startsWith('resistant::'))continue;
       const list = map.get(s.group) ?? [];
       list.push(s);
       map.set(s.group, list);
@@ -64,7 +68,7 @@ export function SheetBuildChoicesPanel({ preview, level, disabled, onChange }: P
                   className="h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark/80 px-3 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                 >
                   {s.options.map((opt) => (
-                    <option key={opt.value} value={opt.value}>
+                    <option key={opt.value} value={opt.value} disabled={opt.disabled}>
                       {opt.meta ? `${opt.label} (${opt.meta})` : opt.label}
                     </option>
                   ))}

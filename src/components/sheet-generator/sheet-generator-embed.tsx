@@ -85,7 +85,7 @@ export function SheetGeneratorEmbed({ initial, sheetReady = false, onSheetReady 
     if (result.success && result.sheet) setSheet(result.sheet);
     if (result.success && result.sheetData) {
       setSheetDataObj(result.sheetData);
-      setQuickManualSections(result.quickManualSections ?? []);
+      setQuickManualSections([...(result.quickManualSections ?? []),...(result.artificerInfusionSections ?? [])]);
       setBackgroundPdfSections(result.backgroundPdfSections ?? []);
       setFeatureSummaryV2(result.featureSummaryV2 ?? null);
       setIncludeBackgroundStoryInPdf(!!result.includeBackgroundStoryInPdf);

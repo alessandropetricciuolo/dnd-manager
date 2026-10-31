@@ -1,3 +1,5 @@
+import { loadArtificerEvidence } from '@/lib/server/artificer-source';
+import { artificerBuildChoiceSlots } from './artificer-build-choices';
 import { classByLabel, maxSpellLevelOnSheet } from "@/lib/character-build-catalog";
 import {
   pickDefaultFightingStyle,
@@ -99,6 +101,7 @@ export async function resolveBuildChoicesPreview(
   requestOrigin?: string | null
 ): Promise<BuildChoicesPreview> {
   const slots: BuildChoiceSlot[] = [];
+  if(input.classLabel==='Artefice')slots.push(...artificerBuildChoiceSlots(input.level,input.classSubclass,await loadArtificerEvidence(input.level,input.classSubclass,requestOrigin??undefined)));
   const core = computeCoreSheet(input.classLabel, input.level, input.backgroundSlug);
   const classDef = classByLabel(input.classLabel);
   const tcWizard = getThirdCasterWizardSpellcasting(

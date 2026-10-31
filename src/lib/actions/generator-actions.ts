@@ -1,5 +1,6 @@
 'use server';
 
+import { artificerInfusionManualSections } from '@/lib/sheet-generator/artificer-print-model';
 import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
 import {
   resolveBuildChoicesPreview,
@@ -22,6 +23,7 @@ export type GenerateSheetResult = {
   sheet?: GeneratedCharacterSheet;
   sheetData?: Record<string, unknown>;
   quickManualSections?: QuickManualSection[];
+  artificerInfusionSections?: QuickManualSection[];
   backgroundPdfSections?: QuickManualSection[];
   includeBackgroundStoryInPdf?: boolean;
   characterStory?: string | null;
@@ -162,6 +164,7 @@ export async function generateSheetAction(formData: FormData): Promise<GenerateS
       sheet: built.sheet,
       sheetData,
       quickManualSections,
+      artificerInfusionSections:artificerInfusionManualSections(built.sheet),
       backgroundPdfSections: undefined,
       includeBackgroundStoryInPdf: !!input.includeBackgroundStoryInPdf,
       characterStory: input.characterStory ?? null,

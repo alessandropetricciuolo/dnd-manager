@@ -2,6 +2,7 @@ import type { SkillKey } from "@/lib/sheet-generator/types";
 
 /** Scelte manuali del giocatore durante la generazione scheda. */
 export type CharacterBuildOverrides = {
+  artificer?: import("./artificer-types").ArtificerChoices;
   classSkills?: SkillKey[];
   /** Maestria (doppio PB): scelte manuali; se vuote, assegnate automaticamente. */
   expertiseSkills?: SkillKey[];
@@ -18,6 +19,9 @@ export type BuildChoiceOption = {
   value: string;
   label: string;
   meta?: string;
+  disabled?: boolean;
+  requiresInfusion?: string;
+  requiresAttunement?: boolean;
 };
 
 /** Un menu a tendina (o slot) modificabile in fase di anteprima scelte. */

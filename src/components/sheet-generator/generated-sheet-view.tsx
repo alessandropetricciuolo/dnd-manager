@@ -85,6 +85,14 @@ export function GeneratedSheetView({
           <pre className="whitespace-pre-wrap text-sm text-barber-paper/90">{inventoryPreviewText(sheet.inventory)}</pre>
         </section>
 
+        {sheet.artificer&&<section className="mb-4 space-y-3 rounded border border-barber-gold/30 p-3" aria-label="Infusioni dell’Artefice">
+          <h3 className="font-semibold">Infusioni e oggetti</h3>
+          <p className="text-sm">Conosciute {sheet.artificer.known.length}/{sheet.artificer.knownLimit} · Oggetti infusi {sheet.artificer.assignments.length}/{sheet.artificer.itemLimit}{sheet.artificer.armorBonusSlots?` + ${sheet.artificer.armorBonusSlots} parti dell’armatura`:''} · Massimo {sheet.artificer.attunementLimit} oggetti in sintonia</p>
+          <ul className="space-y-2 text-sm">{sheet.artificer.assignments.map(a=><li key={a.infusionId}><strong>{a.title}</strong> → {a.itemLabel}: {a.state==='attuned'?'usato dal PG, in sintonia':a.state==='self'?'usato dal PG, senza sintonia':a.state==='other'?'assegnato ad altri':a.state==='carried-attuned'?'portato, in sintonia, non usato':'portato, non usato'}{a.requiresAttunement&&a.state==='self'?' (bonus non applicato: richiede sintonia)':''}{a.resistance&&a.infusionId==='resistant'?` · resistenza a ${a.resistance}`:''}</li>)}</ul>
+          <p className="text-xs text-barber-paper/70">I bonus indicati nei valori della scheda derivano solo dagli oggetti usati dal PG, con sintonia quando necessaria. Gli effetti temporanei richiedono la loro normale attivazione.</p>
+          {sheet.artificer.notes.map((note,i)=><p key={i} className="text-xs">{note}</p>)}
+        </section>}
+
         <section className="mb-4">
           <h3 className="mb-2 font-semibold">Incantesimi</h3>
           <div className="mb-2 text-sm">

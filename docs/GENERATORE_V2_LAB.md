@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro e Chierico
+# Generatore V2: Bardo, Barbaro, Chierico e Artefice
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -23,7 +23,7 @@ Il numero di pagina degli incantesimi dipende dalle continuazioni: la struttura 
 - L’integrazione browser usa un backend di autenticazione fittizio esclusivamente locale (`test-server.cjs`), con il vero modulo, le vere azioni e il vero endpoint PDF. I ruoli degli utenti reali non vengono modificati. Gli account QA salvati come GM/Admin risultavano entrambi player: il controllo accessi reale ha correttamente rifiutato quelle sessioni.
 - TypeScript, lint e build di produzione; controllo visivo del documento scaricato.
 
-Le altre dieci classi attendono i relativi riferimenti; la rifinitura grafica viene dopo l’integrazione del motore per tutte le classi.
+Le altre nove classi attendono i relativi riferimenti; la rifinitura grafica viene dopo l’integrazione del motore per tutte le classi.
 
 ## Revisione prima pagina (31 ottobre 2026)
 
@@ -95,3 +95,43 @@ Le competenze in armature pesanti, armi da guerra e strumenti da fabbro vengono 
 Correzione locale documentata: il Santuario del Crepuscolo nella scansione Tasha dice erroneamente di infliggere una condizione affascinato/spaventato. Il testo V2 termina un effetto che causa tale condizione, e il chierico può scegliere di concedere il beneficio. Verifica sul testo ufficiale generato da D&D Beyond, sezione TCoE Twilight Sanctuary: https://www.dndbeyond.com/sheet-pdfs/f5psf6gmvn_142395168.pdf. Il manuale condiviso resta invariato.
 
 Verifiche: 128 test del generatore, inclusi tutti i dodici domini ai livelli 1/2/6/8/14/17/20, progressioni PHB ai venti livelli, incantesimi sempre preparati, abilità/linguaggi, magie concesse e fonti mancanti. PDF di tutti i domini ai livelli 1 e 20. Cinque test browser locali comprendono scelte della Conoscenza, esportazione dei dodici domini e regressione Bardo/Barbaro. Build, TypeScript, lint e controllo visivo del documento di prova. Il documento è ancora esteso (16 pagine per la prova Vita livello 5): riduzione dell’ingombro e rifinitura grafica rimangono nella fase concordata dopo le classi.
+
+
+## Artefice e correzione condivisa delle infusioni (31 ottobre 2026)
+
+Riferimento fornito: `/Users/alessandropetricciuolo/Downloads/661729627-Scheda-D-D-Artefice-5e-editabile.pdf`. Le quattro pagine sono state ispezionate staticamente: prima pagina con privilegi e tabella infusioni, identità/inventario, incantesimi e sagoma equipaggiamento/sintonie. Il PDF di riferimento è compilabile e contiene JavaScript; viene letto come fonte visiva, senza eseguirlo. La nuova esportazione resta un PDF statico per la stampa.
+
+Questa volta il cambiamento interessa anche il motore originale, come richiesto: `buildGeneratedCharacterSheet` applica la preparazione dell’Artefice dopo aver risolto i dati base. Le altre classi non passano in questa fase. Il renderer V2 riusa le statistiche già preparate e non applica i bonus una seconda volta. Sono disponibili Alchimista, Armaiolo, Artigliere e Fabbro da battaglia.
+
+### Fonti e selezione
+
+`artificer-source.ts` legge la progressione dalla tabella dell’Artefice in Tasha: infusioni conosciute (0/4/6/8/10/12), oggetti infusi (0/2/3/4/5/6), trucchetti e slot. Prerequisiti e sintonia delle quindici infusioni nominate vengono letti dalle loro descrizioni. Replicare un Oggetto Magico è rappresentata da 49 scelte specifiche, tratte dalle quattro tabelle di Tasha; le descrizioni sono risolte nella Dungeon Master locale, senza inventarle. Un testo mancante impedisce la scelta. Non sono inclusi automaticamente tutti gli altri oggetti comuni esterni alle tabelle.
+
+La proposta automatica sceglie tutte le conoscenze previste e assegna oggetti fino alla capacità utilizzabile, con priorità diverse per il Fabbro da battaglia e le altre specializzazioni. Non viene dichiarata una build universalmente ottimale. Non vengono scelti implicitamente la gemma costosa dell’Omuncolo o gli oggetti replicati; restano selezionabili. I supporti generici (veste, bacchetta, stivali, elmo, anello) sono quelli della dotazione proposta: il generatore non tiene una contabilità monetaria o verifica il possesso dell’equipaggiamento reale in campagna. La gemma dell’Omuncolo è marcata come requisito da almeno 100 mo.
+
+L’anteprima condivisa permette di modificare armatura, scudo, modello dell’Armaiolo, ogni infusione conosciuta e ogni abbinamento infusione-oggetto. Una conoscenza rimossa libera le sue assegnazioni; una nuova assegnazione libera eventuali altri usi della stessa infusione o dello stesso oggetto. Il server ricontrolla sempre livelli, compatibilità, unicità, capacità, sintonia e resistenza scelta. I due posti aggiuntivi dell’Armaiolo dal livello 9 sono utilizzabili solo per parti dell’armatura arcana. Le repliche di stivali possono usare gli stivali dell’armatura come supporto.
+
+### Applicazione dei bonus
+
+Gli stati sono distinti: usato dal PG, usato e in sintonia, portato non usato, portato e in sintonia, assegnato ad altri. Le infusioni conosciute ma non assegnate non producono bonus; quelle assegnate ad altri o non usate non modificano i valori del PG. Se serve sintonia, indossare l’oggetto da solo non basta. I limiti personali sono 3/4/5/6 ai livelli 1/10/14/18. Al livello 20 Anima dell’Artificio conta solo le sintonie effettive degli oggetti tracciati, anche se portati e non usati; non conta le conoscenze, gli oggetti senza sintonia o quelli assegnati ad altri. Gli altri oggetti magici preesistenti della campagna non sono acquisiti automaticamente dal generatore.
+
+Sono applicati i bonus permanenti alle statistiche rappresentate nella scheda:
+- Arma Migliorata, Arma Splendente, Ritorno dell’Arma e Colpo Ripetuto: tiro per colpire e danni della sola arma assegnata; il +2 di Arma Migliorata scatta dal livello 10.
+- Difesa Migliorata: CA dell’armatura indossata o dello scudo impugnato, +2 dal livello 10. Scudo della Repulsione aggiunge il proprio +1 solo se impugnato e in sintonia. Le infusioni non si cumulano sullo stesso oggetto.
+- Focus Arcano Migliorato: +1/+2 ai tiri per colpire con incantesimi quando impugnato, senza aumentare la CD.
+- Fabbro da battaglia: Intelligenza disponibile per colpire/danni solo per armi magiche; l’arma ordinaria conserva Forza/Destrezza. Armaiolo: arma speciale del modello e incremento di velocità dell’Infiltrato; bonus di velocità e guanti dell’Armatura a Propulsione Arcana quando attiva.
+- Repliche: i punteggi conferiti da Amuleto della Salute, Fascia dell’Intelletto, Guanti del Potere Orchesco e Cintura dei Giganti delle Colline sono ricavati dal testo/tabella della Dungeon Master. Si aggiornano modificatori, abilità, salvezze, PF secondo la convenzione massimizzata del progetto, attacchi, CD/attacco magico e limite di preparazione. Il punteggio non viene abbassato se era già superiore. Mantello e Anello di Protezione aggiornano CA/salvezze; Bracciali della Difesa solo senza armatura e scudo; Guanti Ladreschi aggiornano Rapidità di Mano. Velocità particolari e competenze degli altri oggetti vengono indicate con le loro condizioni.
+
+Le proprietà a cariche, le attivazioni temporanee e i vantaggi condizionali restano nel testo e nelle note: nessun successo automatico permanente alla concentrazione, nessun +5 fisso all’iniziativa per il vantaggio e nessun raddoppio permanente da Stivali della Velocità. Bracciali dell’Arciere non aumentano i danni della balestra; Colpo Ripetuto non rende la balestra leggera utilizzabile a una mano. Il carico proposto distingue scudo impugnato/non impugnato; usare la balestra richiede comunque di riporlo. I bonus al focus o alle armi descrivono il loro uso nel rispettivo attacco, senza simulare automaticamente cambi di impugnatura e azioni in combattimento.
+
+### Esportazione e testi
+
+`GeneratedCharacterSheet.artificer` mantiene le conoscenze, gli abbinamenti, gli stati, le capacità e le fonti. `ArtificerInfusions` nel payload dei campi conserva i dati strutturati; inventario e privilegi PDF antepongono gli oggetti infusi. Il generatore precedente e quello incorporato allegano anche un’appendice completa delle infusioni, per evitare la perdita delle scelte nei campi corti del PDF compilabile. La V2 include quelle informazioni nelle proprie pagine di continuazione, senza duplicare l’appendice del percorso precedente.
+
+Gli incantesimi della specializzazione sono sempre preparati e non consumano preparazioni ordinarie. Le preparazioni ordinarie liberate o aumentate da una caratteristica vengono completate dalla lista dell’Artefice. Le descrizioni esatte e il livello sono verificati in PHB, Xanathar e Tasha; il lettore gestisce intestazioni e metadati spezzati senza usare riassunti generati. L’Artefice richiede il focus degli Strumenti Necessari anche quando il singolo incantesimo non ha M nella descrizione generica: la tabella lo segnala, mantenendo i requisiti di materiali costosi/consumati. I trucchetti ora passano a tre dal livello 10 e quattro dal livello 14 anche nel motore condiviso.
+
+L’estrazione conserva statistiche e azioni di Cannone Occulto, Difensore d’Acciaio e Servo Omuncolo, e l’intera tabella degli Elisir. Le tabelle future degli incantesimi della specializzazione sono separate dai privilegi, evitando di stamparle dentro il primo privilegio di livello 3. Il cambio di modello dell’armatura è selezionabile; gli usi quotidiani e le reazioni dei privilegi sono documentati, senza attivarli automaticamente.
+
+Correzioni esplicite di trascrizione, senza modificare i manuali condivisi: nomi delle repliche con OCR errato (per esempio «Amuieto», «Broccoli», «malleggiati»), nomi delle magie delle specializzazioni («oura», «trama iprotica», «raggia», ecc.) e titolo «LENZA ELETTRZANTE» collegato alla voce corretta della lista. La formula PF del Difensore corregge l’uguale in più, secondo l’errata ufficiale Wizards: https://media.wizards.com/2020/dnd/downloads/ERftLW-Errata.pdf; il modificatore di INT 4 è -3. In Maestria nella Chimica «cara ferita» è corretto in Guarigione, verificato nel testo TCoE esportato da D&D Beyond nel campione https://d1vzi28wh99zvq.cloudfront.net/pdf_previews/362765-sample.pdf (Chemical Mastery). La scheda di riferimento viene completata con i minimi previsti dal manuale e la durata di sei secondi del messaggio di Invenzione Magica.
+
+Verifiche: 137 test complessivi, inclusi i venti livelli per tutte le quattro specializzazioni e la classe base; assegnazione di tutte le 64 opzioni; incompatibilità, cumuli e limiti; oggetti non usati/di altri; sintonie; bonus a livello 10, caratteristiche delle repliche, Fabbro e Armaiolo. PDF di tutte le specializzazioni ai livelli 1/3/9/20. Sei prove browser locali comprendono modifica delle conoscenze e delle assegnazioni, il percorso precedente e la V2, esportazione delle quattro specializzazioni e rifiuto di input incompatibili. Nessun ruolo di un account reale viene cambiato. TypeScript, lint e build; controllo visivo delle pagine del PDF di prova. La grafica resta provvisoria e il documento contiene ancora molte pagine di regole.

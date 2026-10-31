@@ -551,6 +551,7 @@ export function mapGeneratedSheetToPdfFields(sheet: GeneratedCharacterSheet): Re
     Features_Main: summarizeClassFeaturesForPdf(sheet.classFeaturesMd, sheet.subclassFeaturesMd, sheet.level, 1400),
     Feat_Racial: summarizeRaceTraitsForPdf(sheet.raceTraitsMd, sheet.subraceTraitsMd ?? "", 900),
     Inventory: formatInventoryForPdf(sheet.inventory),
+    ...(sheet.artificer?{ArtificerInfusions:{knownLimit:sheet.artificer.knownLimit,itemLimit:sheet.artificer.itemLimit,armorBonusSlots:sheet.artificer.armorBonusSlots,attunementLimit:sheet.artificer.attunementLimit,known:sheet.artificer.known.map(i=>({id:i.id,title:i.title,level:i.level,source:i.source})),assignments:sheet.artificer.assignments,armorModel:sheet.artificer.armorModel,notes:sheet.artificer.notes}}:{}),
     Languages: sheet.languages.join(", "),
     SpellcastingClass: sheet.spellcastingClass ?? "",
     SpellcastingAbility: sheet.spellcastingAbility?.toUpperCase() ?? "",

@@ -1,6 +1,8 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import type { GeneratedCharacterSheet, SkillKey, AbilityKey } from '@/lib/sheet-generator/types';
 import { buildBardPrintModel, printPlainText, SKILL_LABELS, type BardPrintFeature } from '@/lib/sheet-generator/bard-print-model';
+import { buildArtificerPrintModel } from '@/lib/sheet-generator/artificer-print-model';
+import { artificerReferenceCards } from '@/lib/sheet-generator/artificer-reference-copy';
 import { buildClericPrintModel, type ClericEvidence } from '@/lib/sheet-generator/cleric-print-model';
 import type { ClericChoices } from '@/lib/sheet-generator/cleric-domains';
 import { clericReferenceCards } from '@/lib/sheet-generator/cleric-reference-copy';
@@ -10,7 +12,7 @@ import { barbarianReferenceCards } from '@/lib/sheet-generator/barbarian-referen
 import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
 import type { BardFightingStyle } from '@/lib/sheet-generator/bard-colleges';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
-import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
+import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawArtificerEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
 
 export type CharacterSheetPrintOptions = { clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
@@ -35,8 +37,9 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   const bard=original.classLabel==='Bardo'?buildBardPrintModel(original,options.bonusSkills,options.collegeFeatures,options.fightingStyle):null;
   const barbarian=original.classLabel==='Barbaro'&&options.barbarianEvidence?buildBarbarianPrintModel(original,options.barbarianEvidence,options.barbarianChoices):null;
   const cleric=original.classLabel==='Chierico'&&options.clericEvidence?buildClericPrintModel(original,options.clericEvidence,options.clericChoices):null;
-  const model=bard??barbarian??cleric;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
-  const subclass=bard?.college??barbarian?.path??cleric?.domain;
+  const artificer=original.classLabel==='Artefice'?buildArtificerPrintModel(original):null;
+  const model=bard??barbarian??cleric??artificer;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
+  const subclass=bard?.college??barbarian?.path??cleric?.domain??artificer?.specialist;
   const doc=await PDFDocument.create();doc.setTitle(`${s.characterName} - ${s.classLabel} V2`);
   const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.TimesRomanBold),logo=await doc.embedPng(logoBytes);
   const clean=(v:unknown)=>sanitizeTextForStandardPdfFont(String(v??''));
@@ -55,7 +58,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     text(p,173,784,'RAZZA',6);fit(p,173,773,s.subraceLabel??s.raceLabel,114,8.5);
     text(p,301,784,'BACKGROUND',6);fit(p,301,773,s.backgroundLabel,126,8.5);
     text(p,443,784,'ALLINEAMENTO',6);fit(p,443,773,s.alignment??'-',115,8.5);
-    (bard?drawBardEmblem:cleric?drawClericEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
+    (bard?drawBardEmblem:artificer?drawArtificerEmblem:cleric?drawClericEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
     text(p,204,762,'CLASSE',6);fit(p,204,750,s.classLabel.toUpperCase(),62,11,bold);
     text(p,280,762,'SOTTOCLASSE',6);fit(p,280,750,s.classSubclass??'-',237,9);
     text(p,534,762,'LIVELLO',5.5);text(p,541,750,s.level,11,bold);
@@ -72,7 +75,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   }
   text(first,28,80,`Competenza ${sign(s.proficiencyBonus)} / Percezione ${s.passivePerception}`,7);text(first,28,66,'C: competenza / M: maestria',7);
   text(first,28,51,'Indebolimento ____ / Ispirazione ____',7);
-  frame(first,212,704,168,71,'DIFESE');text(first,223,663,`CA ${s.armorClass} / Iniz. ${sign(s.initiative)}`,11);text(first,223,645,`Velocità ${s.speed}`);
+  frame(first,212,704,168,71,'DIFESE');text(first,223,663,`CA ${s.armorClass} / Iniz. ${sign(s.initiative)}`,11);fit(first,223,645,`Velocità ${s.speed}`,146,8);
   frame(first,212,623,168,112,'PUNTI FERITA E DADI VITA');text(first,223,580,`Massimi ${s.hpMax}`,13,bold);text(first,223,555,'Attuali ______  Temporanei ______');text(first,223,535,`${s.hitDiceTotal} ${s.hitDie} / Dadi usati ____`);
   frame(first,212,501,168,73,'SALVEZZA DA MORTE');text(first,223,459,'Successi');text(first,223,442,'Fallimenti');
   drawFantasyTracker(first,{x:289,y:454,width:80,height:16},3);drawFantasyTracker(first,{x:289,y:437,width:80,height:16},3);
@@ -104,10 +107,21 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     text(first,222,155,`Preparabili: ${s.spellsPrepared} + dominio`,8);
     Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const col=i>=5?1:0,row=i%5,x=222+col*75,sy=136-row*15;text(first,x,sy,`${level}°`);drawFantasyTracker(first,{x:x+19,y:sy-4,width:60,height:16},count);});
   }
+  if(artificer){
+    const state=artificer.state,attuned=state.assignments.filter(a=>a.state==='attuned'||a.state==='carried-attuned').length;
+    frame(first,212,322,168,105,'INFUSIONI E SINTONIA');
+    text(first,222,282,`Conosciute: ${state.known.length}/${state.knownLimit}`,9);
+    text(first,222,267,`Oggetti: ${state.assignments.length}/${state.itemLimit}${state.armorBonusSlots?' + '+state.armorBonusSlots+' armatura':''}`,8);
+    text(first,222,252,`Sintonia: ${attuned}/${state.attunementLimit}`,9);
+    if(s.level>=7)text(first,222,233,`Lampo di Genio: ${Math.max(1,s.abilityMods.int)} usi`,8);
+    frame(first,212,207,168,153,'MAGIA E RISORSE');text(first,222,170,`INT / CD ${s.spellSaveDc} / Att. ${sign(s.spellAttackBonus??0)}`,8.5);
+    text(first,222,155,`Preparabili: ${s.spellsPrepared} + specialità`,8);
+    Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const sy=136-i*15;text(first,222,sy,`${level}°`);drawFantasyTracker(first,{x:246,y:sy-4,width:120,height:16},count);});
+  }
   // Fixed reference-sheet wording for standard class cards; full PHB descriptions remain in the appendix.
   const domainCards=cleric?cleric.features.filter(f=>options.clericEvidence!.domainFeatures.some(d=>d.title===f.title)):[];
   const mainDomainCard=domainCards.find(f=>f.level===1&&!/COMPETENZ|TRUCCHETTO BONUS/.test(f.title));
-  const cards=bard?bardReferenceCards(s.level):cleric?[
+  const cards=bard?bardReferenceCards(s.level):artificer?[...artificer.state.features.filter(f=>f.source.includes(s.classSubclass??'__none__')&&!/COMPETENZA|STRUMENTI DEL MESTIERE/.test(f.title)).slice(0,1),...artificerReferenceCards(s.level)]:cleric?[
     {title:'Incantesimi di Dominio',level:1,source:cleric.domain.label,body:cleric.domainSpells.map(spell=>`${spell.level}°: ${spell.name}`).join('\n')},
     ...(mainDomainCard?[mainDomainCard]:[]),
     ...clericReferenceCards(s.level,cleric.undeadCr),
@@ -131,7 +145,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   section('Linguaggi e competenze',[...s.languages,...s.armorProficiencies,...s.weaponProficiencies,...s.toolProficiencies].join(', '));
   section('Tratti razziali',[s.raceTraitsMd,s.subraceTraitsMd].filter(Boolean).join('\n\n'));section('Inventario',s.inventory.join('\n'));section('Background',s.backgroundMd??s.backgroundLabel);
   let spellPage:PDFPage,rowY=0;const xs=[27,52,186,229,273,568];
-  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard||cleric?`Classe: ${s.classLabel} / Caratteristica: ${cleric?'Saggezza':'Carisma'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
+  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard||cleric||artificer?`Classe: ${s.classLabel} / Caratteristica: ${artificer?'Intelligenza':cleric?'Saggezza':'Carisma'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
     ['Liv.','Nome incantesimo','V S M','Rit. / Conc.','Effetto'].forEach((label,i)=>text(spellPage,xs[i]+3,675,label,7.5));rowY=661;};
   if(s.spells.length)newSpellPage();
   for(const spell of s.spells){const nameLines=wrapSheetText(spell.name,font,8,125),body=spell.fullTextMd?.trim();
@@ -149,7 +163,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   if(options.story?.trim()){reference=newPage('STORIA DEL PERSONAGGIO');refY=704;section('Storia',options.story);}
   if(options.quickManualSections?.length){reference=newPage('MANUALE RAPIDO');refY=704;options.quickManualSections.forEach(f=>section(f.title,f.body));}
   const book=subclass?.supplementRulesSource.manualBookKey;
-  const rules=book==='xanathar'?'PHB + Xanathar':book==='tasha'?'PHB + Tasha':book==='van_richten_ravenloft'?'PHB + Van Richten':'Manuale del Giocatore';
-  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / ${s.classLabel} V2 / ${i===0?`Testi sintetici: scheda ${s.classLabel} ${bard?'V1.4':'v14'}`:`Regole: ${rules}`} / ${i+1} di ${doc.getPageCount()}`,7));
+  const rules=artificer?'Tasha + Dungeon Master / magie: PHB, Xanathar, Tasha':book==='xanathar'?'PHB + Xanathar':book==='tasha'?'PHB + Tasha':book==='van_richten_ravenloft'?'PHB + Van Richten':'Manuale del Giocatore';
+  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / ${s.classLabel} V2 / ${i===0?`Testi sintetici: scheda ${s.classLabel} ${artificer?'editabile':bard?'V1.4':'v14'}`:`Regole: ${rules}`} / ${i+1} di ${doc.getPageCount()}`,7));
   return doc.save();
 }

@@ -29,7 +29,7 @@ export async function POST(req: Request) {
   let json: unknown;
   try { json = JSON.parse(raw); } catch { return Response.json({ error: 'Richiesta non valida.' }, { status: 400 }); }
   const parsed = schema.safeParse(json);
-  if (!parsed.success || !['Bardo','Barbaro','Chierico'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di un Bardo, un Barbaro o un Chierico.' }, { status: 400 });
+  if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di un Bardo, un Barbaro, un Chierico o un Artefice.' }, { status: 400 });
   const form = new FormData();
   for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
   // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
@@ -41,7 +41,7 @@ export async function POST(req: Request) {
     const bard=result.sheet.classLabel==='Bardo',barbarian=result.sheet.classLabel==='Barbaro',cleric=result.sheet.classLabel==='Chierico';
     if((!barbarian&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!cleric&&Object.keys(parsed.data.clericChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
     const clericEvidence=cleric?await loadClericEvidence(result.sheet,origin):undefined;
-    const sheet=bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true');
+    const sheet=result.sheet.classLabel==='Artefice'?result.sheet:bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true');
     const collegeFeatures=bard?await loadBardCollegeFeatures(sheet,origin):undefined;
     const barbarianEvidence=barbarian?await loadBarbarianEvidence(sheet,origin):undefined;
     const bytes = await renderCharacterSheetV2(sheet, logo, {

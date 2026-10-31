@@ -852,6 +852,14 @@ export async function buildGeneratedCharacterSheet(
   };
 
   sheet.languages = resolveRaceLanguages(input.raceSlug);
+  if(input.classLabel==='Artefice'){
+    const {loadArtificerEvidence,addArtificerSpecialistSpells}=await import('@/lib/server/artificer-source');
+    const {applyArtificerInfusions}=await import('./artificer-infusions');
+    const evidence=await loadArtificerEvidence(sheet.level,sheet.classSubclass,requestOrigin??undefined);
+    const infused=applyArtificerInfusions(sheet,evidence,input.buildOverrides?.artificer);
+    await addArtificerSpecialistSpells(infused,evidence,requestOrigin??undefined,!!input.torneoMode);
+    return {sheet:infused,warnings:rules.warnings};
+  }
 
   return { sheet, warnings: rules.warnings };
 }

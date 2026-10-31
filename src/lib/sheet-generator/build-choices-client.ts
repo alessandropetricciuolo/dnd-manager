@@ -28,6 +28,15 @@ export function overridesFromSlots(slots: BuildChoiceSlot[]): CharacterBuildOver
     else if (s.id.startsWith("favored-terrain-")) terrains.push(s.value);
   }
 
+  if(slots.some(s=>s.id.startsWith('artificer-'))){
+    const value=(id:string)=>slots.find(s=>s.id===id)?.value;
+    overrides.artificer={
+      known:slots.filter(s=>s.id.startsWith('artificer-known-')).map(s=>s.value),
+      assignments:slots.filter(s=>s.id.startsWith('artificer-active-')&&s.value).map(s=>{const [infusionId,itemId]=s.value.split('::'),n=s.id.replace('artificer-active-','');return {infusionId,itemId,state:value('artificer-state-'+n) as import('./artificer-types').ArtificerAssignment['state'],...(infusionId==='resistant'?{resistance:value('artificer-resistance-'+n)}:{})};}),
+      armor:value('artificer-armor') as import('./artificer-types').ArtificerChoices['armor'],shield:value('artificer-shield')==='yes',
+      ...(value('artificer-model')?{armorModel:value('artificer-model') as 'Guardiano'|'Infiltrato'}:{}),
+    };
+  }
   if (skills.length) overrides.classSkills = skills;
   if (expertise.length) overrides.expertiseSkills = expertise;
   if (cantrips.length) overrides.cantrips = cantrips;
@@ -45,7 +54,11 @@ export function applySlotChange(
   newValue: string,
   level: number
 ): BuildChoiceSlot[] {
-  const next = slots.map((s) => (s.id === slotId ? { ...s, value: newValue } : s));
+  const next = slots.map((s) => {
+    if(s.id===slotId)return {...s,value:newValue};
+    if(slotId.startsWith('artificer-active-')&&s.id.startsWith('artificer-active-')&&newValue){const [inf,item]=newValue.split('::'),[otherInf,otherItem]=s.value.split('::');if(inf===otherInf||item===otherItem)return {...s,value:''};}
+    return s;
+  });
 
   if (slotId === "warlock-pact") {
     const invOptions = filterWarlockInvocationsForLevel(level, newValue).map((o) => ({
@@ -66,6 +79,14 @@ export function applySlotChange(
     });
   }
 
+  if(slotId.startsWith('artificer-')){
+    const known=new Set(next.filter(s=>s.id.startsWith('artificer-known-')).map(s=>s.value));
+    return next.map(s=>{
+      if(s.id.startsWith('artificer-active-')){const options=s.options.map(o=>({...o,disabled:o.requiresInfusion?!known.has(o.requiresInfusion):false}));const current=options.find(o=>o.value===s.value);return {...s,options,value:current&&!current.disabled?s.value:''};}
+      if(s.id.startsWith('artificer-state-')&&slotId.startsWith('artificer-active-')&&s.id.replace('artificer-state-','')===slotId.replace('artificer-active-','')){const chosen=next.find(v=>v.id===slotId)?.options.find(o=>o.value===newValue);return {...s,value:chosen?.requiresAttunement?'attuned':'self'};}
+      return s;
+    });
+  }
   return next;
 }
 

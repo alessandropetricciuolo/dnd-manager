@@ -124,3 +124,11 @@ export function drawClericEmblem(page:PDFPage,b:FantasyBox){
   page.drawCircle({x:cx,y:cy,size:6*k,borderColor:INK,borderWidth:1.2*k});
   for(let i=0;i<8;i++){const a=i*Math.PI/4;stroke(page,cx+8*k*Math.cos(a),cy+8*k*Math.sin(a),cx+13*k*Math.cos(a),cy+13*k*Math.sin(a),k);}
 }
+
+/** Gear badge for the Artificer, drawn as print-safe vectors. */
+export function drawArtificerEmblem(page:PDFPage,b:FantasyBox){
+ const k=Math.min(b.width,b.height)/36,cx=b.x+b.width/2,cy=b.y+b.height/2;
+ page.drawCircle({x:cx,y:cy,size:17*k,borderColor:INK,borderWidth:.7});
+ page.drawCircle({x:cx,y:cy,size:8*k,borderColor:INK,borderWidth:3*k});
+ for(let i=0;i<8;i++){const a=i*Math.PI/4;stroke(page,cx+9*k*Math.cos(a),cy+9*k*Math.sin(a),cx+13*k*Math.cos(a),cy+13*k*Math.sin(a),3*k);}
+}

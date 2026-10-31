@@ -59,6 +59,7 @@ export type GeneratedSpell = {
 };
 
 export type GeneratedCharacterSheet = {
+  artificer?: import("./artificer-types").ArtificerState;
   characterName: string;
   raceLabel: string;
   subraceLabel: string | null;

@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 import fs from 'node:fs';
+import { PDFDocument } from 'pdf-lib';
+import { execFileSync } from 'node:child_process';
 
 test.describe('Generatore V2', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
@@ -100,6 +102,33 @@ test.describe('Generatore V2', () => {
     const invalid=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Chierico',characterName:'Test',raceSlug:'umano',backgroundSlug:'accolito',classSubclass:'Dominio della Vita',level:'1'},clericChoices:{skills:['arcana']}}});expect(invalid.status()).toBe(422);
     await page.screenshot({path:test.info().outputPath('chierico-v2-desktop.png'),fullPage:true});
     await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
+  });
+
+  test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Artefice');
+    await expect(page.locator('#classLabel')).toHaveValue('Artefice');await expect(page.locator('#classSubclass option')).toHaveCount(5);
+    await page.locator('#characterName').fill('Artefice V2 verifica');await page.locator('#raceSlug').selectOption('umano');await page.locator('#backgroundSlug').selectOption('sapiente');
+    await page.locator('#classSubclass').selectOption('Fabbro da battaglia');await page.locator('#level').fill('5');
+    await page.getByRole('button',{name:'Genera Scheda',exact:true}).click();
+    await expect(page.locator('#artificer-known-1')).toHaveValue('weapon');await expect(page.locator('#artificer-active-1')).toHaveValue('weapon::hammer');
+    await page.locator('#artificer-known-1').selectOption('returning');await expect(page.locator('#artificer-active-1')).toHaveValue('');
+    await page.locator('#artificer-active-1').selectOption('returning::hammer');await expect(page.locator('#artificer-state-1')).toHaveValue('self');
+    await page.getByRole('button',{name:'Conferma e genera PDF'}).click();
+    await expect(page.getByRole('region',{name:'Infusioni dell’Artefice'})).toContainText("RITORNO DELL'ARMA");
+    const pending=page.waitForEvent('download');await page.getByRole('button',{name:'Genera scheda V2',exact:true}).click();const download=await pending;expect(await download.failure()).toBeNull();await download.saveAs(test.info().outputPath('artefice-v2.pdf'));
+    for(const classSubclass of ['Alchimista','Armaiolo','Artigliere','Fabbro da battaglia']){const response=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Artefice',characterName:classSubclass,raceSlug:'umano',backgroundSlug:'sapiente',classSubclass,level:'10'}}});expect(response.status(),classSubclass+': '+(response.status()!==200?await response.text():'')).toBe(200);expect((await response.body()).subarray(0,5).toString()).toBe('%PDF-');}
+    const invalid=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Artefice',characterName:'Test',raceSlug:'umano',backgroundSlug:'sapiente',level:'2',buildOverridesJson:JSON.stringify({artificer:{known:['weapon','defense','focus','mind'],assignments:[{infusionId:'weapon',itemId:'armor',state:'self'}]}})}}});expect(invalid.status()).toBe(400);
+    await page.screenshot({path:test.info().outputPath('artefice-v2-desktop.png'),fullPage:true});await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
+    // The original generator uses the same corrected engine, not a V2-only patch.
+    await page.goto('/generator?classLabel=Artefice');await page.locator('#characterName').fill('Artefice V1 verifica');await page.locator('#raceSlug').selectOption('umano');await page.locator('#backgroundSlug').selectOption('sapiente');await page.locator('#level').fill('2');
+    await page.getByRole('button',{name:'Genera Scheda',exact:true}).click();await expect(page.locator('#artificer-known-1')).toHaveValue('defense');await expect(page.locator('#artificer-active-1')).toHaveValue('defense::armor');await page.getByRole('button',{name:'Conferma e genera PDF'}).click();
+    await expect(page.getByRole('region',{name:'Infusioni dell’Artefice'})).toContainText('DIFESA MIGLIORATA');
+    const legacyPayload=JSON.parse(execFileSync(process.execPath,['--import','tsx','tests/e2e/fixtures/artificer-legacy-payload.ts'],{encoding:'utf8'}));
+    const legacy=await page.request.post('/api/sheet-pdf',{data:legacyPayload});
+    expect(legacy.status(),legacy.status()===200?'':await legacy.text()).toBe(200);
+    const legacyBytes=await legacy.body();expect((await PDFDocument.load(legacyBytes)).getPageCount()).toBeGreaterThan(3);fs.writeFileSync(test.info().outputPath('artefice-v1.pdf'),legacyBytes);
+
   });
 
   test('endpoint rifiuta una scheda arbitraria e richieste anonime', async ({ page, playwright }) => {

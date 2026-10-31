@@ -205,7 +205,8 @@ export function buildFeatureSummaryV2(
   if (!evidence.some((item) => item.kind === "class")) unresolved.push("Nessun privilegio di classe risolto.");
 
   const racial = compact(evidence.filter((item) => item.kind === "racial").map(evidenceLine), MAX_RACIAL_CHARS);
-  const classes = compact(evidence.filter((item) => item.kind === "class").map(evidenceLine), MAX_CLASS_CHARS);
+  const infusionLines=sheet.artificer?.assignments.map(a=>`${a.title}: ${a.itemLabel} (${a.state==='other'?'ad altri':a.state==='attuned'?'in sintonia':a.state==='self'?'usato':'portato'}).`)??[];
+  const classes = compact([...infusionLines,...evidence.filter((item) => item.kind === "class").map(evidenceLine)], MAX_CLASS_CHARS);
   return {
     fields: { Features_Main: classes, Feat_Racial: racial },
     classText: classes,
