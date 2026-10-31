@@ -75,6 +75,33 @@ test.describe('Generatore V2', () => {
     await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
   });
 
+  test('Chierico: scelte della Conoscenza, download e dodici domini',async({page})=>{
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Chierico');
+    await expect(page.locator('#classLabel')).toHaveValue('Chierico');
+    await expect(page.locator('#classSubclass option')).toHaveCount(13);
+    await page.locator('#characterName').fill('Chierico V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');await page.locator('#backgroundSlug').selectOption('accolito');
+    const domain=await page.locator('#classSubclass option').filter({hasText:'Dominio della Conoscenza'}).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(domain!);await page.locator('#level').fill('5');
+    await page.getByRole('button',{name:'Genera Scheda',exact:true}).click();
+    await page.getByRole('button',{name:'Conferma e genera PDF'}).click();
+    const section=page.getByRole('region',{name:'Esportazione scheda V2'});
+    await expect(section.getByRole('checkbox',{checked:true})).toHaveCount(2);
+    await section.getByRole('checkbox',{checked:true}).first().uncheck();
+    await expect(section.getByRole('button',{name:'Genera scheda V2',exact:true})).toBeDisabled();
+    await section.getByRole('checkbox',{checked:false}).first().check();
+    await section.getByLabel('Linguaggio aggiuntivo 1').selectOption('Draconico');
+    await section.getByLabel('Linguaggio aggiuntivo 2').selectOption('Silvano');
+    const pending=page.waitForEvent('download');await section.getByRole('button',{name:'Genera scheda V2',exact:true}).click();
+    const download=await pending;expect(await download.failure()).toBeNull();await download.saveAs(test.info().outputPath('chierico-conoscenza-v2.pdf'));
+    const names=['Dominio della Conoscenza','Dominio della Guerra',"Dominio dell'Inganno",'Dominio della Luce','Dominio della Natura','Dominio della Tempesta','Dominio della Vita','Dominio della Forgia','Dominio della Tomba','Dominio del Crepuscolo',"Dominio dell'Ordine",'Dominio della Pace'];
+    for(const classSubclass of names){const response=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Chierico',characterName:classSubclass,raceSlug:'umano',backgroundSlug:'accolito',classSubclass,level:'9'},...(classSubclass==='Dominio della Natura'?{clericChoices:{skills:['survival'],druidCantrip:'Frusta di Spine'}}:{})}});expect(response.status(),classSubclass+': '+(response.status()!==200?await response.text():'')).toBe(200);expect((await response.body()).subarray(0,5).toString()).toBe('%PDF-');}
+    const invalid=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Chierico',characterName:'Test',raceSlug:'umano',backgroundSlug:'accolito',classSubclass:'Dominio della Vita',level:'1'},clericChoices:{skills:['arcana']}}});expect(invalid.status()).toBe(422);
+    await page.screenshot({path:test.info().outputPath('chierico-v2-desktop.png'),fullPage:true});
+    await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
+  });
+
   test('endpoint rifiuta una scheda arbitraria e richieste anonime', async ({ page, playwright }) => {
     const anonymous = await playwright.request.newContext({ baseURL: test.info().project.use.baseURL });
     const unauthorized = await anonymous.post('/api/sheet-pdf-v2', { data: { input: { classLabel: 'Bardo' } } });

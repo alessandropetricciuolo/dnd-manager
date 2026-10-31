@@ -37,7 +37,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
       characterName: searchParams.get("characterName") ?? "",
       raceSlug: searchParams.get("raceSlug") ?? "",
       subraceSlug: searchParams.get("subraceSlug") ?? "",
-      classLabel: v2 ? (["Bardo","Barbaro"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
+      classLabel: v2 ? (["Bardo","Barbaro","Chierico"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
       classSubclass: searchParams.get("classSubclass") ?? "",
       backgroundSlug: searchParams.get("backgroundSlug") ?? "",
       level: searchParams.get("level") ?? "1",
@@ -349,7 +349,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
           </p>
         </header>
 
-        {v2 && <p className="mb-5 text-sm text-barber-paper/75">Laboratorio di stampa fantasy: Bardo e Barbaro. Scegli il personaggio, conferma le opzioni e scarica la scheda V2.</p>}
+        {v2 && <p className="mb-5 text-sm text-barber-paper/75">Laboratorio di stampa fantasy: Bardo, Barbaro e Chierico. Scegli il personaggio, conferma le opzioni e scarica la scheda V2.</p>}
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
           <div className="space-y-2">
             <label htmlFor="characterName" className="text-sm font-medium text-barber-paper">
@@ -432,7 +432,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
                 <option value="" disabled>
                   Seleziona classe
                 </option>
-                {(v2 ? CLASS_OPTIONS.filter((c) => ["Bardo","Barbaro"].includes(c.label)) : CLASS_OPTIONS).map((c) => (
+                {(v2 ? CLASS_OPTIONS.filter((c) => ["Bardo","Barbaro","Chierico"].includes(c.label)) : CLASS_OPTIONS).map((c) => (
                   <option key={c.slug} value={c.label}>
                     {c.label}
                   </option>
@@ -446,6 +446,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
               </label>
               <select
                 id="classSubclass"
+                required={v2 && selectedClass === "Chierico"}
                 name="classSubclass"
                 defaultValue={initial.classSubclass}
                 disabled={isPending || classSubclasses.length === 0}
@@ -649,7 +650,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
             ))}
           </div>
         )}
-        {sheet && v2Input && ["Bardo","Barbaro"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
+        {sheet && v2Input && ["Bardo","Barbaro","Chierico"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
         {sheet && (
           <GeneratedSheetView
             sheet={sheet}

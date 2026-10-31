@@ -116,3 +116,11 @@ export function drawBarbarianEmblem(page:PDFPage,b:FantasyBox){
     points.forEach((p,i)=>{const q=points[(i+1)%points.length];stroke(page,p[0],p[1],q[0],q[1],1.5*k);});
   }
 }
+
+/** A radiant holy-symbol medallion; no deity is imposed by the generic class badge. */
+export function drawClericEmblem(page:PDFPage,b:FantasyBox){
+  const k=Math.min(b.width,b.height)/36,cx=b.x+b.width/2,cy=b.y+b.height/2;
+  page.drawCircle({x:cx,y:cy,size:17*k,borderColor:INK,borderWidth:.7});
+  page.drawCircle({x:cx,y:cy,size:6*k,borderColor:INK,borderWidth:1.2*k});
+  for(let i=0;i<8;i++){const a=i*Math.PI/4;stroke(page,cx+8*k*Math.cos(a),cy+8*k*Math.sin(a),cx+13*k*Math.cos(a),cy+13*k*Math.sin(a),k);}
+}

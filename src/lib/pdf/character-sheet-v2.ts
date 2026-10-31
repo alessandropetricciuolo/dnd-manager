@@ -1,15 +1,18 @@
 import { PDFDocument, StandardFonts, rgb, type PDFPage, type PDFFont } from 'pdf-lib';
 import type { GeneratedCharacterSheet, SkillKey, AbilityKey } from '@/lib/sheet-generator/types';
 import { buildBardPrintModel, printPlainText, SKILL_LABELS, type BardPrintFeature } from '@/lib/sheet-generator/bard-print-model';
+import { buildClericPrintModel, type ClericEvidence } from '@/lib/sheet-generator/cleric-print-model';
+import type { ClericChoices } from '@/lib/sheet-generator/cleric-domains';
+import { clericReferenceCards } from '@/lib/sheet-generator/cleric-reference-copy';
 import { buildBarbarianPrintModel, type BarbarianEvidence } from '@/lib/sheet-generator/barbarian-print-model';
 import type { BarbarianChoices } from '@/lib/sheet-generator/barbarian-paths';
 import { barbarianReferenceCards } from '@/lib/sheet-generator/barbarian-reference-copy';
 import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
 import type { BardFightingStyle } from '@/lib/sheet-generator/bard-colleges';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
-import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
+import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
 
-export type CharacterSheetPrintOptions = { barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
+export type CharacterSheetPrintOptions = { clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
 const sign=(n:number)=>n>=0?`+${n}`:`${n}`;
 
@@ -31,8 +34,9 @@ export function wrapSheetText(value:string,font:PDFFont,size:number,width:number
 export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,logoBytes:Uint8Array,options:CharacterSheetPrintOptions={}){
   const bard=original.classLabel==='Bardo'?buildBardPrintModel(original,options.bonusSkills,options.collegeFeatures,options.fightingStyle):null;
   const barbarian=original.classLabel==='Barbaro'&&options.barbarianEvidence?buildBarbarianPrintModel(original,options.barbarianEvidence,options.barbarianChoices):null;
-  const model=bard??barbarian;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
-  const subclass=bard?.college??barbarian?.path;
+  const cleric=original.classLabel==='Chierico'&&options.clericEvidence?buildClericPrintModel(original,options.clericEvidence,options.clericChoices):null;
+  const model=bard??barbarian??cleric;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
+  const subclass=bard?.college??barbarian?.path??cleric?.domain;
   const doc=await PDFDocument.create();doc.setTitle(`${s.characterName} - ${s.classLabel} V2`);
   const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.TimesRomanBold),logo=await doc.embedPng(logoBytes);
   const clean=(v:unknown)=>sanitizeTextForStandardPdfFont(String(v??''));
@@ -51,8 +55,8 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     text(p,173,784,'RAZZA',6);fit(p,173,773,s.subraceLabel??s.raceLabel,114,8.5);
     text(p,301,784,'BACKGROUND',6);fit(p,301,773,s.backgroundLabel,126,8.5);
     text(p,443,784,'ALLINEAMENTO',6);fit(p,443,773,s.alignment??'-',115,8.5);
-    (bard?drawBardEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
-    text(p,204,762,'CLASSE',6);text(p,204,750,s.classLabel.toUpperCase(),11,bold);
+    (bard?drawBardEmblem:cleric?drawClericEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
+    text(p,204,762,'CLASSE',6);fit(p,204,750,s.classLabel.toUpperCase(),62,11,bold);
     text(p,280,762,'SOTTOCLASSE',6);fit(p,280,750,s.classSubclass??'-',237,9);
     text(p,534,762,'LIVELLO',5.5);text(p,541,750,s.level,11,bold);
     banner(p,27,738,541,title);return p;
@@ -92,8 +96,23 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     if(s.level>=11){text(first,222,116,'Ira Implacabile: CD iniziale 10',8);text(first,222,100,'CD successiva: ____ (+5 per uso)',7.5);}
     text(first,222,76,'Bonus Ira: solo mischia con Forza',7.5);
   }
+  if(cleric){
+    frame(first,212,322,168,105,'INCANALARE DIVINITÀ');
+    if(cleric.channelUses){drawFantasyTracker(first,{x:225,y:259,width:140,height:20},cleric.channelUses);text(first,222,248,`${cleric.channelUses} ${cleric.channelUses===1?'utilizzo condiviso':'utilizzi condivisi'}`,9);text(first,222,231,'Recupero: riposo breve o lungo',7.5);}
+    else text(first,222,266,'Disponibile dal livello 2',8);
+    frame(first,212,207,168,153,'MAGIA E RISORSE');text(first,222,170,`SAG / CD ${s.spellSaveDc} / Att. ${sign(s.spellAttackBonus??0)}`,8.5);
+    text(first,222,155,`Preparabili: ${s.spellsPrepared} + dominio`,8);
+    Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const col=i>=5?1:0,row=i%5,x=222+col*75,sy=136-row*15;text(first,x,sy,`${level}°`);drawFantasyTracker(first,{x:x+19,y:sy-4,width:60,height:16},count);});
+  }
   // Fixed reference-sheet wording for standard class cards; full PHB descriptions remain in the appendix.
-  const cards=bard?bardReferenceCards(s.level):barbarianReferenceCards(s.level);let ry=704;
+  const domainCards=cleric?cleric.features.filter(f=>options.clericEvidence!.domainFeatures.some(d=>d.title===f.title)):[];
+  const mainDomainCard=domainCards.find(f=>f.level===1&&!/COMPETENZ|TRUCCHETTO BONUS/.test(f.title));
+  const cards=bard?bardReferenceCards(s.level):cleric?[
+    {title:'Incantesimi di Dominio',level:1,source:cleric.domain.label,body:cleric.domainSpells.map(spell=>`${spell.level}°: ${spell.name}`).join('\n')},
+    ...(mainDomainCard?[mainDomainCard]:[]),
+    ...clericReferenceCards(s.level,cleric.undeadCr),
+    ...domainCards.filter(f=>f!==mainDomainCard),
+  ]:barbarianReferenceCards(s.level);let ry=704;
   for(const card of cards){const lines=wrapSheetText(card.body,font,8.5,157),height=43+lines.length*10.5;if(ry-height<89)continue;
     frame(first,390,ry,178,height,card.title);lines.forEach((l,i)=>text(first,401,ry-40-i*10.5,l,8.5));ry-=height+9;}
   const continuation:BardPrintFeature[]=[...model.features];
@@ -112,7 +131,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   section('Linguaggi e competenze',[...s.languages,...s.armorProficiencies,...s.weaponProficiencies,...s.toolProficiencies].join(', '));
   section('Tratti razziali',[s.raceTraitsMd,s.subraceTraitsMd].filter(Boolean).join('\n\n'));section('Inventario',s.inventory.join('\n'));section('Background',s.backgroundMd??s.backgroundLabel);
   let spellPage:PDFPage,rowY=0;const xs=[27,52,186,229,273,568];
-  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard?`Classe: Bardo / Caratteristica: Carisma / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
+  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard||cleric?`Classe: ${s.classLabel} / Caratteristica: ${cleric?'Saggezza':'Carisma'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
     ['Liv.','Nome incantesimo','V S M','Rit. / Conc.','Effetto'].forEach((label,i)=>text(spellPage,xs[i]+3,675,label,7.5));rowY=661;};
   if(s.spells.length)newSpellPage();
   for(const spell of s.spells){const nameLines=wrapSheetText(spell.name,font,8,125),body=spell.fullTextMd?.trim();

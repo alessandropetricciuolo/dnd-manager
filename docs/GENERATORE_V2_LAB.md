@@ -1,6 +1,6 @@
-# Generatore V2: Bardo e Barbaro
+# Generatore V2: Bardo, Barbaro e Chierico
 
-Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo o un Barbaro, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
+Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
 ## Flusso
 
@@ -23,7 +23,7 @@ Il numero di pagina degli incantesimi dipende dalle continuazioni: la struttura 
 - L’integrazione browser usa un backend di autenticazione fittizio esclusivamente locale (`test-server.cjs`), con il vero modulo, le vere azioni e il vero endpoint PDF. I ruoli degli utenti reali non vengono modificati. Gli account QA salvati come GM/Admin risultavano entrambi player: il controllo accessi reale ha correttamente rifiutato quelle sessioni.
 - TypeScript, lint e build di produzione; controllo visivo del documento scaricato.
 
-Le altre undici classi attendono i relativi riferimenti; la rifinitura grafica viene dopo l’integrazione del motore per tutte le classi.
+Le altre dieci classi attendono i relativi riferimenti; la rifinitura grafica viene dopo l’integrazione del motore per tutte le classi.
 
 ## Revisione prima pagina (31 ottobre 2026)
 
@@ -69,3 +69,29 @@ La preparazione V2 aggiunge Movimento Veloce dal livello 5 e Campione Primordial
 Il renderer `character-sheet-v2.ts` è condiviso; `experimental-bard-sheet.ts` mantiene la compatibilità con i chiamanti del Bardo. I riquadri comuni, le continuazioni e la tabella incantesimi non sono duplicati per classe. Il Barbaro usa un emblema vettoriale ad ascia, Ira e combattimento nella colonna centrale. Impaginazione ancora provvisoria: testi completi nelle pagine seguenti, numero di pagine non ottimizzato.
 
 Verifica di questa estensione: 120 test del generatore; tutti i sette cammini ai livelli 2/3/6/10/14/20; progressione Ira ai venti livelli; scelte totemiche e ambiente; incantesimi concessi e sorgenti immutabili; quattro test browser con download V1/V2, otto collegi e sette cammini, selezioni del Totemico e rifiuto di scelte incompatibili. L’autenticazione browser rimane simulata esclusivamente nel processo locale di test. Build e controllo visivo del PDF di prova.
+
+
+## Chierico (31 ottobre 2026)
+
+Riferimento: `/Users/alessandropetricciuolo/Downloads/schede/Chierico 5e v14.pdf`, prima pagina. Le altre pagine sono moduli vuoti per identità/dotazione, incantesimi ed equipaggiamento. La V2 conserva la tabella degli incantesimi già condivisa dalle altre classi. La prima pagina usa l’emblema vettoriale di un simbolo sacro generico, il contatore comune di Incanalare Divinità, la magia basata su Saggezza, gli incantesimi di dominio e il testo di un privilegio caratteristico del dominio. Le regole complete continuano nell’appendice.
+
+Dodici domini dei tre manuali locali:
+- PHB: Conoscenza, Guerra, Inganno, Luce, Natura, Tempesta, Vita.
+- Xanathar: Forgia e Tomba.
+- Tasha: Crepuscolo, Ordine, Pace.
+
+Il dominio è richiesto dal livello 1 nella V2. `cleric-source.ts` valida la progressione PHB (slot e trucchetti), ricava gli utilizzi condivisi di Incanalare Divinità dalla tabella della classe e la soglia di Distruggere Non Morti dalla relativa tabella. Nessun contatore separato per ciascun effetto di Incanalare Divinità. Intervento Divino è disponibile dal livello 10, con successo automatico al livello 20. La descrizione compatta completa le omissioni del riferimento: durata fino a danni, divieto di reazioni/avvicinamento per Scacciare Non Morti; sette giorni di recupero se Intervento Divino riesce, riposo lungo altrimenti.
+
+I privilegi di dominio sono blocchi nominati, con sblocco 1/2/6/8/17; le progressioni interne (per esempio Colpo Divino a livello 14) restano nel testo originale. Il titolo del Dominio dell’Ordine nella scansione Tasha è privo di marcatori Markdown: l’estrattore condiviso riconosce anche i soli titoli esatti del catalogo, senza includere il dominio seguente. I metadati dei privilegi di Tasha non vengono scambiati per il loro testo.
+
+Gli incantesimi di dominio sono estratti dalle cinque righe della tabella di ogni dominio, sempre preparati e aggiuntivi al limite quotidiano. Se uno era già tra le scelte ordinarie del generatore, la V2 conserva quel dominio e completa la preparazione ordinaria dalla lista PHB del Chierico (rispettando il filtro combattimento quando la richiesta è torneo). I testi indicano le preparazioni integrate automaticamente; non viene rimossa una scelta manuale valida. I nomi di pagina/intestazione riconosciuti nella vecchia lista (`207`, `CAPITOLO 11 | INCANTESIMI`) sono esclusi come artefatti di scansione e i posti vengono riempiti con veri incantesimi. Nomi mancanti diversi da questi artefatti causano un errore esplicito.
+
+La ricerca delle descrizioni è limitata al capitolo PHB «Descrizione degli Incantesimi»: evita il precedente omonimo dell’azione Aiuto. I metadati con i due formati di due punti grassetto sono normalizzati senza riscrivere il testo. Il refuso «bagliare lunare» della tabella Crepuscolo è collegato esplicitamente a «bagliore lunare». I nomi e livelli degli incantesimi vengono verificati contro la descrizione sorgente. Tutti i testi delle magie nella V2 del Chierico sono ricostruiti da questa fonte, senza riutilizzare riassunti legacy potenzialmente errati.
+
+Altre concessioni: Luce aggiunge Luce se non già conosciuto; Tomba aggiunge Salvare i Morenti con gittata 9 metri e lancio come azione bonus da Cerchio di Mortalità; Natura permette di scegliere un trucchetto PHB da Druido aggiuntivo. Conoscenza permette due abilità con doppio bonus e due linguaggi distinti; Natura, Ordine e Pace permettono le competenze del dominio. I valori e la percezione passiva vengono aggiornati su una copia della scheda. Le armi della scheda usano il modificatore effettivo indicato nei danni (Forza o Destrezza), non il massimo fra i due.
+
+Le competenze in armature pesanti, armi da guerra e strumenti da fabbro vengono aggiunte solo quando concesse dal dominio. Il carico base della V2 usa scaglie e scudo per i domini senza armature pesanti, cotta e scudo per gli altri. Anima della Forgia aggiunge il bonus permanente dal livello 6; Benedizione della Forgia resta una scelta quotidiana nel testo e non somma automaticamente un secondo +1 alla CA. Non è stato aggiunto un gestore di equipaggiamento indossato o di effetti temporanei. Restano le convenzioni del generatore originale per PF e velocità razziale di base. I privilegi opzionali di Tasha (come Colpi Benedetti in sostituzione del privilegio di livello 8) non vengono attivati implicitamente: questa integrazione riguarda classe PHB e domini dei supplementi.
+
+Correzione locale documentata: il Santuario del Crepuscolo nella scansione Tasha dice erroneamente di infliggere una condizione affascinato/spaventato. Il testo V2 termina un effetto che causa tale condizione, e il chierico può scegliere di concedere il beneficio. Verifica sul testo ufficiale generato da D&D Beyond, sezione TCoE Twilight Sanctuary: https://www.dndbeyond.com/sheet-pdfs/f5psf6gmvn_142395168.pdf. Il manuale condiviso resta invariato.
+
+Verifiche: 128 test del generatore, inclusi tutti i dodici domini ai livelli 1/2/6/8/14/17/20, progressioni PHB ai venti livelli, incantesimi sempre preparati, abilità/linguaggi, magie concesse e fonti mancanti. PDF di tutti i domini ai livelli 1 e 20. Cinque test browser locali comprendono scelte della Conoscenza, esportazione dei dodici domini e regressione Bardo/Barbaro. Build, TypeScript, lint e controllo visivo del documento di prova. Il documento è ancora esteso (16 pagine per la prova Vita livello 5): riduzione dell’ingombro e rifinitura grafica rimangono nella fase concordata dopo le classi.

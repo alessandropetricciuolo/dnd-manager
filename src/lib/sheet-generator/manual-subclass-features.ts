@@ -7,7 +7,8 @@ const norm=(s:string)=>s.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace
 export function extractManualSubclassFeatures(raw:string, college:SubclassCatalogEntry, level:number, specs:Array<[string,number]>):PrintFeature[] {
   if(!specs)throw new Error('Sottoclasse non supportata dalla V2.');
   const lines=raw.replace(/\r/g,'').replace(/<\/table>\s*(#{1,6}\s+)/gi,'</table>\n\n$1').split('\n');
-  const headings=lines.flatMap((line,index)=>{const m=line.match(/^#{1,6}\s+(.+?)\s*$/);return m?[{title:m[1],key:norm(m[1]),index}]:[];});
+  const knownSections=new Set(SUPPLEMENT_SUBCLASS_OPTIONS.flatMap(c=>c.sectionHeadings.map(norm)));
+  const headings=lines.flatMap((line,index)=>{const m=line.match(/^#{1,6}\s+(.+?)\s*$/);const title=m?.[1]??(line.length<100&&knownSections.has(norm(line))?line:null);return title?[{title,key:norm(title),index}]:[];});
   const start=headings.find(h=>college.sectionHeadings.some(s=>norm(s)===h.key));
   if(!start)throw new Error(`Sezione ${college.label} non trovata in ${college.supplementRulesSource.markdownFile}.`);
   const stops=new Set([
@@ -22,8 +23,8 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
   return starts.flatMap((h,i)=>{
     const spec=expected.get(h.key)!;if(spec.unlock>level)return [];
     const body=lines.slice(h.index+1,starts[i+1]?.index??end).join('\n')
-      .replace(/^#{1,6}\s+Privilegio del (?:Collegio|Cammino)[^\n]*\n/gim,'')
-      .replace(/^\*?Privilegio del (?:Collegio|Cammino)[^\n]*\*?\s*$/gim,'')
+      .replace(/^#{1,6}\s+Privilegio del (?:Collegio|Cammino|Dominio)[^\n]*\n/gim,'')
+      .replace(/^\*{0,2}Privilegio del (?:Collegio|Cammino|Dominio)[^\n]*\*{0,2}\s*$/gim,'')
       .replace(/^Scansionato con CamScanner\s*$/gm,'').trim();
     if(!body)throw new Error(`Testo vuoto per ${spec.title}.`);
     return [{title:spec.title,body,level:spec.unlock,source:`${wikiManualBookLabel(college.supplementRulesSource.manualBookKey)} / ${college.label} / ${college.supplementRulesSource.markdownFile}`}];
