@@ -501,6 +501,78 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Ranger: stile di combattimento, download e tutti i 7 archetipi esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Ranger');
+    await expect(page.locator('#classLabel')).toHaveValue('Ranger');
+    await expect(page.locator('#classSubclass option')).toHaveCount(8);
+    await page.locator('#characterName').fill('Ranger V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('forestiero');
+    const hunter = await page.locator('#classSubclass option').filter({ hasText: 'Cacciatore' }).first().getAttribute('value');
+    await page.locator('#classSubclass').selectOption(hunter!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Scegli lo stile di combattimento')).toBeVisible();
+    await section.getByLabel('Scegli lo stile di combattimento').selectOption('Tiro');
+
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    await download.saveAs(test.info().outputPath('ranger-cacciatore-v2.pdf'));
+
+    const archetypes = [
+      'Cacciatore',
+      'Signore delle Bestie',
+      'Cacciatore delle Tenebre',
+      'Uccisore di Mostri',
+      "Viandante dell'Orizzonte",
+      'Custode degli Sciami',
+      'Viandante Fatato',
+    ];
+
+    for (const sub of archetypes) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Ranger',
+            characterName: sub,
+            raceSlug: 'umano',
+            backgroundSlug: 'forestiero',
+            classSubclass: sub,
+            level: '14',
+          },
+          rangerChoices: { fightingStyle: 'Tiro' },
+        },
+      });
+      expect(response.status(), sub + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalid = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Ranger',
+          characterName: 'Test',
+          raceSlug: 'umano',
+          backgroundSlug: 'forestiero',
+          classSubclass: 'Cacciatore',
+          level: '5',
+        },
+        rangerChoices: { fightingStyle: 'Stile Inesistente' },
+      },
+    });
+    expect(invalid.status()).toBe(400);
+
+    await page.screenshot({ path: test.info().outputPath('ranger-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');

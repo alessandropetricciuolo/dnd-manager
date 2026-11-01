@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro, Mago, Monaco e Paladino
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro, Mago, Monaco, Paladino e Ranger
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -301,3 +301,30 @@ Meccaniche, opzioni e calcoli integrati:
   - 12 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Paladino V2 con Giuramento di Devozione, selezione stile, esportazione di tutti i 7 giuramenti, rifiuto scelte non valide e verifica layout mobile.
   - Build Next.js di produzione completata con successo.
   - Campione PDF generato e verificato: `output/pdf/paladino-v2-test.pdf`.
+
+## Ranger (1 novembre 2026)
+
+Riferimento fornito: `Ranger 5e v14.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e salvezze (Forza e Destrezza competenti); colonna centrale con CA, Iniziativa, Velocità, PF (dado vita d10), tabella attacchi a 3 righe, box dedicato a **Nemico Prescelto ed Esploratore** (selezione e tracciamento dei nemici prescelti a lv 1, 6, 14 e dei terreni prescelti a lv 1, 6, 10; sintesi dei benefici di viaggio e tracciamento), box **Magia e Archetipo Ranger** (CD incantesimi, tiro per colpire, slot half-caster da 1° a 5° livello tracciati a diamanti, incantesimi conosciuti, Stile di Combattimento e box compagno animale/capacità di sottoclasse); colonna destra con progressione dei privilegi di classe di primo livello e successivi (Consapevolezza Primordiale lv 3, Attacco Extra lv 5, Andatura sul Territorio lv 8, Nascondersi in Piena Vista lv 10, Svanire lv 14, Sensi Ferini lv 18, Sterminatore di Nemici lv 20). Trascrizione fissa fedele in `ranger-reference-copy.ts`.
+
+Tutti i sette Archetipi Ranger estratti integralmente dai manuali locali:
+- PHB: Cacciatore, Signore delle Bestie.
+- Xanathar: Cacciatore delle Tenebre, Uccisore di Mostri, Viandante dell'Orizzonte.
+- Tasha: Custode degli Sciami, Viandante Fatato.
+
+Meccaniche, opzioni e calcoli integrati:
+- Stile di Combattimento: opzione configurabile tra Combattere con Due Armi, Difesa, Duellare e Tiro; Difesa applica +1 permanente alla CA quando indossa un'armatura.
+- Cacciatore delle Tenebre (Livello 3+): Imboscata Terrificante aggiunge automaticamente il modificatore di Saggezza all'Iniziativa; Mente di Ferro (Livello 7+) conferisce competenza nei tiri salvezza su Saggezza (o Intelligenza se già posseduta).
+- Viandante Fatato (Livello 3+): Fascino Ultraterreno aggiunge automaticamente il modificatore di Saggezza (minimo +1) a tutte le prove di Carisma (Inganno, Intimidire, Intrattenere, Persuasione) e concede una competenza bonus tra Inganno, Intrattenere e Persuasione.
+- Signore delle Bestie (Livello 3+): statistiche del compagno animale (Lupo) calcolate secondo le regole PHB (PF pari al massimo tra base e `4 * livello`, CA e attacchi potenziati dal bonus di competenza).
+- Slot Incantesimi e Incantesimi Conosciuti: tabella half-caster completa da 1° a 5° livello con tracciatori a diamanti; conteggio incantesimi conosciuti calcolato secondo tabella PHB (da 2 a 11).
+- Incantesimi di Archetipo: risolti e caricati automaticamente per tutti i 5 archetipi che concedono magie (Cacciatore delle Tenebre, Uccisore di Mostri, Viandante dell'Orizzonte, Custode degli Sciami, Viandante Fatato) senza consumare le scelte ordinarie dei conosciuti.
+- Emblema vettoriale: creato `drawRangerEmblem` in `fantasy-sheet-graphics.ts` (frecce incrociate e arco ricurvo da cacciatore dei boschi).
+- Risoluzione e robustezza dell'estrazione:
+  - Risolta l'ambiguità tra "Cacciatore" e "Cacciatore delle Tenebre" in `rangerArchetypeFromLabel` tramite corrispondenza esatta prioritaria.
+  - Gestita la precisione di confronto in virgola mobile per la larghezza dei banner fantasy (`drawFantasyBanner`).
+  - Regex di rimozione sottotitoli in `manual-subclass-features.ts` estesa per `Ranger`, `Archetipo Ranger`, `Custode degli Sciami`, `Viandante Fatato`, `Viandante dell'Orizzonte`, `Uccisore di Mostri`, `Cacciatore delle Tenebre`.
+- Verifica e test:
+  - 203 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutti i 7 archetipi, livelli 1-20, progressione slot e conosciuti, Imboscata Terrificante all'iniziativa, Fascino Ultraterreno alle prove CAR, Stile di Combattimento e PDF di ogni archetipo.
+  - 13 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Ranger V2 con Cacciatore, selezione stile, esportazione di tutti i 7 archetipi, rifiuto scelte non valide e verifica layout mobile.
+  - Build Next.js di produzione completata con successo.
+  - Campione PDF generato e verificato: `output/pdf/ranger-v2-test.pdf`.

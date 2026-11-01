@@ -41,6 +41,11 @@ import {
   type PaladinChoices,
   type PaladinFightingStyle,
 } from '@/lib/sheet-generator/paladin-oaths';
+import {
+  RANGER_FIGHTING_STYLES,
+  type RangerChoices,
+  type RangerFightingStyle,
+} from '@/lib/sheet-generator/ranger-archetypes';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -57,6 +62,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [wizardChoices, setWizardChoices] = useState<WizardChoices>({});
   const [monkChoices, setMonkChoices] = useState<MonkChoices>({});
   const [paladinChoices, setPaladinChoices] = useState<PaladinChoices>({});
+  const [rangerChoices, setRangerChoices] = useState<RangerChoices>({});
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
   const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
@@ -97,6 +103,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const isWizard = sheet.classLabel === 'Mago';
   const isMonk = sheet.classLabel === 'Monaco';
   const isPaladin = sheet.classLabel === 'Paladino';
+  const isRanger = sheet.classLabel === 'Ranger';
   const finalFighterChoices: FighterChoices = {
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
@@ -108,7 +115,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -256,6 +263,14 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       <label className="block text-sm">Scegli lo stile di combattimento
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={paladinChoices.fightingStyle ?? 'Difesa'} onChange={e => setPaladinChoices({ ...paladinChoices, fightingStyle: e.target.value as PaladinFightingStyle })}>
           {PALADIN_FIGHTING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
+      </label>
+    </fieldset>}
+    {isRanger && sheet.level >= 2 && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Stile di Combattimento del Ranger</legend>
+      <label className="block text-sm">Scegli lo stile di combattimento
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={rangerChoices.fightingStyle ?? 'Tiro'} onChange={e => setRangerChoices({ ...rangerChoices, fightingStyle: e.target.value as RangerFightingStyle })}>
+          {RANGER_FIGHTING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
     </fieldset>}

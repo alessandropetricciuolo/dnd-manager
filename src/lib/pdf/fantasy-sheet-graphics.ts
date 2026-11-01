@@ -25,7 +25,7 @@ export function drawFantasyFrame(page: PDFPage, b: FantasyBox) {
 
 /** Scroll-like title band, with folded ends. */
 export function drawFantasyBanner(page: PDFPage, b: FantasyBox, title: string, font: PDFFont, size = 9) {
-  if (font.widthOfTextAtSize(title,size)>b.width-24) throw new Error('Banner title exceeds available width');
+  if (font.widthOfTextAtSize(title,size)>b.width-24 + 0.05) throw new Error('Banner title exceeds available width');
   page.drawRectangle({x:b.x,y:b.y,width:b.width,height:b.height,color:PAPER,borderColor:INK,borderWidth:0.7});
   for (const x of [b.x,b.x+b.width]) {
     const d=x===b.x?-1:1;
@@ -208,6 +208,31 @@ export function drawPaladinEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, sx - 4 * k, sy - 2 * k, sx - 7 * k, sy - 4 * k, 0.8 * k);
   stroke(page, sx + 4 * k, sy - 2 * k, sx + 7 * k, sy - 4 * k, 0.8 * k);
 }
+
+/** Crossed hunting arrows and recurve bow / wilderness tracker emblem for the Ranger. */
+export function drawRangerEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 16 * k, borderColor: INK, borderWidth: 0.7 });
+  page.drawCircle({ x: cx, y: cy, size: 10 * k, borderColor: INK, borderWidth: 0.5 });
+  // Crossed arrows
+  stroke(page, cx - 11 * k, cy - 11 * k, cx + 11 * k, cy + 11 * k, 1.2 * k);
+  stroke(page, cx + 11 * k, cy + 11 * k, cx + 6 * k, cy + 10 * k, 1.1 * k);
+  stroke(page, cx + 11 * k, cy + 11 * k, cx + 10 * k, cy + 6 * k, 1.1 * k);
+  // Fletching on bottom-left
+  stroke(page, cx - 9 * k, cy - 11 * k, cx - 11 * k, cy - 9 * k, 0.9 * k);
+
+  stroke(page, cx - 11 * k, cy + 11 * k, cx + 11 * k, cy - 11 * k, 1.2 * k);
+  stroke(page, cx + 11 * k, cy - 11 * k, cx + 6 * k, cy - 10 * k, 1.1 * k);
+  stroke(page, cx + 11 * k, cy - 11 * k, cx + 10 * k, cy - 6 * k, 1.1 * k);
+  // Fletching on bottom-right
+  stroke(page, cx - 9 * k, cy + 11 * k, cx - 11 * k, cy + 9 * k, 0.9 * k);
+
+  // Vertical bowstring and recurve arc
+  stroke(page, cx - 4 * k, cy + 12 * k, cx - 4 * k, cy - 12 * k, 0.8 * k);
+  stroke(page, cx - 4 * k, cy + 12 * k, cx + 4 * k, cy, 1.4 * k);
+  stroke(page, cx + 4 * k, cy, cx - 4 * k, cy - 12 * k, 1.4 * k);
+}
+
 
 
 
