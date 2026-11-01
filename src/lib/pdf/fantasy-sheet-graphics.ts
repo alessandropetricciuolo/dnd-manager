@@ -256,6 +256,34 @@ export function drawSorcererEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, cx, cy - 2.5 * k, cx, cy + 2.5 * k, 1.0 * k);
 }
 
+/** Occult eye / patron's gaze crest for the Warlock. */
+export function drawWarlockEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  // Outer occult circle rings
+  page.drawCircle({ x: cx, y: cy, size: 16 * k, borderColor: INK, borderWidth: 0.7 });
+  page.drawCircle({ x: cx, y: cy, size: 12.5 * k, borderColor: INK, borderWidth: 0.5 });
+  // Radiating occult beams (8 rays)
+  for (let i = 0; i < 8; i++) {
+    const angle = (i * Math.PI) / 4;
+    const r1 = 13 * k;
+    const r2 = 15.5 * k;
+    stroke(page, cx + Math.cos(angle) * r1, cy + Math.sin(angle) * r1, cx + Math.cos(angle) * r2, cy + Math.sin(angle) * r2, 0.8 * k);
+  }
+  // Eye almond contour (upper and lower lids using multi-segment strokes)
+  stroke(page, cx - 10 * k, cy, cx - 5 * k, cy + 4.5 * k, 1.2 * k);
+  stroke(page, cx - 5 * k, cy + 4.5 * k, cx + 5 * k, cy + 4.5 * k, 1.2 * k);
+  stroke(page, cx + 5 * k, cy + 4.5 * k, cx + 10 * k, cy, 1.2 * k);
+
+  stroke(page, cx - 10 * k, cy, cx - 5 * k, cy - 4.5 * k, 1.2 * k);
+  stroke(page, cx - 5 * k, cy - 4.5 * k, cx + 5 * k, cy - 4.5 * k, 1.2 * k);
+  stroke(page, cx + 5 * k, cy - 4.5 * k, cx + 10 * k, cy, 1.2 * k);
+
+  // Central iris
+  page.drawCircle({ x: cx, y: cy, size: 4.2 * k, borderColor: INK, borderWidth: 0.9 });
+  // Vertical slit pupil
+  stroke(page, cx, cy - 3.8 * k, cx, cy + 3.8 * k, 1.5 * k);
+}
+
 
 
 

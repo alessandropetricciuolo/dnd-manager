@@ -649,6 +649,83 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Warlock: patti, suppliche, download e tutti i 7 patroni esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Warlock');
+    await expect(page.locator('#classLabel')).toHaveValue('Warlock');
+    await expect(page.locator('#classSubclass option')).toHaveCount(8);
+    await page.locator('#characterName').fill('Warlock V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('sapiente');
+    const hexblade = await page.locator('#classSubclass option').filter({ hasText: 'Lama del Sortilegio' }).first().getAttribute('value');
+    await page.locator('#classSubclass').selectOption(hexblade!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Dono del Patto (3° livello)')).toBeVisible();
+    await section.getByLabel('Dono del Patto (3° livello)').selectOption('Patto della Lama');
+    await expect(section.getByLabel('Arma del Sortilegio (usa Carisma per TpC e danni)')).toBeVisible();
+
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    await download.saveAs(test.info().outputPath('warlock-lama-sortilegio-v2.pdf'));
+
+    const patrons = [
+      'Il Signore Fatato',
+      "L'Immondo",
+      'Il Grande Antico',
+      'Il Celestiale',
+      'La Lama del Sortilegio',
+      'Il Genio',
+      "L'Insondabile",
+    ];
+
+    for (const sub of patrons) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Warlock',
+            characterName: sub,
+            raceSlug: 'umano',
+            backgroundSlug: 'sapiente',
+            classSubclass: sub,
+            level: '14',
+          },
+          warlockChoices: {
+            pactBoon: 'Patto della Lama',
+            invocations: ['Deflagrazione Agonizzante', 'Armatura delle Ombre', 'Lama Assetata'],
+            genieKind: 'Dao',
+          },
+        },
+      });
+      expect(response.status(), sub + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalid = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Warlock',
+          characterName: 'Test',
+          raceSlug: 'umano',
+          backgroundSlug: 'sapiente',
+          classSubclass: 'La Lama del Sortilegio',
+          level: '5',
+        },
+        warlockChoices: { genieKind: 'Elemento Inesistente' as any },
+      },
+    });
+    expect(invalid.status()).toBe(400);
+
+    await page.screenshot({ path: test.info().outputPath('warlock-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');

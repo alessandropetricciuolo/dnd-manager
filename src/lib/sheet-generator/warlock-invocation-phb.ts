@@ -129,14 +129,25 @@ const WARLOCK_PACT_PHB_HEADING: Record<string, string> = {
   [normalizeSpellNameForTier("Patto della Catena")]: "PATTO DELLA CATENA",
   [normalizeSpellNameForTier("Patto della Lama")]: "PATTO DELLA LAMA",
   [normalizeSpellNameForTier("Patto del Tomo")]: "PATTO DEL TOMO",
+  [normalizeSpellNameForTier("Patto del Talismano")]: "PATTO DEL TALISMANO",
 };
 
-/** Testo completo del Dono del Patto scelto (#### o ### nel PHB IT). */
+/** Testo completo del Dono del Patto scelto (#### o ### nel PHB IT o Tasha). */
 export function extractPhbWarlockPactMarkdown(pactName: string): string {
+  const normTarget = normalizeSpellNameForTier(pactName);
+  const heading = WARLOCK_PACT_PHB_HEADING[normTarget];
+  if (!heading) return "";
+  if (normTarget === normalizeSpellNameForTier("Patto del Talismano")) {
+    const tasha = getManualMarkdownByFileName("Tasha.md");
+    if (tasha) {
+      return (
+        extractHeadingBlock(tasha, heading, 3) ||
+        extractHeadingBlock(tasha, heading, 2)
+      );
+    }
+  }
   const phb = getPhbMarkdownText();
   if (!phb) return "";
-  const heading = WARLOCK_PACT_PHB_HEADING[normalizeSpellNameForTier(pactName)];
-  if (!heading) return "";
   return (
     extractHeadingBlock(phb, heading, 4) ||
     extractHeadingBlock(phb, heading, 3)

@@ -356,3 +356,37 @@ Meccaniche, opzioni e calcoli integrati:
   - Build Next.js di produzione completata con successo.
   - Campione PDF generato e verificato: `output/pdf/stregone-v2-test.pdf`.
 
+## Warlock (1 novembre 2026)
+
+Riferimento fornito: `Warlock 5e V14.pdf`, scansione di 4 pagine. Prima pagina ispezionata:
+- Intestazione con emblema dell'occhio occulto raggiante e indicazione della sottoclasse/Patrono Ultraterreno.
+- Colonna centrale con statistiche di difesa, PF (dado vita d8), tabella attacchi a 3 righe, riquadro dedicato a **Magia del Patto** (CD incantesimi, tiro per colpire incantesimi, trucchetti conosciuti, incantesimi conosciuti, slot del patto con tracciatore a diamanti, indicazione del livello fisso di slot e regola del recupero a riposo breve o lungo), e riquadro **Dono del Patto e Patrono** (Dono scelto, elenco delle Suppliche Occulte note e privilegi specifici del Patrono attivo).
+- Colonna destra con carte di riferimento fisse e progressive: Privilegi del Patrono al 1°, 6°, 10° e 14° livello; Dono del Patto al 3° livello (Catena, Lama, Tomo, Talismano); Arcanum Mistico all'11° livello (progressione 6°, 7°, 8°, 9° livello di magia); Maestro dell'Occulto al 20° livello (invocazione da 1 minuto per recuperare tutti gli slot del patto una volta per riposo lungo).
+- Trascrizione fissa e fedele in `warlock-reference-copy.ts`.
+
+Tutti i sette Patroni Ultraterreni estratti integralmente dai manuali locali:
+- PHB: Il Signore Fatato, L'Immondo, Il Grande Antico.
+- Xanathar: Il Celestiale, La Lama del Sortilegio.
+- Tasha: Il Genio, L'Insondabile.
+
+Meccaniche, opzioni e calcoli integrati:
+- Magia del Patto: progressione rigorosa secondo la tabella del Warlock del Player's Handbook (da 1 slot al 1° livello fino a 4 slot di 5° livello al 17°-20°), tutti gli slot concentrati all'effettivo livello di slot del patto (`sheet.spellSlots[pactSlotLevel] = count`, con tutti gli altri livelli a 0) e recupero a riposo breve o lungo.
+- Suppliche Occulte: calcolo del numero di suppliche conosciute secondo tabella (da 2 al 2° livello fino a 8 al 18°-20°), estrazione automatica della descrizione manuale completa per ciascuna supplica (PHB/XGE/TCE) tramite `extractWarlockInvocationMarkdown`.
+- Dono del Patto (3° livello): supporto per tutte e 4 le opzioni manuali (Patto della Catena, Patto della Lama, Patto del Tomo, Patto del Talismano) con integrazione del testo integrale delle regole e dei doni del patrono tramite `extractPhbWarlockPactMarkdown`.
+- Arcanum Mistico (11°+ livello): sblocco al livello 11 (6°), 13 (7°), 15 (8°) e 17 (9°), lanciabili una volta per riposo lungo senza consumare slot incantesimo.
+- Combattente del Sortilegio (La Lama del Sortilegio): conferisce automaticamente competenza nelle armature medie, negli scudi e nelle armi da guerra (`sheet.armorProficiencies`, `sheet.weaponProficiencies`); permette di utilizzare il modificatore di Carisma al posto di Forza o Destrezza sia per i tiri per colpire sia per i tiri per i danni sulle armi impugnate non a due mani.
+- Luce Guaritrice (Il Celestiale): riserva di d6 pari a `1 + livello da warlock` per la cura ad azione bonus, e trucchetti bonus gratuiti concessi in scheda (`Fiamma Sacra` e `Luce`).
+- Ricettacolo del Genio (Il Genio): scelta dell'elemento del Genio (Dao: Terra/contundenti, Djinni: Aria/tuono, Efreeti: Fuoco/fuoco, Marid: Acqua/freddo), Furia del Genio (+bonus competenza ai danni una volta per turno) e rifugio portatile nel ricettacolo.
+- Tentacolo dei Fondali (L'Insondabile): danno da freddo del tentacolo (1d8 al 1° livello, che scala a 2d8 dal 10° livello), velocità di nuoto 12 metri e respiro sott'acqua con Dono del Mare, e magia aggiuntiva concessa `Tentacoli Neri di Evard` al 10° livello (lanciabile 1/riposo lungo senza slot).
+- Benedizione dell'Oscuro (L'Immondo): punti ferita temporanei pari a `modificatore di Carisma + livello` all'abbattimento di un nemico a 0 PF.
+- Emblema vettoriale: creato `drawWarlockEmblem` in `fantasy-sheet-graphics.ts` (occhio occulto raggiante a otto raggi solari con pupilla a fessura verticale).
+- Risoluzione e robustezza dell'estrazione:
+  - Estensione della delimitazione dei titoli in `manual-subclass-features.ts` con i nomi del Patrono Ultraterreno e aggiunta dei delimitatori `SUPPLICHE OCCULTE` e `TALENTI` per evitare fuoriuscite nelle sezioni successive di PHB e Tasha.
+  - Normalizzazione case-insensitive dei titoli delle capacità di classe per gestire coerentemente le sezioni manuali con maiuscole/minuscole miste (`### Dono del Patto`).
+- Verifica e test:
+  - 220 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutti i 7 patroni, progressione slot patto 1-20, arcanum mistico 6-9, suppliche occulte, tutti i 4 doni del patto, benefici della Lama del Sortilegio (armi/armature e TpC con Carisma), riserva celestiale e PDF di ciascun patrono.
+  - 15 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Warlock V2 con Lama del Sortilegio, selezione dono del patto, arma prescelta, esportazione di tutti i 7 patroni, rifiuto scelte non valide e verifica layout mobile.
+  - Build Next.js di produzione completata con successo (`npm run build`).
+  - Campione PDF generato e verificato: `output/pdf/warlock-v2-test.pdf` (203 KB).
+
+

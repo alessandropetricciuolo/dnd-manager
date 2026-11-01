@@ -53,6 +53,14 @@ import {
   metamagicCountForLevel,
   type SorcererChoices,
 } from '@/lib/sheet-generator/sorcerer-origins';
+import {
+  warlockPatronFromLabel,
+  WARLOCK_PACT_BOONS,
+  GENIE_KINDS,
+  type WarlockChoices,
+  type WarlockPactBoon,
+  type GenieKind,
+} from '@/lib/sheet-generator/warlock-patrons';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -71,6 +79,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [paladinChoices, setPaladinChoices] = useState<PaladinChoices>({});
   const [rangerChoices, setRangerChoices] = useState<RangerChoices>({});
   const [sorcererChoices, setSorcererChoices] = useState<SorcererChoices>({});
+  const [warlockChoices, setWarlockChoices] = useState<WarlockChoices>({ pactBoon: 'Patto del Tomo', genieKind: 'Dao', hexbladeWeapon: 'Spada lunga' });
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
   const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
@@ -115,6 +124,8 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const isSorcerer = sheet.classLabel === 'Stregone';
   const sorcererOrigin = isSorcerer ? sorcererOriginFromLabel(sheet.classSubclass) : null;
   const metamagicCount = isSorcerer ? metamagicCountForLevel(sheet.level) : 0;
+  const isWarlock = sheet.classLabel === 'Warlock';
+  const warlockPatron = isWarlock ? warlockPatronFromLabel(sheet.classSubclass) : null;
   const finalFighterChoices: FighterChoices = {
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
@@ -126,7 +137,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}), ...(isSorcerer?{sorcererChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}), ...(isSorcerer?{sorcererChoices}:{}), ...(isWarlock?{warlockChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -296,6 +307,22 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={sorcererChoices.divineAffinity ?? 'Bene'} onChange={e => setSorcererChoices({ ...sorcererChoices, divineAffinity: e.target.value as any })}>
           {['Bene', 'Male', 'Legge', 'Caos', 'Neutralità'].map(aff => <option key={aff} value={aff}>{aff}</option>)}
         </select>
+      </label>}
+    </fieldset>}
+    {isWarlock && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Opzioni del Warlock</legend>
+      {sheet.level >= 3 && <label className="block text-sm">Dono del Patto (3° livello)
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={warlockChoices.pactBoon ?? 'Patto del Tomo'} onChange={e => setWarlockChoices({ ...warlockChoices, pactBoon: e.target.value as WarlockPactBoon })}>
+          {WARLOCK_PACT_BOONS.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
+      </label>}
+      {warlockPatron?.slug === 'tce-warlock-genio' && <label className="block text-sm">Tipo di Genio
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={warlockChoices.genieKind ?? 'Dao'} onChange={e => setWarlockChoices({ ...warlockChoices, genieKind: e.target.value as GenieKind })}>
+          {GENIE_KINDS.map(k => <option key={k} value={k}>{k}</option>)}
+        </select>
+      </label>}
+      {warlockPatron?.slug === 'xge-warlock-lama-sortilegio' && <label className="block text-sm">Arma del Sortilegio (usa Carisma per TpC e danni)
+        <input className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={warlockChoices.hexbladeWeapon ?? 'Spada lunga'} onChange={e => setWarlockChoices({ ...warlockChoices, hexbladeWeapon: e.target.value })} placeholder="Es. Spada lunga, Stocco, Pugnale" />
       </label>}
     </fieldset>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>

@@ -37,7 +37,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
       characterName: searchParams.get("characterName") ?? "",
       raceSlug: searchParams.get("raceSlug") ?? "",
       subraceSlug: searchParams.get("subraceSlug") ?? "",
-      classLabel: v2 ? (["Bardo","Barbaro","Chierico","Artefice","Druido","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
+      classLabel: v2 ? (["Bardo","Barbaro","Chierico","Artefice","Druido","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
       classSubclass: searchParams.get("classSubclass") ?? "",
       backgroundSlug: searchParams.get("backgroundSlug") ?? "",
       level: searchParams.get("level") ?? "1",
@@ -432,7 +432,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
                 <option value="" disabled>
                   Seleziona classe
                 </option>
-                {(v2 ? CLASS_OPTIONS.filter((c) => ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone"].includes(c.label)) : CLASS_OPTIONS).map((c) => (
+                {(v2 ? CLASS_OPTIONS.filter((c) => ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(c.label)) : CLASS_OPTIONS).map((c) => (
                   <option key={c.slug} value={c.label}>
                     {c.label}
                   </option>
@@ -650,7 +650,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
             ))}
           </div>
         )}
-        {sheet && v2Input && ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
+        {sheet && v2Input && ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
         {sheet && (
           <GeneratedSheetView
             sheet={sheet}
