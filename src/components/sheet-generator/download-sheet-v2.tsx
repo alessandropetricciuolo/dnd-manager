@@ -9,6 +9,7 @@ import { TOTEM_ANIMALS, STORM_ENVIRONMENTS, barbarianPathFromLabel, type Barbari
 
 import { CLERIC_SKILL_CHOICES, DRUID_CANTRIPS, clericDomainFromLabel, type ClericChoices } from '@/lib/sheet-generator/cleric-domains';
 import { CLERIC_BONUS_LANGUAGES } from '@/lib/sheet-generator/cleric-print-model';
+import { DRUID_LAND_TERRAINS, druidCircleFromLabel, type DruidChoices } from '@/lib/sheet-generator/druid-circles';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -18,6 +19,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [barbarianChoices,setBarbarianChoices]=useState<BarbarianChoices>({});
   const [clericSkills,setClericSkills]=useState<SkillKey[]|null>(null);
   const [clericLanguages,setClericLanguages]=useState<string[]|null>(null);
+  const [druidTerrain,setDruidTerrain]=useState<DruidChoices['landTerrain']>('Foresta');
   const [druidCantrip,setDruidCantrip]=useState<string|null>(null);
   const domain=sheet.classLabel==='Chierico'?clericDomainFromLabel(sheet.classSubclass):null;
   const clericPool=domain?CLERIC_SKILL_CHOICES[domain.slug]:undefined;
@@ -31,6 +33,8 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const clericChoices:ClericChoices={...(clericPool?{skills:chosenClericSkills}:{}),...(knowledge?{languages:chosenLanguages}:{}),...(nature?{druidCantrip:chosenDruidCantrip}:{})};
   const invalidCleric=!!domain&&((!!clericPool&&chosenClericSkills.length!==clericCount)||(knowledge&&new Set(chosenLanguages).size!==2));
   const path=sheet.classLabel==='Barbaro'&&sheet.level>=3?barbarianPathFromLabel(sheet.classSubclass):null;
+  const druidCircle=sheet.classLabel==='Druido'&&sheet.level>=2?druidCircleFromLabel(sheet.classSubclass):null;
+  const availableLandCantrips=DRUID_CANTRIPS.filter(n=>!sheet.spells.some(s=>s.name.toLocaleLowerCase('it')===n.toLocaleLowerCase('it')));
   const swords=sheet.classLabel==='Bardo'&&sheet.level>=3&&/spade/i.test(sheet.classSubclass??'');
   const lore = sheet.classLabel==='Bardo' && sheet.level >= 3 && /sapienza/i.test(sheet.classSubclass ?? "");
   const available = (Object.keys(sheet.skills) as SkillKey[]).filter((k) => !sheet.skills[k].proficient);
@@ -50,7 +54,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -106,6 +110,16 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       </label>}
       <p className="text-sm text-barber-paper/70">Gli incantesimi di dominio saranno aggiunti come sempre preparati, senza consumare le scelte giornaliere.</p>
     </fieldset>}
+    {druidCircle?.slug==='phb-druido-terra'&&<label className="block text-sm">Terreno del Circolo della Terra
+      <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={druidTerrain??'Foresta'} disabled={busy} onChange={e=>setDruidTerrain(e.target.value as DruidChoices['landTerrain'])}>
+        {DRUID_LAND_TERRAINS.map(terrain=><option key={terrain}>{terrain}</option>)}
+      </select>
+    </label>}
+    {druidCircle?.slug==='phb-druido-terra'&&<label className="block text-sm">Trucchetto aggiuntivo del Circolo della Terra
+      <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={druidCantrip??availableLandCantrips[0]} disabled={busy||!availableLandCantrips.length} onChange={e=>setDruidCantrip(e.target.value)}>
+        {availableLandCantrips.map(name=><option key={name}>{name}</option>)}
+      </select>
+    </label>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
     <button type="button" onClick={download} disabled={busy || invalidCleric || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">
       {busy ? "Preparazione della scheda V2…" : "Genera scheda V2"}

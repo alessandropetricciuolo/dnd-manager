@@ -13,8 +13,10 @@ import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
 import type { BardFightingStyle } from '@/lib/sheet-generator/bard-colleges';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
 import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawArtificerEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
+import type { DruidEvidence } from '@/lib/sheet-generator/druid-circles';
+import { buildDruidPrintModel, druidReferenceCards } from '@/lib/sheet-generator/druid-print-model';
 
-export type CharacterSheetPrintOptions = { clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
+export type CharacterSheetPrintOptions = { druidEvidence?:DruidEvidence; clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
 const sign=(n:number)=>n>=0?`+${n}`:`${n}`;
 
@@ -38,8 +40,9 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   const barbarian=original.classLabel==='Barbaro'&&options.barbarianEvidence?buildBarbarianPrintModel(original,options.barbarianEvidence,options.barbarianChoices):null;
   const cleric=original.classLabel==='Chierico'&&options.clericEvidence?buildClericPrintModel(original,options.clericEvidence,options.clericChoices):null;
   const artificer=original.classLabel==='Artefice'?buildArtificerPrintModel(original):null;
-  const model=bard??barbarian??cleric??artificer;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
-  const subclass=bard?.college??barbarian?.path??cleric?.domain??artificer?.specialist;
+  const druid=original.classLabel==='Druido'&&options.druidEvidence?buildDruidPrintModel(original,options.druidEvidence):null;
+  const model=bard??barbarian??cleric??artificer??druid;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
+  const subclass=bard?.college??barbarian?.path??cleric?.domain??artificer?.specialist??druid?.circle;
   const doc=await PDFDocument.create();doc.setTitle(`${s.characterName} - ${s.classLabel} V2`);
   const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.TimesRomanBold),logo=await doc.embedPng(logoBytes);
   const clean=(v:unknown)=>sanitizeTextForStandardPdfFont(String(v??''));
@@ -118,6 +121,23 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     text(first,222,155,`Preparabili: ${s.spellsPrepared} + specialità`,8);
     Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const sy=136-i*15;text(first,222,sy,`${level}°`);drawFantasyTracker(first,{x:246,y:sy-4,width:120,height:16},count);});
   }
+  if(druid){
+    frame(first,212,322,168,105,'FORMA SELVATICA');
+    if(s.level<2)text(first,222,271,'Disponibile dal livello 2',8);
+    else {
+      if(s.level<20)drawFantasyTracker(first,{x:225,y:259,width:140,height:20},2);
+      text(first,222,248,s.level>=20?'Utilizzi illimitati':'2 usi / riposo breve o lungo',8.5);
+      if(s.level<20)text(first,222,231,'Recupero alla fine del riposo',7.5);
+      const moon=/circolo della luna/i.test(s.classSubclass??'');
+      const maxCr=moon?(s.level>=6?Math.floor(s.level/3):1):s.level>=8?1:s.level>=4?0.5:0.25;
+      const crLabel=maxCr===0.25?'1/4':maxCr===0.5?'1/2':String(maxCr);
+      const movement=`Nuoto ${s.level>=4?'sì':'no'} / Volo ${s.level>=8?'sì':'no'}`;
+      fit(first,222,220,`GS max ${crLabel} / ${movement}`,145,7.5);
+    }
+    frame(first,212,207,168,153,'MAGIA DRUIDICA');text(first,222,170,`SAG / CD ${s.spellSaveDc} / Att. ${sign(s.spellAttackBonus??0)}`,8.5);
+    text(first,222,155,`Preparabili: ${s.spellsPrepared} / Trucchetti: ${s.cantripsKnown}`,8);
+    Object.entries(s.spellSlots).filter(([,n])=>n).forEach(([level,count],i)=>{const col=i>=5?1:0,row=i%5,x=222+col*75,sy=136-row*15;text(first,x,sy,`${level}°`);drawFantasyTracker(first,{x:x+19,y:sy-4,width:60,height:16},count);});
+  }
   // Fixed reference-sheet wording for standard class cards; full PHB descriptions remain in the appendix.
   const domainCards=cleric?cleric.features.filter(f=>options.clericEvidence!.domainFeatures.some(d=>d.title===f.title)):[];
   const mainDomainCard=domainCards.find(f=>f.level===1&&!/COMPETENZ|TRUCCHETTO BONUS/.test(f.title));
@@ -126,7 +146,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     ...(mainDomainCard?[mainDomainCard]:[]),
     ...clericReferenceCards(s.level,cleric.undeadCr),
     ...domainCards.filter(f=>f!==mainDomainCard),
-  ]:barbarianReferenceCards(s.level);let ry=704;
+  ]:druid?[...druidReferenceCards(s.level,s.classSubclass),...model.features.filter(f=>f.source.includes(' / Circolo'))]:barbarianReferenceCards(s.level);let ry=704;
   for(const card of cards){const lines=wrapSheetText(card.body,font,8.5,157),height=43+lines.length*10.5;if(ry-height<89)continue;
     frame(first,390,ry,178,height,card.title);lines.forEach((l,i)=>text(first,401,ry-40-i*10.5,l,8.5));ry-=height+9;}
   const continuation:BardPrintFeature[]=[...model.features];
@@ -145,7 +165,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   section('Linguaggi e competenze',[...s.languages,...s.armorProficiencies,...s.weaponProficiencies,...s.toolProficiencies].join(', '));
   section('Tratti razziali',[s.raceTraitsMd,s.subraceTraitsMd].filter(Boolean).join('\n\n'));section('Inventario',s.inventory.join('\n'));section('Background',s.backgroundMd??s.backgroundLabel);
   let spellPage:PDFPage,rowY=0;const xs=[27,52,186,229,273,568];
-  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard||cleric||artificer?`Classe: ${s.classLabel} / Caratteristica: ${artificer?'Intelligenza':cleric?'Saggezza':'Carisma'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
+  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,bard||cleric||artificer||druid?`Classe: ${s.classLabel} / Caratteristica: ${artificer?'Intelligenza':bard?'Carisma':'Saggezza'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
     ['Liv.','Nome incantesimo','V S M','Rit. / Conc.','Effetto'].forEach((label,i)=>text(spellPage,xs[i]+3,675,label,7.5));rowY=661;};
   if(s.spells.length)newSpellPage();
   for(const spell of s.spells){const nameLines=wrapSheetText(spell.name,font,8,125),body=spell.fullTextMd?.trim();

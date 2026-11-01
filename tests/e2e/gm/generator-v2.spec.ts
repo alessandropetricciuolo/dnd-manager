@@ -104,6 +104,34 @@ test.describe('Generatore V2', () => {
     await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
   });
 
+  test('Druido: scelta del Circolo della Terra, ambiente, trucchetto e PDF V2',async({page})=>{
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2?classLabel=Druido');
+    await expect(page.locator('#classLabel')).toHaveValue('Druido');
+    await page.locator('#characterName').fill('Druido V2 verifica');
+    await page.locator('#raceSlug').selectOption('elfo');
+    await page.locator('#backgroundSlug').selectOption('eremita');
+    const circle=await page.locator('#classSubclass option').filter({hasText:'Circolo della Terra'}).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(circle!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button',{name:'Genera Scheda',exact:true}).click();
+    await page.getByRole('button',{name:'Conferma e genera PDF'}).click();
+    const section=page.getByRole('region',{name:'Esportazione scheda V2'});
+    await expect(section.getByLabel('Terreno del Circolo della Terra')).toBeVisible();
+    await section.getByLabel('Terreno del Circolo della Terra').selectOption('Palude');
+    const cantrip=section.getByLabel('Trucchetto aggiuntivo del Circolo della Terra');
+    await cantrip.selectOption({index:0});
+    const pending=page.waitForEvent('download');
+    await section.getByRole('button',{name:'Genera scheda V2',exact:true}).click();
+    const download=await pending;expect(await download.failure()).toBeNull();
+    const destination=test.info().outputPath('druido-terra-v2.pdf');await download.saveAs(destination);
+    const pdf=fs.readFileSync(destination);expect(pdf.subarray(0,5).toString()).toBe('%PDF-');
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(3);
+    const invalidChoice=await page.request.post('/api/sheet-pdf-v2',{data:{input:{classLabel:'Druido',characterName:'Scelta incompatibile',raceSlug:'elfo',backgroundSlug:'eremita',classSubclass:'Circolo della Luna',level:'5'},druidChoices:{landTerrain:'Foresta'}}});
+    expect(invalidChoice.status()).toBe(422);
+    await page.screenshot({path:test.info().outputPath('druido-v2-desktop.png'),fullPage:true});
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');
