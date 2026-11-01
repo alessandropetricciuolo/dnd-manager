@@ -132,3 +132,15 @@ export function drawArtificerEmblem(page:PDFPage,b:FantasyBox){
  page.drawCircle({x:cx,y:cy,size:8*k,borderColor:INK,borderWidth:3*k});
  for(let i=0;i<8;i++){const a=i*Math.PI/4;stroke(page,cx+9*k*Math.cos(a),cy+9*k*Math.sin(a),cx+13*k*Math.cos(a),cy+13*k*Math.sin(a),3*k);}
 }
+
+/** Martial crossed swords badge for the Fighter. */
+export function drawFighterEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * k, borderColor: INK, borderWidth: 0.7 });
+  for (const d of [-1, 1]) {
+    stroke(page, cx - d * 10 * k, cy - 10 * k, cx + d * 10 * k, cy + 10 * k, 1.8 * k);
+    stroke(page, cx - d * 5 * k + 3.5 * k, cy - 5 * k - d * 3.5 * k, cx - d * 5 * k - 3.5 * k, cy - 5 * k + d * 3.5 * k, 1.4 * k);
+    page.drawCircle({ x: cx - d * 10 * k, y: cy - 10 * k, size: 1.8 * k, color: INK });
+  }
+}
+

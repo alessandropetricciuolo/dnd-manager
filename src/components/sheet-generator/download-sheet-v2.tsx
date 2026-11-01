@@ -10,6 +10,16 @@ import { TOTEM_ANIMALS, STORM_ENVIRONMENTS, barbarianPathFromLabel, type Barbari
 import { CLERIC_SKILL_CHOICES, DRUID_CANTRIPS, clericDomainFromLabel, type ClericChoices } from '@/lib/sheet-generator/cleric-domains';
 import { CLERIC_BONUS_LANGUAGES } from '@/lib/sheet-generator/cleric-print-model';
 import { DRUID_LAND_TERRAINS, druidCircleFromLabel, type DruidChoices } from '@/lib/sheet-generator/druid-circles';
+import {
+  FIGHTER_FIGHTING_STYLES,
+  ARCANE_ARCHER_CANTRIPS,
+  ARCANE_ARCHER_SKILLS,
+  CAVALIER_SKILLS,
+  SAMURAI_SKILLS,
+  fighterArchetypeFromLabel,
+  type FighterChoices,
+} from '@/lib/sheet-generator/fighter-archetypes';
+import type { PhbFightingStyle } from '@/lib/sheet-generator/class-choice-catalog';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -21,6 +31,11 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [clericLanguages,setClericLanguages]=useState<string[]|null>(null);
   const [druidTerrain,setDruidTerrain]=useState<DruidChoices['landTerrain']>('Foresta');
   const [druidCantrip,setDruidCantrip]=useState<string|null>(null);
+  const [fighterChoices, setFighterChoices] = useState<FighterChoices>({});
+  const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
+  const isChampion10 = fighterArchetype?.slug === 'phb-guerriero-campione' && sheet.level >= 10;
+  const fighterStyle = fighterChoices.fightingStyle ?? 'Duellare';
+  const fighterSecondStyle = fighterChoices.secondFightingStyle ?? (fighterStyle === 'Difesa' ? 'Tiro' : 'Difesa');
   const domain=sheet.classLabel==='Chierico'?clericDomainFromLabel(sheet.classSubclass):null;
   const clericPool=domain?CLERIC_SKILL_CHOICES[domain.slug]:undefined;
   const knowledge=domain?.slug==='phb-chierico-conoscenza',nature=domain?.slug==='phb-chierico-natura';
@@ -49,12 +64,19 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   if(path?.slug==='xge-barbaro-zelota')pathChoices.zealotDamage=barbarianChoices.zealotDamage??'Radiosi';
 
 
+  const isFighter = sheet.classLabel === 'Guerriero';
+  const finalFighterChoices: FighterChoices = {
+    fightingStyle: fighterStyle as PhbFightingStyle,
+    ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
+    ...fighterChoices,
+  };
+
   async function download() {
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -120,6 +142,49 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
         {availableLandCantrips.map(name=><option key={name}>{name}</option>)}
       </select>
     </label>}
+    {isFighter && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Opzioni Guerriero</legend>
+      <label className="block text-sm">Stile di combattimento
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterStyle} onChange={e=>setFighterChoices({...fighterChoices, fightingStyle: e.target.value as PhbFightingStyle})}>
+          {FIGHTER_FIGHTING_STYLES.map(style=><option key={style}>{style}</option>)}
+        </select>
+      </label>
+      {isChampion10 && <label className="block text-sm">Stile di combattimento aggiuntivo (Campione 10°)
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterSecondStyle} onChange={e=>setFighterChoices({...fighterChoices, secondFightingStyle: e.target.value as PhbFightingStyle})}>
+          {FIGHTER_FIGHTING_STYLES.filter(s=>s!==fighterStyle).map(style=><option key={style}>{style}</option>)}
+        </select>
+      </label>}
+      {fighterArchetype?.slug==='xge-guerriero-arciere-arcano' && <div className="space-y-3">
+        <label className="block text-sm">Abilità delle Conoscenze dell’Arciere Arcano
+          <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.arcaneArcherSkill??'arcana'} onChange={e=>setFighterChoices({...fighterChoices, arcaneArcherSkill: e.target.value as 'arcana'|'nature'})}>
+            {ARCANE_ARCHER_SKILLS.map(k=><option key={k} value={k}>{SKILL_LABELS[k]}</option>)}
+          </select>
+        </label>
+        <label className="block text-sm">Trucchetto delle Conoscenze dell’Arciere Arcano
+          <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.arcaneArcherCantrip??'Prestidigitazione'} onChange={e=>setFighterChoices({...fighterChoices, arcaneArcherCantrip: e.target.value as typeof ARCANE_ARCHER_CANTRIPS[number]})}>
+            {ARCANE_ARCHER_CANTRIPS.map(c=><option key={c}>{c}</option>)}
+          </select>
+        </label>
+      </div>}
+      {fighterArchetype?.slug==='xge-guerriero-cavaliere-errante' && <label className="block text-sm">Competenza bonus (Cavaliere Errante)
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.cavalierSkill??'animal_handling'} onChange={e=>setFighterChoices({...fighterChoices, cavalierSkill: e.target.value as SkillKey})}>
+          {CAVALIER_SKILLS.map(k=><option key={k} value={k}>{SKILL_LABELS[k]}</option>)}
+        </select>
+      </label>}
+      {fighterArchetype?.slug==='xge-guerriero-samurai' && <div className="space-y-3">
+        <label className="block text-sm">Competenza bonus (Samurai)
+          <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.samuraiSkill??'history'} onChange={e=>setFighterChoices({...fighterChoices, samuraiSkill: e.target.value as SkillKey})}>
+            {SAMURAI_SKILLS.map(k=><option key={k} value={k}>{SKILL_LABELS[k]}</option>)}
+          </select>
+        </label>
+        {sheet.level>=7 && sheet.savingThrows.wis.proficient && <label className="block text-sm">Tiro salvezza aggiuntivo (Cortigiano Elegante)
+          <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.samuraiSave??'int'} onChange={e=>setFighterChoices({...fighterChoices, samuraiSave: e.target.value as 'int'|'cha'})}>
+            <option value="int">Intelligenza</option>
+            <option value="cha">Carisma</option>
+          </select>
+        </label>}
+      </div>}
+    </fieldset>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
     <button type="button" onClick={download} disabled={busy || invalidCleric || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">
       {busy ? "Preparazione della scheda V2…" : "Genera scheda V2"}

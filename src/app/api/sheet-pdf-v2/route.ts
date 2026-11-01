@@ -13,6 +13,8 @@ import { loadBardCollegeFeatures, addBardCollegeGrantedSpells } from '@/lib/serv
 import { addDruidGrantedSpells, loadDruidEvidence } from '@/lib/server/druid-source';
 import { DRUID_LAND_TERRAINS } from '@/lib/sheet-generator/druid-circles';
 import { DRUID_CANTRIPS } from '@/lib/sheet-generator/cleric-domains';
+import { loadFighterEvidence, addFighterGrantedSpells } from '@/lib/server/fighter-source';
+import { FIGHTER_FIGHTING_STYLES, ARCANE_ARCHER_CANTRIPS } from '@/lib/sheet-generator/fighter-archetypes';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -23,6 +25,18 @@ const schema = z.object({
   clericChoices:z.object({skills:z.array(z.enum(ALL_SKILL_KEYS)).max(2).optional(),languages:z.array(z.string().min(1).max(64)).max(2).optional(),druidCantrip:z.string().min(1).max(64).optional()}).strict().optional(),
   barbarianChoices:z.object({totemSpirit:z.enum(TOTEM_ANIMALS).optional(),totemAspect:z.enum(TOTEM_ANIMALS).optional(),totemAttunement:z.enum(TOTEM_ANIMALS).optional(),storm:z.enum(STORM_ENVIRONMENTS).optional(),zealotDamage:z.enum(['Radiosi','Necrotici']).optional()}).strict().optional(),
   druidChoices:z.object({landTerrain:z.enum(DRUID_LAND_TERRAINS).optional(),landCantrip:z.enum(DRUID_CANTRIPS).optional()}).strict().optional(),
+  fighterChoices:z.object({
+    fightingStyle:z.enum(FIGHTER_FIGHTING_STYLES).optional(),
+    secondFightingStyle:z.enum(FIGHTER_FIGHTING_STYLES).optional(),
+    arcaneArcherSkill:z.enum(['arcana','nature']).optional(),
+    arcaneArcherCantrip:z.enum(ARCANE_ARCHER_CANTRIPS).optional(),
+    cavalierSkill:z.enum(ALL_SKILL_KEYS).optional(),
+    cavalierLanguage:z.string().min(1).max(64).optional(),
+    samuraiSkill:z.enum(ALL_SKILL_KEYS).optional(),
+    samuraiLanguage:z.string().min(1).max(64).optional(),
+    samuraiSave:z.enum(['int','cha']).optional(),
+    battleMasterTool:z.string().min(1).max(64).optional(),
+  }).strict().optional(),
 });
 export async function POST(req: Request) {
   const { user, profile } = await getRequestAuthContext();
@@ -33,7 +47,7 @@ export async function POST(req: Request) {
   let json: unknown;
   try { json = JSON.parse(raw); } catch { return Response.json({ error: 'Richiesta non valida.' }, { status: 400 }); }
   const parsed = schema.safeParse(json);
-  if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice','Druido'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di una classe supportata.' }, { status: 400 });
+  if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice','Druido','Guerriero'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di una classe supportata.' }, { status: 400 });
   const form = new FormData();
   for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
   // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
@@ -42,17 +56,20 @@ export async function POST(req: Request) {
   try {
     const logo = await fs.readFile(path.join(process.cwd(), 'public/logo.png'));
     const origin=new URL(req.url).origin;
-    const bard=result.sheet.classLabel==='Bardo',barbarian=result.sheet.classLabel==='Barbaro',cleric=result.sheet.classLabel==='Chierico',druid=result.sheet.classLabel==='Druido';
-    if((!barbarian&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!cleric&&Object.keys(parsed.data.clericChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
+    const bard=result.sheet.classLabel==='Bardo',barbarian=result.sheet.classLabel==='Barbaro',cleric=result.sheet.classLabel==='Chierico',druid=result.sheet.classLabel==='Druido',fighter=result.sheet.classLabel==='Guerriero';
+    if((!barbarian&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!cleric&&Object.keys(parsed.data.clericChoices??{}).length)||(!fighter&&Object.keys(parsed.data.fighterChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
     const clericEvidence=cleric?await loadClericEvidence(result.sheet,origin):undefined;
     const druidEvidence=druid?await loadDruidEvidence(result.sheet,origin,parsed.data.druidChoices):undefined;
+    const fighterEvidence=fighter?await loadFighterEvidence(result.sheet,origin,parsed.data.fighterChoices):undefined;
     if(!druid&&Object.keys(parsed.data.druidChoices??{}).length)throw new Error('Le scelte del Circolo Druidico non sono compatibili con questa classe.');
-    const sheet=result.sheet.classLabel==='Artefice'?result.sheet:druid?await addDruidGrantedSpells(result.sheet,druidEvidence!,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):cleric?addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):result.sheet;
+    if(!fighter&&Object.keys(parsed.data.fighterChoices??{}).length)throw new Error('Le scelte del Guerriero non sono compatibili con questa classe.');
+    const sheet=result.sheet.classLabel==='Artefice'?result.sheet:fighter?await addFighterGrantedSpells(result.sheet,fighterEvidence!,parsed.data.fighterChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):druid?await addDruidGrantedSpells(result.sheet,druidEvidence!,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):cleric?addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):result.sheet;
     const collegeFeatures=bard?await loadBardCollegeFeatures(sheet,origin):undefined;
     const barbarianEvidence=barbarian?await loadBarbarianEvidence(sheet,origin):undefined;
     const bytes = await renderCharacterSheetV2(sheet, logo, {
       clericEvidence,clericChoices:parsed.data.clericChoices,
       druidEvidence,
+      fighterEvidence,fighterChoices:parsed.data.fighterChoices,
       barbarianEvidence,barbarianChoices:parsed.data.barbarianChoices,
       bonusSkills: parsed.data.bonusSkills,
       collegeFeatures,

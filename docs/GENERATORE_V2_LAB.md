@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice e Druido
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido e Guerriero
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -145,3 +145,33 @@ Il Circolo della Terra consente di scegliere terreno e trucchetto bonus, carica 
 Forma Selvatica riporta usi, riposo, durata, limiti correnti di GS e movimento, ritorno alla forma normale e conversione dei PF. Le schede delle bestie non vengono generate né collegate automaticamente. Il Circolo della Luna mostra il GS effettivo e i privilegi disponibili; Incantesimi Bestiali consente il lancio in forma bestiale dal livello 18. Nessuna modifica al generatore V1. La grafica V2 resta provvisoria.
 
 Verifica: nove test mirati Druido per circoli, livelli di sblocco, magie duplicate, livello 1 e ambienti; suite completa del generatore (146 test) e TypeScript. Sette prove browser V2 passano, inclusi scelta del terreno, trucchetto bonus, download PDF e rifiuto di una scelta incompatibile. PDF Druido del Circolo della Terra al livello 5 scaricato dal flusso browser (18 pagine) e controllato visivamente alle pagine 1, 2 e 18. Verificate tutte le sette sottoclassi, le soglie d'incantesimo e tutte le otto scelte di terreno.
+
+## Guerriero (1 novembre 2026)
+
+Riferimento fornito: `Guerriero_5e_v14.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con Stile di Combattimento e Recuperare Energie; colonna centrale con Azione Impetuosa, Attacco Extra, Indomito e riquadri risorse (Azione Impetuosa, Indomito, Risorsa di Archetipo, Trucchetti/Slot); colonna destra con privilegi di classe e archetipo. Testo fisso fedele al riferimento trascritto in `fighter-reference-copy.ts`.
+
+Otto archetipi marziali estratti dai manuali locali:
+- PHB: Campione, Maestro di Battaglia, Cavaliere Mistico.
+- Xanathar: Arciere Arcano, Cavaliere, Samurai.
+- Tasha: Guerriero Psionico, Cavaliere delle Rune.
+
+Meccaniche, opzioni e calcoli integrati:
+- Stile di Combattimento: selezione stile (Tiro, Difesa, Duellare, Combattere con Grandi Armi, Protezione, Combattere con Due Armi); il Campione seleziona un secondo stile al livello 10.
+- Risorse e tracciatori con caselle spuntabili: Recuperare Energie (1d10 + livello, 1/riposo breve o lungo), Azione Impetuosa (1 uso ai liv. 2-16, 2 usi dal liv. 17), Indomito (1 uso ai liv. 9-12, 2 usi ai liv. 13-16, 3 usi dal liv. 17), Attacco Extra (2 attacchi al liv. 5, 3 attacchi al liv. 11, 4 attacchi al liv. 20).
+- Risorse di Archetipo dedicate: Dadi Superiorità e Manovre (Maestro di Battaglia), Frecce Arcane (Arciere Arcano), Spirito Guerriero (Samurai), Marchio Temerario (Cavaliere), Dadi Energia Psionica (Guerriero Psionico), Uso Rune (Cavaliere delle Rune), Slot Incantesimi (Cavaliere Mistico).
+- Calcoli e competenze applicati sulla copia V2 della scheda (`fighter-print-model.ts`):
+  - Campione: Atleta Straordinario (+ceil(bonus_competenza/2) arrotondato per eccesso a Iniziativa e prove di Forza/Destrezza/Costituzione senza competenza).
+  - Samurai: Cortigiano Elegante (somma modificatore Saggezza alle prove di Carisma [Persuasione], conferisce competenza nei tiri salvezza su Saggezza o a scelta Intelligenza/Carisma se già competente). Competenze bonus selezionabili tra Storia, Intuizione, Intrattenere, Persuasione o un linguaggio.
+  - Arciere Arcano: Tiro Arcano, selezione trucchetto bonus tra Prestidigitazione e Artificio Druidico, competenza bonus tra Arcano e Natura.
+  - Cavaliere: Nato per la Sella, competenza bonus selezionabile (tra le abilità sociali o un linguaggio).
+  - Cavaliere delle Rune: Competenza strumenti da fabbro e Gigante.
+  - Cavaliere Mistico: progressione slot da un terzo di incantatore, CD e tiro per colpire basati su Intelligenza.
+  - Guerriero Psionico: Dadi Energia Psionica crescenti (d6 a d12, 2x competenza), con concessione dell'incantesimo Telecinesi al livello 18 senza slot.
+- Risoluzione fonti manuali locali:
+  - PHB capitolo Guerriero sezionato usando il marcatore `## ARCHETIPI MARZIALI` per evitare la perdita di testo dovuta alla doppia intestazione `# GUERRIERO`.
+  - Tasha: arresto dell'estrazione per Guerriero Psionico su `# GUIDE PER IL MAESTRO DI BATTAGLIA` per isolare il privilegio di livello 18.
+- Verifica e test:
+  - 159 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutti gli 8 archetipi a vari livelli, progressioni risorse, bonus Atleta Straordinario, Cortigiano Elegante, incantesimi concessi e generazione PDF.
+  - 8 test browser end-to-end con Playwright (`playwright.sheet-v2.config.ts`) superati: download Guerriero V2, selezione opzioni, tutti gli 8 archetipi e rifiuto scelte incompatibili.
+  - Lint e build Next.js di produzione riusciti senza errori.
+  - Campione PDF generato e controllato visivamente: `output/pdf/guerriero-v2-test.pdf`.

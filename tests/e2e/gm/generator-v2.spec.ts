@@ -132,6 +132,80 @@ test.describe('Generatore V2', () => {
     await page.screenshot({path:test.info().outputPath('druido-v2-desktop.png'),fullPage:true});
   });
 
+  test('Guerriero: selezione dello stile, download e tutti gli otto archetipi esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Guerriero');
+    await expect(page.locator('#classLabel')).toHaveValue('Guerriero');
+    await expect(page.locator('#classSubclass option')).toHaveCount(9);
+    await page.locator('#characterName').fill('Guerriero V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('soldato');
+    const bm = await page.locator('#classSubclass option').filter({ hasText: 'Maestro di Battaglia' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(bm!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Stile di combattimento')).toBeVisible();
+    await section.getByLabel('Stile di combattimento').selectOption('Duellare');
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    const destination = test.info().outputPath('guerriero-bm-v2.pdf');
+    await download.saveAs(destination);
+    const pdf = fs.readFileSync(destination);
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(2);
+
+    const archetypes = [
+      'Campione',
+      'Maestro di Battaglia',
+      'Cavaliere Mistico',
+      'Arciere Arcano',
+      'Cavaliere Errante',
+      'Samurai',
+      'Cavaliere Runico',
+      'Guerriero Psionico',
+    ];
+    for (const classSubclass of archetypes) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Guerriero',
+            characterName: classSubclass,
+            raceSlug: 'umano',
+            backgroundSlug: 'soldato',
+            classSubclass,
+            level: '10',
+          },
+          fighterChoices: { fightingStyle: 'Duellare' },
+        },
+      });
+      expect(response.status(), classSubclass + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalidChoice = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Barbaro',
+          characterName: 'Scelta errata',
+          raceSlug: 'umano',
+          backgroundSlug: 'soldato',
+          classSubclass: 'Cammino del Berserker',
+          level: '5',
+        },
+        fighterChoices: { fightingStyle: 'Duellare' },
+      },
+    });
+    expect(invalidChoice.status()).toBe(422);
+
+    await page.screenshot({ path: test.info().outputPath('guerriero-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');
