@@ -144,3 +144,17 @@ export function drawFighterEmblem(page: PDFPage, b: FantasyBox) {
   }
 }
 
+/** Stealth dagger badge for the Rogue. */
+export function drawRogueEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * k, borderColor: INK, borderWidth: 0.7 });
+  stroke(page, cx, cy + 9 * k, cx, cy - 8 * k, 2.2 * k);
+  stroke(page, cx - 2.5 * k, cy - 5 * k, cx, cy - 11 * k, 1.2 * k);
+  stroke(page, cx + 2.5 * k, cy - 5 * k, cx, cy - 11 * k, 1.2 * k);
+  stroke(page, cx - 6 * k, cy + 3 * k, cx + 6 * k, cy + 3 * k, 1.6 * k);
+  page.drawCircle({ x: cx, y: cy + 11 * k, size: 2 * k, color: INK });
+  stroke(page, cx - 11 * k, cy + 6 * k, cx - 5 * k, cy - 7 * k, 1 * k);
+  stroke(page, cx + 11 * k, cy + 6 * k, cx + 5 * k, cy - 7 * k, 1 * k);
+}
+
+

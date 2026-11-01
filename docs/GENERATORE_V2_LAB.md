@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido e Guerriero
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero e Ladro
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -175,3 +175,42 @@ Meccaniche, opzioni e calcoli integrati:
   - 8 test browser end-to-end con Playwright (`playwright.sheet-v2.config.ts`) superati: download Guerriero V2, selezione opzioni, tutti gli 8 archetipi e rifiuto scelte incompatibili.
   - Lint e build Next.js di produzione riusciti senza errori.
   - Campione PDF generato e controllato visivamente: `output/pdf/guerriero-v2-test.pdf`.
+
+## Ladro (1 novembre 2026)
+
+Riferimento fornito: `Ladro 5e v14.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e doppio indicatore per competenza e maestria; colonna centrale con grande riquadro dedicato ad Attacco Furtivo, risorse e magia di archetipo, e le regole essenziali per Attacco Furtivo e Gergo Ladresco; colonna destra con progressione dei privilegi di classe e archetipo. Testo fisso fedele trascritto in `rogue-reference-copy.ts`.
+
+Nove archetipi ladreschi estratti integralmente dai manuali locali:
+- PHB: Furfante, Assassino, Mistificatore Arcano.
+- Xanathar: Esploratore, Indagatore, Pianificatore, Spadaccino.
+- Tasha: Fantasma, Lama Spirituale.
+
+Meccaniche, opzioni e calcoli integrati:
+- Attacco Furtivo: progressione da 1d6 a 10d6 calcolata dal livello, presentata nel riquadro centrale della prima pagina con dadi e condizioni.
+- Risorse di Archetipo dedicate:
+  - Mistificatore Arcano: slot incantesimi da un terzo di incantatore, CD e tiro per colpire basati su Intelligenza, concessione automatica del trucchetto *Mano magica* invisibile.
+  - Lama Spirituale: Dadi Energia Psionica crescenti da d6 a d12 (numero pari al doppio del bonus di competenza), recupero con riposo lungo o azione bonus, Lame Psichiche (1d6 danni psichici, 18m lancio, seconda lama azione bonus per 1d4).
+  - Fantasma: Lamenti dalla Tomba con tracciatore di utilizzi (pari al bonus di competenza) e danno necrotico scalato (`ceil(sneakDice / 2)` d6), Pegni dei Defunti dal livello 9 (max bonus di competenza).
+  - Indagatore: Combattimento Intuitivo, Orecchio per l'Inganno, Occhio per i Dettagli, Occhio Infallibile con utilizzi calcolati su Saggezza dal livello 13.
+  - Spadaccino: Audacia del Fanfarone (somma del modificatore di Carisma all'iniziativa, Attacco Furtivo in duello 1v1 senza vantaggio), Gioco di Gambe per evitare attacchi di opportunità.
+  - Esploratore: Schermagliatore per movimento rapido in reazione.
+  - Pianificatore: Maestro di Tattiche (azione di Aiuto come azione bonus a distanza di 9 metri).
+  - Furfante: Mani Veloci (uso di arnesi da scasso e oggetti con Azione Scaltra), Lavoro al Secondo Piano.
+  - Assassino: Assassinare (vantaggio sui nemici che non hanno agito e colpo critico automatico su creature sorprese).
+- Calcoli e competenze applicati sulla copia V2 della scheda (`rogue-print-model.ts`):
+  - Esploratore: Survivalista conferisce competenza e maestria raddoppiata in Natura e Sopravvivenza (valori aggiornati a mod + 2 * prof); Mobilità Superiore incrementa la velocità base di 3 metri dal livello 9.
+  - Spadaccino: Audacia del Fanfarone aggiunge permanentemente il modificatore di Carisma all'iniziativa.
+  - Assassino: competenze bonus negli strumenti per camuffamento e sostanze da avvelenatore.
+  - Pianificatore: competenze bonus in trucchi per il camuffamento, arnesi da falsario, un set di gioco a scelta e due linguaggi a scelta.
+  - Base: Mente Sfuggente al livello 15+ conferisce competenza nei tiri salvezza su Saggezza.
+  - Fantasma: Sussurri dei Morti permette di selezionare una competenza aggiuntiva temporanea.
+- Risoluzione fonti manuali locali:
+  - PHB capitolo Ladro sezionato tra `# LADRO` e `# ARCHETIPI LADRESCHI` per isolare tutti gli 11 privilegi di classe base.
+  - Ripulita l'intestazione di Spadaccino in `character-subclass-catalog.ts` dal refuso `"SCHERMAGLIATORE"`, che causava un arresto prematuro dell'estrazione dell'archetipo Esploratore in Xanathar.
+  - Aggiunta protezione `stops.delete(norm(title))` in `extractManualSubclassFeatures` per garantire che i privilegi attesi di un archetipo non fungano mai da stop per se stessi.
+  - Tasha: verificato il titolo esatto del privilegio di 17° livello del Fantasma (`COMPAGNO DELLA MORTE`).
+- Verifica e test:
+  - 171 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutti i 9 archetipi a livelli 1, 3, 5, 9, 11, 13, 15, 17, 20, progressione Attacco Furtivo, Survivalista, Audacia del Fanfarone, Mente Sfuggente, Dadi Psionici, Lamenti dalla Tomba e generazione PDF.
+  - 9 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Ladro V2, opzioni, tutti i 9 archetipi e rifiuto payload incompatibili.
+  - Lint e build di produzione completati senza errori.
+  - Campione PDF generato e verificato: `output/pdf/ladro-v2-test.pdf`.

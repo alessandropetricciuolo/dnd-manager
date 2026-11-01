@@ -15,6 +15,7 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
     ...SUPPLEMENT_SUBCLASS_OPTIONS.filter(c=>c.slug!==college.slug&&c.supplementRulesSource.markdownFile===college.supplementRulesSource.markdownFile).flatMap(c=>c.sectionHeadings.map(norm)),
     ...CLASS_OPTIONS.map(c=>norm(c.label)), 'WARLOCK: IL NON MORTO', 'GUIDE PER IL MAESTRO DI BATTAGLIA',
   ]);
+  for(const [title] of specs)stops.delete(norm(title));
   const end=headings.find(h=>h.index>start.index&&stops.has(h.key))?.index??lines.length;
   const expected=new Map(specs.map(([title,unlock])=>[norm(title),{title,unlock}]));
   const starts=headings.filter(h=>h.index>start.index&&h.index<end&&expected.has(h.key));
@@ -23,8 +24,8 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
   return starts.flatMap((h,i)=>{
     const spec=expected.get(h.key)!;if(spec.unlock>level)return [];
     const body=lines.slice(h.index+1,starts[i+1]?.index??end).join('\n')
-      .replace(/^#{1,6}\s+Privilegio del (?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo)[^\n]*\n/gim,'')
-      .replace(/^\*{0,2}Privilegio del (?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo)[^\n]*\*{0,2}\s*$/gim,'')
+      .replace(/^#{1,6}\s+Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro)[^\n]*\n/gim,'')
+      .replace(/^\*{0,2}Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro)[^\n]*\*{0,2}\s*$/gim,'')
       .replace(/^Scansionato con CamScanner\s*$/gm,'').trim();
     if(!body)throw new Error(`Testo vuoto per ${spec.title}.`);
     return [{title:spec.title,body,level:spec.unlock,source:`${wikiManualBookLabel(college.supplementRulesSource.manualBookKey)} / ${college.label} / ${college.supplementRulesSource.markdownFile}`}];

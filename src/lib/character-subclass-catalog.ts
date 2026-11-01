@@ -441,7 +441,7 @@ const XGE_TCE_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
     slug: "xge-ladro-spadaccino",
     parentClassLabel: "Ladro",
     label: "Spadaccino",
-    sectionHeadings: H("SPADACCINO", "SCHERMAGLIATORE"),
+    sectionHeadings: H("SPADACCINO"),
     supplementRulesSource: XGE,
   },
   {

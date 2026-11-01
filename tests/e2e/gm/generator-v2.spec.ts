@@ -206,6 +206,78 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Ladro: opzioni, download e tutti i nove archetipi esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Ladro');
+    await expect(page.locator('#classLabel')).toHaveValue('Ladro');
+    await expect(page.locator('#classSubclass option')).toHaveCount(10);
+    await page.locator('#characterName').fill('Ladro V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('criminale');
+    const sw = await page.locator('#classSubclass option').filter({ hasText: 'Spadaccino' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(sw!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    const destination = test.info().outputPath('ladro-spadaccino-v2.pdf');
+    await download.saveAs(destination);
+    const pdf = fs.readFileSync(destination);
+    expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(2);
+
+    const archetypes = [
+      'Furfante',
+      'Assassino',
+      'Mistificatore Arcano',
+      'Esploratore',
+      'Indagatore',
+      'Pianificatore',
+      'Spadaccino',
+      'Fantasma',
+      'Lama Spirituale',
+    ];
+    for (const classSubclass of archetypes) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Ladro',
+            characterName: classSubclass,
+            raceSlug: 'umano',
+            backgroundSlug: 'criminale',
+            classSubclass,
+            level: '5',
+          },
+        },
+      });
+      expect(response.status(), classSubclass + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalidChoice = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Barbaro',
+          characterName: 'Scelta errata',
+          raceSlug: 'umano',
+          backgroundSlug: 'soldato',
+          classSubclass: 'Cammino del Berserker',
+          level: '5',
+        },
+        rogueChoices: { mastermindGamingSet: 'Set di dadi' },
+      },
+    });
+    expect(invalidChoice.status()).toBe(422);
+
+    await page.screenshot({ path: test.info().outputPath('ladro-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');
