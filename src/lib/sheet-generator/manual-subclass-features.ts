@@ -24,8 +24,8 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
   return starts.flatMap((h,i)=>{
     const spec=expected.get(h.key)!;if(spec.unlock>level)return [];
     const body=lines.slice(h.index+1,starts[i+1]?.index??end).join('\n')
-      .replace(/^#{1,6}\s+Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra)[^\n]*\n/gim,'')
-      .replace(/^\*{0,2}Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra)[^\n]*\*{0,2}\s*$/gim,'')
+      .replace(/^#{1,6}\s+Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra|Via|Monaco|Tradizione Monastica)[^\n]*\n/gim,'')
+      .replace(/^\*{0,2}Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra|Via|Monaco|Tradizione Monastica)[^\n]*\*{0,2}\s*$/gim,'')
       .replace(/^Scansionato con CamScanner\s*$/gm,'').trim();
     if(!body)throw new Error(`Testo vuoto per ${spec.title}.`);
     return [{title:spec.title,body,level:spec.unlock,source:`${wikiManualBookLabel(college.supplementRulesSource.manualBookKey)} / ${college.label} / ${college.supplementRulesSource.markdownFile}`}];

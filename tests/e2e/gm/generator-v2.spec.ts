@@ -354,6 +354,81 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Monaco: scelte Kensei, download e tutte le 8 tradizioni esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Monaco');
+    await expect(page.locator('#classLabel')).toHaveValue('Monaco');
+    await expect(page.locator('#classSubclass option')).toHaveCount(9);
+    await page.locator('#characterName').fill('Monaco V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('eremita');
+    const tradition = await page.locator('#classSubclass option').filter({ hasText: 'Kensei' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(tradition!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Arma Kensei da mischia')).toBeVisible();
+    await section.getByLabel('Arma Kensei da mischia').selectOption('Spada lunga');
+    await expect(section.getByLabel('Arma Kensei a distanza')).toBeVisible();
+    await section.getByLabel('Arma Kensei a distanza').selectOption('Arco lungo');
+
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    await download.saveAs(test.info().outputPath('monaco-kensei-v2.pdf'));
+
+    const traditions = [
+      'Via della Mano Aperta',
+      "Via dell'Ombra",
+      'Via dei Quattro Elementi',
+      'Via del Kensei',
+      'Via del Maestro Ubriaco',
+      "Via dell'Anima Solare",
+      'Via del Sé Astrale',
+      'Via della Misericordia',
+    ];
+
+    for (const sub of traditions) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Monaco',
+            characterName: sub,
+            raceSlug: 'umano',
+            backgroundSlug: 'eremita',
+            classSubclass: sub,
+            level: '14',
+          },
+          monkChoices: sub === 'Via del Kensei' ? { kenseiMeleeWeapon: 'Spada lunga', kenseiRangedWeapon: 'Arco lungo' } : undefined,
+        },
+      });
+      expect(response.status(), sub + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalid = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Monaco',
+          characterName: 'Test',
+          raceSlug: 'umano',
+          backgroundSlug: 'eremita',
+          classSubclass: 'Via della Mano Aperta',
+          level: '5',
+        },
+        monkChoices: { kenseiMeleeWeapon: 'Arma inventata' },
+      },
+    });
+    expect(invalid.status()).toBe(400);
+
+    await page.screenshot({ path: test.info().outputPath('monaco-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');

@@ -30,6 +30,12 @@ import {
   BLADESINGER_WEAPONS,
   type WizardChoices,
 } from '@/lib/sheet-generator/wizard-traditions';
+import {
+  monkTraditionFromLabel,
+  KENSEI_MELEE_WEAPONS,
+  KENSEI_RANGED_WEAPONS,
+  type MonkChoices,
+} from '@/lib/sheet-generator/monk-traditions';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -44,9 +50,11 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [fighterChoices, setFighterChoices] = useState<FighterChoices>({});
   const [rogueChoices, setRogueChoices] = useState<RogueChoices>({});
   const [wizardChoices, setWizardChoices] = useState<WizardChoices>({});
+  const [monkChoices, setMonkChoices] = useState<MonkChoices>({});
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
   const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
+  const monkTradition = sheet.classLabel === 'Monaco' && sheet.level >= 3 ? monkTraditionFromLabel(sheet.classSubclass) : null;
   const isChampion10 = fighterArchetype?.slug === 'phb-guerriero-campione' && sheet.level >= 10;
   const fighterStyle = fighterChoices.fightingStyle ?? 'Duellare';
   const fighterSecondStyle = fighterChoices.secondFightingStyle ?? (fighterStyle === 'Difesa' ? 'Tiro' : 'Difesa');
@@ -81,6 +89,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const isFighter = sheet.classLabel === 'Guerriero';
   const isRogue = sheet.classLabel === 'Ladro';
   const isWizard = sheet.classLabel === 'Mago';
+  const isMonk = sheet.classLabel === 'Monaco';
   const finalFighterChoices: FighterChoices = {
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
@@ -92,7 +101,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -219,6 +228,19 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       <label className="block text-sm">Arma da mischia ad una mano (Arte della Guerra e del Canto)
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={wizardChoices.bladesingerWeapon ?? 'Stocco'} onChange={e => setWizardChoices({ ...wizardChoices, bladesingerWeapon: e.target.value })}>
           {BLADESINGER_WEAPONS.map(w => <option key={w} value={w}>{w}</option>)}
+        </select>
+      </label>
+    </fieldset>}
+    {isMonk && monkTradition && monkTradition.slug === 'xge-monaco-kensei' && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Tradizione Monastica: {monkTradition.label}</legend>
+      <label className="block text-sm">Arma Kensei da mischia
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={monkChoices.kenseiMeleeWeapon ?? 'Spada lunga'} onChange={e => setMonkChoices({ ...monkChoices, kenseiMeleeWeapon: e.target.value })}>
+          {KENSEI_MELEE_WEAPONS.map(w => <option key={w} value={w}>{w}</option>)}
+        </select>
+      </label>
+      <label className="block text-sm">Arma Kensei a distanza
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={monkChoices.kenseiRangedWeapon ?? 'Arco lungo'} onChange={e => setMonkChoices({ ...monkChoices, kenseiRangedWeapon: e.target.value })}>
+          {KENSEI_RANGED_WEAPONS.map(w => <option key={w} value={w}>{w}</option>)}
         </select>
       </label>
     </fieldset>}

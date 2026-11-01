@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro e Mago
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro, Mago e Monaco
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -245,3 +245,34 @@ Meccaniche, opzioni e calcoli integrati:
   - 10 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Mago V2 con Canto della Lama, opzioni armi, esportazione di tutte le 11 tradizioni e rifiuto scelte non valide.
   - Lint e build Next.js di produzione completati con successo.
   - Campione PDF generato e verificato: `output/pdf/mago-v2-test.pdf`.
+
+## Monaco (1 novembre 2026)
+
+Riferimento fornito: `Monaco 5e.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e salvezze (Forza e Destrezza competenti); colonna centrale con CA Difesa Senza Armatura (`10 + DES + SAG`), velocità incrementata con Movimento Senza Armatura (`+3m` fino a `+9m` con superfici verticali e liquide dal lv 9), box dedicato a **Punti Ki e Arti Marziali** (con scudo fantasy per il dado di Arti Marziali, contatore a diamanti per i Punti Ki scalati da livello 2 a 20 con ricarica a riposo breve o lungo, CD tiri salvezza Ki) e box **Capacità del Ki e Movimento** (Raffica di Colpi, Difesa Paziente, Passo del Vento, Deviare Proiettili con riduzione `1d10 + DES + livello`, risorse di sottoclasse); colonna destra con progressione dei privilegi di classe di primo livello e successivi (Caduta Lenta lv 4, Attacco Extra lv 5, Colpo Stordente lv 5, Colpi Ki Potenziati lv 6, Elusione lv 7, Mente Lucida lv 7, Purezza del Corpo lv 10, Lingua del Sole e della Luna lv 13, Anima Adamantina lv 14, Corpo Senza Tempo lv 15, Corpo Vuoto lv 18, Perfezione Interiore lv 20). Trascrizione fissa fedele in `monk-reference-copy.ts`.
+
+Tutte le otto Tradizioni Monastiche estratte integralmente dai manuali locali:
+- PHB: Via della Mano Aperta, Via dell'Ombra, Via dei Quattro Elementi.
+- Xanathar: Via del Kensei, Via del Maestro Ubriaco, Via dell'Anima Solare.
+- Tasha: Via del Sé Astrale, Via della Misericordia.
+
+Meccaniche, opzioni e calcoli integrati:
+- Arti Marziali: dado scala da 1d4 (livello 1) a 1d6 (lv 5), 1d8 (lv 11), 1d10 (lv 17).
+- Punti Ki: progressione da livello 2 (2 punti) fino a livello 20 (20 punti), con CD tiri salvezza Ki calcolata come `8 + competenza + mod SAG`. Tracciatore vettoriale scalabile fino a 20 diamanti.
+- Movimento Senza Armatura: incremento di velocità (+3 m a lv 2, +4,5 m a lv 6, +6 m a lv 10, +7,5 m a lv 14, +9 m a lv 18), con nota automatica per il movimento lungo pareti verticali e liquidi a partire dal livello 9.
+- Difesa Senza Armatura: CA aggiornata a `10 + DES mod + SAG mod` quando non indossa armature.
+- Anima Adamantina: a partire dal livello 14 conferisce automaticamente competenza in TUTTI i sei tiri salvezza (Forza, Destrezza, Costituzione, Intelligenza, Saggezza, Carisma) con ricalcolo corretto dei bonus.
+- Risorse e opzioni di sottoclasse dedicate:
+  - Via del Kensei: selezione delle armi Kensei (una da mischia e una a distanza tra le opzioni regolamentari) che conferiscono competenza e contano come armi da monaco; competenze negli strumenti da calligrafo o da pittore.
+  - Via del Maestro Ubriaco: competenza bonus nell'abilità Intrattenere e negli strumenti da birraio; Tecnica dell'Ubriaco (Disimpegno gratuito e +3m quando usa Raffica di Colpi).
+  - Via della Misericordia: competenze bonus in Intuizione, Medicina e strumenti da erborista; Mano Guaritrice con dadi curativi calcolati (`dado + SAG mod`) e Mano del Dolore.
+  - Via dell'Ombra: concessione automatica del trucchetto *Illusione Minore* al livello 3+.
+  - Via del Sé Astrale: Braccia del Sé Astrale (danni da forza con dado marziale e portata 1,5m).
+  - Via della Mano Aperta: Integrità del Corpo al livello 6+ con calcolo automatico dei PF curati (`3 * livello`).
+- Risoluzione e robustezza dell'estrazione:
+  - Normalizzazione avanzata degli apostrofi tipografici curvi/dritti in `monkTraditionFromLabel`.
+  - Rimozione sicura dei sottotitoli descrittivi di terzo livello (es. `*Privilegio della Via del Sé Astrale di 3° livello*`) aggiornando i pattern di `manual-subclass-features.ts`.
+- Verifica e test:
+  - 187 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutte le 8 tradizioni, livelli 1-20, progressione dado e movimento, Punti Ki e CD, Difesa Senza Armatura, Anima Adamantina e PDF di ogni tradizione.
+  - 11 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Monaco V2 con Via del Kensei, opzioni armi, esportazione di tutte le 8 tradizioni, rifiuto scelte non valide e verifica layout mobile.
+  - Build Next.js di produzione completata con successo.
+  - Campione PDF generato e verificato: `output/pdf/monaco-v2-test.pdf`.

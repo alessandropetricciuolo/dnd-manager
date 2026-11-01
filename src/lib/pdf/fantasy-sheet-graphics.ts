@@ -169,5 +169,26 @@ export function drawWizardEmblem(page: PDFPage, b: FantasyBox) {
   page.drawCircle({ x: cx, y: cy, size: 8 * k, borderColor: INK, borderWidth: 0.8 * k });
 }
 
+/** Martial fist badge for the Monk. */
+export function drawMonkEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * k, borderColor: INK, borderWidth: 0.7 });
+  stroke(page, cx - 4 * k, cy - 11 * k, cx - 4 * k, cy - 4 * k, 1.4 * k);
+  stroke(page, cx + 4 * k, cy - 11 * k, cx + 4 * k, cy - 4 * k, 1.4 * k);
+  page.drawRectangle({
+    x: cx - 6 * k,
+    y: cy - 4 * k,
+    width: 12 * k,
+    height: 11 * k,
+    borderColor: INK,
+    borderWidth: 1.2 * k,
+  });
+  stroke(page, cx - 3 * k, cy - 4 * k, cx - 3 * k, cy + 7 * k, 0.8 * k);
+  stroke(page, cx, cy - 4 * k, cx, cy + 7 * k, 0.8 * k);
+  stroke(page, cx + 3 * k, cy - 4 * k, cx + 3 * k, cy + 7 * k, 0.8 * k);
+  stroke(page, cx - 7 * k, cy - 2 * k, cx + 2 * k, cy + 1 * k, 1.6 * k);
+}
+
+
 
 
