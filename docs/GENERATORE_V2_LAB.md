@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro, Mago e Monaco
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro, Mago, Monaco e Paladino
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -276,3 +276,28 @@ Meccaniche, opzioni e calcoli integrati:
   - 11 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Monaco V2 con Via del Kensei, opzioni armi, esportazione di tutte le 8 tradizioni, rifiuto scelte non valide e verifica layout mobile.
   - Build Next.js di produzione completata con successo.
   - Campione PDF generato e verificato: `output/pdf/monaco-v2-test.pdf`.
+
+## Paladino (1 novembre 2026)
+
+Riferimento fornito: `Paladino 5e v14.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e salvezze (Saggezza e Carisma competenti); colonna centrale con CA, Iniziativa, Velocità, PF (dado vita d10), tabella attacchi a 3 righe, box dedicato a **Magia e Risorse Divine** (CD incantesimi, tiro per colpire, slot half-caster da 1° a 5° livello tracciati a diamanti, incantesimi preparabili e Stile di Combattimento) e box **Capacità del Paladino** (Imposizione delle Mani con riserva di 5 x livello PF, Percezione del Divino con 1 + mod CAR utilizzi per riposo lungo, Incanalare Divinità, Punizione Divina con danno scalato su slot, Aura di Protezione e Aura di Coraggio con raggio 3m/9m a lv 18, Punizione Divina Migliorata, Tocco Purificatore con mod CAR utilizzi, e risorse di sottoclasse); colonna destra con progressione dei privilegi di classe di primo livello e successivi (Stile di Combattimento lv 2, Punizione Divina lv 2, Salute Divina lv 3, Attacco Extra lv 5, Aura di Protezione lv 6, Aura di Coraggio lv 10, Punizione Divina Migliorata lv 11, Tocco Purificatore lv 14). Trascrizione fissa fedele in `paladin-reference-copy.ts`.
+
+Tutti i sette Giuramenti Sacri estratti integralmente dai manuali locali:
+- PHB: Giuramento di Devozione, Giuramento degli Antichi, Giuramento di Vendetta.
+- Xanathar: Giuramento di Conquista, Giuramento di Redenzione.
+- Tasha: Giuramento di Gloria, Giuramento delle Sentinelle.
+
+Meccaniche, opzioni e calcoli integrati:
+- Stile di Combattimento: opzione configurabile tra Combattere con Armi Possenti, Difesa, Duellare e Protezione; Difesa applica +1 permanente alla CA quando indossa un'armatura.
+- Aura di Protezione (Livello 6+): aggiunge automaticamente il modificatore di Carisma (minimo +1) a TUTTI i sei tiri salvezza (Forza, Destrezza, Costituzione, Intelligenza, Saggezza, Carisma).
+- Giuramento di Gloria - Aura di Alacrità (Livello 7+): incrementa la velocità base di 3 metri (+3 m).
+- Slot Incantesimi e Preparazione: tabella half-caster completa da 1° a 5° livello con tracciatori vettoriali per gli slot disponibili; incantesimi preparabili calcolati come `Math.floor(level / 2) + mod CAR` (minimo 1), a cui si aggiungono gli incantesimi di giuramento sempre preparati.
+- Incantesimi di Giuramento: risolti e caricati automaticamente per tutti i 7 giuramenti dai manuali locali in base al livello (3, 5, 9, 13, 17) senza consumare le scelte ordinarie.
+- Emblema vettoriale: creato `drawPaladinEmblem` in `fantasy-sheet-graphics.ts` (scudo cavalleresco con spada radiosa e croce sacra).
+- Risoluzione e robustezza dell'estrazione:
+  - Mappati i titoli esatti delle fonti con gestione del refuso OCR di Tasha (`INGANALARE DIVINITÀ`).
+  - Regex di rimozione sottotitoli in `manual-subclass-features.ts` estesa con `|Giuramento|Paladino|Giuramento Sacro`.
+- Verifica e test:
+  - 195 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutti i 7 giuramenti, livelli 1-20, progressione slot, Aura di Protezione a tutti i TS, Aura di Alacrità, Stile di Combattimento e PDF di ogni giuramento.
+  - 12 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Paladino V2 con Giuramento di Devozione, selezione stile, esportazione di tutti i 7 giuramenti, rifiuto scelte non valide e verifica layout mobile.
+  - Build Next.js di produzione completata con successo.
+  - Campione PDF generato e verificato: `output/pdf/paladino-v2-test.pdf`.

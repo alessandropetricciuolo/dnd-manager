@@ -189,6 +189,26 @@ export function drawMonkEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, cx - 7 * k, cy - 2 * k, cx + 2 * k, cy + 1 * k, 1.6 * k);
 }
 
+/** Sacred knight / heraldic sword and shield badge for the Paladin. */
+export function drawPaladinEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * k, borderColor: INK, borderWidth: 0.7 });
+  // Shield silhouette
+  const sx = cx, sy = cy;
+  stroke(page, sx - 10 * k, sy + 10 * k, sx + 10 * k, sy + 10 * k, 1.2 * k);
+  stroke(page, sx - 10 * k, sy + 10 * k, sx - 10 * k, sy, 1.2 * k);
+  stroke(page, sx + 10 * k, sy + 10 * k, sx + 10 * k, sy, 1.2 * k);
+  stroke(page, sx - 10 * k, sy, sx, sy - 11 * k, 1.2 * k);
+  stroke(page, sx + 10 * k, sy, sx, sy - 11 * k, 1.2 * k);
+  // Radiant sword / cross
+  stroke(page, sx, sy + 8 * k, sx, sy - 8 * k, 1.8 * k);
+  stroke(page, sx - 6 * k, sy + 4 * k, sx + 6 * k, sy + 4 * k, 1.4 * k);
+  page.drawCircle({ x: sx, y: sy + 9 * k, size: 1.8 * k, color: INK });
+  // Sunburst rays
+  stroke(page, sx - 4 * k, sy - 2 * k, sx - 7 * k, sy - 4 * k, 0.8 * k);
+  stroke(page, sx + 4 * k, sy - 2 * k, sx + 7 * k, sy - 4 * k, 0.8 * k);
+}
+
 
 
 
