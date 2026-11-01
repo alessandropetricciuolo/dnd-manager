@@ -1,11 +1,8 @@
 /** Punti stregoneria massimi per livello (PHB: — al 1°, poi colonna tabella Stregone). */
-const SORCERY_POINTS_BY_LEVEL: readonly number[] = [
-  0, 0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 12, 13, 13, 14, 14, 15, 15, 15, 15,
-];
-
 export function sorceryPointsForLevel(level: number): number {
   const lvl = Math.max(1, Math.min(20, Math.floor(level || 1)));
-  return SORCERY_POINTS_BY_LEVEL[lvl] ?? 0;
+  if (lvl < 2) return 0;
+  return lvl;
 }
 
 export function sorceryPointsClassFeatureLine(level: number): string | null {

@@ -328,3 +328,31 @@ Meccaniche, opzioni e calcoli integrati:
   - 13 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Ranger V2 con Cacciatore, selezione stile, esportazione di tutti i 7 archetipi, rifiuto scelte non valide e verifica layout mobile.
   - Build Next.js di produzione completata con successo.
   - Campione PDF generato e verificato: `output/pdf/ranger-v2-test.pdf`.
+
+## Stregone (1 novembre 2026)
+
+Riferimento fornito: `Stregone 5e v14.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e salvezze (Costituzione e Carisma competenti); colonna centrale con CA, Iniziativa, Velocità, PF (dado vita d6), tabella attacchi a 3 righe, box dedicato a **Fonte di Magia e Punti Stregoneria** (CD incantesimi, tiro per colpire incantesimi, trucchetti e incantesimi conosciuti, riserva di Punti Stregoneria tracciata a diamanti, tabella di conversione tra slot e punti stregoneria e modalità di recupero) e box **Metamagia e Origine Stregonesca** (opzioni di metamagia scelte con costo e descrizione sintetica, e privilegi distintivi dell'Origine Stregonica); colonna destra con progressione dei privilegi di classe di primo livello e successivi (Fonte di Magia lv 2, Metamagia lv 3, 10, 17, Ripristino Stregonesco lv 20). Trascrizione fissa fedele in `sorcerer-reference-copy.ts`.
+
+Tutte le sette Origini Stregonesche estratte integralmente dai manuali locali:
+- PHB: Discendenza draconica, Magia selvaggia.
+- Xanathar: Anima Divina, Magia delle Ombre, Stregoneria della Tempesta.
+- Tasha: Anima Meccanica, Mente Aberrante.
+
+Meccaniche, opzioni e calcoli integrati:
+- Resilienza Draconica (Discendenza Draconica): aumenta il massimo dei punti ferita di +1 per livello da stregone (`sheet.hpMax += sheet.level`) e imposta la Classe Armatura base a `13 + DES` quando il personaggio non indossa armature.
+- Selezione Antenato Draconico: scelta tra i 10 draghi (Argento, Bianco, Blu, Bronzo, Nero, Oro, Ottone, Rame, Rosso, Verde) con associazione del tipo di danno elementale e benefici di Affinità Elementale (lv 6+).
+- Metamagia: opzioni configurabili tra le 8 opzioni del Player's Handbook (Incantesimo Celato, Incantesimo Distante, Incantesimo Esteso, Incantesimo Intensificato, Incantesimo Potenziato, Incantesimo Preciso, Incantesimo Raddoppiato, Incantesimo Rapido), con limite a 2 opzioni al lv 3, 3 al lv 10 e 4 al lv 17.
+- Punti Stregoneria e Fonte di Magia: progressione esatta secondo tabella PHB (0 al lv 1, poi pari al livello della classe da 2 a 20), tracciatore visivo vettoriale a diamanti e sintesi dei costi di creazione degli slot (1°: 2 pt, 2°: 3 pt, 3°: 5 pt, 4°: 6 pt, 5°: 7 pt) e della conversione di slot in punti.
+- Slot Incantesimi e Progressione Full-Caster: tabella completa da 1° a 9° livello con tracciatori a diamanti per ogni livello di slot; incantesimi conosciuti (da 2 a 15) e trucchetti conosciuti (da 4 a 6) calcolati rigorosamente.
+- Incantesimi Aggiuntivi di Sottoclasse: risolti e caricati automaticamente per Anima Meccanica (10 magie), Mente Aberrante (10 magie + trucchetto Scheggia della Mente), Magia delle Ombre (Oscurità a lv 3 lanciabile anche a 2 pt), e Anima Divina (magia di affinità tra Cura Ferite, Infliggi Ferite, Benedizione, Anatema, Protezione dal Bene e dal Male).
+- Emblema vettoriale: creato `drawSorcererEmblem` in `fantasy-sheet-graphics.ts` (fiamma arcana / cresta magica ancestrale a doppia aura).
+- Risoluzione e robustezza dell'estrazione:
+  - Risolta la collisione tra la razza Dragonide (`### DISCENDENZA DRACONICA` a riga 1529) e la sottoclasse dello Stregone garantendo che la ricerca della sezione inizi dal capitolo della classe di appartenenza.
+  - Gestito il refuso OCR della traduzione italiana di Xanathar (`PORTAVOGE DEL VENTO` vs `PORTAVOCE DEL VENTO`) e deduplicata la doppia intestazione `INCANTESIMI PSIONICI` di Tasha.
+  - Regex di rimozione sottotitoli in `manual-subclass-features.ts` estesa per `Stregone`, `Origine Stregonica`, `Origine Stregonesca`, `Anima Divina`, `Magia delle Ombre`, `Stregoneria della Tempesta`, `Anima Meccanica`, `Mente Aberrante`.
+- Verifica e test:
+  - 210 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutte le 7 origini, livelli 1-20, progressione slot 1-9, Punti Stregoneria, Resilienza Draconica (PF e CA), Metamagia, incantesimi concessi e PDF di ogni origine.
+  - 14 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Stregone V2 con Discendenza draconica, selezione antenato, metamagia, esportazione di tutte le 7 origini, rifiuto scelte non valide e verifica layout mobile.
+  - Build Next.js di produzione completata con successo.
+  - Campione PDF generato e verificato: `output/pdf/stregone-v2-test.pdf`.
+

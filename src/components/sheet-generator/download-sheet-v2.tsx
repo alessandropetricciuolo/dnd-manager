@@ -46,6 +46,13 @@ import {
   type RangerChoices,
   type RangerFightingStyle,
 } from '@/lib/sheet-generator/ranger-archetypes';
+import {
+  sorcererOriginFromLabel,
+  SORCERER_METAMAGIC_OPTIONS,
+  DRACONIC_ANCESTRIES,
+  metamagicCountForLevel,
+  type SorcererChoices,
+} from '@/lib/sheet-generator/sorcerer-origins';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -63,6 +70,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [monkChoices, setMonkChoices] = useState<MonkChoices>({});
   const [paladinChoices, setPaladinChoices] = useState<PaladinChoices>({});
   const [rangerChoices, setRangerChoices] = useState<RangerChoices>({});
+  const [sorcererChoices, setSorcererChoices] = useState<SorcererChoices>({});
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
   const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
@@ -104,6 +112,9 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const isMonk = sheet.classLabel === 'Monaco';
   const isPaladin = sheet.classLabel === 'Paladino';
   const isRanger = sheet.classLabel === 'Ranger';
+  const isSorcerer = sheet.classLabel === 'Stregone';
+  const sorcererOrigin = isSorcerer ? sorcererOriginFromLabel(sheet.classSubclass) : null;
+  const metamagicCount = isSorcerer ? metamagicCountForLevel(sheet.level) : 0;
   const finalFighterChoices: FighterChoices = {
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
@@ -115,7 +126,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}), ...(isSorcerer?{sorcererChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -273,6 +284,19 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
           {RANGER_FIGHTING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
+    </fieldset>}
+    {isSorcerer && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Opzioni dello Stregone</legend>
+      {sorcererOrigin?.slug === 'phb-stregone-draconico' && <label className="block text-sm">Antenato Draconico
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={sorcererChoices.draconicAncestry ?? 'Rosso'} onChange={e => setSorcererChoices({ ...sorcererChoices, draconicAncestry: e.target.value })}>
+          {Object.keys(DRACONIC_ANCESTRIES).map(name => <option key={name} value={name}>{name} ({DRACONIC_ANCESTRIES[name].damageType})</option>)}
+        </select>
+      </label>}
+      {sorcererOrigin?.slug === 'xge-stregone-anima-divina' && <label className="block text-sm">Affinità Divina
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={sorcererChoices.divineAffinity ?? 'Bene'} onChange={e => setSorcererChoices({ ...sorcererChoices, divineAffinity: e.target.value as any })}>
+          {['Bene', 'Male', 'Legge', 'Caos', 'Neutralità'].map(aff => <option key={aff} value={aff}>{aff}</option>)}
+        </select>
+      </label>}
     </fieldset>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
     <button type="button" onClick={download} disabled={busy || invalidCleric || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">

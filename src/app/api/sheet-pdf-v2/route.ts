@@ -25,6 +25,7 @@ import { loadPaladinEvidence, addPaladinGrantedSpells } from '@/lib/server/palad
 import { PALADIN_FIGHTING_STYLES } from '@/lib/sheet-generator/paladin-oaths';
 import { loadRangerEvidence, addRangerGrantedSpells } from '@/lib/server/ranger-source';
 import { RANGER_FIGHTING_STYLES } from '@/lib/sheet-generator/ranger-archetypes';
+import { loadSorcererEvidence, addSorcererGrantedSpells } from '@/lib/server/sorcerer-source';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -70,6 +71,11 @@ const schema = z.object({
     favoredTerrains:z.array(z.string().min(1).max(64)).max(3).optional(),
     feyWandererSkill:z.enum(['Inganno','Intrattenere','Persuasione']).optional(),
   }).strict().optional(),
+  sorcererChoices:z.object({
+    metamagic:z.array(z.string().min(1).max(64)).max(4).optional(),
+    draconicAncestry:z.string().min(1).max(64).optional(),
+    divineAffinity:z.enum(['Bene','Male','Legge','Caos','Neutralità']).optional(),
+  }).strict().optional(),
 });
 export async function POST(req: Request) {
   const { user, profile } = await getRequestAuthContext();
@@ -80,7 +86,7 @@ export async function POST(req: Request) {
   let json: unknown;
   try { json = JSON.parse(raw); } catch { return Response.json({ error: 'Richiesta non valida.' }, { status: 400 }); }
   const parsed = schema.safeParse(json);
-  if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice','Druido','Guerriero','Ladro','Mago','Monaco','Paladino','Ranger'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di una classe supportata.' }, { status: 400 });
+  if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice','Druido','Guerriero','Ladro','Mago','Monaco','Paladino','Ranger','Stregone'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di una classe supportata.' }, { status: 400 });
   const form = new FormData();
   for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
   // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
@@ -89,8 +95,8 @@ export async function POST(req: Request) {
   try {
     const logo = await fs.readFile(path.join(process.cwd(), 'public/logo.png'));
     const origin=new URL(req.url).origin;
-    const bard=result.sheet.classLabel==='Bardo',barbarian=result.sheet.classLabel==='Barbaro',cleric=result.sheet.classLabel==='Chierico',druid=result.sheet.classLabel==='Druido',fighter=result.sheet.classLabel==='Guerriero',rogue=result.sheet.classLabel==='Ladro',wizard=result.sheet.classLabel==='Mago',monk=result.sheet.classLabel==='Monaco',paladin=result.sheet.classLabel==='Paladino',ranger=result.sheet.classLabel==='Ranger';
-    if((!barbarian&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!cleric&&Object.keys(parsed.data.clericChoices??{}).length)||(!fighter&&Object.keys(parsed.data.fighterChoices??{}).length)||(!rogue&&Object.keys(parsed.data.rogueChoices??{}).length)||(!wizard&&Object.keys(parsed.data.wizardChoices??{}).length)||(!monk&&Object.keys(parsed.data.monkChoices??{}).length)||(!paladin&&Object.keys(parsed.data.paladinChoices??{}).length)||(!ranger&&Object.keys(parsed.data.rangerChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
+    const bard=result.sheet.classLabel==='Bardo',barbarian=result.sheet.classLabel==='Barbaro',cleric=result.sheet.classLabel==='Chierico',druid=result.sheet.classLabel==='Druido',fighter=result.sheet.classLabel==='Guerriero',rogue=result.sheet.classLabel==='Ladro',wizard=result.sheet.classLabel==='Mago',monk=result.sheet.classLabel==='Monaco',paladin=result.sheet.classLabel==='Paladino',ranger=result.sheet.classLabel==='Ranger',sorcerer=result.sheet.classLabel==='Stregone';
+    if((!barbarian&&Object.keys(parsed.data.barbarianChoices??{}).length)||(!cleric&&Object.keys(parsed.data.clericChoices??{}).length)||(!fighter&&Object.keys(parsed.data.fighterChoices??{}).length)||(!rogue&&Object.keys(parsed.data.rogueChoices??{}).length)||(!wizard&&Object.keys(parsed.data.wizardChoices??{}).length)||(!monk&&Object.keys(parsed.data.monkChoices??{}).length)||(!paladin&&Object.keys(parsed.data.paladinChoices??{}).length)||(!ranger&&Object.keys(parsed.data.rangerChoices??{}).length)||(!sorcerer&&Object.keys(parsed.data.sorcererChoices??{}).length)||(!bard&&(parsed.data.bonusSkills.length||parsed.data.fightingStyle)))throw new Error('Scelte non compatibili con la classe.');
     const clericEvidence=cleric?await loadClericEvidence(result.sheet,origin):undefined;
     const druidEvidence=druid?await loadDruidEvidence(result.sheet,origin,parsed.data.druidChoices):undefined;
     const fighterEvidence=fighter?await loadFighterEvidence(result.sheet,origin,parsed.data.fighterChoices):undefined;
@@ -99,6 +105,7 @@ export async function POST(req: Request) {
     const monkEvidence=monk?await loadMonkEvidence(result.sheet,origin,parsed.data.monkChoices):undefined;
     const paladinEvidence=paladin?await loadPaladinEvidence(result.sheet,origin,parsed.data.paladinChoices):undefined;
     const rangerEvidence=ranger?await loadRangerEvidence(result.sheet,origin,parsed.data.rangerChoices):undefined;
+    const sorcererEvidence=sorcerer?await loadSorcererEvidence(result.sheet,origin,parsed.data.sorcererChoices):undefined;
     if(!druid&&Object.keys(parsed.data.druidChoices??{}).length)throw new Error('Le scelte del Circolo Druidico non sono compatibili con questa classe.');
     if(!fighter&&Object.keys(parsed.data.fighterChoices??{}).length)throw new Error('Le scelte del Guerriero non sono compatibili con questa classe.');
     if(!rogue&&Object.keys(parsed.data.rogueChoices??{}).length)throw new Error('Le scelte del Ladro non sono compatibili con questa classe.');
@@ -106,10 +113,12 @@ export async function POST(req: Request) {
     if(!monk&&Object.keys(parsed.data.monkChoices??{}).length)throw new Error('Le scelte del Monaco non sono compatibili con questa classe.');
     if(!paladin&&Object.keys(parsed.data.paladinChoices??{}).length)throw new Error('Le scelte del Paladino non sono compatibili con questa classe.');
     if(!ranger&&Object.keys(parsed.data.rangerChoices??{}).length)throw new Error('Le scelte del Ranger non sono compatibili con questa classe.');
-    const sheet=result.sheet.classLabel==='Artefice'?result.sheet:ranger?addRangerGrantedSpells(result.sheet,rangerEvidence!):paladin?addPaladinGrantedSpells(result.sheet,paladinEvidence!):monk?addMonkGrantedSpells(result.sheet,monkEvidence!):wizard?addWizardGrantedSpells(result.sheet,wizardEvidence!):fighter?await addFighterGrantedSpells(result.sheet,fighterEvidence!,parsed.data.fighterChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):rogue?await addRogueGrantedSpells(result.sheet,rogueEvidence!,parsed.data.rogueChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):druid?await addDruidGrantedSpells(result.sheet,druidEvidence!,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):cleric?addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):result.sheet;
+    if(!sorcerer&&Object.keys(parsed.data.sorcererChoices??{}).length)throw new Error('Le scelte dello Stregone non sono compatibili con questa classe.');
+    const sheet=result.sheet.classLabel==='Artefice'?result.sheet:sorcerer?addSorcererGrantedSpells(result.sheet,sorcererEvidence!):ranger?addRangerGrantedSpells(result.sheet,rangerEvidence!):paladin?addPaladinGrantedSpells(result.sheet,paladinEvidence!):monk?addMonkGrantedSpells(result.sheet,monkEvidence!):wizard?addWizardGrantedSpells(result.sheet,wizardEvidence!):fighter?await addFighterGrantedSpells(result.sheet,fighterEvidence!,parsed.data.fighterChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):rogue?await addRogueGrantedSpells(result.sheet,rogueEvidence!,parsed.data.rogueChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):druid?await addDruidGrantedSpells(result.sheet,druidEvidence!,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):bard?await addBardCollegeGrantedSpells(result.sheet,origin):barbarian?await addBarbarianGrantedSpells(result.sheet,origin):cleric?addClericGrantedSpells(result.sheet,clericEvidence!,parsed.data.clericChoices,parsed.data.input.torneoMode==='on'||parsed.data.input.torneoMode==='true'):result.sheet;
     const collegeFeatures=bard?await loadBardCollegeFeatures(sheet,origin):undefined;
     const barbarianEvidence=barbarian?await loadBarbarianEvidence(sheet,origin):undefined;
     const bytes = await renderCharacterSheetV2(sheet, logo, {
+      sorcererEvidence,sorcererChoices:parsed.data.sorcererChoices,
       rangerEvidence,rangerChoices:parsed.data.rangerChoices,
       clericEvidence,clericChoices:parsed.data.clericChoices,
       druidEvidence,

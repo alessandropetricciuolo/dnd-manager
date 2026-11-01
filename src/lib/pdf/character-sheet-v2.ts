@@ -12,7 +12,7 @@ import { barbarianReferenceCards } from '@/lib/sheet-generator/barbarian-referen
 import { bardReferenceCards } from '@/lib/sheet-generator/bard-reference-copy';
 import type { BardFightingStyle } from '@/lib/sheet-generator/bard-colleges';
 import { sanitizeTextForStandardPdfFont } from './winansi-text';
-import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawArtificerEmblem, drawFighterEmblem, drawRogueEmblem, drawWizardEmblem, drawMonkEmblem, drawPaladinEmblem, drawRangerEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
+import { drawFantasyFrame, drawFantasyBanner, drawFantasyTracker, drawFantasyShield, drawBardEmblem, drawBarbarianEmblem, drawClericEmblem, drawArtificerEmblem, drawFighterEmblem, drawRogueEmblem, drawWizardEmblem, drawMonkEmblem, drawPaladinEmblem, drawRangerEmblem, drawSorcererEmblem, drawFantasyAbility } from './fantasy-sheet-graphics';
 import type { DruidEvidence } from '@/lib/sheet-generator/druid-circles';
 import { buildDruidPrintModel, druidReferenceCards } from '@/lib/sheet-generator/druid-print-model';
 import type { FighterEvidence } from '@/lib/server/fighter-source';
@@ -39,8 +39,12 @@ import type { RangerEvidence } from '@/lib/server/ranger-source';
 import { rangerArchetypeFromLabel, type RangerChoices } from '@/lib/sheet-generator/ranger-archetypes';
 import { buildRangerPrintModel } from '@/lib/sheet-generator/ranger-print-model';
 import { rangerReferenceCards } from '@/lib/sheet-generator/ranger-reference-copy';
+import type { SorcererEvidence } from '@/lib/server/sorcerer-source';
+import { sorcererOriginFromLabel, type SorcererChoices } from '@/lib/sheet-generator/sorcerer-origins';
+import { buildSorcererPrintModel } from '@/lib/sheet-generator/sorcerer-print-model';
+import { sorcererReferenceCards } from '@/lib/sheet-generator/sorcerer-reference-copy';
 
-export type CharacterSheetPrintOptions = { rangerEvidence?:RangerEvidence; rangerChoices?:RangerChoices; paladinEvidence?:PaladinEvidence; paladinChoices?:PaladinChoices; monkEvidence?:MonkEvidence; monkChoices?:MonkChoices; wizardEvidence?:WizardEvidence; wizardChoices?:WizardChoices; rogueEvidence?:RogueEvidence; rogueChoices?:RogueChoices; fighterEvidence?:FighterEvidence; fighterChoices?:FighterChoices; druidEvidence?:DruidEvidence; clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
+export type CharacterSheetPrintOptions = { sorcererEvidence?:SorcererEvidence; sorcererChoices?:SorcererChoices; rangerEvidence?:RangerEvidence; rangerChoices?:RangerChoices; paladinEvidence?:PaladinEvidence; paladinChoices?:PaladinChoices; monkEvidence?:MonkEvidence; monkChoices?:MonkChoices; wizardEvidence?:WizardEvidence; wizardChoices?:WizardChoices; rogueEvidence?:RogueEvidence; rogueChoices?:RogueChoices; fighterEvidence?:FighterEvidence; fighterChoices?:FighterChoices; druidEvidence?:DruidEvidence; clericEvidence?:ClericEvidence; clericChoices?:ClericChoices; barbarianEvidence?:BarbarianEvidence; barbarianChoices?:BarbarianChoices; bonusSkills?: SkillKey[]; collegeFeatures?:BardPrintFeature[]; fightingStyle?:BardFightingStyle; story?: string; quickManualSections?: Array<{ title: string; body: string }> };
 const W=595.28, H=841.89;
 const sign=(n:number)=>n>=0?`+${n}`:`${n}`;
 
@@ -71,8 +75,9 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   const monk=original.classLabel==='Monaco'&&options.monkEvidence?buildMonkPrintModel(original,options.monkEvidence,options.monkChoices):null;
   const paladin=original.classLabel==='Paladino'&&options.paladinEvidence?buildPaladinPrintModel(original,options.paladinEvidence,options.paladinChoices):null;
   const ranger=original.classLabel==='Ranger'&&options.rangerEvidence?buildRangerPrintModel(original,options.rangerEvidence,options.rangerChoices):null;
-  const model=bard??barbarian??cleric??artificer??druid??fighter??rogue??wizard??monk??paladin??ranger;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
-  const subclass=bard?.college??barbarian?.path??cleric?.domain??artificer?.specialist??druid?.circle??fighter?.archetype??rogue?.archetype??wizardTraditionFromLabel(wizard?.sheet.classSubclass)??monkTraditionFromLabel(monk?.sheet.classSubclass)??paladinOathFromLabel(paladin?.sheet.classSubclass)??rangerArchetypeFromLabel(ranger?.sheet.classSubclass);
+  const sorcerer=original.classLabel==='Stregone'&&options.sorcererEvidence?buildSorcererPrintModel(original,options.sorcererEvidence,options.sorcererChoices):null;
+  const model=bard??barbarian??cleric??artificer??druid??fighter??rogue??wizard??monk??paladin??ranger??sorcerer;if(!model)throw new Error('Classe o fonti non supportate dalla V2.');const s=model.sheet;
+  const subclass=bard?.college??barbarian?.path??cleric?.domain??artificer?.specialist??druid?.circle??fighter?.archetype??rogue?.archetype??wizardTraditionFromLabel(wizard?.sheet.classSubclass)??monkTraditionFromLabel(monk?.sheet.classSubclass)??paladinOathFromLabel(paladin?.sheet.classSubclass)??rangerArchetypeFromLabel(ranger?.sheet.classSubclass)??sorcererOriginFromLabel(sorcerer?.sheet.classSubclass);
   const doc=await PDFDocument.create();doc.setTitle(`${s.characterName} - ${s.classLabel} V2`);
   const font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.TimesRomanBold),logo=await doc.embedPng(logoBytes);
   const clean=(v:unknown)=>sanitizeTextForStandardPdfFont(String(v??''));
@@ -91,7 +96,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
     text(p,173,784,'RAZZA',6);fit(p,173,773,s.subraceLabel??s.raceLabel,114,8.5);
     text(p,301,784,'BACKGROUND',6);fit(p,301,773,s.backgroundLabel,126,8.5);
     text(p,443,784,'ALLINEAMENTO',6);fit(p,443,773,s.alignment??'-',115,8.5);
-    (ranger?drawRangerEmblem:paladin?drawPaladinEmblem:monk?drawMonkEmblem:wizard?drawWizardEmblem:bard?drawBardEmblem:artificer?drawArtificerEmblem:cleric?drawClericEmblem:fighter?drawFighterEmblem:rogue?drawRogueEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
+    (sorcerer?drawSorcererEmblem:ranger?drawRangerEmblem:paladin?drawPaladinEmblem:monk?drawMonkEmblem:wizard?drawWizardEmblem:bard?drawBardEmblem:artificer?drawArtificerEmblem:cleric?drawClericEmblem:fighter?drawFighterEmblem:rogue?drawRogueEmblem:drawBarbarianEmblem)(p,{x:168,y:747,width:27,height:22});
     text(p,204,762,'CLASSE',6);fit(p,204,750,s.classLabel.toUpperCase(),62,11,bold);
     text(p,280,762,'SOTTOCLASSE',6);fit(p,280,750,s.classSubclass??'-',237,9);
     text(p,534,762,'LIVELLO',5.5);text(p,541,750,s.level,11,bold);
@@ -486,10 +491,94 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
       text(first,222,ay,s.level<3?'Archetipo Ranger al livello 3':(s.classSubclass??'Archetipo Ranger attivo'),8);
     }
   }
+  if(sorcerer){
+    const res=sorcerer.resources;
+    frame(first,212,322,168,105,'FONTE DI MAGIA E PUNTI STREGONERIA');
+    text(first,222,286,`Incantesimi: CD ${res.spellSaveDc} / TpC ${sign(res.spellAttackBonus)}`,8.5,bold);
+    text(first,222,273,`Trucchetti: ${res.cantripsKnown} | Conosciuti: ${res.spellsKnown}`,8);
+    text(first,222,260,`Punti Stregoneria: ${res.sorceryPoints}`,8.5,bold);
+    if(res.sorceryPoints>0){
+      const tWidth=140, step=15;
+      const tCols=Math.floor(tWidth/step);
+      const pRows=Math.ceil(res.sorceryPoints/tCols);
+      const tHeight=pRows*step;
+      drawFantasyTracker(first,{x:225,y:248-tHeight,width:tWidth,height:tHeight},res.sorceryPoints);
+      text(first,222,243-tHeight,'Slot: 1°(2pt), 2°(3pt), 3°(5pt), 4°(6pt), 5°(7pt)',6.8);
+      text(first,222,232-tHeight,'Converti slot: 1 punto per livello di slot speso',6.6);
+      text(first,222,221-tHeight,'Recupero: tutti i punti al riposo lungo',6.4);
+    }else{
+      text(first,222,246,'Punti stregoneria disponibili dal 2° livello',7.5);
+      text(first,222,234,'Slot: 1°(2pt), 2°(3pt), 3°(5pt), 4°(6pt), 5°(7pt)',6.8);
+      text(first,222,221,'Converti slot: 1 punto per livello di slot speso',6.6);
+    }
+
+    frame(first,212,207,168,153,'METAMAGIA E ORIGINE STREGONICA');
+    const sy=172;
+    if(res.metamagic.length>0){
+      text(first,222,sy,`Metamagia (${res.metamagic.length} opzioni note):`,8,bold);
+      res.metamagic.slice(0,3).forEach((m,i)=>{
+        const my=sy-12-i*13;
+        text(first,222,my,`• ${m.name} (${m.cost})`,7.3,bold);
+      });
+      if(res.metamagic.length>3){
+        const m=res.metamagic[3];
+        text(first,222,sy-51,`• ${m.name} (${m.cost})`,7.3,bold);
+      }
+    }else{
+      text(first,222,sy,'Metamagia disponibile dal 3° livello (2 opzioni)',7.5);
+    }
+
+    const oy=res.metamagic.length>2?sy-65:sy-38;
+    if(res.draconicResilience){
+      const anc=res.draconicAncestry;
+      text(first,222,oy,`Origine: Drago ${anc?.name??'Rosso'} (${anc?.damageType??'Fuoco'})`,8,bold);
+      text(first,222,oy-11,'Resilienza Draconica: CA 13+DES senz\'armatura',7.0);
+      text(first,222,oy-21,`Punti Ferita massimi: +${s.level} (+1 per livello)`,7.0);
+      if(s.level>=6)text(first,222,oy-31,`Affinità: +CAR danni ${anc?.damageType??'elemento'} (1pt res. 1h)`,6.6);
+      if(s.level>=14)text(first,222,oy-41,'Ali di Drago: az. bonus volare pari a velocità',6.6);
+    }else if(res.tidesOfChaos){
+      text(first,222,oy,'Origine: Magia Selvaggia',8,bold);
+      text(first,222,oy-11,'Impulso Selvaggio: d20 dopo spell L1+; con 1 tira d100',6.6);
+      text(first,222,oy-21,'Onde di Caos: vantaggio a 1 tiro (1/riposo o DM)',7.0);
+      if(s.level>=6)text(first,222,oy-31,'Piegare la Fortuna (2 pt): reaz. +/- 1d4 a tiro',6.8);
+      if(s.level>=14)text(first,222,oy-41,'Caos Controllato: tira 2 volte su tabella d100',6.6);
+    }else if(res.favoredByTheGods){
+      text(first,222,oy,`Origine: Anima Divina (Affinità ${res.divineAffinity??'Bene'})`,8,bold);
+      text(first,222,oy-11,'Magia Divina: incantesimi anche da chierico',6.8);
+      text(first,222,oy-21,'Prescelto dagli Dèi: +2d4 a TS/TpC fallito (1/riposo)',6.8);
+      if(s.level>=6)text(first,222,oy-31,'Guarigione Potenziata (1 pt): ritira dadi cura',6.8);
+      if(s.level>=14)text(first,222,oy-41,'Ali Ultraterrene: az. bonus volare 9m',6.8);
+    }else if(res.eyesOfDarkness){
+      text(first,222,oy,'Origine: Magia delle Ombre',8,bold);
+      text(first,222,oy-11,'Occhi Oscuro: Scurovisione 36m; Oscurità a 2 pt',6.8);
+      text(first,222,oy-21,'Forza della Tomba: TS CAR (CD 5+danni) evita 0 PF',6.6);
+      if(s.level>=6)text(first,222,oy-31,'Segugio Presagi Nefasti (3 pt): evoca lupo ombre',6.6);
+      if(s.level>=14)text(first,222,oy-41,'Camminare Ombre: az. bonus teletrasporto 36m',6.6);
+    }else if(res.windSpeaker){
+      text(first,222,oy,'Origine: Stregoneria della Tempesta',8,bold);
+      text(first,222,oy-11,'Portavoce: Primordiale | Vola 3m senza AdO con spell',6.6);
+      if(s.level>=6)text(first,222,oy-21,`Cuore Tempesta: res. fulm./tuono, ${Math.floor(s.level/2)} danni nemici`,6.6);
+      if(s.level>=14)text(first,222,oy-31,`Furia Tempesta: reaz. ${s.level} fulmine e respingi 6m`,6.6);
+    }else if(res.restoreBalanceUses!==undefined){
+      text(first,222,oy,'Origine: Anima Meccanica (Mechanus)',8,bold);
+      text(first,222,oy-11,`Ripristino Equilibrio: ${res.restoreBalanceUses} usi (annulla vant/svant)`,6.8);
+      text(first,222,oy-21,'Magia Meccanica: incantesimi aggiuntivi preparati',6.6);
+      if(s.level>=6)text(first,222,oy-31,'Bastione Legge (1-5 pt): scudo di d8 riduce danni',6.8);
+      if(s.level>=14)text(first,222,oy-41,'Trance Ordine: d20 <= 9 conta come 10',6.8);
+    }else if(res.telepathicSpeech){
+      text(first,222,oy,'Origine: Mente Aberrante (Psionica)',8,bold);
+      text(first,222,oy-11,`Parlata Telepatica: az. bonus raggio ${Math.max(1.5, (s.abilityMods.cha || 1) * 1.5)} km`,6.8);
+      text(first,222,oy-21,'Incantesimi Psionici: incantesimi addizionali noti',6.6);
+      if(s.level>=6)text(first,222,oy-31,'Stregoneria Psionica: lancia spell con punti streg.',6.6);
+      if(s.level>=6)text(first,222,oy-41,'Difese Psichiche: res. psichica, vant. TS fasc./spav.',6.6);
+    }else{
+      text(first,222,oy,s.classSubclass?`Origine: ${s.classSubclass}`:'Origine Stregonesca al 1° livello',8);
+    }
+  }
   // Fixed reference-sheet wording for standard class cards; full PHB descriptions remain in the appendix.
   const domainCards=cleric?cleric.features.filter(f=>options.clericEvidence!.domainFeatures.some(d=>d.title===f.title)):[];
   const mainDomainCard=domainCards.find(f=>f.level===1&&!/COMPETENZ|TRUCCHETTO BONUS/.test(f.title));
-  const cards=ranger?[...rangerReferenceCards(s.level),...model.features.filter(f=>f.source.includes(' / '))]:paladin?[...paladinReferenceCards(s.level),...model.features.filter(f=>f.source.includes(' / '))]:bard?bardReferenceCards(s.level):artificer?[...artificer.state.features.filter(f=>f.source.includes(s.classSubclass??'__none__')&&!/COMPETENZA|STRUMENTI DEL MESTIERE/.test(f.title)).slice(0,1),...artificerReferenceCards(s.level)]:cleric?[
+  const cards=sorcerer?[...sorcererReferenceCards(s.level),...model.features.filter(f=>f.source.includes(' / '))]:ranger?[...rangerReferenceCards(s.level),...model.features.filter(f=>f.source.includes(' / '))]:paladin?[...paladinReferenceCards(s.level),...model.features.filter(f=>f.source.includes(' / '))]:bard?bardReferenceCards(s.level):artificer?[...artificer.state.features.filter(f=>f.source.includes(s.classSubclass??'__none__')&&!/COMPETENZA|STRUMENTI DEL MESTIERE/.test(f.title)).slice(0,1),...artificerReferenceCards(s.level)]:cleric?[
     {title:'Incantesimi di Dominio',level:1,source:cleric.domain.label,body:cleric.domainSpells.map(spell=>`${spell.level}°: ${spell.name}`).join('\n')},
     ...(mainDomainCard?[mainDomainCard]:[]),
     ...clericReferenceCards(s.level,cleric.undeadCr),
@@ -513,7 +602,7 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   section('Linguaggi e competenze',[...s.languages,...s.armorProficiencies,...s.weaponProficiencies,...s.toolProficiencies].join(', '));
   section('Tratti razziali',[s.raceTraitsMd,s.subraceTraitsMd].filter(Boolean).join('\n\n'));section('Inventario',s.inventory.join('\n'));section('Background',s.backgroundMd??s.backgroundLabel);
   let spellPage:PDFPage,rowY=0;const xs=[27,52,186,229,273,568];
-  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,ranger||paladin||bard||cleric||artificer||druid||fighter||rogue||wizard||monk?`Classe: ${s.classLabel} / Caratteristica: ${artificer||fighter||rogue||wizard?'Intelligenza':(paladin||bard)?'Carisma':'Saggezza'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
+  const newSpellPage=()=>{spellPage=newPage('INCANTESIMI');fit(spellPage,28,699,sorcerer||ranger||paladin||bard||cleric||artificer||druid||fighter||rogue||wizard||monk?`Classe: ${s.classLabel} / Caratteristica: ${artificer||fighter||rogue||wizard?'Intelligenza':(paladin||bard||sorcerer)?'Carisma':'Saggezza'} / Attacco: ${sign(s.spellAttackBonus??0)} / CD: ${s.spellSaveDc}`:`Classe: Barbaro / Magia del cammino: vedi restrizioni nei singoli incantesimi`,537,9);
     ['Liv.','Nome incantesimo','V S M','Rit. / Conc.','Effetto'].forEach((label,i)=>text(spellPage,xs[i]+3,675,label,7.5));rowY=661;};
   if(s.spells.length)newSpellPage();
   for(const spell of s.spells){const nameLines=wrapSheetText(spell.name,font,8,125),body=spell.fullTextMd?.trim();
@@ -532,6 +621,6 @@ export async function renderCharacterSheetV2(original:GeneratedCharacterSheet,lo
   options.quickManualSections?.length&&(()=>{reference=newPage('MANUALE RAPIDO');refY=704;options.quickManualSections.forEach(f=>section(f.title,f.body));})();
   const book=subclass?.supplementRulesSource.manualBookKey;
   const rules=artificer?'Tasha + Dungeon Master / magie: PHB, Xanathar, Tasha':book==='xanathar'?'PHB + Xanathar':book==='tasha'?'PHB + Tasha':book==='van_richten_ravenloft'?'PHB + Van Richten':'Manuale del Giocatore';
-  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / ${s.classLabel} V2 / ${i===0?`Testi sintetici: scheda ${s.classLabel} ${artificer?'editabile':bard?'V1.4':(s.classLabel==='Guerriero'||s.classLabel==='Ladro'||s.classLabel==='Mago'||s.classLabel==='Monaco'||s.classLabel==='Paladino'||s.classLabel==='Ranger')?'5e':'v14'}`:`Regole: ${rules}`} / ${i+1} di ${doc.getPageCount()}`,7));
+  doc.getPages().forEach((p,i)=>text(p,28,16,`Barber & Dragons / ${s.classLabel} V2 / ${i===0?`Testi sintetici: scheda ${s.classLabel} ${artificer?'editabile':bard?'V1.4':(s.classLabel==='Guerriero'||s.classLabel==='Ladro'||s.classLabel==='Mago'||s.classLabel==='Monaco'||s.classLabel==='Paladino'||s.classLabel==='Ranger'||s.classLabel==='Stregone')?'5e':'v14'}`:`Regole: ${rules}`} / ${i+1} di ${doc.getPageCount()}`,7));
   return doc.save();
 }

@@ -573,6 +573,82 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Stregone: opzioni origine, metamagia, download e tutte le 7 origini esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Stregone');
+    await expect(page.locator('#classLabel')).toHaveValue('Stregone');
+    await expect(page.locator('#classSubclass option')).toHaveCount(8);
+    await page.locator('#characterName').fill('Stregone V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('sapiente');
+    const draconic = await page.locator('#classSubclass option').filter({ hasText: 'Discendenza' }).first().getAttribute('value');
+    await page.locator('#classSubclass').selectOption(draconic!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Antenato Draconico')).toBeVisible();
+    await section.getByLabel('Antenato Draconico').selectOption('Rosso');
+
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    await download.saveAs(test.info().outputPath('stregone-draconico-v2.pdf'));
+
+    const origins = [
+      'Discendenza draconica',
+      'Magia selvaggia',
+      'Anima Divina',
+      'Magia delle Ombre',
+      'Stregoneria della Tempesta',
+      'Anima Meccanica',
+      'Mente Aberrante',
+    ];
+
+    for (const sub of origins) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Stregone',
+            characterName: sub,
+            raceSlug: 'umano',
+            backgroundSlug: 'sapiente',
+            classSubclass: sub,
+            level: '14',
+          },
+          sorcererChoices: {
+            metamagic: ['Incantesimo Rapido', 'Incantesimo Raddoppiato', 'Incantesimo Celato'],
+            draconicAncestry: 'Rosso',
+            divineAffinity: 'Bene',
+          },
+        },
+      });
+      expect(response.status(), sub + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalid = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Stregone',
+          characterName: 'Test',
+          raceSlug: 'umano',
+          backgroundSlug: 'sapiente',
+          classSubclass: 'Discendenza draconica',
+          level: '5',
+        },
+        sorcererChoices: { divineAffinity: 'Affinità Inesistente' },
+      },
+    });
+    expect(invalid.status()).toBe(400);
+
+    await page.screenshot({ path: test.info().outputPath('stregone-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');

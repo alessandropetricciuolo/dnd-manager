@@ -233,6 +233,29 @@ export function drawRangerEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, cx + 4 * k, cy, cx - 4 * k, cy - 12 * k, 1.4 * k);
 }
 
+/** Arcane flame / innate magic crest for the Sorcerer. */
+export function drawSorcererEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 16 * k, borderColor: INK, borderWidth: 0.7 });
+  page.drawCircle({ x: cx, y: cy, size: 11 * k, borderColor: INK, borderWidth: 0.5 });
+  // Central rising flame
+  stroke(page, cx, cy + 13 * k, cx - 4 * k, cy - 2 * k, 1.3 * k);
+  stroke(page, cx, cy + 13 * k, cx + 4 * k, cy - 2 * k, 1.3 * k);
+  stroke(page, cx - 4 * k, cy - 2 * k, cx, cy - 9 * k, 1.1 * k);
+  stroke(page, cx + 4 * k, cy - 2 * k, cx, cy - 9 * k, 1.1 * k);
+  // Left curling flame flare
+  stroke(page, cx - 3 * k, cy + 4 * k, cx - 8 * k, cy + 6 * k, 1.1 * k);
+  stroke(page, cx - 8 * k, cy + 6 * k, cx - 6 * k, cy - 4 * k, 1.0 * k);
+  stroke(page, cx - 6 * k, cy - 4 * k, cx - 2 * k, cy - 8 * k, 0.9 * k);
+  // Right curling flame flare
+  stroke(page, cx + 3 * k, cy + 4 * k, cx + 8 * k, cy + 6 * k, 1.1 * k);
+  stroke(page, cx + 8 * k, cy + 6 * k, cx + 6 * k, cy - 4 * k, 1.0 * k);
+  stroke(page, cx + 6 * k, cy - 4 * k, cx + 2 * k, cy - 8 * k, 0.9 * k);
+  // Central magic spark
+  stroke(page, cx - 2.5 * k, cy, cx + 2.5 * k, cy, 1.0 * k);
+  stroke(page, cx, cy - 2.5 * k, cx, cy + 2.5 * k, 1.0 * k);
+}
+
 
 
 
