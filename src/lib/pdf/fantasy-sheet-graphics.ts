@@ -157,4 +157,17 @@ export function drawRogueEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, cx + 11 * k, cy + 6 * k, cx + 5 * k, cy - 7 * k, 1 * k);
 }
 
+/** Arcane starburst badge for the Wizard. */
+export function drawWizardEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 17 * k, borderColor: INK, borderWidth: 0.7 });
+  stroke(page, cx, cy - 11 * k, cx, cy + 11 * k, 1.6 * k);
+  stroke(page, cx - 11 * k, cy, cx + 11 * k, cy, 1.6 * k);
+  stroke(page, cx - 6 * k, cy - 6 * k, cx + 6 * k, cy + 6 * k, 1.0 * k);
+  stroke(page, cx - 6 * k, cy + 6 * k, cx + 6 * k, cy - 6 * k, 1.0 * k);
+  page.drawCircle({ x: cx, y: cy, size: 3 * k, color: INK });
+  page.drawCircle({ x: cx, y: cy, size: 8 * k, borderColor: INK, borderWidth: 0.8 * k });
+}
+
+
 

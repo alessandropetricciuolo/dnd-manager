@@ -6542,23 +6542,6 @@ Una volta creata l'interdizione, il mago non può crearne un'altra finché non c
 
 A partire dal 6° livello, quando una creatura situata entro 9 metri dal mago e che egli sia in grado di vedere subisce danni, il mago può usare la sua reazione per fare in modo che la sua Interdizione Arcana assorba quei danni. Se questi danni riducono l'interdizione a 0 punti ferita, la creatura protetta subisce gli eventuali danni rimanenti.
 
-84
-CAPITOLO 3 | CLASSI
-
-![Un mago in una biblioteca oscura circondato da candele e libri antichi.](page_85_image_1_v2.jpg)
-
-1,5 metri e che egli sia in grado di vedere. Se il bersaglio è in grado di vedere e sentire il mago, deve superare un tiro salvezza su Saggezza contro la CD degli incantesimi del mago, altrimenti sarà affascinata dal mago fino alla fine del turno successivo di quest'ultimo. La velocità della creatura affascinata scende a 0 e la creatura è incapacitata e visibilmente frastornata.
-
-Nei turni successivi il mago può usare la sua azione per mantenere questo effetto, estendendone la durata fino alla fine del suo turno successivo. Tuttavia, l'effetto termina se il mago si allontana a più di 1,5 metri dalla creatura, se la creatura non è più in grado di vederlo o di sentirlo o se la creatura subisce danni.
-
-Una volta terminato l'effetto, o se la creatura ha superato il suo tiro salvezza iniziale contro questo effetto, il mago non può più utilizzare questo privilegio su quella stessa creatura finché non completa un riposo lungo.
-
-## FASCINO ISTINTIVO
-
-A partire dal 6° livello, quando una creatura situata entro 9 metri dal mago e che egli sia in grado di vedere effettua un tiro per colpire contro di lui, il mago può usare la sua reazione per deviare l'attacco, purché un'altra creatura si trovi entro la gittata dell'attacco. L'attaccante deve effettuare un tiro salvezza su Saggezza contro la CD degli incantesimi del mago. Se lo fallisce, l'attaccante deve bersagliare la creatura a esso più vicina (escludendo il mago e se stesso). Se più creature sono egualmente distanti, l'attaccante sceglie quale bersagliare. Se la creatura supera il tiro salvezza, il mago non può più utilizzare questo privilegio contro l'attaccante finché non completa un riposo lungo.
-
-Il mago deve scegliere se utilizzare questo privilegio prima di sapere se l'attacco colpirà o mancherà. Le creature che non possono essere affascinate sono immuni a questo effetto.
-
 ### ABIURAZIONE MIGLIORATA
 
 A partire dal 10° livello, quando lancia un incantesimo di abiurazione che richiede una prova di caratteristica come parte del lancio dell'incantesimo stesso (come nel caso di *controincantesimo* o *dissolvi magie*), il mago può aggiungere il suo bonus di competenza a quella prova di caratteristica.
@@ -6568,6 +6551,11 @@ A partire dal 10° livello, quando lancia un incantesimo di abiurazione che rich
 A partire dal 14° livello, il mago dispone di vantaggio ai tiri salvezza contro incantesimi.
 
 Dispone inoltre di resistenza ai danni degli incantesimi.
+
+84
+CAPITOLO 3 | CLASSI
+
+![Un mago in una biblioteca oscura circondato da candele e libri antichi.](page_85_image_1_v2.jpg)
 
 ## SCUOLA DI AMMALIAMENTO
 
@@ -6579,7 +6567,17 @@ A partire da quando il mago sceglie questa scuola al 2° livello, il tempo e il 
 
 ### SGUARDO IPNOTICO
 
-A partire da quando il mago sceglie questa scuola al 2° livello, le sue parole suadenti e il suo sguardo ipnotico sono in grado di estasiare magicamente un'altra creatura. Con un'azione, il mago sceglie una creatura situata entro
+A partire da quando il mago sceglie questa scuola al 2° livello, le sue parole suadenti e il suo sguardo ipnotico sono in grado di estasiare magicamente un'altra creatura. Con un'azione, il mago sceglie una creatura situata entro 1,5 metri e che egli sia in grado di vedere. Se il bersaglio è in grado di vedere e sentire il mago, deve superare un tiro salvezza su Saggezza contro la CD degli incantesimi del mago, altrimenti sarà affascinata dal mago fino alla fine del turno successivo di quest'ultimo. La velocità della creatura affascinata scende a 0 e la creatura è incapacitata e visibilmente frastornata.
+
+Nei turni successivi il mago può usare la sua azione per mantenere questo effetto, estendendone la durata fino alla fine del suo turno successivo. Tuttavia, l'effetto termina se il mago si allontana a più di 1,5 metri dalla creatura, se la creatura non è più in grado di vederlo o di sentirlo o se la creatura subisce danni.
+
+Una volta terminato l'effetto, o se la creatura ha superato il suo tiro salvezza iniziale contro questo effetto, il mago non può più utilizzare questo privilegio su quella stessa creatura finché non completa un riposo lungo.
+
+### FASCINO ISTINTIVO
+
+A partire dal 6° livello, quando una creatura situata entro 9 metri dal mago e che egli sia in grado di vedere effettua un tiro per colpire contro di lui, il mago può usare la sua reazione per deviare l'attacco, purché un'altra creatura si trovi entro la gittata dell'attacco. L'attaccante deve effettuare un tiro salvezza su Saggezza contro la CD degli incantesimi del mago. Se lo fallisce, l'attaccante deve bersagliare la creatura a esso più vicina (escludendo il mago e se stesso). Se più creature sono egualmente distanti, l'attaccante sceglie quale bersagliare. Se la creatura supera il tiro salvezza, il mago non può più utilizzare questo privilegio contro l'attaccante finché non completa un riposo lungo.
+
+Il mago deve scegliere se utilizzare questo privilegio prima di sapere se l'attacco colpirà o mancherà. Le creature che non possono essere affascinate sono immuni a questo effetto.
 
 ### AMMALIAMENTO CONDIVISO
 

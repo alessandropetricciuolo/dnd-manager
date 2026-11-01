@@ -25,6 +25,11 @@ import {
   MASTERMIND_GAMING_SETS,
   type RogueChoices,
 } from '@/lib/sheet-generator/rogue-archetypes';
+import {
+  wizardTraditionFromLabel,
+  BLADESINGER_WEAPONS,
+  type WizardChoices,
+} from '@/lib/sheet-generator/wizard-traditions';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
   const [busy, setBusy] = useState(false);
@@ -38,8 +43,10 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const [druidCantrip,setDruidCantrip]=useState<string|null>(null);
   const [fighterChoices, setFighterChoices] = useState<FighterChoices>({});
   const [rogueChoices, setRogueChoices] = useState<RogueChoices>({});
+  const [wizardChoices, setWizardChoices] = useState<WizardChoices>({});
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
+  const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
   const isChampion10 = fighterArchetype?.slug === 'phb-guerriero-campione' && sheet.level >= 10;
   const fighterStyle = fighterChoices.fightingStyle ?? 'Duellare';
   const fighterSecondStyle = fighterChoices.secondFightingStyle ?? (fighterStyle === 'Difesa' ? 'Tiro' : 'Difesa');
@@ -73,6 +80,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
 
   const isFighter = sheet.classLabel === 'Guerriero';
   const isRogue = sheet.classLabel === 'Ladro';
+  const isWizard = sheet.classLabel === 'Mago';
   const finalFighterChoices: FighterChoices = {
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
@@ -84,7 +92,7 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}) }),
+        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}) }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -205,6 +213,14 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
           {available.map(k => <option key={k} value={k}>{SKILL_LABELS[k]}</option>)}
         </select>
       </label>}
+    </fieldset>}
+    {isWizard && wizardTradition && wizardTradition.slug === 'tce-mago-canto-lama' && <fieldset disabled={busy} className="space-y-3">
+      <legend className="text-sm font-medium text-barber-gold">Tradizione Arcana: {wizardTradition.label}</legend>
+      <label className="block text-sm">Arma da mischia ad una mano (Arte della Guerra e del Canto)
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={wizardChoices.bladesingerWeapon ?? 'Stocco'} onChange={e => setWizardChoices({ ...wizardChoices, bladesingerWeapon: e.target.value })}>
+          {BLADESINGER_WEAPONS.map(w => <option key={w} value={w}>{w}</option>)}
+        </select>
+      </label>
     </fieldset>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
     <button type="button" onClick={download} disabled={busy || invalidCleric || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">

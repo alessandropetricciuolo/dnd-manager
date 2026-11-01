@@ -278,6 +278,82 @@ test.describe('Generatore V2', () => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
   });
 
+  test('Mago: scelte Tradizione Arcana, download e tutte le 11 tradizioni esportano', async ({ page }) => {
+    test.setTimeout(240_000);
+    await page.goto('/generator-v2?classLabel=Mago');
+    await expect(page.locator('#classLabel')).toHaveValue('Mago');
+    await expect(page.locator('#classSubclass option')).toHaveCount(12);
+    await page.locator('#characterName').fill('Mago V2 verifica');
+    await page.locator('#raceSlug').selectOption('umano');
+    await page.locator('#backgroundSlug').selectOption('sapiente');
+    const tradition = await page.locator('#classSubclass option').filter({ hasText: 'Canto della Lama' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(tradition!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section.getByLabel('Arma da mischia ad una mano (Arte della Guerra e del Canto)')).toBeVisible();
+    await section.getByLabel('Arma da mischia ad una mano (Arte della Guerra e del Canto)').selectOption('Stocco');
+
+    const pending = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const download = await pending;
+    expect(await download.failure()).toBeNull();
+    await download.saveAs(test.info().outputPath('mago-canto-lama-v2.pdf'));
+
+    const traditions = [
+      'Scuola di Abiurazione',
+      'Scuola di Ammaliamento',
+      'Scuola di Divinazione',
+      'Scuola di Evocazione',
+      'Scuola di Illusione',
+      'Scuola di Invocazione',
+      'Scuola di Necromanzia',
+      'Scuola di Trasmutazione',
+      'Magia della Guerra',
+      'Canto della Lama',
+      'Ordine degli Scribi',
+    ];
+
+    for (const sub of traditions) {
+      const response = await page.request.post('/api/sheet-pdf-v2', {
+        data: {
+          input: {
+            classLabel: 'Mago',
+            characterName: sub,
+            raceSlug: 'umano',
+            backgroundSlug: 'sapiente',
+            classSubclass: sub,
+            level: '14',
+          },
+          wizardChoices: sub === 'Canto della Lama' ? { bladesingerWeapon: 'Stocco' } : undefined,
+        },
+      });
+      expect(response.status(), sub + ': ' + (response.status() !== 200 ? await response.text() : '')).toBe(200);
+      expect((await response.body()).subarray(0, 5).toString()).toBe('%PDF-');
+    }
+
+    const invalid = await page.request.post('/api/sheet-pdf-v2', {
+      data: {
+        input: {
+          classLabel: 'Mago',
+          characterName: 'Test',
+          raceSlug: 'umano',
+          backgroundSlug: 'sapiente',
+          classSubclass: 'Scuola di Evocazione',
+          level: '5',
+        },
+        wizardChoices: { bladesingerWeapon: 'Spada laser' },
+      },
+    });
+    expect(invalid.status()).toBe(400);
+
+    await page.screenshot({ path: test.info().outputPath('mago-v2-desktop.png'), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBeTruthy();
+  });
+
   test('Artefice: il motore propone infusioni e oggetti, le scelte si modificano e tutte le specializzazioni esportano',async({page})=>{
     test.setTimeout(240_000);
     await page.goto('/generator-v2?classLabel=Artefice');

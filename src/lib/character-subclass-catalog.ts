@@ -220,7 +220,7 @@ const PHB_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
     slug: "phb-mago-necromanzia",
     parentClassLabel: "Mago",
     label: "Scuola di Necromanzia",
-    sectionHeadings: H("SCUOLA DI NECROMANZIA"),
+    sectionHeadings: H("SCUOLA DI NECROMANZIA", "SCUOLA DI NEGROMANZIA"),
     supplementRulesSource: PHB,
   },
   {

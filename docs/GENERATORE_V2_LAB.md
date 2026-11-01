@@ -1,4 +1,4 @@
-# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero e Ladro
+# Generatore V2: Bardo, Barbaro, Chierico, Artefice, Druido, Guerriero, Ladro e Mago
 
 Percorso: `/generator-v2`, riservato a GM e Admin. Il generatore attuale include un collegamento al laboratorio e, dopo aver generato un Bardo, un Barbaro o un Chierico, il pulsante **Genera scheda V2**. Lo stesso pulsante è presente nel laboratorio. Nessun salvataggio V2 automatico sui personaggi.
 
@@ -214,3 +214,34 @@ Meccaniche, opzioni e calcoli integrati:
   - 9 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Ladro V2, opzioni, tutti i 9 archetipi e rifiuto payload incompatibili.
   - Lint e build di produzione completati senza errori.
   - Campione PDF generato e verificato: `output/pdf/ladro-v2-test.pdf`.
+
+## Mago (1 novembre 2026)
+
+Riferimento fornito: `Mago 5e.pdf`, scansione di 4 pagine. Prima pagina ispezionata: colonna sinistra con caratteristiche e salvezze (Intelligenza e Saggezza competenti); colonna centrale con difese, PF (dado vita d6), attacchi, CD e bonus attacco incantesimi basati su Intelligenza, tracciatore per Recupero Arcano e risorsa di tradizione, e slot incantesimi; colonna destra con progressione dei privilegi di classe (Recupero Arcano a livello 1, Maestria negli Incantesimi a livello 18, Incantesimi Personali a livello 20) e Tradizione Arcana. Testo fisso fedele trascritto in `wizard-reference-copy.ts`.
+
+Undici tradizioni arcane estratte integralmente dai manuali locali:
+- PHB: Scuola di Abiurazione, Scuola di Ammaliamento, Scuola di Divinazione, Scuola di Evocazione, Scuola di Illusione, Scuola di Invocazione, Scuola di Necromanzia, Scuola di Trasmutazione.
+- Xanathar: Magia della Guerra.
+- Tasha: Canto della Lama, Ordine degli Scribi.
+
+Meccaniche, opzioni e calcoli integrati:
+- Recupero Arcano: slot totali recuperabili = `Math.ceil(level / 2)` (max slot di 5° livello), calcolati da livello 1 con tracciatore a diamanti.
+- Slot Incantesimi Full Caster: progressione completa dal 1° al 9° livello derivata dalla tabella HTML ufficiale del PHB.
+- Incantesimi Preparabili e Trucchetti: preparabili = `Math.max(1, level + intMod)`, trucchetti = 3 al lv 1-3, 4 al lv 4-9, 5 al lv 10+.
+- Risorse di Tradizione dedicate:
+  - Scuola di Abiurazione: Interdizione Arcana con calcolo automatico dei PF massimi (`2 * level + intMod`) e ricarica con incantesimi di abiurazione.
+  - Scuola di Divinazione: Portento con 2 dadi d20 per riposo lungo (3 dadi dal 14° livello con Portento Superiore).
+  - Magia della Guerra: Ingegno Tattico al livello 2+ aggiunge permanentemente il modificatore di Intelligenza all'iniziativa; Impulso di Potere dal livello 6+ calcola cariche massime (`max(1, intMod)`) e danno da forza (`Math.floor(level / 2)`).
+  - Canto della Lama: Arte della Guerra e del Canto al livello 2+ conferisce competenza nelle armature leggere, in un'arma da mischia a una mano a scelta (`BLADESINGER_WEAPONS`), e nell'abilità Intrattenere; Melodia della Lama traccia utilizzi pari al bonus di competenza, bonus CA (`max(1, intMod)`), velocità (+3m) e vantaggio ad Acrobazia.
+  - Ordine degli Scribi: Mente Manifesta dal livello 6+ con tracciatore di utilizzi pari al bonus di competenza per lancio da spazio spettrale.
+- Incantesimi concessi automaticamente dai manuali:
+  - Scuola di Illusione: concede *Illusione Minore* al livello 2+ (Illusione Minore Migliorata).
+  - Scuola di Necromanzia: aggiunge *Animare Morti* al livello 6+ (Servitori Non Morti).
+- Risoluzione e allineamento fonti:
+  - In `manuale_giocatore.md`, risolta un'anomalia di scansione OCR a due colonne tra la Scuola di Abiurazione e la Scuola di Ammaliamento: ripristinato l'ordine originale dei paragrafi (completamento di Sguardo Ipnotico e Fascino Istintivo sotto Ammaliamento; Abiurazione Migliorata e Resistenza agli Incantesimi sotto Abiurazione).
+  - In `character-subclass-catalog.ts`, aggiunto l'alias `SCUOLA DI NEGROMANZIA` a fianco di `SCUOLA DI NECROMANZIA` per garantire la risoluzione robusta del capitolo PHB.
+- Verifica e test:
+  - 179 test unitari e di integrazione superati (`npm run test:sheet-generator`), inclusi tutte le 11 tradizioni a livelli 1, 2, 6, 10, 14, 18, 20, progressioni slot e trucchetti, Ingegno Tattico, Arte della Guerra e del Canto, incantesimi concessi e generazione PDF per ogni tradizione.
+  - 10 test Playwright end-to-end (`playwright.sheet-v2.config.ts`) superati: download Mago V2 con Canto della Lama, opzioni armi, esportazione di tutte le 11 tradizioni e rifiuto scelte non valide.
+  - Lint e build Next.js di produzione completati con successo.
+  - Campione PDF generato e verificato: `output/pdf/mago-v2-test.pdf`.
