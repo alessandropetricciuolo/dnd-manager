@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
@@ -10,6 +11,10 @@ import { getAvatarGalleryData } from "@/lib/avatar-gallery";
 import { getTrophyDataForPlayer } from "@/lib/trophy-data";
 import { PlayerTrophyBoard } from "@/components/profile/player-trophy-board";
 import { ArrowLeft, User, UserCheck, UserX } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Dossier dell'Eroe",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -45,9 +50,9 @@ export default async function ProfilePage() {
   const trophyData = await getTrophyDataForPlayer(user.id);
 
   return (
-    <div className="min-h-screen bg-guild-void text-parchment-100 font-sans p-4 py-10 md:p-8">
+    <main className="min-h-screen bg-guild-void text-parchment-100 font-sans p-4 py-10 md:p-8">
       <div className="mx-auto w-full max-w-xl space-y-6">
-        <header className="flex items-center justify-between border-b border-guild-border/80 pb-4">
+        <div className="flex items-center justify-between border-b border-guild-border/80 pb-4">
           <Link href="/dashboard">
             <Button
               variant="stone"
@@ -66,7 +71,7 @@ export default async function ProfilePage() {
               Dossier dell&apos;Eroe
             </h1>
           </div>
-        </header>
+        </div>
 
         {/* Affidabilità al Tavolo */}
         <div className="card-guild-stone relative rounded-2xl p-5 shadow-lg">
@@ -191,6 +196,6 @@ export default async function ProfilePage() {
 
         <ChangePasswordForm />
       </div>
-    </div>
+    </main>
   );
 }

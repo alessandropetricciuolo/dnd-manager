@@ -24,7 +24,7 @@ import { KENSEI_MELEE_WEAPONS, KENSEI_RANGED_WEAPONS } from '@/lib/sheet-generat
 import { loadPaladinEvidence, addPaladinGrantedSpells } from '@/lib/server/paladin-source';
 import { PALADIN_FIGHTING_STYLES } from '@/lib/sheet-generator/paladin-oaths';
 import { loadRangerEvidence, addRangerGrantedSpells } from '@/lib/server/ranger-source';
-import { RANGER_FIGHTING_STYLES } from '@/lib/sheet-generator/ranger-archetypes';
+import { RANGER_FIGHTING_STYLES, RANGER_BEAST_COMPANIONS } from '@/lib/sheet-generator/ranger-archetypes';
 import { loadSorcererEvidence, addSorcererGrantedSpells } from '@/lib/server/sorcerer-source';
 import { loadWarlockEvidence, addWarlockGrantedSpells } from '@/lib/server/warlock-source';
 import { WARLOCK_PACT_BOONS, GENIE_KINDS } from '@/lib/sheet-generator/warlock-patrons';
@@ -41,6 +41,9 @@ const schema = z.object({
   fighterChoices:z.object({
     fightingStyle:z.enum(FIGHTER_FIGHTING_STYLES).optional(),
     secondFightingStyle:z.enum(FIGHTER_FIGHTING_STYLES).optional(),
+    maneuvers:z.array(z.string().min(1).max(64)).max(9).optional(),
+    arcaneShots:z.array(z.string().min(1).max(64)).max(6).optional(),
+    runes:z.array(z.string().min(1).max(64)).max(5).optional(),
     arcaneArcherSkill:z.enum(['arcana','nature']).optional(),
     arcaneArcherCantrip:z.enum(ARCANE_ARCHER_CANTRIPS).optional(),
     cavalierSkill:z.enum(ALL_SKILL_KEYS).optional(),
@@ -71,7 +74,12 @@ const schema = z.object({
     fightingStyle:z.enum(RANGER_FIGHTING_STYLES).optional(),
     favoredEnemies:z.array(z.string().min(1).max(64)).max(3).optional(),
     favoredTerrains:z.array(z.string().min(1).max(64)).max(3).optional(),
+    beastCompanion:z.enum(RANGER_BEAST_COMPANIONS).optional(),
     feyWandererSkill:z.enum(['Inganno','Intrattenere','Persuasione']).optional(),
+    hunterPrey:z.enum(["Devastatore dell'Orda",'Sterminatore di Colossi','Uccisore di Giganti']).optional(),
+    defensiveTactics:z.enum(['Difesa dal Multiattacco',"Sfuggire all'Orda","Volontà d'Acciaio"]).optional(),
+    multiattack:z.enum(['Attacco Turbinante','Raffica']).optional(),
+    superiorHunterDefense:z.enum(['Elusione','Opporsi alla Marea','Schivata Prodigiosa']).optional(),
   }).strict().optional(),
   sorcererChoices:z.object({
     metamagic:z.array(z.string().min(1).max(64)).max(4).optional(),

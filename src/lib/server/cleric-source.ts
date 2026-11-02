@@ -1,6 +1,7 @@
 import { parseSpellsWithLevelFromList, extractSpellListByMaxLevel } from '@/lib/sheet-generator/rules-resolver';
 import { filterTorneoCombatSpells } from '@/lib/sheet-generator/spell-torneo-combat';
 import { getManualMarkdownByFileName, preloadManualMarkdownFile } from './phb-spell-excerpt';
+import { manualSpellFromSources } from './manual-spell-source';
 import { CLERIC_CLASS_LEVELS, CLERIC_DOMAIN_FEATURES, clericDomainFromLabel, DRUID_CANTRIPS, type ClericChoices } from '@/lib/sheet-generator/cleric-domains';
 import { extractManualSubclassFeatures } from '@/lib/sheet-generator/manual-subclass-features';
 import { printPlainText, normalizeFeatureTitle, type PrintFeature } from '@/lib/sheet-generator/manual-feature-text';
@@ -75,29 +76,32 @@ function spellDescription(name:string){
  const tail=chapter.slice(h.index+h[0].length),end=tail.search(/^#{1,6}\s+/m);
  return chapter.slice(h.index,h.index+h[0].length+(end<0?tail.length:end)).trim().replace(/\*\*(Tempo di Lancio|Gittata|Componenti|Durata)\*\*\s*:/g,'**$1:**');
 }
-function sourceSpell(name:string,expectedLevel:number,note=''):GeneratedSpell{
- const raw=spellDescription(name);if(!raw)throw new Error(`Testo del manuale non trovato per ${name}.`);
- const level=/Trucchetto/i.test(raw)?0:Number(raw.match(/(\d+)[°º]? livello/i)?.[1]);
- if(level!==expectedLevel)throw new Error(`Livello incantesimo non verificato per ${name}.`);
- const components=raw.match(/\*\*Componenti:\*\*\s*([^\n]+)/)?.[1]??'';
- return {name,level,summary:note,fullTextMd:(note?note+'\n\n':'')+raw,ritual:/\(rituale\)/i.test(raw),concentration:/\*\*Durata:\*\*\s*Concentrazione/i.test(raw),verbal:/\bV\b/.test(components),somatic:/\bS\b/.test(components),material:/\bM\b/.test(components)};
+function sourceSpell(name:string,expectedLevel:number,note='',meta:Partial<GeneratedSpell>={}):GeneratedSpell{
+ return manualSpellFromSources(name,expectedLevel,note,meta);
 }
 export function addClericGrantedSpells(original:GeneratedCharacterSheet,evidence:ClericEvidence,choices:ClericChoices={},torneoMode=false){
  const sheet=structuredClone(original),domain=clericDomainFromLabel(sheet.classSubclass)!;
- sheet.spells=sheet.spells.filter(s=>!/^(?:\d+|CAPITOLO\s+\d+\s*\|.*)$/i.test(s.name.trim())).map(s=>({...sourceSpell(s.name,s.level,s.summary.startsWith('Trucchetto aggiuntivo da druido: Accolito della Natura.')?s.summary:'')}));
- const add=(spell:GeneratedSpell)=>{const i=sheet.spells.findIndex(s=>spellKey(s.name)===spellKey(spell.name));if(i<0)sheet.spells.push(spell);else sheet.spells[i]=spell;};
- for(const entry of evidence.domainSpells)add(sourceSpell(entry.name,entry.level,`Incantesimo di dominio: sempre preparato, non conta nel limite giornaliero (${domain.label}, livello ${entry.unlock}).`));
- if(domain.slug==='phb-chierico-luce')add(sourceSpell('Luce',0,'Trucchetto bonus del Dominio della Luce.'));
+ const isClericOrigin=(o?:string)=>!o||o==='class'||o==='subclass';
+ sheet.spells=sheet.spells
+  .filter(s=>!/^(?:\d+|CAPITOLO\s+\d+\s*\|.*)$/i.test(s.name.trim()))
+  .map(s=>{
+   if(!isClericOrigin(s.origin))return s;
+   const isAccolito=s.summary.startsWith('Trucchetto aggiuntivo da druido: Accolito della Natura.');
+   return {...sourceSpell(s.name,s.level,isAccolito?s.summary:'',{origin:isAccolito?'subclass':'class',sourceLabel:isAccolito?domain.label:'Chierico',ability:'wis',alwaysPrepared:isAccolito,requiresSlot:s.level>0})};
+  });
+ const add=(spell:GeneratedSpell)=>{const i=sheet.spells.findIndex(s=>isClericOrigin(s.origin)&&spellKey(s.name)===spellKey(spell.name));if(i<0)sheet.spells.push(spell);else sheet.spells[i]=spell;};
+ for(const entry of evidence.domainSpells)add(sourceSpell(entry.name,entry.level,`Incantesimo di dominio: sempre preparato, non conta nel limite giornaliero (${domain.label}, livello ${entry.unlock}).`,{origin:'subclass',sourceLabel:domain.label,ability:'wis',alwaysPrepared:true,requiresSlot:true}));
+ if(domain.slug==='phb-chierico-luce')add(sourceSpell('Luce',0,'Trucchetto bonus del Dominio della Luce.',{origin:'subclass',sourceLabel:domain.label,ability:'wis',alwaysPrepared:true,requiresSlot:false}));
  if(domain.slug==='xge-chierico-tomba'){
-  const spell=sourceSpell('Salvare i Morenti',0,'Trucchetto aggiuntivo: Cerchio di Mortalità.');
+  const spell=sourceSpell('Salvare i Morenti',0,'Trucchetto aggiuntivo: Cerchio di Mortalità.',{origin:'subclass',sourceLabel:domain.label,ability:'wis',alwaysPrepared:true,requiresSlot:false,castingTimeOverride:'1 azione bonus',rangeOverride:'9 m'});
   spell.fullTextMd=spell.fullTextMd!.replace(/\*\*Gittata:\*\*[^\n]*/,'**Gittata:** 9 metri (Cerchio di Mortalità)').replace(/\*\*Tempo di Lancio:\*\*[^\n]*/,'**Tempo di Lancio:** 1 azione bonus (Cerchio di Mortalità)');add(spell);
  }
  if(domain.slug==='phb-chierico-natura'){
-  const prior=sheet.spells.find(s=>s.summary.startsWith('Trucchetto aggiuntivo da druido: Accolito della Natura.'));
-  const name=choices.druidCantrip??prior?.name??DRUID_CANTRIPS.find(n=>!sheet.spells.some(s=>spellKey(s.name)===spellKey(n)))!;
+  const prior=sheet.spells.find(s=>isClericOrigin(s.origin)&&s.summary.startsWith('Trucchetto aggiuntivo da druido: Accolito della Natura.'));
+  const name=choices.druidCantrip??prior?.name??DRUID_CANTRIPS.find(n=>!sheet.spells.some(s=>isClericOrigin(s.origin)&&spellKey(s.name)===spellKey(n)))!;
   if(!DRUID_CANTRIPS.some(n=>n===name))throw new Error('Scegli un trucchetto da druido del PHB.');
-  if(sheet.spells.some(s=>spellKey(s.name)===spellKey(name))&&prior?.name!==name)throw new Error('Il trucchetto aggiuntivo deve essere diverso da quelli già conosciuti.');
-  add(sourceSpell(name,0,'Trucchetto aggiuntivo da druido: Accolito della Natura. Caratteristica: Saggezza.'));
+  if(sheet.spells.some(s=>isClericOrigin(s.origin)&&spellKey(s.name)===spellKey(name))&&prior?.name!==name)throw new Error('Il trucchetto aggiuntivo deve essere diverso da quelli già conosciuti.');
+  add(sourceSpell(name,0,'Trucchetto aggiuntivo da druido: Accolito della Natura. Caratteristica: Saggezza.',{origin:'subclass',sourceLabel:domain.label,ability:'wis',alwaysPrepared:true,requiresSlot:false}));
  }else if(choices.druidCantrip)throw new Error('Il trucchetto da druido richiede il Dominio della Natura.');
  // A domain spell already selected in V1 frees an ordinary preparation. Fill that place from the actual class list.
  const domainNames=new Set(evidence.domainSpells.map(s=>spellKey(s.name)));
@@ -108,8 +112,8 @@ export function addClericGrantedSpells(original:GeneratedCharacterSheet,evidence
  if(!list)throw new Error('Lista incantesimi da Chierico non trovata nel PHB.');
  const entries=parseSpellsWithLevelFromList(extractSpellListByMaxLevel(list,maxLevel)).filter(e=>e.level>0&&e.level<=maxLevel&&!/^\d+$/.test(e.name)&&spellDescription(e.name));
  const candidates=torneoMode?filterTorneoCombatSpells(entries):entries;
- let normalCount=sheet.spells.filter(s=>s.level>0&&!domainNames.has(spellKey(s.name))).length;
- for(const entry of candidates){if(normalCount>=prepared)break;if(sheet.spells.some(s=>spellKey(s.name)===spellKey(entry.name)))continue;add(sourceSpell(entry.name,entry.level,'Preparazione ordinaria aggiunta nella V2: gli incantesimi di dominio non consumano questo limite.'));normalCount++;}
+ let normalCount=sheet.spells.filter(s=>s.level>0&&(!s.origin||s.origin==='class')&&!domainNames.has(spellKey(s.name))).length;
+ for(const entry of candidates){if(normalCount>=prepared)break;if(sheet.spells.some(s=>isClericOrigin(s.origin)&&spellKey(s.name)===spellKey(entry.name)))continue;add(sourceSpell(entry.name,entry.level,'Preparazione ordinaria aggiunta nella V2: gli incantesimi di dominio non consumano questo limite.',{origin:'class',sourceLabel:'Chierico',ability:'wis',alwaysPrepared:false,requiresSlot:true}));normalCount++;}
  if(normalCount<prepared)throw new Error('La lista sorgente non consente di completare gli incantesimi preparati.');
  return sheet;
 }

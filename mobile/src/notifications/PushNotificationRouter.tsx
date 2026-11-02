@@ -16,9 +16,17 @@ export function PushNotificationRouter() {
     let cancelled = false;
     void Promise.resolve(selectCampaign(target.campaignId)).then(() => {
       if (cancelled) return;
-      const gm = role === 'gm' || (role === 'admin' && activeMode === 'gm');
-      const screen = target.kind === 'whisper' ? (gm ? 'GmWhispers' : 'PlayerWhisper') : (gm ? 'GmXpAttendance' : 'Sessions');
-      mobileNavigationRef.navigate(screen, target.sessionId ? { notificationSessionId: target.sessionId } : undefined);
+      const gm = (role === 'gm' || role === 'admin') && activeMode === 'gm';
+      if (target.kind === 'whisper') {
+        mobileNavigationRef.navigate(gm ? 'GmTabs' : 'PlayerTabs', {
+          screen: gm ? 'GmWhispers' : 'PlayerWhisper',
+        });
+      } else {
+        mobileNavigationRef.navigate(
+          gm ? 'GmXpAttendance' : 'Sessions',
+          target.sessionId ? { notificationSessionId: target.sessionId } : undefined
+        );
+      }
       consumeTarget();
     });
     return () => { cancelled = true; };

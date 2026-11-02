@@ -97,7 +97,18 @@ export async function loadSorcererEvidence(
     for (const tier of originSpellTiers) {
       if (tier.sorcererLevel <= sheet.level) {
         for (const spellName of tier.spells) {
-          const spell = manualSpellFromSources(spellName, tier.spellLevel);
+          const spell = manualSpellFromSources(
+            spellName,
+            tier.spellLevel,
+            `Magia dell'Origine (${sorcererOrigin.label}, livello ${tier.sorcererLevel}): conosciuto aggiuntivo, non conta nel limite.`,
+            {
+              origin: 'subclass',
+              sourceLabel: sorcererOrigin.label,
+              ability: 'cha',
+              alwaysPrepared: true,
+              requiresSlot: true,
+            }
+          );
           if (spell) grantedSpells.push(spell);
         }
       }
@@ -107,7 +118,18 @@ export async function loadSorcererEvidence(
     if (sorcererOrigin.slug === 'xge-stregone-anima-divina' && sheet.level >= 1) {
       const affinity = choices.divineAffinity ?? 'Bene';
       const affinitySpellName = DIVINE_AFFINITY_SPELLS[affinity] ?? 'Cura Ferite';
-      const spell = manualSpellFromSources(affinitySpellName, 1);
+      const spell = manualSpellFromSources(
+        affinitySpellName,
+        1,
+        `Magia Divina (${affinity}): incantesimo conosciuto aggiuntivo, non conta nel limite.`,
+        {
+          origin: 'subclass',
+          sourceLabel: `${sorcererOrigin.label} (${affinity})`,
+          ability: 'cha',
+          alwaysPrepared: true,
+          requiresSlot: true,
+        }
+      );
       if (spell) grantedSpells.push(spell);
     }
   }
@@ -139,6 +161,12 @@ export async function loadSorcererEvidence(
     const info = DRACONIC_ANCESTRIES[ancestryChoice] ?? { damageType: 'Fuoco', color: ancestryChoice };
     resources.draconicAncestry = { name: ancestryChoice, damageType: info.damageType };
     resources.draconicResilience = true;
+    const ancestryFeature = originFeatures.find((f) => f.title === 'ANTENATO DRACONICO');
+    if (ancestryFeature) {
+      ancestryFeature.body =
+        `Drago scelto: ${ancestryChoice} (tipo di danno associato: ${info.damageType}). ` +
+        `Parli, leggi e scrivi il Draconico. Quando effettui una prova di Carisma interagendo con i draghi, il tuo bonus di competenza raddoppia se si applica alla prova.`;
+    }
   }
 
   if (sorcererOrigin?.slug === 'phb-stregone-magia-selvaggia') {
@@ -184,8 +212,9 @@ export function addSorcererGrantedSpells(
   evidence: SorcererEvidence
 ): GeneratedCharacterSheet {
   const clone = structuredClone(sheet);
+  const isSorcererOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
   for (const spell of evidence.grantedSpells) {
-    if (!clone.spells.some((s) => s.name.toLowerCase() === spell.name.toLowerCase())) {
+    if (!clone.spells.some((s) => isSorcererOrigin(s.origin) && s.name.toLowerCase() === spell.name.toLowerCase())) {
       clone.spells.push(spell);
     }
   }

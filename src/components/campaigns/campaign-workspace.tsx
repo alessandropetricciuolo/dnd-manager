@@ -367,10 +367,10 @@ export function CampaignWorkspace({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-x-hidden">
       {/* Mobile: barra compatta + tab (niente hero immagine) */}
-      <div className="z-40 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
-        <div className="flex gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5">
+      <div className="z-40 w-full max-w-full min-w-0 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
+        <div className="flex w-full min-w-0 gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5 scrollbar-hide">
           <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} iconOnly />
           <Button
             type="button"

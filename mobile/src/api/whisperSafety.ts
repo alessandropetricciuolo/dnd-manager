@@ -34,14 +34,38 @@ export async function blockWhisperUser(blockerId: string, blockedId: string): Pr
   if (error) throw error;
 }
 
-export async function listBlockedWhisperUsers(blockerId: string): Promise<Array<{ blocked_id: string; created_at: string }>> {
+export async function listBlockedWhisperUsers(
+  blockerId: string
+): Promise<Array<{ blocked_id: string; created_at: string; blocked_name?: string | null }>> {
   const { data, error } = await (supabase as any)
     .from('whisper_user_blocks')
     .select('blocked_id, created_at')
     .eq('blocker_id', blockerId)
     .order('created_at', { ascending: false });
   if (error) throw error;
-  return data ?? [];
+  const rows: Array<{ blocked_id: string; created_at: string }> = data ?? [];
+  if (rows.length === 0) return [];
+
+  const ids = rows.map((r) => r.blocked_id);
+  const { data: profilesData } = await (supabase as any)
+    .from('profiles')
+    .select('id, display_name, nickname')
+    .in('id', ids);
+
+  const nameMap = new Map<string, string>();
+  if (Array.isArray(profilesData)) {
+    for (const p of profilesData) {
+      const label = p?.display_name || p?.nickname;
+      if (p?.id && label) {
+        nameMap.set(p.id, label);
+      }
+    }
+  }
+
+  return rows.map((r) => ({
+    ...r,
+    blocked_name: nameMap.get(r.blocked_id) ?? null,
+  }));
 }
 
 export async function unblockWhisperUser(blockerId: string, blockedId: string): Promise<void> {

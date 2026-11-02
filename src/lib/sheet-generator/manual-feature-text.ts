@@ -7,8 +7,11 @@ export function printPlainText(markdown: string): string {
     .replace(/^\s*\|[\s:|\-]+\|\s*$/gm,'')
     .replace(/<\/(?:tr|p)>/gi,'\n').replace(/<\/(?:td|th)>/gi,' | ').replace(/<[^>]+>/g,' ')
     .replace(/\[([^\]]+)\]\([^)]*\)/g,'$1').replace(/^#{1,6}\s+/gm,'').replace(/\*|`/g,'')
-    .replace(/(?:^|\n)CAPITOLO\s+\d+\s*\|[^\n]*(?:\n\d{1,3})?/g,'')
-    .replace(/(?:^|\n)\d{1,3}\s*\nCAPITOLO\s+\d+\s*\|[^\n]*/g,'')
+    .replace(/(?:^|\n)\s*(?:\d{1,3}\s+)?(?:CAPITOLO|PARTE)\s+\d+(?:\s*\|[^\n]*)?(?:\s+\d{1,3})?/gi, ' ')
+    .replace(/\b\d{1,3}\s+(?:CAPITOLO|PARTE)\s+\d+\s*\|[^\n]*/gi, ' ')
+    .replace(/\b(?:CAPITOLO|PARTE)\s+\d+\s*\|[^\n]*/gi, ' ')
+    .replace(/\n\s*\d{1,3}\s*\n/g, '\n')
+    .replace(/^(?:img[-_]?\d+\.?\s*(?:jpe?g|png)?|scansionato con camscanner|offrimi un caff[eè][^\n]*|paypal\.me[^\n]*)\s*$/gim, '')
     .replace(/\n{3,}/g,'\n\n').trim());
 }
 

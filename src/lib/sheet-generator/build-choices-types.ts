@@ -2,11 +2,13 @@ import type { SkillKey } from "@/lib/sheet-generator/types";
 
 /** Scelte manuali del giocatore durante la generazione scheda. */
 export type CharacterBuildOverrides = {
+  abilities?: Record<import("@/lib/sheet-generator/types").AbilityKey, number>;
   artificer?: import("./artificer-types").ArtificerChoices;
   classSkills?: SkillKey[];
   /** Maestria (doppio PB): scelte manuali; se vuote, assegnate automaticamente. */
   expertiseSkills?: SkillKey[];
   cantrips?: string[];
+  racialCantrip?: string;
   spells?: string[];
   fightingStyle?: string;
   warlockPact?: string;

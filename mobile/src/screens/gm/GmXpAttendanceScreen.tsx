@@ -4,13 +4,13 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Alert,
   ActivityIndicator,
   Modal,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Award,
   CheckCircle2,
@@ -304,7 +304,7 @@ export const GmXpAttendanceScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

@@ -4,13 +4,15 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Modal,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Shield,
   Heart,
@@ -377,7 +379,7 @@ export const CharacterSheetScreen: React.FC = () => {
 
   if (!hasAssignedCharacter) {
     return (
-      <SafeAreaView style={styles.safeArea}>
+      <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
         <ScrollView
           contentContainerStyle={styles.noCharContainer}
           showsVerticalScrollIndicator={false}
@@ -448,7 +450,7 @@ export const CharacterSheetScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       {/* Hero Sticky Header */}
       <View style={styles.heroHeader}>
         <View style={styles.heroRow}>
@@ -703,7 +705,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 <View style={styles.deathSavesRows}>
                   {/* Successes */}
                   <View style={styles.deathSaveTrackerRow}>
-                    <Text style={styles.deathSaveTrackLabel}>SUCCESS</Text>
+                    <Text style={styles.deathSaveTrackLabel}>SUCCESSI</Text>
                     <View style={styles.deathDotsRow}>
                       {[1, 2, 3].map((idx) => {
                         const isFilled = deathSaves.successes >= idx;
@@ -712,9 +714,13 @@ export const CharacterSheetScreen: React.FC = () => {
                             key={`succ-${idx}`}
                             style={[styles.deathDot, isFilled && styles.deathDotSuccess]}
                             disabled={isSaving}
+                            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Tiro salvezza contro morte riuscito ${idx} di 3`}
+                            accessibilityState={{ selected: isFilled }}
                             onPress={() => updateDeathSaves(isFilled ? idx - 1 : idx, deathSaves.failures)}
                           >
-                            {isFilled && <Check size={12} color={colors.void} />}
+                            {isFilled && <Check size={14} color={colors.void} />}
                           </TouchableOpacity>
                         );
                       })}
@@ -732,9 +738,13 @@ export const CharacterSheetScreen: React.FC = () => {
                             key={`fail-${idx}`}
                             style={[styles.deathDot, isFilled && styles.deathDotFailure]}
                             disabled={isSaving}
+                            hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                            accessibilityRole="button"
+                            accessibilityLabel={`Tiro salvezza contro morte fallito ${idx} di 3`}
+                            accessibilityState={{ selected: isFilled }}
                             onPress={() => updateDeathSaves(deathSaves.successes, isFilled ? idx - 1 : idx)}
                           >
-                            {isFilled && <X size={12} color={colors.parchmentLight} />}
+                            {isFilled && <X size={14} color={colors.parchmentLight} />}
                           </TouchableOpacity>
                         );
                       })}
@@ -921,6 +931,10 @@ export const CharacterSheetScreen: React.FC = () => {
                               <TouchableOpacity
                                 key={`dot-${slot.level}-${idx}`}
                                 style={[styles.slotDot, isSlotUsed && styles.slotDotUsed]}
+                                hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Slot incantesimo livello ${slot.level} numero ${idx + 1}, ${isSlotUsed ? 'consumato' : 'disponibile'}`}
+                                accessibilityState={{ selected: !isSlotUsed }}
                                 onPress={() => updateSpellSlot(slot.level, isSlotUsed ? used - 1 : used + 1)}
                                 disabled={isSaving}
                               />
@@ -1121,6 +1135,8 @@ export const CharacterSheetScreen: React.FC = () => {
           setIsDiceModalOpen(true);
         }}
         activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="Apri lanciadadi rapido"
       >
         <Dices size={28} color={colors.void} />
       </TouchableOpacity>
@@ -1136,8 +1152,11 @@ export const CharacterSheetScreen: React.FC = () => {
       />
 
       {/* Custom HP Modal */}
-      <Modal visible={isCustomHpModalOpen} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
+      <Modal visible={isCustomHpModalOpen} transparent animationType="fade" onRequestClose={() => setIsCustomHpModalOpen(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>
               {customHpAction === 'heal' ? 'CURA PUNTI FERITA' : 'INFLIGGI DANNO'}
@@ -1148,9 +1167,10 @@ export const CharacterSheetScreen: React.FC = () => {
               value={customHpInput}
               onChangeText={setCustomHpInput}
               autoFocus
+              accessibilityLabel={customHpAction === 'heal' ? 'Quantità punti ferita da curare' : 'Quantità danni da infliggere'}
             />
             <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsCustomHpModalOpen(false)}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsCustomHpModalOpen(false)} accessibilityRole="button">
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -1160,17 +1180,21 @@ export const CharacterSheetScreen: React.FC = () => {
                 ]}
                 onPress={handleCustomHpSubmit}
                 disabled={isSaving}
+                accessibilityRole="button"
               >
                 <Text style={styles.modalConfirmText}>Applica</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Temp HP Modal */}
-      <Modal visible={isTempHpModalOpen} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
+      <Modal visible={isTempHpModalOpen} transparent animationType="fade" onRequestClose={() => setIsTempHpModalOpen(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>PUNTI FERITA TEMPORANEI</Text>
             <TextInput
@@ -1179,22 +1203,26 @@ export const CharacterSheetScreen: React.FC = () => {
               value={tempHpInput}
               onChangeText={setTempHpInput}
               autoFocus
+              accessibilityLabel="Punti ferita temporanei"
             />
             <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsTempHpModalOpen(false)}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsTempHpModalOpen(false)} accessibilityRole="button">
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleTempHpSubmit} disabled={isSaving}>
+              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleTempHpSubmit} disabled={isSaving} accessibilityRole="button">
                 <Text style={styles.modalConfirmTextDark}>Imposta Temp HP</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Edit Coins Modal */}
-      <Modal visible={isCoinsModalOpen} transparent animationType="fade">
-        <View style={styles.modalBackdrop}>
+      <Modal visible={isCoinsModalOpen} transparent animationType="fade" onRequestClose={() => setIsCoinsModalOpen(false)}>
+        <KeyboardAvoidingView
+          style={styles.modalBackdrop}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={styles.modalCard}>
             <Text style={styles.modalTitle}>AGGIORNA BORSELLO</Text>
             <View style={styles.coinInputGroup}>
@@ -1204,6 +1232,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 keyboardType="number-pad"
                 defaultValue={String(safeCharacter.coins_gp ?? 0)}
                 onChangeText={setCoinsGpInput}
+                accessibilityLabel="Monete d'oro"
               />
             </View>
             <View style={styles.coinInputGroup}>
@@ -1213,6 +1242,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 keyboardType="number-pad"
                 defaultValue={String(safeCharacter.coins_sp ?? 0)}
                 onChangeText={setCoinsSpInput}
+                accessibilityLabel="Monete d'argento"
               />
             </View>
             <View style={styles.coinInputGroup}>
@@ -1222,19 +1252,20 @@ export const CharacterSheetScreen: React.FC = () => {
                 keyboardType="number-pad"
                 defaultValue={String(safeCharacter.coins_cp ?? 0)}
                 onChangeText={setCoinsCpInput}
+                accessibilityLabel="Monete di rame"
               />
             </View>
 
             <View style={styles.modalButtonsRow}>
-              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsCoinsModalOpen(false)}>
+              <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsCoinsModalOpen(false)} accessibilityRole="button">
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleCoinsSubmit} disabled={isSaving}>
+              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleCoinsSubmit} disabled={isSaving} accessibilityRole="button">
                 <Text style={styles.modalConfirmTextDark}>Salva Borsello</Text>
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Character Selector Modal */}
@@ -1569,9 +1600,9 @@ const styles = StyleSheet.create({
     marginVertical: 2,
   },
   vitalLabel: {
-    fontSize: 8,
+    fontSize: 9.5,
     fontWeight: '800',
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
     color: colors.parchmentMuted,
     textAlign: 'center',
   },
@@ -1637,6 +1668,8 @@ const styles = StyleSheet.create({
   },
   hpDeltaBtn: {
     flex: 1,
+    minHeight: 36,
+    justifyContent: 'center',
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
@@ -1656,6 +1689,8 @@ const styles = StyleSheet.create({
   },
   hpActionBtn: {
     flex: 1.5,
+    minHeight: 36,
+    justifyContent: 'center',
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
@@ -1675,6 +1710,8 @@ const styles = StyleSheet.create({
   },
   tempHpBtn: {
     flex: 1.2,
+    minHeight: 36,
+    justifyContent: 'center',
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
@@ -1757,18 +1794,19 @@ const styles = StyleSheet.create({
   },
   rollDeathSaveBtn: {
     backgroundColor: colors.crimson,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 4,
   },
   rollDeathSaveText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.parchmentLight,
   },
   deathSavesRows: {
     flexDirection: 'row',
     justifyContent: 'space-around',
+    paddingVertical: 4,
   },
   deathSaveTrackerRow: {
     flexDirection: 'row',
@@ -1776,18 +1814,18 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   deathSaveTrackLabel: {
-    fontSize: 9,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.parchmentMuted,
   },
   deathDotsRow: {
     flexDirection: 'row',
-    gap: 6,
+    gap: 10,
   },
   deathDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
@@ -1821,7 +1859,7 @@ const styles = StyleSheet.create({
     color: colors.parchmentLight,
   },
   weaponRange: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.brassLight,
   },
   weaponProps: {
@@ -1830,7 +1868,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   weaponNotes: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontStyle: 'italic',
     color: colors.parchmentMuted,
     marginTop: 2,
@@ -1847,7 +1885,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 6,
     backgroundColor: colors.brassBase,
-    paddingVertical: 7,
+    paddingVertical: 8,
+    minHeight: 38,
     borderRadius: 6,
   },
   weaponHitBtnText: {
@@ -1864,7 +1903,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.brassDark,
-    paddingVertical: 7,
+    paddingVertical: 8,
+    minHeight: 38,
     borderRadius: 6,
   },
   weaponDmgBtnText: {
@@ -1899,7 +1939,7 @@ const styles = StyleSheet.create({
     color: colors.brassBase,
   },
   abilityName: {
-    fontSize: 9,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
     marginTop: 1,
   },
@@ -1994,12 +2034,12 @@ const styles = StyleSheet.create({
   },
   skillAbilityBadge: {
     backgroundColor: colors.stoneSurface,
-    paddingHorizontal: 4,
+    paddingHorizontal: 5,
     paddingVertical: 1,
     borderRadius: 4,
   },
   skillAbilityBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
@@ -2009,7 +2049,7 @@ const styles = StyleSheet.create({
     color: colors.parchmentMuted,
   },
   passivePerceptionLabel: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     color: colors.brassLight,
   },
@@ -2040,13 +2080,14 @@ const styles = StyleSheet.create({
   },
   slotDotsRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginTop: 4,
+    flexWrap: 'wrap',
+    gap: 10,
+    marginTop: 6,
   },
   slotDot: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     backgroundColor: colors.brassBase,
     borderWidth: 1.5,
     borderColor: colors.brassLight,
@@ -2093,7 +2134,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   featureSourceText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.parchmentMuted,
   },
@@ -2172,7 +2213,7 @@ const styles = StyleSheet.create({
     color: '#F97316',
   },
   coinLabel: {
-    fontSize: 9,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.parchmentMuted,
     marginTop: 2,
@@ -2181,12 +2222,12 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
     borderRadius: 6,
   },
   editCoinsBtnText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.brassLight,
   },
@@ -2218,15 +2259,15 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   inventoryQty: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   inventoryWeight: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   inventoryNotes: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.brassLight,
     fontStyle: 'italic',
   },
@@ -2237,7 +2278,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   equippedBadgeText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.brassLight,
   },

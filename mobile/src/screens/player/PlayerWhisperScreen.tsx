@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -12,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Lock,
   Send,
@@ -126,11 +126,11 @@ export const PlayerWhisperScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 96 : 138}
       >
         {/* Secrecy Warning Header with Campaign Switcher */}
         <View style={styles.securityBanner}>
@@ -141,6 +141,8 @@ export const PlayerWhisperScreen: React.FC = () => {
             style={styles.securityTextContainer}
             onPress={() => setCampaignModalVisible(true)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={`Cambia campagna attiva, attuale: ${effectiveCampaignTitle}`}
           >
             <Text style={styles.securityBannerText}>
               CANALE CIFRATO CON IL MASTER • NESSUN ALTRO GIOCATORE PUÒ LEGGERE
@@ -149,15 +151,18 @@ export const PlayerWhisperScreen: React.FC = () => {
               <Text style={styles.securitySubtext} numberOfLines={1}>
                 {activeCharacter?.name || 'Avventuriero'} • {effectiveCampaignTitle}
               </Text>
-              <ChevronDown size={11} color={colors.brassLight} />
+              <ChevronDown size={12} color={colors.brassLight} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.refreshIconBtn}
             onPress={refreshMessages}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Aggiorna sussurri"
           >
-            <RefreshCw size={13} color={colors.parchmentMuted} />
+            <RefreshCw size={15} color={colors.parchmentMuted} />
           </TouchableOpacity>
         </View>
 
@@ -167,7 +172,13 @@ export const PlayerWhisperScreen: React.FC = () => {
           style={styles.messagesContainer}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => {
+            if (messages.length > 0) {
+              scrollViewRef.current?.scrollToEnd({ animated: false });
+            } else {
+              scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+            }
+          }}
         >
           {isLoading && messages.length === 0 ? (
             <View style={styles.centerLoading}>
@@ -262,8 +273,11 @@ export const PlayerWhisperScreen: React.FC = () => {
                 style={styles.presetChip}
                 onPress={() => handleApplyPreset(preset)}
                 activeOpacity={0.75}
+                hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Preset sussurro: ${preset}`}
               >
-                <Sparkles size={11} color={colors.brassLight} style={styles.presetSparkle} />
+                <Sparkles size={12} color={colors.brassLight} style={styles.presetSparkle} />
                 <Text style={styles.presetText}>{preset}</Text>
               </TouchableOpacity>
             ))}
@@ -280,6 +294,7 @@ export const PlayerWhisperScreen: React.FC = () => {
             onChangeText={setInputText}
             multiline
             maxLength={600}
+            accessibilityLabel="Messaggio sussurro segreto al Game Master"
           />
           <TouchableOpacity
             style={[
@@ -289,6 +304,8 @@ export const PlayerWhisperScreen: React.FC = () => {
             onPress={handleSend}
             disabled={!inputText.trim() || isSending}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Invia sussurro"
           >
             {isSending ? (
               <ActivityIndicator size="small" color={colors.void} />
@@ -325,14 +342,14 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stoneSurface,
     borderBottomWidth: 1,
     borderBottomColor: colors.brassDark,
-    paddingVertical: 9,
+    paddingVertical: 10,
     paddingHorizontal: 12,
     gap: 8,
   },
   securityIconBox: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.brassDark,
@@ -341,20 +358,25 @@ const styles = StyleSheet.create({
   },
   securityTextContainer: {
     flex: 1,
+    paddingVertical: 2,
   },
   securityBannerText: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.brassLight,
-    letterSpacing: 0.6,
+    letterSpacing: 0.5,
   },
   securitySubtext: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.parchmentMuted,
     marginTop: 1,
   },
   refreshIconBtn: {
-    padding: 6,
+    minWidth: 40,
+    minHeight: 40,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   messagesContainer: {
     flex: 1,
@@ -441,7 +463,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   messageSender: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.4,
   },
@@ -452,8 +474,8 @@ const styles = StyleSheet.create({
     color: colors.brassLight,
   },
   optimisticTag: {
-    fontSize: 9,
-    color: colors.brassDark,
+    fontSize: 11,
+    color: colors.brassLight,
     fontStyle: 'italic',
   },
   messageText: {
@@ -461,8 +483,15 @@ const styles = StyleSheet.create({
     lineHeight: 19,
     color: colors.parchmentLight,
   },
-  safetyAction: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingTop: 8, alignSelf: 'flex-start' },
-  safetyActionText: { color: colors.parchmentMuted, fontSize: 10, textDecorationLine: 'underline' },
+  safetyAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingTop: 8,
+    minHeight: 32,
+    alignSelf: 'flex-start',
+  },
+  safetyActionText: { color: colors.parchmentMuted, fontSize: 11, textDecorationLine: 'underline' },
   bubbleFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -471,7 +500,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   messageTime: {
-    fontSize: 9,
+    fontSize: 11,
     color: colors.parchmentMuted,
   },
   checkIcon: {
@@ -486,22 +515,25 @@ const styles = StyleSheet.create({
   presetsScroll: {
     paddingHorizontal: 12,
     gap: 8,
+    alignItems: 'center',
   },
   presetChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.brassDark,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 38,
+    borderRadius: 18,
   },
   presetSparkle: {
-    marginRight: 4,
+    marginRight: 5,
   },
   presetText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.parchmentLight,
   },
@@ -521,15 +553,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    fontSize: 13,
+    paddingVertical: 10,
+    fontSize: 13.5,
     color: colors.parchmentLight,
     maxHeight: 90,
   },
   sendButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.brassBase,
     alignItems: 'center',
     justifyContent: 'center',

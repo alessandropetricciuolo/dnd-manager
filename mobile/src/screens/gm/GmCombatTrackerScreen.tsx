@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, ActivityIndicator, AppState, Modal, Pressable, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { AccessibilityInfo, Animated, Alert, ActivityIndicator, AppState, KeyboardAvoidingView, Modal, Pressable, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Check, Mic, Plus, RotateCcw, Sparkles, Swords, Trash2, Wifi, WifiOff } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useGmLive, type GmLiveEntry, type GmLiveSnapshot } from '../../contexts/GmLiveContext';
@@ -32,6 +33,37 @@ function formatCommandOperation(operation: MobileCommandOperation, entries: GmLi
   }
 }
 
+function ListeningIndicator() {
+  const pulse = useRef(new Animated.Value(1)).current;
+  const [reduceMotion, setReduceMotion] = useState(true);
+
+  useEffect(() => {
+    let active = true;
+    void AccessibilityInfo.isReduceMotionEnabled().then((enabled) => {
+      if (active) setReduceMotion(enabled);
+    });
+    const subscription = AccessibilityInfo.addEventListener('reduceMotionChanged', setReduceMotion);
+    return () => { active = false; subscription.remove(); };
+  }, []);
+
+  useEffect(() => {
+    if (reduceMotion) { pulse.setValue(1); return; }
+    const animation = Animated.loop(Animated.sequence([
+      Animated.timing(pulse, { toValue: 0.35, duration: 650, useNativeDriver: true }),
+      Animated.timing(pulse, { toValue: 1, duration: 650, useNativeDriver: true }),
+    ]));
+    animation.start();
+    return () => { animation.stop(); pulse.setValue(1); };
+  }, [pulse, reduceMotion]);
+
+  return (
+    <View accessibilityLiveRegion="polite" style={{ flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8 }}>
+      <Animated.View importantForAccessibility="no" style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: colors.emerald, opacity: pulse, transform: [{ scale: pulse.interpolate({ inputRange: [0.35, 1], outputRange: [0.8, 1.2] }) }] }} />
+      <Text style={{ color: colors.emerald, fontWeight: '700' }}>Microfono attivo · In ascolto</Text>
+    </View>
+  );
+}
+
 const GmLiveCombatTrackerScreen: React.FC = () => {
   const live = useGmLive();
   const setSnapshotConsumer = live.setSnapshotConsumer;
@@ -44,7 +76,7 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
   const [newHp, setNewHp] = useState('');
   const [newAc, setNewAc] = useState('');
   const [newInitiative, setNewInitiative] = useState('');
-  const { state: voiceState, transcript: voiceTranscript, message: voiceMessage, begin: beginVoice, release: releaseVoice, cancel: cancelVoice } = usePushToTalk();
+  const { state: voiceState, transcript: voiceTranscript, message: voiceMessage, begin: beginVoice, release: releaseVoice, cancel: cancelVoice, handleAppStateChange: handleVoiceAppState } = usePushToTalk();
   const [commandText, setCommandText] = useState('');
   const [commandMode, setCommandMode] = useState<'local' | 'ai'>('local');
   const [commandPending, setCommandPending] = useState(false);
@@ -60,17 +92,16 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
   }, [isFocused, setSnapshotConsumer]);
 
   useEffect(() => {
-    if (!isFocused) cancelVoice();
+    if (!isFocused) cancelVoice('Dettatura annullata: hai lasciato il pannello Iniziativa.');
   }, [isFocused, cancelVoice]);
   useEffect(() => {
     if (voiceState === 'requesting') lastTranscriptRef.current = '';
   }, [voiceState]);
   useEffect(() => {
-    const subscription = AppState.addEventListener('change', (next) => {
-      if (next !== 'active') cancelVoice();
-    });
+    handleVoiceAppState(AppState.currentState);
+    const subscription = AppState.addEventListener('change', handleVoiceAppState);
     return () => subscription.remove();
-  }, [cancelVoice]);
+  }, [handleVoiceAppState]);
   useEffect(() => {
     if (voiceTranscript && voiceTranscript !== lastTranscriptRef.current) {
       lastTranscriptRef.current = voiceTranscript;
@@ -218,7 +249,7 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <View style={styles.liveHeader}>
           <View style={{ flex: 1 }}>
@@ -242,17 +273,18 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
             accessibilityRole="button"
             accessibilityLabel="Tieni premuto per parlare al GM Screen"
             accessibilityHint="Rilascia per fermare la dettatura e rivedere il testo"
-            disabled={blocked || voiceState === 'stopping' || voiceState === 'unavailable'}
+            disabled={blocked || voiceState === 'stopping'}
             onPressIn={() => void beginVoice()}
             onPressOut={releaseVoice}
             onLongPress={() => undefined}
-            style={({ pressed }) => [styles.voiceButton, pressed && styles.voiceButtonPressed, (blocked || voiceState === 'unavailable') && styles.voiceDisabled]}
+            style={({ pressed }) => [styles.voiceButton, (pressed || voiceState === 'listening') && styles.voiceButtonPressed, blocked && styles.voiceDisabled]}
           >
-            {voiceState === 'requesting' || voiceState === 'stopping'
+            {voiceState === 'requesting' || voiceState === 'starting' || voiceState === 'stopping'
               ? <ActivityIndicator color={colors.void} />
               : <Mic size={20} color={colors.void} />}
-            <Text style={styles.voiceButtonText}>{voiceState === 'listening' ? 'In ascolto · rilascia per fermare' : voiceState === 'requesting' ? 'Richiesta permesso…' : 'Tieni premuto per parlare'}</Text>
+            <Text style={styles.voiceButtonText}>{voiceState === 'listening' ? 'In ascolto · rilascia per fermare' : voiceState === 'starting' ? 'Avvio del microfono…' : voiceState === 'requesting' ? 'Richiesta permesso…' : voiceState === 'stopping' ? 'Trascrizione in corso…' : 'Tieni premuto per parlare'}</Text>
           </Pressable>
+          {voiceState === 'listening' && <ListeningIndicator />}
           {!!voiceMessage && <Text style={styles.voiceMessage}>{voiceMessage}</Text>}
           <Text style={styles.voiceLabel}>Testo del comando</Text>
           <TextInput
@@ -301,15 +333,15 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
             <Text style={styles.liveRoundLabel}>ROUND</Text>
             <Text style={styles.liveRoundNumber}>{snapshot?.roundNumber ?? '—'}</Text>
           </View>
-          <TouchableOpacity disabled={pending || blocked || !snapshot} style={styles.liveTurnButton} onPress={() => void send('initiative.prev_turn')}>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} style={styles.liveTurnButton} onPress={() => void send('initiative.prev_turn')} accessibilityRole="button" accessibilityLabel="Turno precedente">
             <Text style={styles.liveTurnButtonText}>◀ Prec</Text>
           </TouchableOpacity>
-          <TouchableOpacity disabled={pending || blocked || !snapshot} style={[styles.liveTurnButton, styles.liveTurnPrimary]} onPress={() => void send('initiative.next_turn')}>
+          <TouchableOpacity disabled={pending || blocked || !snapshot} style={[styles.liveTurnButton, styles.liveTurnPrimary]} onPress={() => void send('initiative.next_turn')} accessibilityRole="button" accessibilityLabel="Prossimo turno">
             <Text style={[styles.liveTurnButtonText, styles.liveTurnPrimaryText]}>Prossimo ▶</Text>
           </TouchableOpacity>
           <TouchableOpacity disabled={pending || blocked || !snapshot} style={styles.liveIconButton} onPress={() => Alert.alert('Azzera round', 'Riportare il combattimento al round 1?', [
             { text: 'Annulla', style: 'cancel' }, { text: 'Azzera', style: 'destructive', onPress: () => void send('initiative.reset_round') },
-          ])}>
+          ])} accessibilityRole="button" accessibilityLabel="Azzera round">
             <RotateCcw size={15} color={colors.parchmentMuted} />
           </TouchableOpacity>
         </View>
@@ -351,7 +383,7 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
                 <Text style={styles.liveEntryName}>{entry.name}</Text>
                 <Text style={styles.liveEntryMeta}>CA {entry.ac ?? '—'} · {entry.hp}/{entry.maxHp} PF · inflitti {entry.damageDealt} · subiti {entry.damageTaken}</Text>
               </View>
-              <TouchableOpacity disabled={pending || blocked} onPress={() => removeEntry(entry)} style={styles.liveRemoveButton}>
+              <TouchableOpacity disabled={pending || blocked} onPress={() => removeEntry(entry)} style={styles.liveRemoveButton} accessibilityRole="button" accessibilityLabel={`Rimuovi ${entry.name}`}>
                 <Trash2 size={15} color={colors.parchmentMuted} />
               </TouchableOpacity>
             </View>
@@ -383,7 +415,7 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
       </ScrollView>
 
       <Modal visible={addModalVisible} transparent animationType="slide" onRequestClose={() => setAddModalVisible(false)}>
-        <View style={styles.liveModalBackdrop}>
+        <KeyboardAvoidingView style={styles.liveModalBackdrop} behavior="padding">
           <View style={styles.liveModalCard}>
             <Text style={styles.liveModalTitle}>Aggiungi mostro alla live</Text>
             <TextInput style={styles.liveInput} placeholder="Nome" placeholderTextColor={colors.parchmentMuted} value={newName} onChangeText={setNewName} />
@@ -395,7 +427,7 @@ const GmLiveCombatTrackerScreen: React.FC = () => {
               <TouchableOpacity disabled={blocked || pending} style={styles.liveAddButton} onPress={addEntry}><Text style={styles.liveAddText}>Invia al PC</Text></TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );

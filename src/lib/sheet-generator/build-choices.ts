@@ -257,6 +257,39 @@ export async function resolveBuildChoicesPreview(
   const shouldLoadSpells =
     (cantripsKnown > 0 || spellsPrepared > 0) && (!!tcWizard || !!classDef?.spellList);
 
+  const isHighElf =
+    input.subraceSlug === "elfo_alto" ||
+    (input.raceSlug === "elfo" && (input.subraceSlug ?? "").toLowerCase().includes("alto"));
+  if (isHighElf) {
+    const { entries: wizEntries } = await loadClassSpellPool(
+      {
+        classLabel: "Mago",
+        classSubclass: null,
+        level: 1,
+        torneoMode: false,
+        tcWizard: true,
+      },
+      0,
+      requestOrigin
+    );
+    const wizCantrips = wizEntries
+      .filter((e) => e.level === 0)
+      .map((e) => ({ value: e.name, label: e.name }));
+    if (wizCantrips.length > 0) {
+      const defRacial =
+        wizCantrips.find((c) => c.value === "Creare Falò")?.value ?? wizCantrips[0].value;
+      slots.push(
+        slot(
+          "racial-cantrip",
+          "Trucchetto razziale (Elfo alto - Mago)",
+          "Razza",
+          wizCantrips,
+          defRacial
+        )
+      );
+    }
+  }
+
   if (shouldLoadSpells) {
     const spellSlots = slotsForClassLevel(classDef, input.level);
     const maxOnSheet = tcWizard
@@ -369,6 +402,8 @@ export function validateBuildOverrides(
     } else if (s.id.startsWith("favored-terrain-")) {
       const idx = Number.parseInt(s.id.replace("favored-terrain-", ""), 10) - 1;
       val = overrides.favoredTerrains?.[idx];
+    } else if (s.id === "racial-cantrip") {
+      val = overrides.racialCantrip;
     } else if (s.id === "fighting-style") {
       val = overrides.fightingStyle;
     } else if (s.id === "warlock-pact") {

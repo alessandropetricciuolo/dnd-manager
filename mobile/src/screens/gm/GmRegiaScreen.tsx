@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
   Modal,
@@ -13,6 +12,7 @@ import {
   Platform,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
   Crown,
@@ -164,7 +164,7 @@ export const GmRegiaScreen: React.FC = () => {
   }, [liveSession?.scheduled_at]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -190,6 +190,8 @@ export const GmRegiaScreen: React.FC = () => {
               style={styles.switchCampBtn}
               onPress={() => setCampaignModalVisible(true)}
               activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Cambia campagna in regia"
             >
               <Text style={styles.switchCampText}>Cambia</Text>
               <ChevronDown size={12} color={colors.brassLight} />
@@ -204,16 +206,16 @@ export const GmRegiaScreen: React.FC = () => {
             </Text>
             <Text style={styles.livePairingText} numberOfLines={2}>
               {live.pairing
-                ? `${live.campaignId === activeCampaign?.id ? activeCampaign?.name || 'Campagna collegata' : 'Live collegata a un’altra campagna'}${live.error ? ` · ${live.error}` : ''}`
+                ? `${live.status === 'mismatch' ? 'Live collegata a un’altra campagna' : activeCampaign?.name || 'Campagna collegata'}${live.error && live.status !== 'mismatch' ? ` · ${live.error}` : ''}`
                 : 'Scansiona il QR sul GM Screen per condividere iniziativa e audio tra le schermate.'}
             </Text>
           </View>
           <View style={styles.livePairingActions}>
-            <TouchableOpacity style={styles.livePairingButton} onPress={() => setScannerModalOpen(true)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.livePairingButton} onPress={() => setScannerModalOpen(true)} activeOpacity={0.8} accessibilityRole="button" accessibilityLabel={live.pairing ? 'Ricollega tramite QR' : 'Scansiona QR'}>
               <QrCode size={15} color={colors.void} />
               <Text style={styles.livePairingButtonText}>{live.pairing ? 'Ricollega' : 'Scansiona QR'}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setManualPairingOpen(true)}>
+            <TouchableOpacity onPress={() => setManualPairingOpen(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }} accessibilityRole="button" accessibilityLabel="Incolla link di collegamento manuale">
               <Text style={styles.liveManualPairingLink}>Incolla link</Text>
             </TouchableOpacity>
           </View>
@@ -475,7 +477,7 @@ export const GmRegiaScreen: React.FC = () => {
         onScan={(result) => { void live.pair(result); }}
       />
       <Modal visible={manualPairingOpen} transparent animationType="slide" onRequestClose={() => setManualPairingOpen(false)}>
-        <KeyboardAvoidingView style={styles.manualModalKeyboard} behavior={Platform.OS === 'ios' ? 'padding' : undefined} keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}>
+        <KeyboardAvoidingView style={styles.manualModalKeyboard} behavior="padding" keyboardVerticalOffset={Platform.OS === 'ios' ? 24 : 0}>
           <View style={styles.manualModalBackdrop}>
             <View style={styles.manualModalCard}>
             <Text style={styles.manualModalTitle}>Collega il GM Screen</Text>

@@ -76,19 +76,34 @@ export async function loadArtificerEvidence(level:number,subclass:string|null,or
 export async function addArtificerSpecialistSpells(sheet:GeneratedCharacterSheet,evidence:ArtificerEvidence,origin?:string,torneoMode=false){
  const {manualSpellFromSources}=await import('./manual-spell-source');
  const {preloadPhbMarkdown}=await import('./phb-spell-excerpt');await preloadPhbMarkdown(origin);
- sheet.spells=sheet.spells.filter(s=>!/^\d+$|^CAPITOLO\s/i.test(s.name)).map(s=>manualSpellFromSources(s.name,s.level));
+ const isArtificerOrigin=(o?:string)=>!o||o==='class'||o==='subclass';
+ sheet.spells=sheet.spells
+  .filter(s=>!/^\d+$|^CAPITOLO\s/i.test(s.name))
+  .map(s=>isArtificerOrigin(s.origin)?manualSpellFromSources(s.name,s.level,'',{origin:'class',sourceLabel:'Artefice',ability:'int',alwaysPrepared:false,requiresSlot:s.level>0}):s);
  const spellKey=(s:string)=>s.toLocaleLowerCase('it').replace(/[’‘]/g,"'").trim();
- for(const entry of evidence.specialistSpells){const spell=manualSpellFromSources(entry.name,entry.level,`Sempre preparato: specializzazione da Artefice (livello ${entry.unlock}). Non conta nel limite giornaliero.`);const i=sheet.spells.findIndex(s=>spellKey(s.name)===spellKey(entry.name));if(i<0)sheet.spells.push(spell);else sheet.spells[i]=spell;}
+ const specialistLabel=sheet.classSubclass??'Specializzazione da Artefice';
+ for(const entry of evidence.specialistSpells){
+  const spell=manualSpellFromSources(entry.name,entry.level,`Sempre preparato: specializzazione da Artefice (livello ${entry.unlock}). Non conta nel limite giornaliero.`,{origin:'subclass',sourceLabel:specialistLabel,ability:'int',alwaysPrepared:true,requiresSlot:true});
+  const i=sheet.spells.findIndex(s=>isArtificerOrigin(s.origin)&&spellKey(s.name)===spellKey(entry.name));
+  if(i<0)sheet.spells.push(spell);else sheet.spells[i]=spell;
+ }
  const names=new Set(evidence.specialistSpells.map(s=>spellKey(s.name)));
+ const countOrdinary=()=>sheet.spells.filter(s=>s.level>0&&(!s.origin||s.origin==='class')&&!names.has(spellKey(s.name))).length;
  const {loadClassSpellPool}=await import('@/lib/sheet-generator/rules-resolver');
  const max=Math.max(...Object.entries(evidence.slots).filter(([,n])=>n>0).map(([n])=>Number(n)));
  const {entries,torneoPool}=await loadClassSpellPool({classLabel:'Artefice',classSubclass:sheet.classSubclass,level:sheet.level,torneoMode,tcWizard:false},max,origin);
  const candidates=torneoMode?torneoPool:entries;
- for(const entry of candidates){if(sheet.spells.filter(s=>s.level>0&&!names.has(spellKey(s.name))).length>=sheet.spellsPrepared)break;if(entry.level===0||sheet.spells.some(s=>spellKey(s.name)===spellKey(entry.name)))continue;
+ for(const entry of candidates){
+  if(countOrdinary()>=sheet.spellsPrepared)break;
+  if(entry.level===0||sheet.spells.some(s=>isArtificerOrigin(s.origin)&&spellKey(s.name)===spellKey(entry.name)))continue;
   // This class list includes PHB spells; missing descriptions fail visibly rather than produce fabricated text.
-  sheet.spells.push(manualSpellFromSources(entry.name,entry.level,'Preparazione ordinaria aggiunta: gli incantesimi della specializzazione non consumano questo limite.'));
+  sheet.spells.push(manualSpellFromSources(entry.name,entry.level,'Preparazione ordinaria aggiunta: gli incantesimi della specializzazione non consumano questo limite.',{origin:'class',sourceLabel:'Artefice',ability:'int',alwaysPrepared:false,requiresSlot:true}));
  }
- for(const spell of sheet.spells){spell.material=true;spell.fullTextMd='Artefice - Strumenti Necessari: il lancio richiede un focus (arnesi da scasso, strumenti da artigiano o, dal livello 2, un oggetto con una tua infusione). Questo aggiunge la componente M; le eventuali componenti costose o consumate restano richieste.\n\n'+spell.fullTextMd;}
- if(sheet.spells.filter(s=>s.level>0&&!names.has(spellKey(s.name))).length<sheet.spellsPrepared)throw new Error('Preparazioni ordinarie Artefice incomplete nella lista sorgente.');
+ for(const spell of sheet.spells){
+  if(!isArtificerOrigin(spell.origin))continue;
+  spell.material=true;
+  spell.fullTextMd='Artefice - Strumenti Necessari: il lancio richiede un focus (arnesi da scasso, strumenti da artigiano o, dal livello 2, un oggetto con una tua infusione). Questo aggiunge la componente M; le eventuali componenti costose o consumate restano richieste.\n\n'+spell.fullTextMd;
+ }
+ if(countOrdinary()<sheet.spellsPrepared)throw new Error('Preparazioni ordinarie Artefice incomplete nella lista sorgente.');
  return sheet;
 }

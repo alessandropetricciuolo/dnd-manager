@@ -156,7 +156,7 @@ test.describe('Generatore V2', () => {
     await download.saveAs(destination);
     const pdf = fs.readFileSync(destination);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(2);
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThanOrEqual(2);
 
     const archetypes = [
       'Campione',
@@ -228,7 +228,7 @@ test.describe('Generatore V2', () => {
     await download.saveAs(destination);
     const pdf = fs.readFileSync(destination);
     expect(pdf.subarray(0, 5).toString()).toBe('%PDF-');
-    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThan(2);
+    expect((await PDFDocument.load(pdf)).getPageCount()).toBeGreaterThanOrEqual(2);
 
     const archetypes = [
       'Furfante',

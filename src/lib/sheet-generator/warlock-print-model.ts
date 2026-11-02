@@ -4,7 +4,7 @@ import {
   type WarlockChoices,
 } from './warlock-patrons';
 import type { WarlockEvidence, WarlockResources } from '@/lib/server/warlock-source';
-import type { PrintFeature } from './manual-feature-text';
+import { normalizeFeatureTitle, type PrintFeature } from './manual-feature-text';
 import type { SubclassCatalogEntry } from '@/lib/character-subclass-catalog';
 
 export type WarlockPrintModel = {
@@ -27,7 +27,32 @@ export function buildWarlockPrintModel(
 
   const features: PrintFeature[] = [...evidence.classFeatures, ...evidence.patronFeatures]
     .filter((f) => f.level <= sheet.level)
-    .map((f) => ({ ...f }));
+    .map((f) => {
+      const normTitle = normalizeFeatureTitle(f.title);
+      if (normTitle === 'DONO DEL PATTO' && evidence.resources.pactBoon) {
+        return {
+          ...f,
+          title: `DONO DEL PATTO: ${evidence.resources.pactBoon.name.toUpperCase()}`,
+          body: evidence.resources.pactBoon.desc,
+        };
+      }
+      if (normTitle === 'SUPPLICHE OCCULTE' && evidence.resources.invocations.length > 0) {
+        return {
+          ...f,
+          body: evidence.resources.invocations.map((inv) => `${inv.name}: ${inv.desc}`).join('\n'),
+        };
+      }
+      if (normTitle === 'ARCANUM MISTICO' && evidence.resources.mysticArcanum.length > 0) {
+        return {
+          ...f,
+          body:
+            '1 utilizzo senza slot per riposo lungo per ciascun Arcanum sbloccato: ' +
+            evidence.resources.mysticArcanum.map((a) => `${a.level}° liv. ${a.spellName}`).join('; ') +
+            '.',
+        };
+      }
+      return { ...f };
+    });
 
   // Hexblade Warrior (Combattente del Sortilegio)
   if (patron?.slug === 'xge-warlock-lama-sortilegio') {

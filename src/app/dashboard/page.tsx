@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+
+export const metadata: Metadata = {
+  title: "Dashboard di Gilda",
+};
 import {
   Sparkles,
   Terminal,
@@ -29,6 +34,7 @@ import { CreateOpenCalendarEventDialog } from "@/components/dashboard/create-ope
 import { OpenCalendarSessionsGmPanel } from "@/components/dashboard/open-calendar-sessions-gm-panel";
 import { DashboardWarRoomTabs } from "@/components/dashboard/dashboard-war-room-tabs";
 import { resolveWarRoomTab, type WarRoomTabKey } from "@/lib/dashboard-war-room-tabs";
+import { DashboardNoticeBanner } from "@/components/dashboard/dashboard-notice-banner";
 
 export const dynamic = "force-dynamic";
 
@@ -226,6 +232,7 @@ export default async function DashboardPage({
   return (
     <div className="min-h-full w-full bg-guild-void text-parchment-100 font-sans p-4 md:p-8">
       <div className="mx-auto flex max-w-6xl flex-col gap-8">
+        <DashboardNoticeBanner />
         
         {/* WAR-ROOM HERO DOSSIER: Passaporto dell'Avventuriero & Plancia Live */}
         <section className="card-guild-stone relative overflow-hidden rounded-3xl border-2 border-brass-base/40 p-6 md:p-8 shadow-2xl">

@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -12,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Lock,
   Send,
@@ -126,6 +126,12 @@ export const GmWhispersInboxScreen: React.FC = () => {
     return playerTargets.find((p) => p.id === selectedTargetId) || playerTargets[1] || playerTargets[0];
   }, [playerTargets, selectedTargetId]);
 
+  const realBroadcastTargets = useMemo(
+    () => playerTargets.filter((p) => !p.isBroadcast),
+    [playerTargets]
+  );
+  const canSendToActiveTarget = !activeTarget.isBroadcast || realBroadcastTargets.length > 0;
+
   // Filter messages for current view
   const currentConversationMessages = useMemo(() => {
     if (selectedTargetId === 'all-party') {
@@ -149,13 +155,19 @@ export const GmWhispersInboxScreen: React.FC = () => {
   // Send reply or broadcast
   const handleSend = useCallback(async () => {
     if (!replyText.trim() || isSending) return;
+    if (activeTarget.isBroadcast && realBroadcastTargets.length === 0) {
+      Alert.alert(
+        'Nessun destinatario al tavolo',
+        'Non ci sono ancora personaggi associati a questa campagna per inviare un sussurro broadcast.'
+      );
+      return;
+    }
     const textToSend = replyText.trim();
     setReplyText('');
 
     if (activeTarget.isBroadcast) {
       // Broadcast to every individual player in party
-      const realTargets = playerTargets.filter((p) => !p.isBroadcast);
-      for (const target of realTargets) {
+      for (const target of realBroadcastTargets) {
         await sendWhisper(activeCampaignId, target.id, `[TAVOLO] ${textToSend}`);
       }
     } else {
@@ -165,7 +177,7 @@ export const GmWhispersInboxScreen: React.FC = () => {
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [replyText, isSending, activeTarget, playerTargets, sendWhisper, activeCampaignId]);
+  }, [replyText, isSending, activeTarget, realBroadcastTargets, sendWhisper, activeCampaignId]);
 
   const handleApplyPreset = (presetText: string) => {
     setReplyText(presetText);
@@ -217,11 +229,11 @@ export const GmWhispersInboxScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 96 : 138}
       >
         {/* Campaign Info Bar */}
         <View style={styles.campaignBar}>
@@ -233,8 +245,11 @@ export const GmWhispersInboxScreen: React.FC = () => {
             style={styles.refreshBtn}
             onPress={refreshMessages}
             activeOpacity={0.7}
+            hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+            accessibilityRole="button"
+            accessibilityLabel="Aggiorna sussurri"
           >
-            <RefreshCw size={12} color={colors.parchmentMuted} />
+            <RefreshCw size={15} color={colors.parchmentMuted} />
           </TouchableOpacity>
         </View>
 
@@ -341,7 +356,13 @@ export const GmWhispersInboxScreen: React.FC = () => {
           style={styles.messagesList}
           contentContainerStyle={styles.messagesContent}
           showsVerticalScrollIndicator={false}
-          onContentSizeChange={() => scrollViewRef.current?.scrollToEnd({ animated: false })}
+          onContentSizeChange={() => {
+            if (currentConversationMessages.length > 0) {
+              scrollViewRef.current?.scrollToEnd({ animated: false });
+            } else {
+              scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+            }
+          }}
         >
           {isLoading && currentConversationMessages.length === 0 ? (
             <View style={styles.loadingContainer}>
@@ -352,11 +373,14 @@ export const GmWhispersInboxScreen: React.FC = () => {
             <View style={styles.emptyContainer}>
               <Eye size={28} color={colors.stoneBorder} />
               <Text style={styles.emptyTitle}>
-                Nessun messaggio con {activeTarget.charName}
+                {activeTarget.isBroadcast && !canSendToActiveTarget
+                  ? 'Nessun eroe associato alla campagna'
+                  : `Nessun messaggio con ${activeTarget.charName}`}
               </Text>
               <Text style={styles.emptyDesc}>
-                Invia un sussurro riservato a questo avventuriero usando il campo
-                qui sotto o i preset rapidi del Master.
+                {activeTarget.isBroadcast && !canSendToActiveTarget
+                  ? 'Questa campagna non ha ancora personaggi registrati al tavolo. Assegna almeno un personaggio per inviare sussurri broadcast.'
+                  : 'Invia un sussurro riservato a questo avventuriero usando il campo qui sotto o i preset rapidi del Master.'}
               </Text>
             </View>
           ) : (
@@ -431,8 +455,11 @@ export const GmWhispersInboxScreen: React.FC = () => {
                 style={styles.templateChip}
                 onPress={() => handleApplyPreset(tmpl)}
                 activeOpacity={0.75}
+                hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+                accessibilityRole="button"
+                accessibilityLabel={`Preset risposta Master: ${tmpl}`}
               >
-                <Sparkles size={11} color={colors.brassLight} style={styles.presetIcon} />
+                <Sparkles size={12} color={colors.brassLight} style={styles.presetIcon} />
                 <Text style={styles.templateText}>{tmpl}</Text>
               </TouchableOpacity>
             ))}
@@ -445,30 +472,36 @@ export const GmWhispersInboxScreen: React.FC = () => {
             style={styles.textInput}
             placeholder={
               activeTarget.isBroadcast
-                ? 'Sussurra segretamente a TUTTO il tavolo...'
+                ? canSendToActiveTarget
+                  ? 'Sussurra segretamente a TUTTO il tavolo...'
+                  : 'Nessun personaggio al tavolo per il broadcast...'
                 : `Rispondi a ${activeTarget.charName.split(' ')[0]}...`
             }
             placeholderTextColor={colors.parchmentMuted}
             value={replyText}
             onChangeText={setReplyText}
+            editable={canSendToActiveTarget}
             multiline
             maxLength={600}
+            accessibilityLabel="Messaggio sussurro segreto dal Game Master"
           />
           <TouchableOpacity
             style={[
               styles.sendBtn,
-              (!replyText.trim() || isSending) && styles.sendBtnDisabled,
+              (!replyText.trim() || isSending || !canSendToActiveTarget) && styles.sendBtnDisabled,
             ]}
             onPress={handleSend}
-            disabled={!replyText.trim() || isSending}
+            disabled={!replyText.trim() || isSending || !canSendToActiveTarget}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Invia sussurro"
           >
             {isSending ? (
               <ActivityIndicator size="small" color={colors.void} />
             ) : (
               <Send
                 size={18}
-                color={replyText.trim() ? colors.void : colors.stoneBorder}
+                color={replyText.trim() && canSendToActiveTarget ? colors.void : colors.stoneBorder}
               />
             )}
           </TouchableOpacity>
@@ -493,17 +526,21 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.stoneBorder,
     paddingHorizontal: 12,
-    paddingVertical: 7,
+    paddingVertical: 6,
     gap: 8,
   },
   campaignBarText: {
     flex: 1,
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.parchmentLight,
   },
   refreshBtn: {
-    padding: 4,
+    minWidth: 40,
+    minHeight: 40,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   playersTabBar: {
     backgroundColor: colors.stone,
@@ -522,8 +559,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 40,
     borderRadius: 8,
   },
   playerTabBroadcast: {
@@ -546,7 +584,7 @@ const styles = StyleSheet.create({
     fontWeight: '800',
   },
   playerTabClass: {
-    fontSize: 9,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   playerTabClassActive: {
@@ -567,7 +605,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.brassDark,
   },
   unreadBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.parchmentLight,
   },
@@ -597,13 +635,13 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.brassDark,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
     borderRadius: 4,
     marginLeft: 8,
   },
   encryptedText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 0.4,
@@ -629,8 +667,8 @@ const styles = StyleSheet.create({
   emptyContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 60,
-    paddingHorizontal: 30,
+    paddingVertical: 24,
+    paddingHorizontal: 24,
     gap: 8,
   },
   emptyTitle: {
@@ -680,7 +718,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   msgSender: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     letterSpacing: 0.3,
   },
@@ -691,8 +729,8 @@ const styles = StyleSheet.create({
     color: colors.parchmentLight,
   },
   optimisticText: {
-    fontSize: 9,
-    color: colors.brassDark,
+    fontSize: 11,
+    color: colors.brassLight,
     fontStyle: 'italic',
   },
   msgText: {
@@ -700,8 +738,15 @@ const styles = StyleSheet.create({
     color: colors.parchmentLight,
     lineHeight: 19,
   },
-  safetyAction: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingTop: 8, alignSelf: 'flex-start' },
-  safetyActionText: { color: colors.parchmentMuted, fontSize: 10, textDecorationLine: 'underline' },
+  safetyAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    paddingTop: 8,
+    minHeight: 32,
+    alignSelf: 'flex-start',
+  },
+  safetyActionText: { color: colors.parchmentMuted, fontSize: 11, textDecorationLine: 'underline' },
   msgFooter: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -710,7 +755,7 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   msgTime: {
-    fontSize: 9,
+    fontSize: 11,
     color: colors.parchmentMuted,
   },
   checkIcon: {
@@ -725,22 +770,25 @@ const styles = StyleSheet.create({
   quickReplyScroll: {
     paddingHorizontal: 12,
     gap: 8,
+    alignItems: 'center',
   },
   templateChip: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.brassDark,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    minHeight: 38,
+    borderRadius: 18,
   },
   presetIcon: {
-    marginRight: 4,
+    marginRight: 5,
   },
   templateText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.parchmentLight,
   },
@@ -760,15 +808,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     paddingHorizontal: 14,
-    paddingVertical: 9,
-    fontSize: 13,
+    paddingVertical: 10,
+    fontSize: 13.5,
     color: colors.parchmentLight,
     maxHeight: 90,
   },
   sendBtn: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: colors.brassBase,
     alignItems: 'center',
     justifyContent: 'center',

@@ -95,6 +95,9 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
               style={styles.closeBtn}
               onPress={onClose}
               activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityRole="button"
+              accessibilityLabel="Chiudi selettore campagna"
             >
               <X size={20} color={colors.parchmentMuted} />
             </TouchableOpacity>
@@ -110,6 +113,7 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
               value={searchQuery}
               onChangeText={setSearchQuery}
               clearButtonMode="while-editing"
+              accessibilityLabel="Cerca campagna per titolo o descrizione"
             />
           </View>
 
@@ -117,11 +121,15 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
+            style={styles.filterTabsScroll}
             contentContainerStyle={styles.filterTabsRow}
           >
             <TouchableOpacity
               style={[styles.filterPill, activeTab === 'all' && styles.filterPillActive]}
               onPress={() => setActiveTab('all')}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'all' }}
             >
               <Text
                 style={[
@@ -136,6 +144,9 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
             <TouchableOpacity
               style={[styles.filterPill, activeTab === 'long' && styles.filterPillActive]}
               onPress={() => setActiveTab('long')}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'long' }}
             >
               <Text
                 style={[
@@ -150,6 +161,9 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
             <TouchableOpacity
               style={[styles.filterPill, activeTab === 'quest' && styles.filterPillActive]}
               onPress={() => setActiveTab('quest')}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'quest' }}
             >
               <Text
                 style={[
@@ -164,6 +178,9 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
             <TouchableOpacity
               style={[styles.filterPill, activeTab === 'oneshot' && styles.filterPillActive]}
               onPress={() => setActiveTab('oneshot')}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'oneshot' }}
             >
               <Text
                 style={[
@@ -178,6 +195,9 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
             <TouchableOpacity
               style={[styles.filterPill, activeTab === 'torneo' && styles.filterPillActive]}
               onPress={() => setActiveTab('torneo')}
+              hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: activeTab === 'torneo' }}
             >
               <Text
                 style={[
@@ -340,7 +360,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   headerSubtitle: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassBase,
     letterSpacing: 1.2,
@@ -352,9 +372,9 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   closeBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.stone,
     alignItems: 'center',
     justifyContent: 'center',
@@ -372,41 +392,50 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     paddingHorizontal: 10,
-    height: 38,
+    height: 42,
   },
   searchIcon: {
     marginRight: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 12,
+    fontSize: 13,
     color: colors.parchmentLight,
     fontWeight: '500',
   },
+  filterTabsScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   filterTabsRow: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
-    gap: 6,
+    paddingVertical: 8,
+    gap: 8,
+    alignItems: 'center',
   },
   filterPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    minHeight: 36,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 8,
     backgroundColor: colors.stone,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillActive: {
     backgroundColor: colors.brassBase,
     borderColor: colors.brassLight,
   },
   filterPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
   filterPillTextActive: {
     color: colors.void,
+    fontWeight: '800',
   },
   listContainer: {
     maxHeight: 420,
@@ -428,7 +457,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   emptySub: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.parchmentMuted,
     textAlign: 'center',
     maxWidth: 240,
@@ -452,12 +481,12 @@ const styles = StyleSheet.create({
   },
   typeBadge: {
     paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
     borderWidth: 1,
   },
   typeBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '900',
     letterSpacing: 0.5,
   },
@@ -467,11 +496,11 @@ const styles = StyleSheet.create({
     gap: 4,
     backgroundColor: colors.brassBase,
     paddingHorizontal: 7,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: 4,
   },
   activeCheckText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.void,
   },
@@ -483,9 +512,9 @@ const styles = StyleSheet.create({
     lineHeight: 19,
   },
   cardDesc: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.parchmentMuted,
-    lineHeight: 16,
+    lineHeight: 17,
     marginBottom: 8,
   },
   cardFooter: {
@@ -507,7 +536,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   gmRoleTagText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '800',
     color: colors.brassLight,
   },
@@ -519,7 +548,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   pgAssignedTagText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.emerald,
   },
@@ -529,7 +558,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   noPgTagText: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.parchmentMuted,
     fontStyle: 'italic',
   },

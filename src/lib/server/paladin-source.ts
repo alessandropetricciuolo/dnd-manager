@@ -82,7 +82,18 @@ export async function loadPaladinEvidence(
     for (const tier of oathSpellTiers) {
       if (tier.paladinLevel <= sheet.level) {
         for (const spellName of tier.spells) {
-          const spell = manualSpellFromSources(spellName, tier.spellLevel);
+          const spell = manualSpellFromSources(
+            spellName,
+            tier.spellLevel,
+            `Sempre preparato: incantesimo di giuramento (${oath.label}, livello ${tier.paladinLevel}). Non conta nel limite giornaliero.`,
+            {
+              origin: 'subclass',
+              sourceLabel: oath.label,
+              ability: 'cha',
+              alwaysPrepared: true,
+              requiresSlot: true,
+            }
+          );
           if (spell) {
             grantedSpells.push(spell);
           }
@@ -92,6 +103,15 @@ export async function loadPaladinEvidence(
   }
 
   const fightingStyle = choices.fightingStyle ?? 'Difesa';
+  const styleFeature = classFeatures.find((f) => f.title === 'STILE DI COMBATTIMENTO');
+  if (styleFeature) {
+    const header = styleFeature.body.split(/^###\s+/m)[0].trim();
+    const styleH = new RegExp(`^###\\s+${fightingStyle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im');
+    const m = styleH.exec(styleFeature.body);
+    if (m) {
+      styleFeature.body = `${header}\n\n**${fightingStyle}:** ${m[1].trim()}`;
+    }
+  }
   const chaMod = sheet.abilityMods.cha;
   const slots = PALADIN_SLOTS_TABLE[sheet.level] ?? { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
 
@@ -127,9 +147,15 @@ export function addPaladinGrantedSpells(
   evidence: PaladinEvidence
 ): GeneratedCharacterSheet {
   const clone = structuredClone(sheet);
+  const isPaladinOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
   for (const spell of evidence.grantedSpells) {
-    if (!clone.spells.some((s) => s.name.toLowerCase() === spell.name.toLowerCase())) {
+    const idx = clone.spells.findIndex(
+      (s) => isPaladinOrigin(s.origin) && s.name.toLowerCase() === spell.name.toLowerCase()
+    );
+    if (idx < 0) {
       clone.spells.push(spell);
+    } else {
+      clone.spells[idx] = spell;
     }
   }
   return clone;

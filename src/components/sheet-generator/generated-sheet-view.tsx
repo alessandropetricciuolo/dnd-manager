@@ -101,11 +101,41 @@ export function GeneratedSheetView({
             {sheet.spellAttackBonus != null ? `+${sheet.spellAttackBonus}` : "-"}
           </div>
           <div className="space-y-1 text-sm">
-            {sheet.spells.slice(0, 20).map((s) => (
-              <div key={`${s.level}-${s.name}`} className="rounded border border-barber-gold/15 p-2">
-                <b>{s.name}</b> (lvl {s.level}) - {s.summary}
-              </div>
-            ))}
+            {sheet.spells.map((s, idx) => {
+              const tags = [
+                s.origin === "race"
+                  ? `Razza${s.ability ? ` (${s.ability.toUpperCase()})` : ""}`
+                  : s.origin === "arcanum"
+                  ? "Arcanum Mistico"
+                  : s.origin === "feat"
+                  ? "Talento"
+                  : s.origin === "item"
+                  ? "Oggetto"
+                  : null,
+                s.alwaysPrepared ? "Sempre preparato" : null,
+                s.usesPerRest ? s.usesPerRest : null,
+                s.requiresSlot === false && s.level > 0 ? "Senza slot" : null,
+                s.ritual ? "Rituale" : null,
+                s.concentration ? "Concentrazione" : null,
+              ].filter(Boolean);
+              return (
+                <div key={`${s.level}-${s.name}-${s.origin ?? "cls"}-${idx}`} className="rounded border border-barber-gold/15 p-2">
+                  <div>
+                    <b>{s.name}</b> (lvl {s.level}){tags.length ? ` [${tags.join(" · ")}]` : ""} - {s.summary}
+                  </div>
+                  {s.fullTextMd?.trim() ? (
+                    <details className="mt-1 print:hidden">
+                      <summary className="cursor-pointer text-xs text-barber-gold/80 hover:text-barber-gold">
+                        Testo integrale dal manuale
+                      </summary>
+                      <pre className="mt-1 whitespace-pre-wrap rounded bg-black/25 p-2 text-xs text-barber-paper/90">
+                        {s.fullTextMd.trim()}
+                      </pre>
+                    </details>
+                  ) : null}
+                </div>
+              );
+            })}
           </div>
         </section>
 

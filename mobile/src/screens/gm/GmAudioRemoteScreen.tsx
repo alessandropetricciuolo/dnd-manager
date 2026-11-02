@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Modal,
@@ -12,6 +11,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Radio,
   Play,
@@ -328,7 +328,7 @@ export const GmAudioRemoteScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}

@@ -4,11 +4,11 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   Alert,
   RefreshControl,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import {
   Crown,
@@ -36,7 +36,7 @@ type CampaignFilter = 'all' | 'oneshot' | 'quest' | 'long' | 'torneo';
 
 export const GmHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { profile, user, role, switchMode } = useAuth();
+  const { profile, user } = useAuth();
   const {
     campaigns,
     activeCampaign,
@@ -51,6 +51,7 @@ export const GmHomeScreen: React.FC = () => {
 
   // Filters state
   const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>('all');
+  const [showAllCampaigns, setShowAllCampaigns] = useState<boolean>(false);
 
   // Modals state
   const [createSessionModalVisible, setCreateSessionModalVisible] = useState<boolean>(false);
@@ -58,11 +59,12 @@ export const GmHomeScreen: React.FC = () => {
   const [sessionsManagerModalVisible, setSessionsManagerModalVisible] = useState<boolean>(false);
   const [selectedSessionForSignups, setSelectedSessionForSignups] = useState<Session | null>(null);
 
-  const gmName =
+  const rawGmName =
     profile?.display_name ||
     profile?.nickname ||
     user?.email?.split('@')[0] ||
     'Game Master';
+  const gmName = rawGmName.replace(/^master\s+/i, '');
 
   const onRefresh = useCallback(async () => {
     await Promise.all([refreshCampaigns(), refreshSessionData()]);
@@ -79,7 +81,29 @@ export const GmHomeScreen: React.FC = () => {
     return campaigns.filter((c) => c.type === campaignFilter);
   }, [campaigns, campaignFilter]);
 
-  const handleSelectCampaign = async (camp: Campaign) => {
+  const upcomingSessionByCampaignId = useMemo(() => {
+    const map = new Map<string, Session>();
+    for (const s of allGuildSessions || []) {
+      if (s.campaign_id && s.status === 'scheduled' && !map.has(s.campaign_id)) {
+        map.set(s.campaign_id, s);
+      }
+    }
+    return map;
+  }, [allGuildSessions]);
+
+  const visibleCampaigns = useMemo(() => {
+    if (showAllCampaigns || filteredCampaigns.length <= 6) return filteredCampaigns;
+    const initial = filteredCampaigns.slice(0, 6);
+    if (activeCampaign?.id && !initial.some((c) => c.id === activeCampaign.id)) {
+      const activeInFiltered = filteredCampaigns.find((c) => c.id === activeCampaign.id);
+      if (activeInFiltered) {
+        return [activeInFiltered, ...initial.slice(0, 5)];
+      }
+    }
+    return initial;
+  }, [filteredCampaigns, showAllCampaigns, activeCampaign?.id]);
+
+  const handleSelectCampaign = useCallback(async (camp: Campaign) => {
     if (camp.id === activeCampaign?.id) return;
     try {
       await selectCampaign(camp.id);
@@ -87,7 +111,14 @@ export const GmHomeScreen: React.FC = () => {
     } catch {
       Alert.alert('Errore', 'Impossibile selezionare la campagna.');
     }
-  };
+  }, [activeCampaign?.id, selectCampaign]);
+
+  const handleNavigateRegia = useCallback((camp: Campaign) => {
+    if (camp.id !== activeCampaign?.id) {
+      void handleSelectCampaign(camp);
+    }
+    navigation.navigate('GmRegia');
+  }, [activeCampaign?.id, handleSelectCampaign, navigation]);
 
   const handleOpenSignups = (sess: Session) => {
     setSelectedSessionForSignups(sess);
@@ -102,7 +133,7 @@ export const GmHomeScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -115,26 +146,6 @@ export const GmHomeScreen: React.FC = () => {
           />
         }
       >
-        {/* GM Mode Switcher Banner */}
-        <View style={styles.switcherBanner}>
-          <View style={styles.switchBannerLeft}>
-            <Crown size={18} color={colors.brassLight} />
-            <View>
-              <Text style={styles.switchBannerTitle}>MODALITÀ GAME MASTER</Text>
-              <Text style={styles.switchBannerSub}>Benvenuto, Master {gmName}</Text>
-            </View>
-          </View>
-          {(role === 'admin' || role === 'gm') && (
-            <TouchableOpacity
-              style={styles.switchButton}
-              onPress={() => switchMode('player')}
-              activeOpacity={0.8}
-            >
-              <Repeat size={13} color={colors.void} />
-              <Text style={styles.switchButtonText}>Vista Giocatore</Text>
-            </TouchableOpacity>
-          )}
-        </View>
 
         {/* Master Quick Stats Header Card */}
         <View style={styles.headerCard}>
@@ -276,25 +287,32 @@ export const GmHomeScreen: React.FC = () => {
 
         {/* Elenco Campagne con Copertina ed Espansione al Tap */}
         <View style={styles.campaignsGrid}>
-          {filteredCampaigns.map((camp) => {
-            const isActive = camp.id === activeCampaign?.id;
-            const nextCampSession = (allGuildSessions || []).find(
-              (s) => s.campaign_id === camp.id && s.status === 'scheduled'
-            );
-
-            return (
-              <ExpandableCampaignCard
-                key={camp.id}
-                campaign={camp}
-                isActive={isActive}
-                onSelect={handleSelectCampaign}
-                isGmView={true}
-                onNavigateRegia={() => navigation.navigate('Regia')}
-                upcomingSession={nextCampSession}
-              />
-            );
-          })}
+          {visibleCampaigns.map((camp) => (
+            <ExpandableCampaignCard
+              key={camp.id}
+              campaign={camp}
+              isActive={camp.id === activeCampaign?.id}
+              onSelect={handleSelectCampaign}
+              isGmView={true}
+              onNavigateRegia={handleNavigateRegia}
+              upcomingSession={upcomingSessionByCampaignId.get(camp.id) ?? null}
+            />
+          ))}
         </View>
+
+        {filteredCampaigns.length > 6 && (
+          <TouchableOpacity
+            style={styles.showMoreCampaignsBtn}
+            onPress={() => setShowAllCampaigns((prev) => !prev)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.showMoreCampaignsText}>
+              {showAllCampaigns
+                ? 'Mostra meno campagne'
+                : `Mostra tutte le campagne (${filteredCampaigns.length})`}
+            </Text>
+          </TouchableOpacity>
+        )}
       </ScrollView>
 
       {/* Create New Session Modal */}
@@ -411,7 +429,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   roleBadgeText: {
-    fontSize: 9,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 0.8,
@@ -422,7 +440,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   fameBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.brassBase,
   },
@@ -451,13 +469,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   statVal: {
-    fontSize: 15,
+    fontSize: 16,
     fontWeight: '800',
     color: colors.parchmentLight,
     marginTop: 2,
   },
   statDesc: {
-    fontSize: 9,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   statDivider: {
@@ -496,7 +514,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   regiaBadgeText: {
-    fontSize: 8,
+    fontSize: 10,
     fontWeight: '900',
     color: colors.brassLight,
     letterSpacing: 0.5,
@@ -508,9 +526,9 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   regiaBannerSub: {
-    fontSize: 10,
+    fontSize: 11,
     color: colors.parchmentMuted,
-    lineHeight: 14,
+    lineHeight: 15,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -520,29 +538,33 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 1,
   },
   campaignFiltersScroll: {
-    gap: 6,
-    paddingBottom: 8,
+    gap: 8,
+    paddingBottom: 10,
+    alignItems: 'center',
   },
   filterPill: {
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
+    minHeight: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 8,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillActive: {
     backgroundColor: colors.brassDark,
     borderColor: colors.brassBase,
   },
   filterPillText: {
-    fontSize: 10,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
@@ -554,6 +576,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 12,
+  },
+  showMoreCampaignsBtn: {
+    marginTop: 4,
+    marginBottom: 8,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showMoreCampaignsText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brassLight,
+    letterSpacing: 0.4,
   },
   campaignCard: {
     backgroundColor: colors.stoneSurface,

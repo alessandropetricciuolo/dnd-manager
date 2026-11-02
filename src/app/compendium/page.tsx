@@ -24,7 +24,7 @@ export default async function CompendiumPage() {
   const profile = profileRaw as { role?: string } | null;
 
   if (profile?.role !== "gm" && profile?.role !== "admin") {
-    redirect("/dashboard");
+    redirect("/dashboard?notice=gm_only");
   }
 
   return <CompendiumPageClient />;

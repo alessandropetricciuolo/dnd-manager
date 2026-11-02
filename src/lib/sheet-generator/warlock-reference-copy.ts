@@ -1,9 +1,22 @@
+import type { WarlockPactBoon } from './warlock-patrons';
+
 export interface ReferenceCard {
   level: number;
   title: string;
   source: string;
   body: string;
 }
+
+export const WARLOCK_PACT_BOON_SUMMARIES: Record<WarlockPactBoon, string> = {
+  'Patto della Catena':
+    "Apprendi l'incantesimo Trova Famiglio e puoi lanciarlo come rituale (non conta nel numero di incantesimi conosciuti). Puoi scegliere una delle forme normali oppure una forma speciale: imp, pseudodrago, quasit o spiritello. Quando effettui l'azione di Attacco nel tuo turno, puoi rinunciare a uno dei tuoi attacchi per permettere al famiglio di effettuare un attacco con la propria reazione.",
+  'Patto della Lama':
+    "Puoi usare la tua azione per creare un'arma del patto da mischia nella tua mano vuota, scegliendone la forma ogni volta; sei competente con essa finché la impugni ed è considerata magica contro resistenze e immunità. Scompare se resta a più di 1,5 m da te per 1 minuto, se ne crei un'altra, se la congedi (nessuna azione) o se muori. Puoi trasformare un'arma magica nella tua arma del patto con un rituale di 1 ora.",
+  'Patto del Tomo':
+    "Il patrono ti dona un grimorio chiamato Libro delle Ombre. Quando ottieni questo privilegio, scegli 3 trucchetti dalla lista di qualsiasi classe (anche di liste diverse): mentre il libro è con te puoi lanciarli a volontà, non contano nel numero di trucchetti conosciuti e sono considerati incantesimi da warlock per te. Se perdi il libro, puoi eseguire una cerimonia di 1 ora (anche durante un riposo breve o lungo) per riceverne un sostituto dal patrono.",
+  'Patto del Talismano':
+    "Il patrono ti conferisce un amuleto speciale. Quando chi indossa il talismano fallisce una prova di caratteristica, può aggiungere 1d4 al tiro, potenzialmente trasformando il fallimento in un successo. Questo beneficio può essere usato un numero di volte pari al tuo bonus di competenza, recuperando tutti gli usi spesi al termine di un riposo lungo.",
+};
 
 export const WARLOCK_CORE_REFERENCE: Record<string, { level: number; body: string }> = {
   'MAGIA DEL PATTO': {
@@ -47,7 +60,7 @@ export const WARLOCK_CORE_REFERENCE: Record<string, { level: number; body: strin
   },
 };
 
-export function warlockReferenceCards(level: number): ReferenceCard[] {
+export function warlockReferenceCards(level: number, pactBoon?: WarlockPactBoon): ReferenceCard[] {
   const cards: ReferenceCard[] = [];
 
   // Privilegio del Patrono Ultraterreno 1° livello
@@ -62,9 +75,9 @@ export function warlockReferenceCards(level: number): ReferenceCard[] {
   if (level >= 3) {
     cards.push({
       level: 3,
-      title: 'Dono del Patto',
+      title: pactBoon ? `Dono del Patto: ${pactBoon}` : 'Dono del Patto',
       source: 'Manuale del Giocatore p. 107',
-      body: WARLOCK_CORE_REFERENCE['DONO DEL PATTO'].body,
+      body: pactBoon ? WARLOCK_PACT_BOON_SUMMARIES[pactBoon] : WARLOCK_CORE_REFERENCE['DONO DEL PATTO'].body,
     });
   }
 
@@ -90,11 +103,19 @@ export function warlockReferenceCards(level: number): ReferenceCard[] {
 
   // Arcanum Mistico (11° livello)
   if (level >= 11) {
+    const unlockedArcanum = [
+      '6° livello',
+      ...(level >= 13 ? ['7° livello'] : []),
+      ...(level >= 15 ? ['8° livello'] : []),
+      ...(level >= 17 ? ['9° livello'] : []),
+    ].join(', ');
     cards.push({
       level: 11,
       title: 'Arcanum Mistico',
       source: 'Manuale del Giocatore p. 107',
-      body: WARLOCK_CORE_REFERENCE['ARCANUM MISTICO'].body,
+      body: pactBoon
+        ? `Arcanum sbloccati: ${unlockedArcanum}. Puoi lanciare ciascun incantesimo di Arcanum Mistico 1 volta senza spendere uno slot incantesimo; recuperi tutti gli usi al termine di un riposo lungo.`
+        : WARLOCK_CORE_REFERENCE['ARCANUM MISTICO'].body,
     });
   }
 

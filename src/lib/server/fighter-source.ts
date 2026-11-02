@@ -69,14 +69,15 @@ export async function loadFighterEvidence(
     }
   }
 
-  // If a fighting style is chosen, collapse or highlight it in the main Stile di Combattimento feature
+  // Collapse Stile di Combattimento to the chosen fighting style
+  const effectiveStyle = choices.fightingStyle ?? 'Difesa';
   const styleFeature = classFeatures.find((f) => f.title === 'STILE DI COMBATTIMENTO');
-  if (styleFeature && choices.fightingStyle) {
+  if (styleFeature) {
     const header = styleFeature.body.split(/^###\s+/m)[0].trim();
-    const styleH = new RegExp(`^###\\s+${choices.fightingStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im');
+    const styleH = new RegExp(`^###\\s+${effectiveStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im');
     const m = styleH.exec(styleFeature.body);
     if (m) {
-      styleFeature.body = `${header}\n\n**${choices.fightingStyle}:** ${m[1].trim()}`;
+      styleFeature.body = `${header}\n\n**${effectiveStyle}:** ${m[1].trim()}`;
     }
     if (sheet.level >= 10 && choices.secondFightingStyle) {
       const secondM = new RegExp(`^###\\s+${choices.secondFightingStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im').exec(
@@ -119,6 +120,18 @@ export async function loadFighterEvidence(
     };
     resources.maneuversCount = sheet.level >= 15 ? 9 : sheet.level >= 10 ? 7 : sheet.level >= 7 ? 5 : 3;
     resources.maneuverDc = 8 + sheet.proficiencyBonus + Math.max(sheet.abilityMods.str, sheet.abilityMods.dex);
+    const manFeat = archetypeFeatures.find((f) => f.title === 'MANOVRE');
+    if (manFeat) {
+      const blocks = [...manFeat.body.matchAll(/^\*\*([^*]+?)\.\*\*\s*([\s\S]*?)(?=^\*\*[^*]+?\.\*\*|$(?![\s\S]))/gm)];
+      if (blocks.length > 0) {
+        const picked = choices.maneuvers?.length
+          ? blocks.filter((b) => choices.maneuvers!.some((c) => b[1].toLowerCase().includes(c.toLowerCase()))).slice(0, resources.maneuversCount)
+          : blocks.slice(0, resources.maneuversCount);
+        if (picked.length > 0) {
+          manFeat.body = picked.map((b) => `**${b[1]}.** ${b[2].trim()}`).join('\n\n');
+        }
+      }
+    }
   }
 
   if (archetype?.slug === 'phb-guerriero-cavaliere-mistico' && sheet.level >= 3) {
@@ -134,6 +147,20 @@ export async function loadFighterEvidence(
       dc: 8 + sheet.proficiencyBonus + sheet.abilityMods.int,
       optionsCount: sheet.level >= 18 ? 6 : sheet.level >= 15 ? 5 : sheet.level >= 10 ? 4 : sheet.level >= 7 ? 3 : 2,
     };
+    const shotFeat = archetypeFeatures.find((f) => f.title === 'OPZIONI DI TIRO ARCANO');
+    if (shotFeat) {
+      const blocks = [...shotFeat.body.matchAll(/^\*\*([^*]+?)\.\*\*\s*([\s\S]*?)(?=^\*\*[^*]+?\.\*\*|$(?![\s\S]))/gm)];
+      if (blocks.length > 0) {
+        const picked = choices.arcaneShots?.length
+          ? blocks.filter((b) => choices.arcaneShots!.some((c) => b[1].toLowerCase().includes(c.toLowerCase()))).slice(0, resources.arcaneShot.optionsCount)
+          : blocks.slice(0, resources.arcaneShot.optionsCount);
+        if (picked.length > 0) {
+          shotFeat.body =
+            `CD Tiro Arcano ${resources.arcaneShot.dc} (2 usi per riposo breve o lungo).\n\n` +
+            picked.map((b) => `**${b[1]}.** ${b[2].trim()}`).join('\n\n');
+        }
+      }
+    }
   }
 
   if (archetype?.slug === 'xge-guerriero-cavaliere-errante' && sheet.level >= 3) {
@@ -162,6 +189,24 @@ export async function loadFighterEvidence(
     };
     if (sheet.level >= 7) {
       resources.runicShieldUses = sheet.proficiencyBonus;
+    }
+    const runeFeat = archetypeFeatures.find((f) => f.title === 'INTAGLIATORE DI RUNE');
+    if (runeFeat) {
+      const allRunes = [...runeFeat.body.matchAll(/^\*\*(Runa[^*]+?)\.\*\*\s*([\s\S]*?)(?=^\*\*Runa[^*]+?\.\*\*|$(?![\s\S]))/gm)];
+      const eligible = allRunes.filter((b) => {
+        const reqMatch = b[1].match(/(\d+)°\s*livello/i);
+        return !reqMatch || Number(reqMatch[1]) <= sheet.level;
+      });
+      if (eligible.length > 0) {
+        const picked = choices.runes?.length
+          ? eligible.filter((b) => choices.runes!.some((c) => b[1].toLowerCase().includes(c.toLowerCase()))).slice(0, resources.runes.count)
+          : eligible.slice(0, resources.runes.count);
+        if (picked.length > 0) {
+          runeFeat.body =
+            `Rune incise al termine di un riposo lungo (${picked.length}/${resources.runes.count}, CD Magia Runica ${resources.runes.dc}, ${resources.runes.usesPerRune} uso/riposo breve o lungo per runa):\n\n` +
+            picked.map((b) => `**${b[1].replace('Navole', 'Nuvole')}.** ${b[2].trim()}`).join('\n\n');
+        }
+      }
     }
   }
 
@@ -195,13 +240,22 @@ export async function addFighterGrantedSpells(
 
   const sheet = structuredClone(original);
 
+  const isFighterOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
+
   if (archetype.slug === 'xge-guerriero-arciere-arcano') {
     const cantripName = choices.arcaneArcherCantrip ?? 'Prestidigitazione';
-    if (!sheet.spells.some((s) => s.name.toLowerCase() === cantripName.toLowerCase())) {
+    if (!sheet.spells.some((s) => isFighterOrigin(s.origin) && s.name.toLowerCase() === cantripName.toLowerCase())) {
       const spell = manualSpellFromSources(
         cantripName,
         0,
-        'Conoscenze dell’Arciere Arcano: trucchetto concesso (Caratteristica: Intelligenza).'
+        'Conoscenze dell’Arciere Arcano: trucchetto concesso (Caratteristica: Intelligenza).',
+        {
+          origin: 'subclass',
+          sourceLabel: archetype.label,
+          ability: 'int',
+          alwaysPrepared: true,
+          requiresSlot: false,
+        }
       );
       sheet.spells.push(spell);
       sheet.cantripsKnown = Math.max(sheet.cantripsKnown, 1);
@@ -214,12 +268,23 @@ export async function addFighterGrantedSpells(
 
   if (archetype.slug === 'tce-guerriero-psionico' && original.level >= 18) {
     const name = 'Telecinesi';
-    if (!sheet.spells.some((s) => s.name.toLowerCase() === name.toLowerCase())) {
+    if (!sheet.spells.some((s) => isFighterOrigin(s.origin) && s.name.toLowerCase() === name.toLowerCase())) {
       const spell = manualSpellFromSources(
         name,
         5,
-        'Maestro della Telecinesi: lancia telecinesi senza componenti. Intelligenza come caratteristica. Un utilizzo gratuito per riposo lungo, poi spendi un dado di Energia Psionica.'
+        'Maestro della Telecinesi: lancia telecinesi senza componenti. Intelligenza come caratteristica. Un utilizzo gratuito per riposo lungo, poi spendi un dado di Energia Psionica.',
+        {
+          origin: 'subclass',
+          sourceLabel: archetype.label,
+          ability: 'int',
+          alwaysPrepared: true,
+          usesPerRest: '1/riposo lungo (poi 1 dado psionico)',
+          requiresSlot: false,
+        }
       );
+      spell.verbal = false;
+      spell.somatic = false;
+      spell.material = false;
       sheet.spells.push(spell);
     }
     sheet.spellcastingAbility = 'int';
@@ -233,12 +298,19 @@ export async function addFighterGrantedSpells(
     sheet.spellcastingClass = 'Guerriero';
     sheet.spellSaveDc = 8 + sheet.proficiencyBonus + sheet.abilityMods.int;
     sheet.spellAttackBonus = sheet.proficiencyBonus + sheet.abilityMods.int;
-    // Ensure all spells have valid fullTextMd from source manuals
+    // Ensure all class spells have valid fullTextMd from source manuals without overwriting racial spells
     for (let i = 0; i < sheet.spells.length; i++) {
       const s = sheet.spells[i];
+      if (!isFighterOrigin(s.origin)) continue;
       if (!s.fullTextMd || s.fullTextMd.length < 50) {
         try {
-          const loaded = manualSpellFromSources(s.name, s.level);
+          const loaded = manualSpellFromSources(s.name, s.level, '', {
+            origin: 'class',
+            sourceLabel: archetype.label,
+            ability: 'int',
+            alwaysPrepared: false,
+            requiresSlot: s.level > 0,
+          });
           sheet.spells[i] = loaded;
         } catch {
           // Keep existing if not found in primary list

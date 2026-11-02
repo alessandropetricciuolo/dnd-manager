@@ -6,6 +6,6 @@ export const dynamic = "force-dynamic";
 export default async function GeneratorLayout({ children }: { children: React.ReactNode }) {
   const { user, profile } = await getRequestAuthContext();
   if (!user) redirect("/login");
-  if (profile?.role !== "gm" && profile?.role !== "admin") redirect("/dashboard");
+  if (profile?.role !== "gm" && profile?.role !== "admin") redirect("/dashboard?notice=gm_only");
   return children;
 }

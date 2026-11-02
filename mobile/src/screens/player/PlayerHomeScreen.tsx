@@ -5,12 +5,12 @@ import {
   View,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   RefreshControl,
   Image,
   Alert,
   ActivityIndicator,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Shield,
   Calendar,
@@ -138,6 +138,7 @@ export const PlayerHomeScreen: React.FC = () => {
   // Filters state
   const [sessionFilter, setSessionFilter] = useState<SessionFilter>('all');
   const [campaignFilter, setCampaignFilter] = useState<CampaignFilter>('all');
+  const [showAllCampaigns, setShowAllCampaigns] = useState<boolean>(false);
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
 
   // Modals state
@@ -186,6 +187,29 @@ export const PlayerHomeScreen: React.FC = () => {
     if (campaignFilter === 'all') return campaigns;
     return campaigns.filter((c) => c.type === campaignFilter);
   }, [campaigns, campaignFilter]);
+
+  const upcomingSessionByCampaignId = useMemo(() => {
+    const map = new Map<string, Session>();
+    const cutoff = Date.now() - 3600 * 1000;
+    for (const s of allSessions || []) {
+      if (s.campaign_id && !map.has(s.campaign_id) && new Date(s.scheduled_at).getTime() >= cutoff) {
+        map.set(s.campaign_id, s);
+      }
+    }
+    return map;
+  }, [allSessions]);
+
+  const visibleCampaigns = useMemo(() => {
+    if (showAllCampaigns || filteredCampaigns.length <= 6) return filteredCampaigns;
+    const initial = filteredCampaigns.slice(0, 6);
+    if (activeCampaignId && !initial.some((c) => c.id === activeCampaignId)) {
+      const activeInFiltered = filteredCampaigns.find((c) => c.id === activeCampaignId);
+      if (activeInFiltered) {
+        return [activeInFiltered, ...initial.slice(0, 5)];
+      }
+    }
+    return initial;
+  }, [filteredCampaigns, showAllCampaigns, activeCampaignId]);
 
   // Active hero vitals
   const currentHp = safeCharacter.hit_points ?? 0;
@@ -250,7 +274,7 @@ export const PlayerHomeScreen: React.FC = () => {
     );
   };
 
-  const handleSelectCampaign = async (camp: Campaign) => {
+  const handleSelectCampaign = useCallback(async (camp: Campaign) => {
     if (camp.id === activeCampaignId) return;
     try {
       await selectCampaign(camp.id);
@@ -258,7 +282,7 @@ export const PlayerHomeScreen: React.FC = () => {
     } catch {
       Alert.alert('Errore', 'Impossibile selezionare la campagna.');
     }
-  };
+  }, [activeCampaignId, selectCampaign]);
 
   const handleOpenSessionDetail = (session: PlayerSession | any) => {
     setSelectedSessionForDetail(session as PlayerSession);
@@ -273,7 +297,7 @@ export const PlayerHomeScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -286,25 +310,6 @@ export const PlayerHomeScreen: React.FC = () => {
           />
         }
       >
-        {/* GM Mode Switcher Notice (Admin/GM) */}
-        {canAccessGm && (
-          <View style={styles.gmNoticeBanner}>
-            <View style={styles.gmNoticeLeft}>
-              <Repeat size={16} color={colors.brassBase} />
-              <Text style={styles.gmNoticeText}>
-                Stai visualizzando come <Text style={styles.boldText}>Giocatore</Text>
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.gmSwitchButton}
-              onPress={() => switchMode('gm')}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.gmSwitchButtonText}>Torna alla Regia</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Guild Adventurer Header */}
         <View style={styles.headerCard}>
           <View style={styles.badgeRow}>
@@ -517,22 +522,30 @@ export const PlayerHomeScreen: React.FC = () => {
 
         {/* Griglia/Carosello Campagne Expandabili 2 per riga */}
         <View style={styles.campaignsGrid}>
-          {filteredCampaigns.map((camp) => {
-            const isActive = camp.id === activeCampaignId;
-            const nextCampSession = (allSessions || []).find(
-              (s) => s.campaign_id === camp.id && new Date(s.scheduled_at).getTime() >= Date.now() - 3600 * 1000
-            );
-            return (
-              <ExpandableCampaignCard
-                key={camp.id}
-                campaign={camp}
-                isActive={isActive}
-                onSelect={handleSelectCampaign}
-                upcomingSession={nextCampSession}
-              />
-            );
-          })}
+          {visibleCampaigns.map((camp) => (
+            <ExpandableCampaignCard
+              key={camp.id}
+              campaign={camp}
+              isActive={camp.id === activeCampaignId}
+              onSelect={handleSelectCampaign}
+              upcomingSession={upcomingSessionByCampaignId.get(camp.id) ?? null}
+            />
+          ))}
         </View>
+
+        {filteredCampaigns.length > 6 && (
+          <TouchableOpacity
+            style={styles.showMoreCampaignsBtn}
+            onPress={() => setShowAllCampaigns((prev) => !prev)}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.showMoreCampaignsText}>
+              {showAllCampaigns
+                ? 'Mostra meno campagne'
+                : `Mostra tutte le campagne (${filteredCampaigns.length})`}
+            </Text>
+          </TouchableOpacity>
+        )}
 
         {/* 4. SCHEDA PG RAPIDA LIVE CON BARRA HP INTERATTIVA */}
         <View style={styles.sectionHeader}>
@@ -1100,27 +1113,32 @@ const styles = StyleSheet.create({
   },
   campaignFiltersScroll: {
     gap: 8,
-    paddingVertical: 2,
+    paddingVertical: 4,
+    alignItems: 'center',
   },
   filterPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 16,
+    minHeight: 36,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 18,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterPillActive: {
     backgroundColor: colors.brassBase,
     borderColor: colors.brassLight,
   },
   filterPillText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
   filterPillTextActive: {
     color: colors.void,
+    fontWeight: '800',
   },
   miniSessionCard: {
     flexDirection: 'row',
@@ -1148,13 +1166,13 @@ const styles = StyleSheet.create({
     color: colors.brassLight,
   },
   miniSessionMonth: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.parchmentMuted,
     textTransform: 'uppercase',
   },
   miniSessionTime: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '700',
     color: colors.parchmentLight,
     marginTop: 1,
@@ -1164,7 +1182,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   miniSessionCampName: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassBase,
   },
@@ -1179,7 +1197,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   miniSessionOccupancyText: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
     fontWeight: '600',
   },
@@ -1209,7 +1227,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   cancelSessionBtnText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.emerald,
   },
@@ -1222,7 +1240,7 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   fullBadgeText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
@@ -1233,6 +1251,24 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     rowGap: 12,
+  },
+  showMoreCampaignsBtn: {
+    marginTop: -2,
+    marginBottom: 4,
+    paddingVertical: 11,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showMoreCampaignsText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brassLight,
+    letterSpacing: 0.4,
   },
   campaignCard: {
     backgroundColor: colors.stoneSurface,
@@ -1261,7 +1297,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   campaignTypeBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -1277,7 +1313,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   activePillBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassLight,
   },
@@ -1311,12 +1347,12 @@ const styles = StyleSheet.create({
     borderColor: colors.brassDark,
   },
   selectCampBtnText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.void,
   },
   selectCampBtnActiveText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.brassLight,
   },
@@ -1396,7 +1432,7 @@ const styles = StyleSheet.create({
     gap: 5,
   },
   quickHpTitle: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.parchmentLight,
     letterSpacing: 0.5,
@@ -1422,6 +1458,7 @@ const styles = StyleSheet.create({
   },
   quickStepBtn: {
     flex: 1,
+    minHeight: 36,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.stoneSurface,
@@ -1454,7 +1491,7 @@ const styles = StyleSheet.create({
     borderColor: colors.stoneBorder,
   },
   statLabel: {
-    fontSize: 9,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.parchmentMuted,
   },

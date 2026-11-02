@@ -97,7 +97,14 @@ export async function loadWizardEvidence(
         manualSpellFromSources(
           'Animare Morti',
           3,
-          'Aggiunto gratuitamente al libro degli incantesimi (Servitori Non Morti).'
+          'Aggiunto gratuitamente al libro degli incantesimi (Servitori Non Morti).',
+          {
+            origin: 'subclass',
+            sourceLabel: tradition.label,
+            ability: 'int',
+            alwaysPrepared: false,
+            requiresSlot: true,
+          }
         )
       );
     }
@@ -106,7 +113,14 @@ export async function loadWizardEvidence(
         manualSpellFromSources(
           'Illusione Minore',
           0,
-          'Trucchetto aggiuntivo della Scuola di Illusione (Illusione Minore Migliorata).'
+          'Trucchetto aggiuntivo della Scuola di Illusione (Illusione Minore Migliorata).',
+          {
+            origin: 'subclass',
+            sourceLabel: tradition.label,
+            ability: 'int',
+            alwaysPrepared: true,
+            requiresSlot: false,
+          }
         )
       );
     }
@@ -153,8 +167,9 @@ export function addWizardGrantedSpells(
   evidence: WizardEvidence
 ): GeneratedCharacterSheet {
   const clone = structuredClone(sheet);
+  const isWizardOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
   for (const spell of evidence.grantedSpells) {
-    if (!clone.spells.some((s) => s.name.toLowerCase() === spell.name.toLowerCase())) {
+    if (!clone.spells.some((s) => isWizardOrigin(s.origin) && s.name.toLowerCase() === spell.name.toLowerCase())) {
       clone.spells.push(spell);
     }
   }

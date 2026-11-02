@@ -111,9 +111,52 @@ export function buildMonkPrintModel(
     }
   }
 
+  // Arti Marziali: Colpo senz'armi e armi da monaco usano il migliore tra FOR e DES e scalano col dado Arti Marziali
+  const maDieFaces = Number(evidence.resources.martialArtsDie.replace(/^1d/i, '')) || 4;
+  const bestMartialMod = Math.max(sheet.abilityMods.str, sheet.abilityMods.dex);
+  const bestToHit = sheet.proficiencyBonus + bestMartialMod;
+  const toHitStr = bestToHit >= 0 ? `+${bestToHit}` : `${bestToHit}`;
+  const modSuffix =
+    bestMartialMod > 0 ? `+${bestMartialMod}` : bestMartialMod < 0 ? `${bestMartialMod}` : '';
+
+  const kenseiChosen =
+    tradition?.slug === 'xge-monaco-kensei' && sheet.level >= 3
+      ? [
+          (choices.kenseiMeleeWeapon ?? 'Spada lunga').toLowerCase(),
+          (choices.kenseiRangedWeapon ?? 'Arco lungo').toLowerCase(),
+        ]
+      : [];
+
+  const isMonkWeaponName = (name: string) => {
+    const n = name.toLowerCase();
+    if (/colpo senz['’]armi/i.test(n)) return true;
+    if (kenseiChosen.some((kw) => n.includes(kw))) return true;
+    return /spada corta|bastone ferrato|pugnale|clava|ascia|falcetto|giavellotto|lancia|martello leggero|mazza/i.test(n);
+  };
+
+  sheet.weaponRows = sheet.weaponRows.map((row) => {
+    if (!isMonkWeaponName(row.name)) return row;
+    const isUnarmed = /colpo senz['’]armi/i.test(row.name);
+    const dmgMatch = row.damage.match(/^(\d+)d(\d+)/i);
+    const currentCount = dmgMatch ? Number(dmgMatch[1]) : 1;
+    const currentFaces = dmgMatch ? Number(dmgMatch[2]) : 4;
+    const effectiveDie =
+      isUnarmed || (currentCount === 1 && currentFaces < maDieFaces)
+        ? `1d${maDieFaces}`
+        : dmgMatch
+          ? `${currentCount}d${currentFaces}`
+          : evidence.resources.martialArtsDie;
+    return {
+      ...row,
+      toHit: toHitStr,
+      damage: `${effectiveDie}${modSuffix}`,
+    };
+  });
+
   // Granted spells
+  const isMonkOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
   for (const spell of evidence.grantedSpells) {
-    if (!sheet.spells.some((s) => s.name.toLowerCase() === spell.name.toLowerCase())) {
+    if (!sheet.spells.some((s) => isMonkOrigin(s.origin) && s.name.toLowerCase() === spell.name.toLowerCase())) {
       sheet.spells.push(spell);
     }
   }

@@ -1,4 +1,6 @@
 import { backgroundBySlug, backgroundStartingInventoryLines, raceBySlug } from "@/lib/character-build-catalog";
+import { manualSpellFromSources } from "@/lib/server/manual-spell-source";
+import { preloadManualMarkdownFile, preloadPhbMarkdown } from "@/lib/server/phb-spell-excerpt";
 import { computeArmorClass } from "@/lib/sheet-generator/armor-class";
 import type { CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import { armorInventoryLines } from "@/lib/sheet-generator/inventory-armor";
@@ -15,6 +17,7 @@ import type {
   AbilityKey,
   CharacterGeneratorInput,
   GeneratedCharacterSheet,
+  GeneratedSpell,
   GeneratorBuildResult,
   SkillKey,
 } from "@/lib/sheet-generator/types";
@@ -505,12 +508,22 @@ function computeCoreFromAbilities(
   });
   const armorClass = armor.ac;
   const hpMax = computeHpMax(lvl, cfg.hitDie, abilityMods.con);
-  const weaponRows = cfg.weaponSet.map((w) => ({
-    name: w.name,
-    damage: w.damage,
-    type: w.type,
-    toHit: `+${pb + Math.max(abilityMods.str, abilityMods.dex)}`,
-  }));
+  const monkDieFaces = lvl >= 17 ? 10 : lvl >= 11 ? 8 : lvl >= 5 ? 6 : 4;
+  const weaponRows = cfg.weaponSet.map((w) => {
+    let damage = w.damage;
+    if (classLabel === "Monaco") {
+      const m = damage.match(/^1d(\d+)(.*)$/);
+      if (m && Number(m[1]) < monkDieFaces) {
+        damage = `1d${monkDieFaces}${m[2]}`;
+      }
+    }
+    return {
+      name: w.name,
+      damage,
+      type: w.type,
+      toHit: `+${pb + Math.max(abilityMods.str, abilityMods.dex)}`,
+    };
+  });
 
   return {
     abilities,
@@ -780,10 +793,13 @@ export async function buildGeneratedCharacterSheet(
     cfg.primary,
     input.classLabel
   );
+  const resolvedAbilities = input.buildOverrides?.abilities
+    ? { ...input.buildOverrides.abilities }
+    : boostedAbilities;
   const core = computeCoreFromAbilities(
     input.classLabel,
     input.level,
-    boostedAbilities,
+    resolvedAbilities,
     input.backgroundSlug,
     input.buildOverrides,
     input.raceSlug,
@@ -851,15 +867,181 @@ export async function buildGeneratedCharacterSheet(
     spells: rules.spells,
   };
 
+  await Promise.all([
+    preloadPhbMarkdown(requestOrigin),
+    preloadManualMarkdownFile("xanathar.md", requestOrigin),
+    preloadManualMarkdownFile("Tasha.md", requestOrigin),
+  ]);
+  const racialSpells = resolveRacialSpells(
+    input.raceSlug,
+    input.subraceSlug,
+    input.level,
+    input.buildOverrides?.racialCantrip
+  );
+  sheet.racialSpells = racialSpells;
+  const normSpellKey = (s: string) => s.toLocaleLowerCase("it").replace(/[’‘]/g, "'").trim();
+  for (const rsp of racialSpells) {
+    const existingRaceIdx = sheet.spells.findIndex(
+      (s) => normSpellKey(s.name) === normSpellKey(rsp.name) && s.origin === "race"
+    );
+    if (existingRaceIdx >= 0) {
+      sheet.spells[existingRaceIdx] = rsp;
+    } else {
+      sheet.spells.push(rsp);
+    }
+  }
+
+  if (racialSpells.length > 0 && !sheet.spellcastingAbility) {
+    const rAbility: AbilityKey = racialSpells[0].ability ?? "int";
+    sheet.spellcastingAbility = rAbility;
+    sheet.spellSaveDc = 8 + sheet.proficiencyBonus + (sheet.abilityMods[rAbility] ?? 0);
+    sheet.spellAttackBonus = sheet.proficiencyBonus + (sheet.abilityMods[rAbility] ?? 0);
+    sheet.spellcastingClass = sheet.subraceLabel ?? sheet.raceLabel;
+  }
+
   sheet.languages = resolveRaceLanguages(input.raceSlug);
-  if(input.classLabel==='Artefice'){
-    const {loadArtificerEvidence,addArtificerSpecialistSpells}=await import('@/lib/server/artificer-source');
-    const {applyArtificerInfusions}=await import('./artificer-infusions');
-    const evidence=await loadArtificerEvidence(sheet.level,sheet.classSubclass,requestOrigin??undefined);
-    const infused=applyArtificerInfusions(sheet,evidence,input.buildOverrides?.artificer);
-    await addArtificerSpecialistSpells(infused,evidence,requestOrigin??undefined,!!input.torneoMode);
-    return {sheet:infused,warnings:rules.warnings};
+  if (input.classLabel === "Artefice") {
+    const { loadArtificerEvidence, addArtificerSpecialistSpells } = await import("@/lib/server/artificer-source");
+    const { applyArtificerInfusions } = await import("./artificer-infusions");
+    const evidence = await loadArtificerEvidence(sheet.level, sheet.classSubclass, requestOrigin ?? undefined);
+    const infused = applyArtificerInfusions(sheet, evidence, input.buildOverrides?.artificer);
+    await addArtificerSpecialistSpells(infused, evidence, requestOrigin ?? undefined, !!input.torneoMode);
+    return { sheet: infused, warnings: rules.warnings };
   }
 
   return { sheet, warnings: rules.warnings };
+}
+
+function buildRacialSpell(
+  name: string,
+  level: number,
+  ability: AbilityKey,
+  sourceLabel: string,
+  summary: string,
+  options: { usesPerRest?: string; castAtLevel?: number } = {}
+): GeneratedSpell {
+  const meta: Partial<GeneratedSpell> = {
+    origin: "race",
+    sourceLabel,
+    ability,
+    alwaysPrepared: true,
+    usesPerRest: options.usesPerRest ?? (level === 0 ? "A volontà" : "1/riposo lungo"),
+    requiresSlot: false,
+    ...(options.castAtLevel ? { castAtLevel: options.castAtLevel } : {}),
+  };
+  return manualSpellFromSources(name, level, summary, meta);
+}
+
+export function resolveRacialSpells(
+  raceSlug: string,
+  subraceSlug: string | null | undefined,
+  level: number,
+  chosenCantrip?: string
+): GeneratedSpell[] {
+  const spells: GeneratedSpell[] = [];
+  const r = (raceSlug ?? "").toLowerCase();
+  const sr = (subraceSlug ?? "").toLowerCase();
+
+  // 1. Elfo Alto (High Elf): 1 cantrip from wizard list (INT)
+  if (sr === "elfo_alto" || (r === "elfo" && sr.includes("alto"))) {
+    const cantripName = chosenCantrip?.trim() || "Creare Falò";
+    spells.push(
+      buildRacialSpell(
+        cantripName,
+        0,
+        "int",
+        "Elfo alto",
+        "Trucchetto razziale (Elfo alto) dalla lista del Mago. Caratteristica da incantatore: Intelligenza."
+      )
+    );
+  }
+
+  // 2. Gnomo delle Foreste: Illusione Minore (INT)
+  if (sr === "gnomo_foreste" || sr === "gnomo_delle_foreste" || sr.includes("foreste")) {
+    spells.push(
+      buildRacialSpell(
+        "Illusione Minore",
+        0,
+        "int",
+        "Gnomo delle foreste",
+        "Trucchetto razziale (Gnomo delle foreste). Caratteristica da incantatore: Intelligenza."
+      )
+    );
+  }
+
+  // 3. Tiefling: Taumaturgia (liv 1), Intimorire Infernale (liv 3, lanciato al 2° liv), Oscurità (liv 5) (CHA)
+  if (r === "tiefling" || sr.includes("infernale")) {
+    spells.push(
+      buildRacialSpell(
+        "Taumaturgia",
+        0,
+        "cha",
+        "Eredità Infernale",
+        "Eredità Infernale: trucchetto razziale. Caratteristica da incantatore: Carisma."
+      )
+    );
+    if (level >= 3) {
+      spells.push(
+        buildRacialSpell(
+          "Intimorire Infernale",
+          1,
+          "cha",
+          "Eredità Infernale",
+          "Eredità Infernale: 1 volta/riposo lungo (come incantesimo di 2° livello, senza slot). Caratteristica: Carisma.",
+          { usesPerRest: "1/riposo lungo", castAtLevel: 2 }
+        )
+      );
+    }
+    if (level >= 5) {
+      spells.push(
+        buildRacialSpell(
+          "Oscurità",
+          2,
+          "cha",
+          "Eredità Infernale",
+          "Eredità Infernale: 1 volta/riposo lungo (senza slot). Caratteristica: Carisma.",
+          { usesPerRest: "1/riposo lungo" }
+        )
+      );
+    }
+  }
+
+  // 4. Drow (Elfo Scuro): Luci Danzanti (liv 1), Luminescenza (liv 3), Oscurità (liv 5) (CHA)
+  if (sr === "elfo_drow" || sr === "drow" || sr.includes("drow") || sr.includes("scuro")) {
+    spells.push(
+      buildRacialSpell(
+        "Luci Danzanti",
+        0,
+        "cha",
+        "Magia Drow",
+        "Magia Drow: trucchetto razziale. Caratteristica: Carisma."
+      )
+    );
+    if (level >= 3) {
+      spells.push(
+        buildRacialSpell(
+          "Luminescenza",
+          1,
+          "cha",
+          "Magia Drow",
+          "Magia Drow: 1 volta/riposo lungo (senza slot). Caratteristica: Carisma.",
+          { usesPerRest: "1/riposo lungo" }
+        )
+      );
+    }
+    if (level >= 5) {
+      spells.push(
+        buildRacialSpell(
+          "Oscurità",
+          2,
+          "cha",
+          "Magia Drow",
+          "Magia Drow: 1 volta/riposo lungo (senza slot). Caratteristica: Carisma.",
+          { usesPerRest: "1/riposo lungo" }
+        )
+      );
+    }
+  }
+
+  return spells;
 }

@@ -48,16 +48,16 @@ export function CampaignCommandBar({
       <div className="flex min-h-12 items-center gap-2 px-3 py-1 sm:px-4 lg:px-6">
         <div className="min-w-0 flex-1">
           <div className="flex min-w-0 items-center gap-1.5 text-xs leading-tight">
-            <span className="truncate font-serif text-sm font-semibold text-parchment-100 lg:hidden">
-              {campaignName}
-            </span>
-            <span className="text-guild-border lg:hidden">/</span>
-            <span className="inline-flex min-w-0 items-center gap-1 truncate font-serif text-xs uppercase tracking-wider font-bold text-brass-light">
-              <SectionIcon className="h-3.5 w-3.5 shrink-0 text-brass-base" aria-hidden />
-              {sectionLabel}
-            </span>
+            <h1 className="inline-flex min-w-0 items-center gap-1.5 truncate font-serif text-sm font-semibold text-parchment-100">
+              <span className="truncate">{campaignName}</span>
+              <span className="text-guild-border font-normal" aria-hidden="true">/</span>
+              <span className="inline-flex min-w-0 items-center gap-1 truncate text-xs uppercase tracking-wider font-bold text-brass-light">
+                <SectionIcon className="h-3.5 w-3.5 shrink-0 text-brass-base" aria-hidden="true" />
+                <span>{sectionLabel}</span>
+              </span>
+            </h1>
           </div>
-          <div className="hidden truncate text-[10px] text-parchment-500 sm:block lg:hidden">
+          <div className="hidden truncate text-[10px] text-parchment-500 sm:block">
             {campaignTypeLabel ?? "Campagna"}
             {gmDisplayName ? ` · Master ${gmDisplayName}` : ""}
           </div>

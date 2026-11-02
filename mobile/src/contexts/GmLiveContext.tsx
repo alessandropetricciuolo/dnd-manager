@@ -226,7 +226,11 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } catch (cause: any) {
       if (requestId !== validationSequence.current || campaignRef.current !== requestedCampaignId) return false;
       setStatus('offline');
-      setError(cause?.message || 'Impossibile raggiungere il GM Screen.');
+      const rawMessage = typeof cause?.message === 'string' ? cause.message : '';
+      const isNetworkFailure =
+        !rawMessage ||
+        /fetch failed|network request failed|connectexception|econnrefused|timed? ?out|aborted/i.test(rawMessage);
+      setError(isNetworkFailure ? 'Impossibile raggiungere il GM Screen.' : rawMessage);
       return false;
     } finally {
       if (requestId === validationSequence.current) setIsValidating(false);

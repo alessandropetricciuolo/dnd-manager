@@ -78,10 +78,24 @@ export const RANGER_FIGHTING_STYLES = [
 
 export type RangerFightingStyle = typeof RANGER_FIGHTING_STYLES[number];
 
+export const RANGER_BEAST_COMPANIONS = [
+  'Lupo',
+  'Pantera',
+  'Mastino',
+  'Falco',
+  'Cinghiale',
+  'Bestia della Terra',
+  'Bestia del Cielo',
+  'Bestia del Mare',
+] as const;
+
+export type RangerBeastCompanion = (typeof RANGER_BEAST_COMPANIONS)[number];
+
 export type RangerChoices = {
   fightingStyle?: RangerFightingStyle;
   favoredEnemies?: string[];
   favoredTerrains?: string[];
+  beastCompanion?: RangerBeastCompanion;
   feyWandererSkill?: 'Inganno' | 'Intrattenere' | 'Persuasione';
   hunterPrey?: 'Devastatore dell\'Orda' | 'Sterminatore di Colossi' | 'Uccisore di Giganti';
   defensiveTactics?: 'Difesa dal Multiattacco' | 'Sfuggire all\'Orda' | 'Volontà d\'Acciaio';

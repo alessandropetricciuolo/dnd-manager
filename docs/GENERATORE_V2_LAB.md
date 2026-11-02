@@ -389,4 +389,58 @@ Meccaniche, opzioni e calcoli integrati:
   - Build Next.js di produzione completata con successo (`npm run build`).
   - Campione PDF generato e verificato: `output/pdf/warlock-v2-test.pdf` (203 KB).
 
+## Impaginazione Compatta V2 Generalizzata alle 13 Classi (2 novembre 2026)
+
+Implementata la generalizzazione del nuovo generatore di schede V2 compatto a tutte le 13 classi supportate dal progetto (`Artefice`, `Barbaro`, `Bardo`, `Chierico`, `Druido`, `Guerriero`, `Ladro`, `Mago`, `Monaco`, `Paladino`, `Ranger`, `Stregone`, `Warlock`), partendo dall'impostazione grafica ed editoriale approvata con il prototipo dell'Artefice di 8° livello (`output/pdf/artefice-v2-compatta.pdf`).
+
+### Principi e Regole Implementate
+
+1. **Dati Reali e Nessuna Invenzione**:
+   - Eliminati tutti i fallback cablati nel renderer (tratti elfici forzati, trucchetti presunti come Creare Falò, monete o inventari generici predefiniti).
+   - Modellati i trucchetti e le magie razziali (`sheet.racialSpells`, con `origin: 'race'`) in `build-engine.ts` e `types.ts`, calcolando correttamente caratteristica da incantatore, CD, componenti e utilizzi.
+   - Coerenza garantita su tutte le caselle: CA principale, scudo, iniziativa, bonus di competenza e modificatori derivati.
+
+2. **Impaginazione Dinamica Basata sui Contenuti Reali**:
+   - Classi senza incantesimi (Barbaro, Guerriero Campione/Maestro di Battaglia, Ladro Furfante/Assassino, Monaco): **2 pagine totali**. Nessuna pagina incantesimi vuota creata.
+   - Mezze progressioni con 5-6 magie (Paladino, Ranger Cacciatore): **3 pagine totali** (2 scheda + 1 magie).
+   - Ranger con Compagno Animale (Signore delle Bestie): **4 pagine totali** (2 scheda + 1 compagno + 1 magie).
+   - Incantatori completi (Bardo, Chierico, Druido, Mago, Stregone, Warlock): **4 pagine totali** (2 scheda + 2 magie per 8-15 incantesimi).
+   - Artefice Fabbro da Battaglia con 15 incantesimi e Difensore d'Acciaio: **5 pagine totali** (2 scheda + 1 compagno + 2 magie).
+   - Piè di pagina dinamico su tutti i fogli: `Barber & Dragons | <Classe> V2 | Pagina X di Y`.
+
+3. **Mini Schede Compagni Riutilizzabili**:
+   - Implementate in `src/lib/pdf/companion-stat-block.ts` e integrate nel renderer:
+     - `buildSteelDefenderStatBlock`: Difensore d'Acciaio (Artefice Fabbro da Battaglia).
+     - `buildHomunculusStatBlock`: Omuncolo Servitore (Artefice con infusione attiva).
+     - `buildBeastCompanionStatBlock`: Compagno Bestiale (Ranger Signore delle Bestie).
+   - Nessuna pagina compagni viene creata per personaggi che non possiedono una creatura permanente attiva.
+
+4. **Sintesi Operative degli Incantesimi e Regole di Combattimento**:
+   - Arricchito il dizionario locale `SPELL_OPERATIVE_SUMMARIES` con sintesi verificate dai manuali per tutti i principali incantesimi di classe e di sottoclasse (condizioni, inneschi, gittata, concentrazione, rituale, componenti con costo in mo ed effetti).
+   - Aggiunto fallback intelligente `extractOperativeFromFullText` per incantesimi del compendio non presenti a dizionario, delimitando automaticamente a 3-4 frasi operative concise per evitare che descrizioni estese producano pagine superflue.
+   - Avviso del compendio online inserito nel bordo inferiore dell'ultima pagina incantesimi.
+
+5. **Riquadri di Risorse e Capacità per Tutte le 13 Classi**:
+   - **Pagina 1 (Colonna Centrale)**: Caselle separate grandi per CA, Iniziativa, Velocità; PF Max, Attuali, Temporanei e Dadi Vita; Attacchi risolti numericamente con formula danni calcolata; Riquadro risorse di classe personalizzato (Punti Ki con tracciatore a diamanti, Ira, Ispirazione Bardica, Incanalare Divinità, Forma Selvatica, Risorse Marziali, Attacco Furtivo, Imposizione delle Mani, Magia del Patto, Punti Stregoneria, Recupero Arcano).
+   - **Pagina 2**:
+     - *Colonna Sinistra*: Privilegi di classe operativi (3 capacità chiave senza sovrapporsi a Pagina 1), Tratti razziali senza tagli arbitrari (tutte le razze PHB coperte), Linguaggi e Competenze.
+     - *Colonna Destra*: Specializzazione di classe (Infusioni attive e note per Artefice; Manovre e dadi superiorità per Maestro di Battaglia; Metamagia per Stregone; Suppliche e Patto per Warlock; Discipline Ki per Monaco; Privilegi di Archetipo, Dominio, Circolo o Scuola per le altre classi), seguita da Dotazione ed Inventario compatto con elementi reali.
+
+### Verifica e Collaudo
+- Tutti i 226 test unitari e di integrazione superati (`npm run test:sheet-generator`): pass 226, fail 0.
+- Eseguito script di validazione per tutte le 13 classi con salvataggio PDF in `output/pdf/v2-classes/`:
+  - `artefice-v2.pdf`: 5 pagine
+  - `barbaro-v2.pdf`: 2 pagine
+  - `bardo-v2.pdf`: 4 pagine
+  - `chierico-v2.pdf`: 4 pagine
+  - `druido-v2.pdf`: 4 pagine
+  - `guerriero-v2.pdf`: 2 pagine
+  - `ladro-v2.pdf`: 2 pagine
+  - `mago-v2.pdf`: 4 pagine
+  - `monaco-v2.pdf`: 2 pagine
+  - `paladino-v2.pdf`: 3 pagine
+  - `ranger-v2.pdf`: 3 pagine (4 con Signore delle Bestie)
+  - `stregone-v2.pdf`: 4 pagine
+  - `warlock-v2.pdf`: 4 pagine
+- TypeScript typecheck (`npx tsc --noEmit`): 0 errori.
 

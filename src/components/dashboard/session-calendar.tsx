@@ -235,6 +235,7 @@ export function SessionCalendar({
             size="icon"
             className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/20 hover:text-barber-paper"
             onClick={() => setCurrentDate((d) => subMonths(d, 1))}
+            aria-label="Mese precedente"
           >
             <ChevronLeft className="h-4 w-4" />
           </Button>
@@ -247,6 +248,7 @@ export function SessionCalendar({
             size="icon"
             className="h-8 w-8 text-barber-paper/80 hover:bg-barber-gold/20 hover:text-barber-paper"
             onClick={() => setCurrentDate((d) => addMonths(d, 1))}
+            aria-label="Mese successivo"
           >
             <ChevronRight className="h-4 w-4" />
           </Button>
@@ -304,7 +306,7 @@ export function SessionCalendar({
                     "relative z-10 inline-flex h-6 w-6 items-center justify-center rounded text-xs",
                     isDayToday && "bg-barber-gold/30 font-semibold text-barber-gold",
                     isCurrentMonth && !isDayToday && "text-slate-300",
-                    !isCurrentMonth && "text-slate-500"
+                    !isCurrentMonth && "text-slate-400 font-medium"
                   )}
                 >
                   {format(day, "d")}

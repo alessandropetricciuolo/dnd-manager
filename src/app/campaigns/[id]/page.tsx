@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
@@ -63,6 +64,29 @@ type CampaignTabValue = (typeof CAMPAIGN_TAB_VALUES)[number];
 function parseCampaignTab(raw: string | string[] | undefined): CampaignTabValue | null {
   const value = Array.isArray(raw) ? raw[0] : raw;
   return value && CAMPAIGN_TAB_VALUES.includes(value as CampaignTabValue) ? (value as CampaignTabValue) : null;
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  try {
+    const admin = createSupabaseAdminClient();
+    const { data } = await admin
+      .from("campaigns")
+      .select("name")
+      .eq("id", id)
+      .maybeSingle();
+    const campaign = data as { name?: string | null } | null;
+    if (campaign?.name) {
+      return {
+        title: campaign.name,
+      };
+    }
+  } catch (e) {
+    console.error("[generateMetadata] campaign", e);
+  }
+  return {
+    title: "Campagna",
+  };
 }
 
 export default async function CampaignPage({ params, searchParams }: PageProps) {

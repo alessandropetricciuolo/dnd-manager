@@ -119,8 +119,9 @@ function LoginPageContent() {
           return;
         }
         toast.success("Accesso effettuato. Ben tornato, avventuriero!");
-        const redirectTo = searchParams.get("redirect") ?? "/dashboard";
-        router.push(redirectTo.startsWith("/") && !redirectTo.startsWith("//") ? redirectTo : "/dashboard");
+        const rawRedirect = searchParams.get("redirect") || searchParams.get("next");
+        const redirectTo = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
+        router.push(redirectTo);
         return;
       }
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
@@ -267,7 +268,9 @@ function LoginPageContent() {
                     setSignupCompleted(false);
                     return;
                   }
-                  router.push("/dashboard");
+                  const rawRedirect = searchParams.get("redirect") || searchParams.get("next");
+                  const redirectTo = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
+                  router.push(redirectTo);
                 }}
               >
                 {signupRequiresEmailConfirm ? "Vai al login dopo conferma email" : "Entra nella Dashboard"}

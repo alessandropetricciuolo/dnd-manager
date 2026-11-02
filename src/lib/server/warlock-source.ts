@@ -122,14 +122,32 @@ export async function loadWarlockEvidence(
     if (patronCatalog.slug === 'xge-warlock-celestiale') {
       const cantrips = ['Fiamma Sacra', 'Luce'];
       for (const c of cantrips) {
-        const sp = manualSpellFromSources(c, 0);
+        const sp = manualSpellFromSources(c, 0, 'Trucchetto bonus de Il Celestiale.', {
+          origin: 'subclass',
+          sourceLabel: patronCatalog.label,
+          ability: 'cha',
+          alwaysPrepared: true,
+          requiresSlot: false,
+        });
         if (sp) grantedSpells.push(sp);
       }
     }
 
     // Insondabile 10th level: Tentacoli Neri di Evard
     if (patronCatalog.slug === 'tce-warlock-insondabile' && sheet.level >= 10) {
-      const sp = manualSpellFromSources('Tentacoli Neri di Evard', 4);
+      const sp = manualSpellFromSources(
+        'Tentacoli Neri di Evard',
+        4,
+        'Concesso da Presa dei Tentacoli (1/riposo lungo senza slot incantesimo).',
+        {
+          origin: 'subclass',
+          sourceLabel: patronCatalog.label,
+          ability: 'cha',
+          alwaysPrepared: true,
+          usesPerRest: '1/riposo lungo',
+          requiresSlot: false,
+        }
+      );
       if (sp) grantedSpells.push(sp);
     }
   }
@@ -185,6 +203,27 @@ export async function loadWarlockEvidence(
   if (sheet.level >= 17) {
     const spell9 = choices.mysticArcanum?.['9'] ?? DEFAULT_MYSTIC_ARCANUM[9];
     mysticArcanum.push({ level: 9, spellName: spell9 });
+  }
+
+  for (const arc of mysticArcanum) {
+    try {
+      const arcSpell = manualSpellFromSources(
+        arc.spellName,
+        arc.level,
+        `Arcanum Mistico (${arc.level}° livello): 1 utilizzo senza slot per riposo lungo.`,
+        {
+          origin: 'arcanum',
+          sourceLabel: 'Arcanum Mistico',
+          ability: 'cha',
+          alwaysPrepared: true,
+          usesPerRest: '1/riposo lungo',
+          requiresSlot: false,
+        }
+      );
+      grantedSpells.push(arcSpell);
+    } catch {
+      // Custom/unlisted arcanum spell name is validated later before print
+    }
   }
 
   // Patron specific resources
@@ -244,15 +283,21 @@ export function addWarlockGrantedSpells(
   sheet: GeneratedCharacterSheet,
   evidence: WarlockEvidence
 ): GeneratedCharacterSheet {
-  if (!evidence.grantedSpells || evidence.grantedSpells.length === 0) return sheet;
-
-  const existing = new Set((sheet.spells ?? []).map((s) => s.name.toLowerCase().trim()));
-  const newSpells = evidence.grantedSpells.filter((s) => !existing.has(s.name.toLowerCase().trim()));
-
-  if (newSpells.length === 0) return sheet;
-
-  return {
-    ...sheet,
-    spells: [...(sheet.spells ?? []), ...newSpells],
-  };
+  const clone = structuredClone(sheet);
+  const isWarlockOrigin = (o?: string) =>
+    !o || o === 'class' || o === 'subclass' || o === 'pact' || o === 'arcanum';
+  clone.spells = (clone.spells ?? []).map((s) =>
+    (!s.origin || s.origin === 'class') && s.level > 0
+      ? { ...s, origin: 'pact', sourceLabel: 'Magia del Patto', ability: 'cha', requiresSlot: true }
+      : s
+  );
+  for (const sp of evidence.grantedSpells ?? []) {
+    const exists = clone.spells.some(
+      (s) => isWarlockOrigin(s.origin) && s.name.toLowerCase().trim() === sp.name.toLowerCase().trim()
+    );
+    if (!exists) {
+      clone.spells.push(sp);
+    }
+  }
+  return clone;
 }

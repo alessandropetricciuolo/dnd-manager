@@ -4,11 +4,11 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   RefreshControl,
   Alert,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Calendar,
   Clock,
@@ -180,7 +180,7 @@ export const SessionsCalendarScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       <ScrollView
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
@@ -210,6 +210,8 @@ export const SessionsCalendarScreen: React.FC = () => {
             ]}
             onPress={() => setFilterByCampaign(true)}
             activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filterByCampaign }}
           >
             <Swords size={12} color={filterByCampaign ? colors.void : colors.brassLight} />
             <Text
@@ -230,6 +232,8 @@ export const SessionsCalendarScreen: React.FC = () => {
             ]}
             onPress={() => setFilterByCampaign(false)}
             activeOpacity={0.8}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: !filterByCampaign }}
           >
             <Compass size={12} color={!filterByCampaign ? colors.void : colors.parchmentMuted} />
             <Text
@@ -246,6 +250,8 @@ export const SessionsCalendarScreen: React.FC = () => {
             style={styles.changeCampaignIconBtn}
             onPress={() => setIsCampaignModalOpen(true)}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Cambia campagna attiva"
           >
             <Text style={styles.changeCampaignIconBtnText}>Cambia ▾</Text>
           </TouchableOpacity>
@@ -255,11 +261,14 @@ export const SessionsCalendarScreen: React.FC = () => {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
+          style={{ flexGrow: 0, flexShrink: 0 }}
           contentContainerStyle={styles.filterRow}
         >
           <TouchableOpacity
             style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
             onPress={() => setFilter('all')}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === 'all' }}
           >
             <Text
               style={[
@@ -274,6 +283,8 @@ export const SessionsCalendarScreen: React.FC = () => {
           <TouchableOpacity
             style={[styles.filterChip, filter === 'mine' && styles.filterChipActive]}
             onPress={() => setFilter('mine')}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === 'mine' }}
           >
             <Text
               style={[
@@ -291,6 +302,8 @@ export const SessionsCalendarScreen: React.FC = () => {
               filter === 'available' && styles.filterChipActive,
             ]}
             onPress={() => setFilter('available')}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === 'available' }}
           >
             <Text
               style={[
@@ -308,6 +321,8 @@ export const SessionsCalendarScreen: React.FC = () => {
               filter === 'completed' && styles.filterChipActive,
             ]}
             onPress={() => setFilter('completed')}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: filter === 'completed' }}
           >
             <Text
               style={[

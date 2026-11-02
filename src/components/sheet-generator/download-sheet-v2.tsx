@@ -43,8 +43,11 @@ import {
 } from '@/lib/sheet-generator/paladin-oaths';
 import {
   RANGER_FIGHTING_STYLES,
+  RANGER_BEAST_COMPANIONS,
+  rangerArchetypeFromLabel,
   type RangerChoices,
   type RangerFightingStyle,
+  type RangerBeastCompanion,
 } from '@/lib/sheet-generator/ranger-archetypes';
 import {
   sorcererOriginFromLabel,
@@ -289,12 +292,17 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       </label>
     </fieldset>}
     {isRanger && sheet.level >= 2 && <fieldset disabled={busy} className="space-y-3">
-      <legend className="text-sm font-medium text-barber-gold">Stile di Combattimento del Ranger</legend>
+      <legend className="text-sm font-medium text-barber-gold">Opzioni del Ranger</legend>
       <label className="block text-sm">Scegli lo stile di combattimento
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={rangerChoices.fightingStyle ?? 'Tiro'} onChange={e => setRangerChoices({ ...rangerChoices, fightingStyle: e.target.value as RangerFightingStyle })}>
           {RANGER_FIGHTING_STYLES.map(s => <option key={s} value={s}>{s}</option>)}
         </select>
       </label>
+      {sheet.level >= 3 && rangerArchetypeFromLabel(sheet.classSubclass)?.slug === 'phb-ranger-signore-bestie' && <label className="block text-sm">Compagno del Signore delle Bestie (PHB Appendice D / Tasha)
+        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={rangerChoices.beastCompanion ?? 'Lupo'} onChange={e => setRangerChoices({ ...rangerChoices, beastCompanion: e.target.value as RangerBeastCompanion })}>
+          {RANGER_BEAST_COMPANIONS.map(b => <option key={b} value={b}>{b}</option>)}
+        </select>
+      </label>}
     </fieldset>}
     {isSorcerer && <fieldset disabled={busy} className="space-y-3">
       <legend className="text-sm font-medium text-barber-gold">Opzioni dello Stregone</legend>

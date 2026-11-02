@@ -87,7 +87,7 @@ export const LoginScreen: React.FC = () => {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.keyboardAvoid}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
       >
         <ScrollView
           contentContainerStyle={styles.scrollContent}
@@ -137,6 +137,7 @@ export const LoginScreen: React.FC = () => {
                   autoComplete="email"
                   autoCorrect={false}
                   editable={!isSubmitting}
+                  accessibilityLabel="Indirizzo email"
                 />
               </View>
             </View>
@@ -159,11 +160,15 @@ export const LoginScreen: React.FC = () => {
                   autoCapitalize="none"
                   autoComplete="password"
                   editable={!isSubmitting}
+                  accessibilityLabel="Password"
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword((prev) => !prev)}
                   style={styles.eyeButton}
                   activeOpacity={0.7}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  accessibilityRole="button"
+                  accessibilityLabel={showPassword ? 'Nascondi password' : 'Mostra password'}
                 >
                   {showPassword ? (
                     <EyeOff size={18} color={colors.parchmentMuted} />
@@ -180,6 +185,8 @@ export const LoginScreen: React.FC = () => {
               onPress={handleLogin}
               disabled={isSubmitting}
               activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Accedi alla gilda"
             >
               {isSubmitting ? (
                 <View style={styles.loadingRow}>
@@ -369,7 +376,10 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
   },
   eyeButton: {
-    padding: 6,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   submitButton: {
     backgroundColor: colors.brassBase,

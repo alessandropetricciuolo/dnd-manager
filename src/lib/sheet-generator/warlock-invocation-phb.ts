@@ -41,15 +41,21 @@ function escapeRegExp(s: string): string {
 
 function cleanInvocationExcerpt(md: string): string {
   return md
+    .replace(/<sub>([^<]*)<\/sub>/gi, "$1")
     .replace(/!\[[^\]]*]\([^)]*\)/g, "")
     .replace(/^CAPITOLO\s+\d+.*$/gim, "")
+    .replace(/^\d{1,3}\s*$/gm, "")
     .replace(/^Offrimi un caffè:.*$/gim, "")
-    .replace(/<sub>[^<]*<\/sub>/gi, "")
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 }
 
-function extractHeadingBlock(manualText: string, heading: string, minHeadingLevel = 2): string {
+function extractHeadingBlock(
+  manualText: string,
+  heading: string,
+  minHeadingLevel = 2,
+  stopAtAnyHeading = false
+): string {
   const txt = manualText.replace(/\r/g, "");
   const normTarget = normalizeSpellNameForTier(heading);
   const re = new RegExp(`^(#{${minHeadingLevel},6})\\s+(.+?)\\s*$`, "gm");
@@ -69,7 +75,8 @@ function extractHeadingBlock(manualText: string, heading: string, minHeadingLeve
   const firstLineEnd = rest.indexOf("\n");
   const bodyStart = firstLineEnd >= 0 ? firstLineEnd + 1 : rest.length;
   const afterTitle = rest.slice(bodyStart);
-  const next = new RegExp(`^#{1,${level}}\\s+\\S`, "m").exec(afterTitle);
+  const stopMax = stopAtAnyHeading ? 6 : level;
+  const next = new RegExp(`^#{1,${stopMax}}\\s+\\S`, "m").exec(afterTitle);
   const end = next?.index != null ? bodyStart + next.index : rest.length;
   return cleanInvocationExcerpt(rest.slice(0, end).trim());
 }
@@ -96,13 +103,23 @@ export function extractWarlockInvocationMarkdown(displayName: string): string {
   if (manualFile) {
     const sup = getManualMarkdownByFileName(manualFile);
     if (sup) {
-      const fromSup = extractHeadingBlock(sup, heading, 1);
+      const fromSup = extractHeadingBlock(sup, heading, 1, true);
       if (fromSup) return fromSup;
     }
   }
   const phb = getPhbMarkdownText();
-  if (!phb) return "";
-  return extractHeadingBlock(invocationCatalogSlice(phb), heading, 2);
+  if (phb) {
+    const fromPhb = extractHeadingBlock(invocationCatalogSlice(phb), heading, 2, true);
+    if (fromPhb) return fromPhb;
+  }
+  for (const supFile of ["xanathar.md", "Tasha.md"]) {
+    const sup = getManualMarkdownByFileName(supFile);
+    if (sup) {
+      const fromSup = extractHeadingBlock(sup, heading, 2, true);
+      if (fromSup) return fromSup;
+    }
+  }
+  return "";
 }
 
 export function parseWarlockPactChoice(classFeaturesMd: string): string | null {
@@ -141,16 +158,16 @@ export function extractPhbWarlockPactMarkdown(pactName: string): string {
     const tasha = getManualMarkdownByFileName("Tasha.md");
     if (tasha) {
       return (
-        extractHeadingBlock(tasha, heading, 3) ||
-        extractHeadingBlock(tasha, heading, 2)
+        extractHeadingBlock(tasha, heading, 3, true) ||
+        extractHeadingBlock(tasha, heading, 2, true)
       );
     }
   }
   const phb = getPhbMarkdownText();
   if (!phb) return "";
   return (
-    extractHeadingBlock(phb, heading, 4) ||
-    extractHeadingBlock(phb, heading, 3)
+    extractHeadingBlock(phb, heading, 4, true) ||
+    extractHeadingBlock(phb, heading, 3, true)
   );
 }
 

@@ -748,7 +748,14 @@ export function parseSpellsWithLevelFromList(md: string): Array<{ name: string; 
       .replace(/\s*\([^)]*\)\s*$/g, "")
       .replace(/[;,:.]+$/g, "")
       .trim();
-    if (!core || core.length < 2 || core.length > 70) continue;
+    if (
+      !core ||
+      core.length < 2 ||
+      core.length > 70 ||
+      /^\d+$|^CAPITOLO\b|\bCAPITOLO\s+\d+\s*\||paypal\.me|offrimi un caff|^!\[/i.test(core)
+    ) {
+      continue;
+    }
     const key = `${currentLevel}:${core.toLocaleLowerCase("it")}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -1362,8 +1369,31 @@ export async function resolveGeneratorRules(
     }
 
     const picked = [...cantripEntries, ...leveledEntries];
-    await preloadPhbMarkdown(requestOrigin);
+    await Promise.all([
+      preloadPhbMarkdown(requestOrigin),
+      preloadManualMarkdownFile("xanathar.md", requestOrigin),
+      preloadManualMarkdownFile("Tasha.md", requestOrigin),
+    ]);
+    const { manualSpellFromSources } = await import("@/lib/server/manual-spell-source");
     for (const pickedSpell of picked) {
+      let resolvedFromManual = null;
+      try {
+        resolvedFromManual = manualSpellFromSources(pickedSpell.name, pickedSpell.level, "", {
+          origin: "class",
+          sourceLabel: input.classLabel,
+          ability: spellcastingAbility ?? undefined,
+          alwaysPrepared: false,
+          requiresSlot: pickedSpell.level > 0,
+        });
+      } catch {
+        resolvedFromManual = null;
+      }
+      if (resolvedFromManual) {
+        const mdBody = resolvedFromManual.fullTextMd ?? "";
+        resolvedFromManual.summary = mdBody ? compactSpellSummary(mdBody) : "";
+        spells.push(resolvedFromManual);
+        continue;
+      }
       const mdSpell = extractPhbSpellMarkdown(pickedSpell.name);
       const summary = mdSpell ? compactSpellSummary(mdSpell) : "";
       const flags = extractSpellFlags(mdSpell ?? "");
@@ -1377,6 +1407,11 @@ export async function resolveGeneratorRules(
         somatic: flags.somatic,
         material: flags.material,
         fullTextMd: mdSpell ? cleanRulesExcerpt(mdSpell) : null,
+        origin: "class",
+        sourceLabel: input.classLabel,
+        ability: spellcastingAbility ?? undefined,
+        alwaysPrepared: false,
+        requiresSlot: pickedSpell.level > 0,
       });
     }
   }
@@ -1473,6 +1508,7 @@ function inferSpellLevelFromList(listMd: string, spellName: string): number {
       .replace(/\s*\([^)]*\)\s*$/g, "")
       .replace(/[;,:.]+$/g, "")
       .trim();
+    if (!core || /^\d+$|^CAPITOLO\b/i.test(core)) continue;
     if (core.toLocaleLowerCase("it") === spellName.toLocaleLowerCase("it")) return level;
   }
   return 0;

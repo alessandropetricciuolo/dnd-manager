@@ -174,12 +174,14 @@ function escapeRegExp(s: string): string {
   return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-/** Estrae il blocco da `# Titolo incantesimo` al prossimo heading ATX. */
+/** Estrae il blocco da `# Titolo incantesimo` al prossimo heading ATX (cercando prima nel capitolo incantesimi). */
 export function extractPhbSpellMarkdown(spellName: string): string {
   const name = spellName.trim();
   if (!name) return "";
-  const txt = getPhbMarkdownText().replace(/\r/g, "");
-  if (!txt) return "";
+  const fullTxt = getPhbMarkdownText().replace(/\r/g, "");
+  if (!fullTxt) return "";
+  const marker = fullTxt.search(/^# DESCRIZIONE DEGLI INCANTESIMI\s*$/m);
+  const txt = marker >= 0 ? fullTxt.slice(marker) : fullTxt;
   const head = new RegExp(
     `^#{1,6}\\s+${escapeRegExp(name)}(?:\\s*\\([^)]*\\))?\\s*$`,
     "im"

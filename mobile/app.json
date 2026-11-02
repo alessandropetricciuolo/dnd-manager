@@ -29,8 +29,9 @@
         "backgroundColor": "#0B0908"
       },
       "userInterfaceStyle": "dark",
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.barberanddragons.mobile",
-      "versionCode": 5,
+      "versionCode": 7,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"

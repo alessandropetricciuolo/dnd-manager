@@ -35,13 +35,17 @@ const config: Config = {
           dark: "#7e5f24",
         },
         crimson: {
+          light: "#e05353",
           base: "#942121",
           hover: "#7a1919",
           dark: "#5c1313",
         },
         parchment: {
+          DEFAULT: "#f5f2eb",
           100: "#f5f2eb",
+          200: "#e6e0d3",
           300: "#cdc5b4",
+          400: "#ada28d",
           500: "#8c8270",
         },
         background: "hsl(var(--background))",

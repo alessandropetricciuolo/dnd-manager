@@ -21,6 +21,7 @@ import {
   ChevronRight,
   LogOut,
 } from 'lucide-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePushNotifications } from '../../contexts/PushNotificationsContext';
@@ -34,7 +35,7 @@ export const AccountScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, profile, role, activeMode, switchMode, signOut } = useAuth();
   const isGmOrAdmin = role === 'gm' || role === 'admin';
-  const isAdmin = role === 'admin';
+  const isGmActiveView = isGmOrAdmin && activeMode === 'gm';
 
   const {
     enabled,
@@ -48,7 +49,7 @@ export const AccountScreen: React.FC = () => {
     loading: pushLoading,
   } = usePushNotifications();
   const [deletionBusy, setDeletionBusy] = useState(false);
-  const [blockedUsers, setBlockedUsers] = useState<Array<{ blocked_id: string; created_at: string }>>([]);
+  const [blockedUsers, setBlockedUsers] = useState<Array<{ blocked_id: string; created_at: string; blocked_name?: string | null }>>([]);
   const [blocksError, setBlocksError] = useState<string | null>(null);
 
   const refreshBlockedUsers = useCallback(async () => {
@@ -133,21 +134,22 @@ export const AccountScreen: React.FC = () => {
   };
 
   return (
+    <SafeAreaView style={styles.screen} edges={['left', 'right']}>
     <ScrollView style={styles.screen} contentContainerStyle={styles.content}>
       {/* HEADING ARALDICO */}
       <View style={styles.heading}>
         <View style={styles.iconBadge}>
-          {isGmOrAdmin ? (
+          {isGmActiveView ? (
             <Crown size={24} color={colors.brassLight} />
           ) : (
             <Shield size={24} color={colors.brassLight} />
           )}
         </View>
         <Text style={styles.title}>
-          {isGmOrAdmin ? 'Profilo Game Master' : 'Profilo Giocatore'}
+          {isGmActiveView ? 'Profilo Game Master' : 'Profilo Giocatore'}
         </Text>
         <Text style={styles.subtitle}>
-          {isGmOrAdmin
+          {isGmActiveView
             ? 'Gestione identità Master, presenze di gilda e impostazioni.'
             : 'Passaporto dell’Avventuriero, preferenze e dati personali.'}
         </Text>
@@ -182,12 +184,14 @@ export const AccountScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Switcher Admin tra GM e Player */}
-        {isAdmin && (
+        {/* Switcher GM/Admin tra GM e Player */}
+        {isGmOrAdmin && (
           <TouchableOpacity
             style={styles.adminSwitchBtn}
             onPress={() => switchMode(activeMode === 'gm' ? 'player' : 'gm')}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Passa a vista ${activeMode === 'gm' ? 'Giocatore' : 'Regia GM'}`}
           >
             <Repeat size={14} color={colors.void} />
             <Text style={styles.adminSwitchBtnText}>
@@ -206,8 +210,8 @@ export const AccountScreen: React.FC = () => {
         </TouchableOpacity>
       </View>
 
-      {/* STRUMENTI GM (PRESENZE & XP) */}
-      {isGmOrAdmin && (
+      {/* STRUMENTI GM (PRESENZE & XP) - Solo in modalità Regia GM */}
+      {isGmActiveView && (
         <View style={styles.card}>
           <View style={styles.sectionHeadingRow}>
             <Award size={18} color={colors.brassLight} />
@@ -224,10 +228,12 @@ export const AccountScreen: React.FC = () => {
               }
             }}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel="Apri Registro Presenze e Assegnazione XP"
           >
             <View style={styles.toolActionLeft}>
               <Award size={18} color={colors.brassBase} />
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.toolActionTitle}>Registro Presenze & Assegnazione XP</Text>
                 <Text style={styles.toolActionSubtitle}>
                   Verifica i partecipanti e distribuisci l’esperienza di fine giocata
@@ -321,8 +327,17 @@ export const AccountScreen: React.FC = () => {
         ) : null}
         {blockedUsers.map((item) => (
           <View key={item.blocked_id} style={styles.blockRow}>
-            <Text style={styles.blockLabel}>ID · {item.blocked_id.slice(0, 8)}</Text>
-            <TouchableOpacity onPress={() => removeBlock(item.blocked_id)} accessibilityRole="button">
+            <Text style={styles.blockLabel}>
+              {item.blocked_name
+                ? `${item.blocked_name} (${item.blocked_id.slice(0, 6)})`
+                : `Account · ${item.blocked_id.slice(0, 8)}`}
+            </Text>
+            <TouchableOpacity
+              onPress={() => removeBlock(item.blocked_id)}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              accessibilityRole="button"
+              accessibilityLabel={`Rimuovi blocco per ${item.blocked_name || item.blocked_id.slice(0, 8)}`}
+            >
               <Text style={styles.unblockText}>Rimuovi blocco</Text>
             </TouchableOpacity>
           </View>
@@ -367,6 +382,7 @@ export const AccountScreen: React.FC = () => {
         <Text style={styles.signOutText}>Esci dall’account</Text>
       </TouchableOpacity>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 

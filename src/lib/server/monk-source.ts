@@ -78,7 +78,14 @@ export async function loadMonkEvidence(
         manualSpellFromSources(
           'Illusione Minore',
           0,
-          'Trucchetto aggiuntivo concesso dalla Via dell’Ombra (Arti dell’Ombra).'
+          'Trucchetto aggiuntivo concesso dalla Via dell’Ombra (Arti dell’Ombra).',
+          {
+            origin: 'subclass',
+            sourceLabel: tradition.label,
+            ability: 'wis',
+            alwaysPrepared: true,
+            requiresSlot: false,
+          }
         )
       );
     }
@@ -101,7 +108,7 @@ export async function loadMonkEvidence(
     resources.handOfHealingDice = `${die} + ${sheet.abilityMods.wis}`;
   }
   if (tradition?.slug === 'tce-monaco-se-astrale' && sheet.level >= 3) {
-    resources.astralArmsDamage = `2${die} forza`;
+    resources.astralArmsDamage = `2d${die.replace(/^1d/, '')} forza`;
   }
 
   return {
@@ -117,8 +124,9 @@ export function addMonkGrantedSpells(
   evidence: MonkEvidence
 ): GeneratedCharacterSheet {
   const clone = structuredClone(sheet);
+  const isMonkOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
   for (const spell of evidence.grantedSpells) {
-    if (!clone.spells.some((s) => s.name.toLowerCase() === spell.name.toLowerCase())) {
+    if (!clone.spells.some((s) => isMonkOrigin(s.origin) && s.name.toLowerCase() === spell.name.toLowerCase())) {
       clone.spells.push(spell);
     }
   }

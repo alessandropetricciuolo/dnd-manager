@@ -37,12 +37,13 @@ export async function addBarbarianGrantedSpells(original:GeneratedCharacterSheet
   // Also validates that the features granting these spells are present in the owned source.
   await loadBarbarianEvidence(original,origin);
   const sheet=structuredClone(original);
-  for(const name of names){if(sheet.spells.some(s=>s.name.toLowerCase()===name.toLowerCase()))continue;
+  const isBarbOrigin=(o?:string)=>!o||o==='class'||o==='subclass';
+  for(const name of names){if(sheet.spells.some(s=>isBarbOrigin(s.origin)&&s.name.toLowerCase()===name.toLowerCase()))continue;
     const raw=extractPhbSpellMarkdown(name);if(!raw)throw new Error(`Testo del manuale non trovato per ${name}.`);
     const level=Number(raw.match(/(\d+)[°º]? livello/i)?.[1]);if(!level)throw new Error(`Livello non trovato per ${name}.`);
     const components=raw.match(/\*\*Componenti:\*\*\s*([^\n]+)/)?.[1]??'';
     const restriction=totem?'Solo come rituale (Cammino del Combattente Totemico).':'Consultare gli Spiriti: senza slot o componenti materiali; un utilizzo condiviso per riposo breve o lungo. Caratteristica: Saggezza.';
-    sheet.spells.push({name,level,summary:restriction,fullTextMd:restriction+'\n\n'+raw,ritual:totem,concentration:/\*\*Durata:\*\*\s*Concentrazione/i.test(raw),verbal:/\bV\b/.test(components),somatic:/\bS\b/.test(components),material:!ancestral&&/\bM\b/.test(components)});
+    sheet.spells.push({name,level,summary:restriction,fullTextMd:restriction+'\n\n'+raw,ritual:totem,concentration:/\*\*Durata:\*\*\s*Concentrazione/i.test(raw),verbal:/\bV\b/.test(components),somatic:/\bS\b/.test(components),material:!ancestral&&/\bM\b/.test(components),origin:'subclass',sourceLabel:path.label,ability:'wis',alwaysPrepared:true,requiresSlot:false,usesPerRest:totem?'Solo rituale':'1/riposo breve o lungo (condiviso)'});
   }
   if(ancestral){sheet.spellSaveDc=8+sheet.proficiencyBonus+sheet.abilityMods.wis;sheet.spellAttackBonus=sheet.proficiencyBonus+sheet.abilityMods.wis;}
   return sheet;

@@ -12,7 +12,7 @@ export function sorcererReferenceCards(level: number): PrintFeature[] {
       title: 'Metamagia',
       level: 3,
       source: 'Stregone 5e / Manuale del Giocatore',
-      body: 'Plasmi gli incantesimi secondo le tue necessità. Ottieni 2 opzioni al 3° livello, una al 10° e una al 17°. Puoi applicare una sola Metamagia per lancio, salvo diversa indicazione (es. Incantesimo Potenziato).',
+      body: `Plasmi gli incantesimi secondo le tue necessità (${level >= 17 ? 4 : level >= 10 ? 3 : 2} opzioni di Metamagia note al tuo livello). Puoi applicare una sola opzione di Metamagia a un incantesimo quando lo lanci, salvo diversa indicazione (es. Incantesimo Potenziato).`,
     },
     {
       title: 'Ripristino Stregonesco',

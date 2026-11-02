@@ -142,21 +142,45 @@ export async function addRogueGrantedSpells(
   if (original.level < 3 || archetype?.slug !== 'phb-ladro-mistificatore-arcano') return original;
 
   const sheet = structuredClone(original);
+  const isRogueOrigin = (o?: string) => !o || o === 'class' || o === 'subclass';
 
   // Mistificatore Arcano automatically learns Mano Magica (Mage Hand) at level 3
-  if (!sheet.spells.some((s) => s.name.toLowerCase() === 'mano magica')) {
-    const mageHand = manualSpellFromSources('Mano magica', 0);
+  if (!sheet.spells.some((s) => isRogueOrigin(s.origin) && s.name.toLowerCase() === 'mano magica')) {
+    const mageHand = manualSpellFromSources(
+      'Mano magica',
+      0,
+      'Trucchetto concesso dal Mistificatore Arcano (Gioco di Prestigio con Mano Magica).',
+      {
+        origin: 'subclass',
+        sourceLabel: 'Mistificatore Arcano',
+        ability: 'int',
+        alwaysPrepared: true,
+        requiresSlot: false,
+      }
+    );
     if (mageHand) {
       sheet.spells.unshift(mageHand);
-      sheet.cantripsKnown = Math.max(sheet.cantripsKnown, sheet.spells.filter((s) => s.level === 0).length);
+      sheet.cantripsKnown = Math.max(
+        sheet.cantripsKnown,
+        sheet.spells.filter((s) => isRogueOrigin(s.origin) && s.level === 0).length
+      );
     }
   }
 
   if (choices.arcaneTricksterCantrip) {
-    const cantrip = manualSpellFromSources(choices.arcaneTricksterCantrip, 0);
-    if (cantrip && !sheet.spells.some((s) => s.name.toLowerCase() === cantrip.name.toLowerCase())) {
+    const cantrip = manualSpellFromSources(choices.arcaneTricksterCantrip, 0, '', {
+      origin: 'class',
+      sourceLabel: 'Mistificatore Arcano',
+      ability: 'int',
+      alwaysPrepared: false,
+      requiresSlot: false,
+    });
+    if (cantrip && !sheet.spells.some((s) => isRogueOrigin(s.origin) && s.name.toLowerCase() === cantrip.name.toLowerCase())) {
       sheet.spells.push(cantrip);
-      sheet.cantripsKnown = Math.max(sheet.cantripsKnown, sheet.spells.filter((s) => s.level === 0).length);
+      sheet.cantripsKnown = Math.max(
+        sheet.cantripsKnown,
+        sheet.spells.filter((s) => isRogueOrigin(s.origin) && s.level === 0).length
+      );
     }
   }
 

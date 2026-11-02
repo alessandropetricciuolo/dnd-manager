@@ -202,10 +202,13 @@ export function DashboardShell({ children, isAdmin, isGmOrAdmin, hasForgeAccess 
 
       <div className="flex flex-1 flex-col md:contents">
         {!isCampaignPage && (
-          <div className="flex items-center gap-2 border-b border-brass-base/20 bg-guild-oak/95 px-4 py-3 backdrop-blur-md md:hidden">
+          <nav
+            aria-label="Navigazione rapida di Gilda"
+            className="flex items-center gap-2 border-b border-brass-base/20 bg-guild-oak/95 px-4 py-3 backdrop-blur-md md:hidden"
+          >
             <MobileNavMenu isAdmin={isAdmin} isGmOrAdmin={isGmOrAdmin} hasForgeAccess={hasForgeAccess} hasVaultAccess={hasVaultAccess} />
             <span className="truncate text-sm font-medium text-parchment-200">Menu di Gilda</span>
-          </div>
+          </nav>
         )}
 
         <main className={cn("min-w-0 flex-1", isCampaignDetail && "flex min-h-0 flex-col")}>

@@ -19,7 +19,20 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
   if(!start)throw new Error(`Sezione ${college.label} non trovata in ${college.supplementRulesSource.markdownFile}.`);
   const stops=new Set([
     ...SUPPLEMENT_SUBCLASS_OPTIONS.filter(c=>c.slug!==college.slug&&c.supplementRulesSource.markdownFile===college.supplementRulesSource.markdownFile).flatMap(c=>c.sectionHeadings.map(norm)),
-    ...CLASS_OPTIONS.map(c=>norm(c.label)), 'WARLOCK: IL NON MORTO', 'GUIDE PER IL MAESTRO DI BATTAGLIA', 'SUPPLICHE OCCULTE', 'TALENTI',
+    ...CLASS_OPTIONS.map(c=>norm(c.label)),
+    'WARLOCK: IL NON MORTO',
+    'GUIDE PER IL MAESTRO DI BATTAGLIA',
+    'SUPPLICHE OCCULTE',
+    'TALENTI',
+    'IMPULSI DI MAGIA SELVAGGIA',
+    'APPRENDERE FORME BESTIALI',
+    'COMPAGNI DEL SIGNORE DELLE BESTIE',
+    'INFUSIONI DA ARTEFICE',
+    'OPZIONI DELLE SUPPLICHE OCCULTE',
+    'BACKGROUND',
+    'CAPITOLO 2',
+    'CAPITOLO 4',
+    'PARTE 2',
   ]);
   for(const [title] of specs)stops.delete(norm(title));
   const end=headings.find(h=>h.index>start.index&&stops.has(h.key))?.index??lines.length;
@@ -38,6 +51,11 @@ export function extractManualSubclassFeatures(raw:string, college:SubclassCatalo
     const body=lines.slice(h.index+1,starts[i+1]?.index??end).join('\n')
       .replace(/^#{1,6}\s+Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra|Via|Monaco|Tradizione Monastica|Giuramento|Paladino|Giuramento Sacro|Ranger|Archetipo Ranger|Custode degli Sciami|Viandante Fatato|Viandante dell['’]Orizzonte|Uccisore di Mostri|Cacciatore delle Tenebre|Stregone|Origine Stregonica|Origine Stregonesca|Anima Divina|Magia delle Ombre|Stregoneria della Tempesta|Anima Meccanica|Mente Aberrante|Warlock|Patrono Ultraterreno|Signore Fatato|Immondo|Grande Antico|Celestiale|Lama del Sortilegio|Lama Sortilegio|Genio|Insondabile)[^\n]*\n/gim,'')
       .replace(/^\*{0,2}Privilegio (?:del|della|dell['’])\s+(?:Collegio|Cammino|Dominio|Circolo|Cavaliere|Guerriero|Archetipo|Fantasma|Lama Spirituale|Ladro|Mago|Tradizione Arcana|Canto della Lama|Ordine degli Scribi|Mago della Guerra|Via|Monaco|Tradizione Monastica|Giuramento|Paladino|Giuramento Sacro|Ranger|Archetipo Ranger|Custode degli Sciami|Viandante Fatato|Viandante dell['’]Orizzonte|Uccisore di Mostri|Cacciatore delle Tenebre|Stregone|Origine Stregonica|Origine Stregonesca|Anima Divina|Magia delle Ombre|Stregoneria della Tempesta|Anima Meccanica|Mente Aberrante|Warlock|Patrono Ultraterreno|Signore Fatato|Immondo|Grande Antico|Celestiale|Lama del Sortilegio|Lama Sortilegio|Genio|Insondabile)[^\n]*\*{0,2}\s*$/gim,'')
+      .replace(/(?:^|\n)\s*(?:\d{1,3}\s+)?(?:CAPITOLO|PARTE)\s+\d+(?:\s*\|[^\n]*)?(?:\s+\d{1,3})?/gi, ' ')
+      .replace(/\b\d{1,3}\s+(?:CAPITOLO|PARTE)\s+\d+\s*\|[^\n]*/gi, ' ')
+      .replace(/\b(?:CAPITOLO|PARTE)\s+\d+\s*\|[^\n]*/gi, ' ')
+      .replace(/\n\s*\d{1,3}\s*\n/g, '\n')
+      .replace(/^(?:img[-_]?\d+\.?\s*(?:jpe?g|png)?|scansionato con camscanner|offrimi un caff[eè][^\n]*|paypal\.me[^\n]*)\s*$/gim, '')
       .replace(/^Scansionato con CamScanner\s*$/gm,'').trim();
     if(!body)throw new Error(`Testo vuoto per ${spec.title}.`);
     return [{title:spec.title,body,level:spec.unlock,source:`${wikiManualBookLabel(college.supplementRulesSource.manualBookKey)} / ${college.label} / ${college.supplementRulesSource.markdownFile}`}];

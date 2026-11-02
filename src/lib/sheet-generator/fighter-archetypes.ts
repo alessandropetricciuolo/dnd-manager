@@ -92,6 +92,9 @@ export const SAMURAI_SKILLS: SkillKey[] = ['performance', 'insight', 'persuasion
 export type FighterChoices = {
   fightingStyle?: PhbFightingStyle;
   secondFightingStyle?: PhbFightingStyle;
+  maneuvers?: string[];
+  arcaneShots?: string[];
+  runes?: string[];
   arcaneArcherSkill?: 'arcana' | 'nature';
   arcaneArcherCantrip?: typeof ARCANE_ARCHER_CANTRIPS[number];
   cavalierSkill?: SkillKey;

@@ -213,9 +213,9 @@ export function CharactersSection({
         <span className="corner-ornament-tr" />
         <span className="corner-ornament-bl" />
         <span className="corner-ornament-br" />
-        <p className="font-cinzel text-xl font-semibold text-gold-relief">
+        <h2 className="font-cinzel text-xl font-semibold text-gold-relief">
           I destini sono in preparazione
-        </p>
+        </h2>
         <p className="mt-2 text-sm text-barber-paper/75">
           Il Dungeon Master sta forgiando la tua scheda. Attendi l&apos;assegnazione del tuo eroe per visualizzare il registro.
         </p>

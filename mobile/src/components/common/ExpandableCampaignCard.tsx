@@ -36,11 +36,11 @@ interface ExpandableCampaignCardProps {
   isActive: boolean;
   onSelect: (campaign: Campaign) => void;
   isGmView?: boolean;
-  onNavigateRegia?: () => void;
+  onNavigateRegia?: (campaign: Campaign) => void;
   upcomingSession?: Session | null;
 }
 
-export const ExpandableCampaignCard: React.FC<ExpandableCampaignCardProps> = ({
+const ExpandableCampaignCardComponent: React.FC<ExpandableCampaignCardProps> = ({
   campaign,
   isActive,
   onSelect,
@@ -73,6 +73,7 @@ export const ExpandableCampaignCard: React.FC<ExpandableCampaignCardProps> = ({
             source={{ uri: imageUrl }}
             style={styles.squareImage}
             resizeMode="cover"
+            resizeMethod="resize"
             onError={() => setImageError(true)}
           />
         ) : (
@@ -133,6 +134,7 @@ export const ExpandableCampaignCard: React.FC<ExpandableCampaignCardProps> = ({
               source={{ uri: imageUrl }}
               style={styles.expandedBannerImage}
               resizeMode="cover"
+              resizeMethod="resize"
               onError={() => setImageError(true)}
             />
           ) : (
@@ -235,7 +237,7 @@ export const ExpandableCampaignCard: React.FC<ExpandableCampaignCardProps> = ({
           {isGmView && onNavigateRegia && (
             <TouchableOpacity
               style={styles.regiaDirectBtn}
-              onPress={onNavigateRegia}
+              onPress={() => onNavigateRegia(campaign)}
               activeOpacity={0.8}
             >
               <Crown size={15} color={colors.brassLight} />
@@ -247,6 +249,8 @@ export const ExpandableCampaignCard: React.FC<ExpandableCampaignCardProps> = ({
     </View>
   );
 };
+
+export const ExpandableCampaignCard = React.memo(ExpandableCampaignCardComponent);
 
 const styles = StyleSheet.create({
   // ============= SQUARE COLLAPSED (2 PER ROW) =============

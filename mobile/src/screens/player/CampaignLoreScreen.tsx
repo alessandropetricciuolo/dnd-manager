@@ -4,7 +4,6 @@ import {
   Text,
   View,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   Modal,
@@ -12,6 +11,7 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   BookOpen,
   Flag,
@@ -59,6 +59,7 @@ export const CampaignLoreScreen: React.FC = () => {
   const [companions, setCompanions] = useState<Character[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Wiki tab filters
   const [wikiSearch, setWikiSearch] = useState<string>('');
@@ -76,6 +77,7 @@ export const CampaignLoreScreen: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       setIsLoading(true);
+      setLoadError(null);
 
       // 1. Fetch Wiki Entities (admin_only = false or is_secret = false)
       let wikiQuery = supabase
@@ -127,11 +129,16 @@ export const CampaignLoreScreen: React.FC = () => {
       } else {
         setCompanions([]);
       }
+
+      if (wikiErr && missionErr && compErr) {
+        setLoadError('Impossibile sincronizzare i tomi di gilda. Verifica la connessione e riprova.');
+      }
     } catch (err) {
       console.warn('[CampaignLoreScreen] loadData catch:', err);
       setWikiEntities([]);
       setMissions([]);
       setCompanions([]);
+      setLoadError('Impossibile sincronizzare i tomi di gilda. Verifica la connessione e riprova.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -246,7 +253,7 @@ export const CampaignLoreScreen: React.FC = () => {
   }, [missions, missionStatusFilter]);
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={{ flex: 1, paddingRight: 8 }}>
@@ -259,6 +266,9 @@ export const CampaignLoreScreen: React.FC = () => {
           style={styles.campaignBadgeBtn}
           onPress={() => setCampaignModalVisible(true)}
           activeOpacity={0.7}
+          hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+          accessibilityRole="button"
+          accessibilityLabel={`Seleziona campagna, attuale: ${activeCampaign?.name || 'Cambia'}`}
         >
           <Compass size={12} color={colors.brassBase} />
           <Text style={styles.campaignBadgeText} numberOfLines={1}>
@@ -273,6 +283,8 @@ export const CampaignLoreScreen: React.FC = () => {
           style={[styles.tabBtn, activeTab === 'wiki' && styles.tabBtnActive]}
           onPress={() => setActiveTab('wiki')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'wiki' }}
         >
           <BookOpen
             size={14}
@@ -292,6 +304,8 @@ export const CampaignLoreScreen: React.FC = () => {
           style={[styles.tabBtn, activeTab === 'missions' && styles.tabBtnActive]}
           onPress={() => setActiveTab('missions')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'missions' }}
         >
           <Flag
             size={14}
@@ -311,6 +325,8 @@ export const CampaignLoreScreen: React.FC = () => {
           style={[styles.tabBtn, activeTab === 'party' && styles.tabBtnActive]}
           onPress={() => setActiveTab('party')}
           activeOpacity={0.8}
+          accessibilityRole="tab"
+          accessibilityState={{ selected: activeTab === 'party' }}
         >
           <Users
             size={14}
@@ -344,6 +360,20 @@ export const CampaignLoreScreen: React.FC = () => {
             <ActivityIndicator size="small" color={colors.brassBase} />
             <Text style={styles.loadingText}>Apertura tomi di gilda...</Text>
           </View>
+        ) : loadError ? (
+          <View style={styles.emptyCard} accessibilityRole="alert">
+            <AlertTriangle size={32} color={colors.crimsonLight} />
+            <Text style={styles.emptyTitle}>Errore di caricamento</Text>
+            <Text style={styles.emptySubtitle}>{loadError}</Text>
+            <TouchableOpacity
+              style={[styles.modalActionButton, { paddingHorizontal: 18, marginTop: 8 }]}
+              onPress={onRefresh}
+              accessibilityRole="button"
+              accessibilityLabel="Riprova caricamento archivio"
+            >
+              <Text style={styles.modalActionText}>Riprova</Text>
+            </TouchableOpacity>
+          </View>
         ) : (
           <>
             {/* ================================================= */}
@@ -360,9 +390,16 @@ export const CampaignLoreScreen: React.FC = () => {
                     placeholderTextColor={colors.parchmentMuted}
                     value={wikiSearch}
                     onChangeText={setWikiSearch}
+                    accessibilityLabel="Cerca nell'archivio Wiki Lore"
                   />
                   {wikiSearch.length > 0 && (
-                    <TouchableOpacity onPress={() => setWikiSearch('')} style={styles.clearBtn}>
+                    <TouchableOpacity
+                      onPress={() => setWikiSearch('')}
+                      style={styles.clearBtn}
+                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      accessibilityRole="button"
+                      accessibilityLabel="Cancella testo di ricerca"
+                    >
                       <X size={14} color={colors.parchmentMuted} />
                     </TouchableOpacity>
                   )}
@@ -372,6 +409,7 @@ export const CampaignLoreScreen: React.FC = () => {
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
+                  style={{ flexGrow: 0, flexShrink: 0 }}
                   contentContainerStyle={styles.filterChipScroll}
                 >
                   {[
@@ -390,6 +428,9 @@ export const CampaignLoreScreen: React.FC = () => {
                       ]}
                       onPress={() => setWikiTypeFilter(chip.key)}
                       activeOpacity={0.75}
+                      hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
+                      accessibilityRole="tab"
+                      accessibilityState={{ selected: wikiTypeFilter === chip.key }}
                     >
                       <Text
                         style={[
@@ -1086,27 +1127,33 @@ const styles = StyleSheet.create({
   },
   filterChipScroll: {
     gap: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    paddingRight: 24,
+    alignItems: 'center',
   },
   filterChip: {
+    minHeight: 36,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   filterChipActive: {
     borderColor: colors.brassBase,
     backgroundColor: colors.stone,
   },
   filterChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
     color: colors.parchmentMuted,
   },
   filterChipTextActive: {
     color: colors.brassLight,
+    fontWeight: '700',
   },
   entityCard: {
     backgroundColor: colors.stoneSurface,
@@ -1130,7 +1177,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 0.5,
@@ -1159,7 +1206,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   tagText: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   missionFiltersRow: {
@@ -1169,19 +1216,21 @@ const styles = StyleSheet.create({
   },
   missionFilterBtn: {
     flex: 1,
-    paddingVertical: 7,
+    minHeight: 36,
+    paddingVertical: 8,
     borderRadius: 6,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   missionFilterBtnActive: {
     backgroundColor: colors.stone,
     borderColor: colors.brassBase,
   },
   missionFilterText: {
-    fontSize: 11,
+    fontSize: 11.5,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
@@ -1213,7 +1262,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   diffBadgeText: {
-    fontSize: 9,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.4,
   },
@@ -1224,7 +1273,7 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   statusBadgeText: {
-    fontSize: 9.5,
+    fontSize: 10.5,
     fontWeight: '700',
   },
   missionTitle: {
@@ -1288,7 +1337,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   partyBannerText: {
-    fontSize: 10,
+    fontSize: 10.5,
     fontWeight: '800',
     color: colors.brassLight,
     letterSpacing: 0.5,
@@ -1354,7 +1403,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statPillLabel: {
-    fontSize: 10,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
   },
   statPillValue: {
@@ -1419,7 +1468,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   modalTypeBadgeText: {
-    fontSize: 8.5,
+    fontSize: 10,
     fontWeight: '800',
     color: colors.brassLight,
   },
@@ -1434,7 +1483,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   modalCloseBtn: {
-    padding: 6,
+    minWidth: 40,
+    minHeight: 40,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   modalBody: {
     maxHeight: 400,
@@ -1563,7 +1616,7 @@ const styles = StyleSheet.create({
     color: colors.parchmentLight,
   },
   statGridLabel: {
-    fontSize: 9,
+    fontSize: 10.5,
     color: colors.parchmentMuted,
     textAlign: 'center',
   },

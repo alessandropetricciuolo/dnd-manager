@@ -284,7 +284,22 @@ export function drawWarlockEmblem(page: PDFPage, b: FantasyBox) {
   stroke(page, cx, cy - 3.8 * k, cx, cy + 3.8 * k, 1.5 * k);
 }
 
-
-
-
+/** Oak leaf & stone circle crest for the Druid. */
+export function drawDruidEmblem(page: PDFPage, b: FantasyBox) {
+  const k = Math.min(b.width, b.height) / 36, cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+  page.drawCircle({ x: cx, y: cy, size: 16 * k, borderColor: INK, borderWidth: 0.7 });
+  page.drawCircle({ x: cx, y: cy, size: 12 * k, borderColor: INK, borderWidth: 0.5 });
+  // Central leaf stem
+  stroke(page, cx, cy - 11 * k, cx, cy + 10 * k, 1.2 * k);
+  // Leaf contour
+  stroke(page, cx, cy + 11 * k, cx - 7 * k, cy + 2 * k, 1.1 * k);
+  stroke(page, cx - 7 * k, cy + 2 * k, cx, cy - 8 * k, 1.1 * k);
+  stroke(page, cx, cy + 11 * k, cx + 7 * k, cy + 2 * k, 1.1 * k);
+  stroke(page, cx + 7 * k, cy + 2 * k, cx, cy - 8 * k, 1.1 * k);
+  // Leaf veins
+  stroke(page, cx, cy - 2 * k, cx - 4.5 * k, cy + 2.5 * k, 0.8 * k);
+  stroke(page, cx, cy - 2 * k, cx + 4.5 * k, cy + 2.5 * k, 0.8 * k);
+  stroke(page, cx, cy + 2 * k, cx - 3.5 * k, cy + 5.5 * k, 0.8 * k);
+  stroke(page, cx, cy + 2 * k, cx + 3.5 * k, cy + 5.5 * k, 0.8 * k);
+}
 

@@ -67,6 +67,9 @@ const PlayerTabs: React.FC = () => {
                 style={styles.gmSwitchButton}
                 onPress={() => switchMode('gm')}
                 activeOpacity={0.8}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                accessibilityRole="button"
+                accessibilityLabel="Passa alla Regia Game Master"
               >
                 <Crown size={14} color={colors.void} />
                 <Text style={styles.gmSwitchButtonText}>Regia</Text>
@@ -74,11 +77,27 @@ const PlayerTabs: React.FC = () => {
             )}
             <TouchableOpacity
               style={styles.signOutButton}
-              onPress={async () => {
-                const result = await signOut();
-                if (result.error) Alert.alert('Impossibile uscire', result.error);
+              onPress={() => {
+                Alert.alert(
+                  'Esci dall’account',
+                  'Vuoi davvero disconnettere la sessione corrente?',
+                  [
+                    { text: 'Annulla', style: 'cancel' },
+                    {
+                      text: 'Esci',
+                      style: 'destructive',
+                      onPress: async () => {
+                        const result = await signOut();
+                        if (result.error) Alert.alert('Impossibile uscire', result.error);
+                      },
+                    },
+                  ]
+                );
               }}
               activeOpacity={0.7}
+              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              accessibilityRole="button"
+              accessibilityLabel="Esci dall’account"
             >
               <LogOut size={16} color={colors.parchmentMuted} />
             </TouchableOpacity>
@@ -188,31 +207,37 @@ const styles = StyleSheet.create({
   headerTitle: {
     color: colors.parchmentLight,
     fontWeight: '800',
-    fontSize: 16,
-    letterSpacing: 0.5,
+    fontSize: 15,
+    letterSpacing: 0.3,
   },
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginRight: 14,
+    gap: 10,
+    marginRight: 12,
   },
   gmSwitchButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    justifyContent: 'center',
+    gap: 5,
     backgroundColor: colors.brassBase,
-    paddingHorizontal: 8,
-    paddingVertical: 5,
-    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    minHeight: 38,
+    borderRadius: 8,
   },
   gmSwitchButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '800',
     color: colors.void,
   },
   signOutButton: {
-    padding: 6,
+    minWidth: 40,
+    minHeight: 40,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 
