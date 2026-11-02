@@ -117,7 +117,7 @@ export async function loadFighterEvidence(
           chapter
         );
         const desc = secondM ? secondM[1].trim() : '';
-        secFeat.body = `Stile scelto: **${choices.secondFightingStyle}**.\n\n${desc}`;
+        secFeat.body = `Stile scelto: **${choices.secondFightingStyle}**.\n\n**${choices.secondFightingStyle}:** ${desc}`;
       }
     }
   }

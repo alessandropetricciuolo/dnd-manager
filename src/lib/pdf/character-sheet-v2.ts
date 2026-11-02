@@ -86,6 +86,16 @@ import {
   ABILITY_IT,
 } from '@/lib/sheet-generator/feature-operative-summaries';
 import type { PrintFeature } from '@/lib/sheet-generator/manual-feature-text';
+import {
+  planAdaptivePage1,
+  renderPlacedBlockOnPage1,
+  wrapInlineBody,
+  type AdaptiveBlock,
+  type AvailableSlot,
+  type AdaptiveFlowItem,
+} from './page1-adaptive-planner';
+import { FIGHTING_STYLE_DESCRIPTIONS } from '@/lib/sheet-generator/fighter-reference-copy';
+import type { PhbFightingStyle } from '@/lib/sheet-generator/class-choice-catalog';
 
 export type CharacterSheetPrintOptions = {
   warlockEvidence?: WarlockEvidence;
@@ -378,68 +388,94 @@ export async function renderCharacterSheetV2(
     )(p, box);
   };
 
-  /** Page 1: Full Header with new logo and all identity attributes */
-  const newFirstPage = (title: string): PDFPage => {
+  /** Page 1: Full Header with 2x enlarged logo and spacious multi-row identity */
+  const newFirstPage = (title: string): { page: PDFPage; bodyTopY: number } => {
     const p = doc.addPage([W, H]);
     drawFantasyFrame(p, { x: 18, y: 30, width: W - 36, height: H - 48 });
 
-    // Logo on left (aspect ratio ~0.73)
-    const scale = Math.min(50 / logo.width, 54 / logo.height);
+    // Logo on left enlarged by 100% (doubled width and height, preserving exact aspect ratio ~0.73)
+    const scale = 2 * Math.min(50 / logo.width, 54 / logo.height);
     const lw = logo.width * scale,
       lh = logo.height * scale;
-    p.drawImage(logo, { x: 27 + (50 - lw) / 2, y: 760 + (54 - lh) / 2, width: lw, height: lh });
+    // Header frame height: Row 1 (36pt) + Row 2 (36pt) + Row 3 (46pt) = 118pt (from y: 696 to 814)
+    const headerTop = 814;
+    const headerBottom = 696;
+    const headerHeight = headerTop - headerBottom; // 118
+    p.drawImage(logo, { x: 27 + (88 - lw) / 2, y: headerBottom + (headerHeight - lh) / 2, width: lw, height: lh });
 
-    // Full Header Frame next to logo (2 clean rows, height 54)
-    drawFantasyFrame(p, { x: 84, y: 760, width: 484, height: 54 });
+    // Full Header Frame next to logo
+    drawFantasyFrame(p, { x: 118, y: headerBottom, width: 450, height: headerHeight });
     const rule = (x: number, y: number, xx: number, yy: number) =>
       p.drawLine({ start: { x, y }, end: { x: xx, y: yy }, thickness: 0.45, color: rgb(0.35, 0.35, 0.35) });
 
-    // Single dividing horizontal line between Row 1 and Row 2
-    rule(87, 787, 565, 787);
+    // Dividing horizontal lines between Rows (Row 1: 36pt, Row 2: 36pt, Row 3: 46pt)
+    rule(121, 778, 565, 778);
+    rule(121, 742, 565, 742);
 
-    // Row 1 vertical dividers (Nome, Razza, Background)
-    rule(270, 814, 270, 787);
-    rule(430, 814, 430, 787);
+    // Row 1 vertical divider (Nome / Livello)
+    rule(480, 814, 480, 778);
 
-    // Row 2 vertical dividers (Classe, Sottoclasse, Allineamento & Dati Fisici, Livello)
-    rule(190, 787, 190, 760);
-    rule(345, 787, 345, 760);
-    rule(515, 787, 515, 760);
+    // Row 2 vertical divider (Classe & Sottoclasse / Razza & Sottorazza)
+    rule(345, 778, 345, 742);
 
-    // Row 1 Content
-    text(p, 92, 803, 'NOME', 6);
-    fit(p, 92, 792, s.characterName, 172, 11, bold);
-    text(p, 276, 803, 'RAZZA E SOTTORAZZA', 6);
+    // Row 3 vertical dividers (Background / Allineamento / Dati Fisici / Sesso)
+    rule(236, 742, 236, headerBottom);
+    rule(346, 742, 346, headerBottom);
+    rule(482, 742, 482, headerBottom);
+
+    // Row 1 Content: NOME & LIVELLO
+    text(p, 126, 804, 'NOME', 6);
+    fit(p, 126, 788, s.characterName, 346, 12.5, bold);
+
+    const lvlLbl = 'LIVELLO';
+    text(p, 524 - bold.widthOfTextAtSize(lvlLbl, 6) / 2, 804, lvlLbl, 6, bold);
+    const lvlVal = String(s.level);
+    text(p, 524 - bold.widthOfTextAtSize(lvlVal, 16) / 2, 785, lvlVal, 16, bold);
+
+    // Row 2 Content: CLASSE E SOTTOCLASSE & RAZZA E SOTTORAZZA
+    drawEmblem(p, { x: 122, y: 746, width: 26, height: 26 });
+    text(p, 154, 769, 'CLASSE E SOTTOCLASSE', 5.5);
+    const classSubText = s.classSubclass
+      ? `${s.classLabel.toUpperCase()} • ${s.classSubclass}`
+      : s.classLabel.toUpperCase();
+    fit(p, 154, 754, classSubText, 185, 9.5, bold);
+
+    text(p, 353, 769, 'RAZZA E SOTTORAZZA', 5.5);
     const fullRace = s.subraceLabel ? `${s.raceLabel} (${s.subraceLabel})` : s.raceLabel;
-    fit(p, 276, 792, fullRace, 148, 9);
-    text(p, 436, 803, 'BACKGROUND', 6);
-    fit(p, 436, 792, s.backgroundLabel, 124, 9);
+    fit(p, 353, 754, fullRace, 207, 9.5);
 
-    // Row 2 Content
-    drawEmblem(p, { x: 88, y: 762, width: 24, height: 21 });
-    text(p, 118, 777, 'CLASSE', 5.5);
-    fit(p, 118, 766, s.classLabel.toUpperCase(), 68, 9.5, bold);
+    // Row 3 Content: BACKGROUND, ALLINEAMENTO, DATI FISICI (3 righe distinte), SESSO
+    text(p, 126, 733, 'BACKGROUND', 5.5);
+    fit(p, 126, 716, s.backgroundLabel, 104, 8.5);
 
-    text(p, 196, 777, 'SOTTOCLASSE', 5.5);
-    fit(p, 196, 766, s.classSubclass ?? '-', 142, 8.5);
+    text(p, 244, 733, 'ALLINEAMENTO', 5.5);
+    fit(p, 244, 716, s.alignment || '-', 96, 8.5);
 
-    text(p, 351, 777, 'ALLINEAMENTO E DATI FISICI', 5.5);
-    const physicalParts = [
-      s.alignment,
-      s.sex,
-      s.age ? `${s.age} a.` : '',
-      s.height,
-      s.weight,
-    ].filter(Boolean);
-    const physText = physicalParts.join(' • ') || '-';
-    fit(p, 351, 766, physText, 158, 8);
+    text(p, 354, 733, 'DATI FISICI', 5.5);
+    text(p, 354, 722, 'Età:', 7.2, bold);
+    fit(p, 386, 722, s.age ? `${s.age} a.` : '-', 90, 7.2);
 
-    text(p, 523, 777, 'LIVELLO', 5.5);
-    text(p, 532, 765, String(s.level), 11, bold);
+    text(p, 354, 711, 'Altezza:', 7.2, bold);
+    fit(p, 386, 711, s.height || '-', 90, 7.2);
 
-    // Section banner: 8pt below header frame
-    drawSectionBanner(p, 752, title);
-    return p;
+    text(p, 354, 700, 'Peso:', 7.2, bold);
+    fit(p, 386, 700, s.weight || '-', 90, 7.2);
+
+    text(p, 490, 733, 'SESSO', 5.5);
+    fit(p, 490, 716, s.sex || '-', 70, 8.5, bold);
+
+    // Section banner: placed dynamically 8pt below header bottom
+    const bannerGap = 8;
+    const bannerH = 18;
+    const bannerTop = headerBottom - bannerGap; // 688
+    const bannerY = bannerTop - bannerH; // 670
+    drawSectionBanner(p, bannerTop, title);
+
+    // Uniform margin between banner bottom (ribbons reach bannerY - 2) and top border of all body columns
+    const bannerLowestY = bannerY - 2; // 668
+    const BANNER_TO_BODY_MARGIN = 9;
+    const bodyTopY = bannerLowestY - BANNER_TO_BODY_MARGIN; // 659
+    return { page: p, bodyTopY };
   };
 
   /** Pages 2+: Reduced Header (saves ~50pt vertical space per page!) */
@@ -472,14 +508,17 @@ export async function renderCharacterSheetV2(
   };
 
   // --- PAGE 1: IMMEDIATE COMBAT & PLAY ---
-  const first = newFirstPage('SCHEDA DEL PERSONAGGIO - V2');
+  const { page: first, bodyTopY } = newFirstPage('SCHEDA DEL PERSONAGGIO - V2');
 
-  // LEFT COLUMN: Proficiency Bonus + Abilities + Passive Perception
-  drawFantasyFrame(first, { x: 27, y: 684, width: 175, height: 40 });
+  // LEFT COLUMN: Proficiency Bonus + Abilities + Passive Perception + Senses (Chained dynamically from bodyTopY)
+  const pbBoxH = 34;
+  const pbTop = bodyTopY;
+  const pbBottom = pbTop - pbBoxH;
+  drawFantasyFrame(first, { x: 27, y: pbBottom, width: 175, height: pbBoxH });
   const pbLabel = 'BONUS DI COMPETENZA';
-  text(first, 27 + (175 - bold.widthOfTextAtSize(pbLabel, 7.5)) / 2, 710, pbLabel, 7.5, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(pbLabel, 7)) / 2, pbTop - 12, pbLabel, 7, bold);
   const pbVal = `+${s.proficiencyBonus}`;
-  text(first, 27 + (175 - bold.widthOfTextAtSize(pbVal, 16)) / 2, 692, pbVal, 16, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(pbVal, 15)) / 2, pbTop - 27, pbVal, 15, bold);
 
   const names: Record<AbilityKey, string> = {
     str: 'FORZA',
@@ -499,18 +538,18 @@ export async function renderCharacterSheetV2(
   };
 
   const abilityHeights: Record<AbilityKey, number> = {
-    str: 56,
-    dex: 76,
-    con: 52,
-    int: 96,
-    wis: 96,
-    cha: 86,
+    str: 52,
+    dex: 72,
+    con: 48,
+    int: 92,
+    wis: 92,
+    cha: 82,
   };
 
-  let abY = 676;
+  let curAbY = pbBottom - 6;
   for (const key of Object.keys(names) as AbilityKey[]) {
     const height = abilityHeights[key];
-    const top = abY;
+    const top = curAbY;
     const box = { x: 27, y: top - height, width: 175, height };
 
     drawFantasyFrame(first, box);
@@ -520,8 +559,8 @@ export async function renderCharacterSheetV2(
     const modifier = sign(s.abilityMods[key]);
     const leftCenter = box.x + 24;
 
-    text(first, leftCenter - font.widthOfTextAtSize(score, 9.5) / 2, top - 32, score, 9.5);
-    text(first, leftCenter - bold.widthOfTextAtSize(modifier, 16) / 2, top - 48, modifier, 16, bold);
+    text(first, leftCenter - font.widthOfTextAtSize(score, 9.5) / 2, top - 31, score, 9.5);
+    text(first, leftCenter - bold.widthOfTextAtSize(modifier, 15) / 2, top - 46, modifier, 15, bold);
 
     first.drawLine({
       start: { x: box.x + 48, y: top - 24 },
@@ -539,90 +578,106 @@ export async function renderCharacterSheetV2(
     ];
 
     rows.forEach((row, idx) => {
-      const rowY = top - 32 - idx * 10;
+      const rowY = top - 31 - idx * 10;
       const mText = row.marker ? `${row.marker} ` : '';
       text(first, box.x + 52, rowY, mText, 6.5, bold);
       fit(first, box.x + 62, rowY, row.label, 90, 7);
       text(first, box.x + 155, rowY, sign(row.value), 7.5, bold);
     });
 
-    abY -= height + 5;
+    curAbY -= height + 4;
   }
 
   // Passive Perception Box
-  drawFantasyFrame(first, { x: 27, y: 144, width: 175, height: 32 });
+  const ppBoxH = 30;
+  const ppTop = curAbY - 3;
+  const ppBottom = ppTop - ppBoxH;
+  drawFantasyFrame(first, { x: 27, y: ppBottom, width: 175, height: ppBoxH });
   const ppLabel = 'PERCEZIONE PASSIVA';
-  text(first, 27 + (175 - bold.widthOfTextAtSize(ppLabel, 7)) / 2, 164, ppLabel, 7, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(ppLabel, 7)) / 2, ppTop - 12, ppLabel, 7, bold);
   const ppVal = `${s.passivePerception}`;
-  text(first, 27 + (175 - bold.widthOfTextAtSize(ppVal, 14)) / 2, 150, ppVal, 14, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(ppVal, 13)) / 2, ppTop - 25, ppVal, 13, bold);
 
   // Senses / Inspiration Notes
-  drawFantasyFrame(first, { x: 27, y: 100, width: 175, height: 38 });
+  const sensesBoxH = 34;
+  const sensesTop = ppBottom - 5;
+  const sensesBottom = sensesTop - sensesBoxH;
+  drawFantasyFrame(first, { x: 27, y: sensesBottom, width: 175, height: sensesBoxH });
   const combinedRaceText = `${s.raceTraitsMd} ${s.subraceTraitsMd ?? ''}`;
   const hasDarkvision = /scurovisione|darkvision|luce fioca/i.test(combinedRaceText);
   const dvRange = /36\s*metri|36\s*m|120\s*ft/i.test(combinedRaceText) ? '36 m' : '18 m';
   const senseText = hasDarkvision ? `Scurovisione ${dvRange}` : 'Visione normale';
-  text(first, 36, 122, senseText, 7.5, bold);
-  text(first, 36, 110, 'C: competenza  M: maestria | Ispiraz. [  ]', 6.8);
+  text(first, 36, sensesTop - 14, senseText, 7.5, bold);
+  text(first, 36, sensesTop - 26, 'C: competenza  M: maestria | Ispiraz. [  ]', 6.8);
 
   // CENTER COLUMN: Defense (3 separate boxes) + HP & Hit Dice + Death Saves + Attacks + Combat Resources
-  drawFantasyFrame(first, { x: 212, y: 674, width: 52, height: 50 });
-  text(first, 212 + (52 - bold.widthOfTextAtSize('CA', 7)) / 2, 712, 'CA', 7, bold);
-  const caVal = `${s.armorClass}`;
-  text(first, 212 + (52 - bold.widthOfTextAtSize(caVal, 18)) / 2, 688, caVal, 18, bold);
+  const defBoxH = 48;
+  const defTop = bodyTopY;
+  const defBottom = defTop - defBoxH;
 
-  drawFantasyFrame(first, { x: 268, y: 674, width: 52, height: 50 });
+  drawFantasyFrame(first, { x: 212, y: defBottom, width: 52, height: defBoxH });
+  text(first, 212 + (52 - bold.widthOfTextAtSize('CA', 7)) / 2, defTop - 13, 'CA', 7, bold);
+  const caVal = `${s.armorClass}`;
+  text(first, 212 + (52 - bold.widthOfTextAtSize(caVal, 17)) / 2, defTop - 36, caVal, 17, bold);
+
+  drawFantasyFrame(first, { x: 268, y: defBottom, width: 52, height: defBoxH });
   const initLbl = 'INIZIATIVA';
-  text(first, 268 + (52 - bold.widthOfTextAtSize(initLbl, 6)) / 2, 712, initLbl, 6, bold);
+  text(first, 268 + (52 - bold.widthOfTextAtSize(initLbl, 6)) / 2, defTop - 13, initLbl, 6, bold);
   const initVal = `${sign(s.initiative)}`;
-  text(first, 268 + (52 - bold.widthOfTextAtSize(initVal, 18)) / 2, 688, initVal, 18, bold);
+  text(first, 268 + (52 - bold.widthOfTextAtSize(initVal, 17)) / 2, defTop - 36, initVal, 17, bold);
 
   // Velocità box with clean multi-line fitting for conditional speed notes like "(+3 m senza armatura)"
-  drawFantasyFrame(first, { x: 324, y: 674, width: 56, height: 50 });
+  drawFantasyFrame(first, { x: 324, y: defBottom, width: 56, height: defBoxH });
   const spdLbl = 'VELOCITÀ';
-  text(first, 324 + (56 - bold.widthOfTextAtSize(spdLbl, 6)) / 2, 712, spdLbl, 6, bold);
+  text(first, 324 + (56 - bold.widthOfTextAtSize(spdLbl, 6)) / 2, defTop - 13, spdLbl, 6, bold);
   const spdClean = clean(s.speed);
   const spdMatch = spdClean.match(/^([^(]+?)\s*(\(.+\))?$/);
   const spdPrimary = (spdMatch?.[1] ?? spdClean).trim();
   const spdSecondary = spdMatch?.[2]?.trim() ?? '';
   if (spdSecondary) {
-    const pSize = Math.min(11.5, (48 / Math.max(1, bold.widthOfTextAtSize(spdPrimary, 1))));
-    text(first, 324 + (56 - bold.widthOfTextAtSize(spdPrimary, pSize)) / 2, 694, spdPrimary, pSize, bold);
+    const pSize = Math.min(11, (48 / Math.max(1, bold.widthOfTextAtSize(spdPrimary, 1))));
+    text(first, 324 + (56 - bold.widthOfTextAtSize(spdPrimary, pSize)) / 2, defTop - 27, spdPrimary, pSize, bold);
     const noteLines = wrapSheetText(spdSecondary, font, 5.2, 48).slice(0, 2);
     noteLines.forEach((nl, idx) => {
-      text(first, 324 + (56 - font.widthOfTextAtSize(nl, 5.2)) / 2, 684 - idx * 6, nl, 5.2);
+      text(first, 324 + (56 - font.widthOfTextAtSize(nl, 5.2)) / 2, defTop - 36 - idx * 6, nl, 5.2);
     });
   } else {
     const pSize = Math.min(13, (48 / Math.max(1, bold.widthOfTextAtSize(spdPrimary, 1))));
-    text(first, 324 + (56 - bold.widthOfTextAtSize(spdPrimary, pSize)) / 2, 690, spdPrimary, pSize, bold);
+    text(first, 324 + (56 - bold.widthOfTextAtSize(spdPrimary, pSize)) / 2, defTop - 33, spdPrimary, pSize, bold);
   }
 
   // Distinct HP & Hit Dice Box
-  frame(first, 212, 666, 168, 104, 'PUNTI FERITA E DADI VITA');
-  const hpBoxW = 48;
-  const hpBoxH = 32;
-  const hpY = 608;
-  first.drawRectangle({ x: 218, y: hpY, width: hpBoxW, height: hpBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
-  text(first, 218 + (hpBoxW - bold.widthOfTextAtSize('MAX', 6.5)) / 2, hpY + hpBoxH - 9, 'MAX', 6.5, bold);
-  text(first, 218 + (hpBoxW - bold.widthOfTextAtSize(`${s.hpMax}`, 13)) / 2, hpY + 6, `${s.hpMax}`, 13, bold);
+  const hpBoxH = 96;
+  const hpTop = defBottom - 6;
+  const hpBottom = hpTop - hpBoxH;
+  frame(first, 212, hpTop, 168, hpBoxH, 'PUNTI FERITA E DADI VITA');
+  const hpInnerBoxW = 48;
+  const hpInnerBoxH = 30;
+  const hpY = hpTop - 54;
+  first.drawRectangle({ x: 218, y: hpY, width: hpInnerBoxW, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
+  text(first, 218 + (hpInnerBoxW - bold.widthOfTextAtSize('MAX', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'MAX', 6.5, bold);
+  text(first, 218 + (hpInnerBoxW - bold.widthOfTextAtSize(`${s.hpMax}`, 13)) / 2, hpY + 5, `${s.hpMax}`, 13, bold);
 
-  first.drawRectangle({ x: 271, y: hpY, width: 50, height: hpBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
-  text(first, 271 + (50 - bold.widthOfTextAtSize('ATTUALI', 6.5)) / 2, hpY + hpBoxH - 9, 'ATTUALI', 6.5, bold);
+  first.drawRectangle({ x: 271, y: hpY, width: 50, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
+  text(first, 271 + (50 - bold.widthOfTextAtSize('ATTUALI', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'ATTUALI', 6.5, bold);
   first.drawLine({ start: { x: 275, y: hpY + 7 }, end: { x: 317, y: hpY + 7 }, thickness: 0.4, color: rgb(0.5, 0.5, 0.5) });
 
-  first.drawRectangle({ x: 326, y: hpY, width: 48, height: hpBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
-  text(first, 326 + (48 - bold.widthOfTextAtSize('TEMP', 6.5)) / 2, hpY + hpBoxH - 9, 'TEMP', 6.5, bold);
+  first.drawRectangle({ x: 326, y: hpY, width: 48, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
+  text(first, 326 + (48 - bold.widthOfTextAtSize('TEMP', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'TEMP', 6.5, bold);
   first.drawLine({ start: { x: 330, y: hpY + 7 }, end: { x: 370, y: hpY + 7 }, thickness: 0.4, color: rgb(0.5, 0.5, 0.5) });
 
   text(first, 222, hpY - 14, `Dadi Vita: ${s.hitDiceTotal} ${s.hitDie}`, 8, bold);
   text(first, 222, hpY - 26, 'Dadi Vita spesi: ________________', 7.5);
 
   // Salvezze da Morte
-  frame(first, 212, 554, 168, 56, 'SALVEZZE DA MORTE');
-  text(first, 224, 524, 'Successi', 7.5);
-  drawFantasyTracker(first, { x: 288, y: 518, width: 80, height: 16 }, 3);
-  text(first, 224, 506, 'Fallimenti', 7.5);
-  drawFantasyTracker(first, { x: 288, y: 500, width: 80, height: 16 }, 3);
+  const dsBoxH = 52;
+  const dsTop = hpBottom - 6;
+  const dsBottom = dsTop - dsBoxH;
+  frame(first, 212, dsTop, 168, dsBoxH, 'SALVEZZE DA MORTE');
+  text(first, 224, dsTop - 26, 'Successi', 7.5);
+  drawFantasyTracker(first, { x: 288, y: dsTop - 32, width: 80, height: 15 }, 3);
+  text(first, 224, dsTop - 42, 'Fallimenti', 7.5);
+  drawFantasyTracker(first, { x: 288, y: dsTop - 48, width: 80, height: 15 }, 3);
 
   // Dynamic Attacks Box (no silent .slice(0, 3) drop!)
   const extraAttacksCount = fighter
@@ -650,9 +705,11 @@ export async function renderCharacterSheetV2(
   const page1Weapons = s.weaponRows.slice(0, maxAttacksOnPage1);
   const overflowWeapons = s.weaponRows.slice(maxAttacksOnPage1);
   const attackRowsH = Math.max(2, page1Weapons.length) * 13 + (extraAttacksCount > 1 ? 13 : 0);
-  const attacksBoxH = Math.max(68, 34 + attackRowsH + 6);
-  frame(first, 212, 490, 168, attacksBoxH, 'ATTACCHI');
-  let curAtkY = 490 - 30;
+  const attacksBoxH = Math.max(64, 30 + attackRowsH + 6);
+  const atkTop = dsBottom - 6;
+  const atkBottom = atkTop - attacksBoxH;
+  frame(first, 212, atkTop, 168, attacksBoxH, 'ATTACCHI');
+  let curAtkY = atkTop - 28;
   page1Weapons.forEach((a) => {
     const resolvedDmg = resolveDamageFormula(a.damage, s.abilityMods);
     const rowStr = `${a.name} ${a.toHit} / ${resolvedDmg} (${a.type.slice(0, 4)}.)`;
@@ -663,322 +720,189 @@ export async function renderCharacterSheetV2(
     text(first, 220, curAtkY + 1, `Attacco Extra: ${extraAttacksCount} attacchi per azione`, 6.9);
   }
 
-  // Class Combat Resources (Page 1, placed dynamically 8pt below ATTACCHI)
-  const resTop = 490 - attacksBoxH - 8;
-  const resH = 114;
+  // Class Combat Resources (Page 1, placed dynamically 6pt below ATTACCHI)
+  const resTop = atkBottom - 6;
+  const resH = 112;
   if (artificer) {
     const state = artificer.state;
     const attuned = state.assignments.filter((a) => a.state === 'attuned' || a.state === 'carried-attuned').length;
     frame(first, 212, resTop, 168, resH, 'RISORSE DI CLASSE');
     const intMod = Math.max(1, s.abilityMods.int);
     if (s.level >= 7) {
-      text(first, 224, resTop - 30, `Lampo di Genio: ${intMod} usi / lungo`, 7.8, bold);
-      drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, intMod);
-      fit(first, 224, resTop - 60, `Reazione (visibile 9 m): +${intMod} a prova o TS`, 144, 7);
+      text(first, 224, resTop - 28, `Lampo di Genio: ${intMod} usi / lungo`, 7.8, bold);
+      drawFantasyTracker(first, { x: 224, y: resTop - 45, width: 140, height: 16 }, intMod);
+      fit(first, 224, resTop - 59, `Reazione (visibile 9 m): +${intMod} a prova o TS`, 144, 7);
     } else {
-      text(first, 224, resTop - 30, 'Inventore Arcano / Strumenti', 8, bold);
-      fit(first, 224, resTop - 46, `Azione: magia lieve in max ${intMod} ogg. Minuscoli`, 144, 7);
+      text(first, 224, resTop - 28, 'Inventore Arcano / Strumenti', 8, bold);
+      fit(first, 224, resTop - 44, `Azione: magia lieve in max ${intMod} ogg. Minuscoli`, 144, 7);
     }
-    text(first, 224, resTop - 76, `Infusioni attive: ${state.assignments.length}/${state.itemLimit}`, 7.8, bold);
-    text(first, 224, resTop - 90, `Sintonia usata: ${attuned}/${state.attunementLimit}`, 7.5);
-    text(first, 224, resTop - 104, 'Incantesimi e slot sulle pagine seguenti.', 6.8);
+    text(first, 224, resTop - 72, `Infusioni attive: ${state.assignments.length}/${state.itemLimit}`, 7.8, bold);
+    text(first, 224, resTop - 84, `Sintonia usata: ${attuned}/${state.attunementLimit}`, 7.5);
+    text(first, 224, resTop - 98, 'Incantesimi e slot sulle pagine seguenti.', 6.8);
   } else if (bard) {
     frame(first, 212, resTop, 168, resH, 'ISPIRAZIONE BARDICA');
-    drawFantasyShield(first, { x: 226, y: resTop - 92, width: 40, height: 50 }, bard.die, bold);
-    drawFantasyTracker(first, { x: 279, y: resTop - 77, width: 96, height: 34 }, bard.uses);
-    text(first, 277, resTop - 89, `${bard.uses} utilizzi (${bard.die})`);
-    text(first, 222, resTop - 104, s.level >= 5 ? 'Recupero: riposo breve o lungo' : 'Recupero: riposo lungo', 7.3);
+    drawFantasyShield(first, { x: 226, y: resTop - 85, width: 40, height: 48 }, bard.die, bold);
+    drawFantasyTracker(first, { x: 279, y: resTop - 70, width: 96, height: 30 }, bard.uses);
+    text(first, 277, resTop - 80, `${bard.uses} utilizzi (${bard.die})`);
+    text(first, 222, resTop - 96, s.level >= 5 ? 'Recupero: riposo breve o lungo' : 'Recupero: riposo lungo', 7.3);
   } else if (barbarian) {
     frame(first, 212, resTop, 168, resH, 'IRA E COMBATTIMENTO');
-    drawFantasyShield(first, { x: 226, y: resTop - 92, width: 40, height: 50 }, `+${barbarian.rage.damage}`, bold);
+    drawFantasyShield(first, { x: 226, y: resTop - 85, width: 40, height: 48 }, `+${barbarian.rage.damage}`, bold);
     if (barbarian.rage.uses !== null)
-      drawFantasyTracker(first, { x: 279, y: resTop - 77, width: 96, height: 34 }, barbarian.rage.uses);
-    text(first, 277, resTop - 89, barbarian.rage.uses === null ? 'Usi illimitati' : `${barbarian.rage.uses} utilizzi`);
-    text(first, 222, resTop - 104, 'Recupero: riposo lungo', 7.5);
+      drawFantasyTracker(first, { x: 279, y: resTop - 70, width: 96, height: 30 }, barbarian.rage.uses);
+    text(first, 277, resTop - 80, barbarian.rage.uses === null ? 'Usi illimitati' : `${barbarian.rage.uses} utilizzi`);
+    text(first, 222, resTop - 96, 'Recupero: riposo lungo', 7.5);
   } else if (cleric) {
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'INCANALARE DIVINITÀ' : 'POTERE DIVINO');
     const cdUses = s.level >= 18 ? 3 : s.level >= 6 ? 2 : s.level >= 2 ? 1 : 0;
     if (cdUses > 0) {
-      text(first, 224, resTop - 30, `Incanalare Divinità: ${cdUses} usi / riposo`, 8, bold);
-      drawFantasyTracker(first, { x: 224, y: resTop - 50, width: 140, height: 16 }, cdUses);
-      text(first, 224, resTop - 68, `CD Incantesimi e Divinità: ${s.spellSaveDc}`, 7.8);
+      text(first, 224, resTop - 28, `Incanalare Divinità: ${cdUses} usi / riposo`, 8, bold);
+      drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, cdUses);
+      fit(first, 224, resTop - 64, `Dominio: ${s.classSubclass ?? '-'}`, 144, 7.8, bold);
       if (s.level >= 5) {
-        text(first, 224, resTop - 84, `Distruggere Non Morti: GS ${cleric.undeadCr ?? '-'}`, 7.8, bold);
+        text(first, 224, resTop - 78, `Distruggere Non Morti: GS ${cleric.undeadCr ?? '-'}`, 7.8, bold);
       }
-      text(first, 224, resTop - 102, 'Recupero: riposo breve o lungo', 7.2);
+      text(first, 224, resTop - 96, 'Recupero: riposo breve o lungo', 7.2);
     } else {
-      fit(first, 224, resTop - 34, `Dominio: ${s.classSubclass ?? '-'}`, 144, 8, bold);
-      text(first, 224, resTop - 52, `Incantesimi preparabili: ${s.spellsPrepared}`, 7.8);
-      text(first, 224, resTop - 68, `CD Incantesimi: ${s.spellSaveDc} | TpC: ${sign(s.spellAttackBonus ?? 0)}`, 7.5);
-      text(first, 224, resTop - 96, 'Magie di dominio sempre preparate.', 7);
+      fit(first, 224, resTop - 32, `Dominio: ${s.classSubclass ?? '-'}`, 144, 8, bold);
+      text(first, 224, resTop - 50, `Incantesimi preparabili: ${s.spellsPrepared}`, 7.8);
+      text(first, 224, resTop - 68, 'Magie di dominio sempre preparate.', 7.5);
+      text(first, 224, resTop - 96, 'Incantesimi e slot sulle pagine seguenti.', 6.8);
     }
   } else if (druid) {
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'FORMA SELVATICA' : 'MAGIA DRUIDICA');
     if (s.level >= 2) {
       const wsUses = s.level >= 20 ? 'Illimitati' : '2 usi / riposo';
-      text(first, 224, resTop - 30, `Forma Selvatica: ${wsUses}`, 8, bold);
+      text(first, 224, resTop - 28, `Forma Selvatica: ${wsUses}`, 8, bold);
       if (s.level < 20) {
-        drawFantasyTracker(first, { x: 224, y: resTop - 50, width: 140, height: 16 }, 2);
+        drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, 2);
       }
       const moon = /circolo della luna/i.test(s.classSubclass ?? '');
       const maxCr = moon ? (s.level >= 6 ? Math.floor(s.level / 3) : 1) : s.level >= 8 ? 1 : s.level >= 4 ? 0.5 : 0.25;
       const crLabel = maxCr === 0.25 ? '1/4' : maxCr === 0.5 ? '1/2' : String(maxCr);
-      fit(first, 224, resTop - 68, `GS Max: ${crLabel} (${s.level >= 8 ? 'Volo/Nuoto' : s.level >= 4 ? 'Nuoto' : 'Terra'})`, 144, 7.2);
-      text(first, 224, resTop - 84, `CD Salvezza: ${s.spellSaveDc}`, 7.5);
-      text(first, 224, resTop - 102, 'Recupero: riposo breve o lungo', 7.2);
+      fit(first, 224, resTop - 64, `GS Max: ${crLabel} (${s.level >= 8 ? 'Volo/Nuoto' : s.level >= 4 ? 'Nuoto' : 'Terra'})`, 144, 7.2);
+      text(first, 224, resTop - 78, 'Linguaggio Druidico conosciuto.', 7.5);
+      text(first, 224, resTop - 96, 'Recupero: riposo breve o lungo', 7.2);
     } else {
-      text(first, 224, resTop - 36, `Incantesimi preparabili: ${s.spellsPrepared}`, 8, bold);
-      text(first, 224, resTop - 54, `CD Incantesimi: ${s.spellSaveDc} | TpC: ${sign(s.spellAttackBonus ?? 0)}`, 7.5);
-      text(first, 224, resTop - 74, 'Linguaggio Druidico conosciuto.', 7.2);
+      text(first, 224, resTop - 32, `Incantesimi preparabili: ${s.spellsPrepared}`, 8, bold);
+      text(first, 224, resTop - 50, `Trucchetti conosciuti: ${druid.cantrips}`, 7.8);
+      text(first, 224, resTop - 68, 'Linguaggio Druidico conosciuto.', 7.2);
+      text(first, 224, resTop - 96, 'Incantesimi e slot sulle pagine seguenti.', 6.8);
     }
   } else if (fighter) {
     const res = fighter.resources;
     frame(first, 212, resTop, 168, resH, 'RISORSE MARZIALI');
-    text(first, 224, resTop - 30, `Recuperare Energie: ${res.secondWind}`, 7.8, bold);
-    fit(first, 224, resTop - 44, 'Azione bonus (1 uso / riposo breve o lungo)', 144, 7);
-    drawFantasyTracker(first, { x: 224, y: resTop - 62, width: 140, height: 16 }, 1);
+    text(first, 224, resTop - 28, `Recuperare Energie: ${res.secondWind}`, 7.8, bold);
+    fit(first, 224, resTop - 40, 'Azione bonus (1 uso / riposo breve o lungo)', 144, 7);
+    drawFantasyTracker(first, { x: 224, y: resTop - 56, width: 140, height: 16 }, 1);
     if (res.actionSurge > 0) {
-      text(first, 224, resTop - 78, `Azione Impetuosa: ${res.actionSurge} usi / riposo`, 7.8, bold);
-      drawFantasyTracker(first, { x: 224, y: resTop - 96, width: 140, height: 16 }, res.actionSurge);
-      text(first, 224, resTop - 108, 'Recupero: riposo breve o lungo', 6.8);
+      text(first, 224, resTop - 70, `Azione Impetuosa: ${res.actionSurge} usi / riposo`, 7.8, bold);
+      drawFantasyTracker(first, { x: 224, y: resTop - 85, width: 140, height: 16 }, res.actionSurge);
+      text(first, 224, resTop - 97, 'Recupero: riposo breve o lungo', 7.2);
     } else {
       const st = options.fighterChoices?.fightingStyle ?? '-';
-      fit(first, 224, resTop - 84, `Stile: ${st}`, 144, 7.6, bold);
+      fit(first, 224, resTop - 74, `Stile: ${st}`, 144, 7.6, bold);
+      text(first, 224, resTop - 96, 'Recupero: riposo breve o lungo', 7.2);
     }
   } else if (rogue) {
     const res = rogue.resources;
     frame(first, 212, resTop, 168, resH, 'ATTACCO FURTIVO');
-    drawFantasyShield(first, { x: 224, y: resTop - 84, width: 44, height: 44 }, res.sneakAttackDamage, bold);
-    text(first, 276, resTop - 56, `Danno: ${res.sneakAttackDamage}`, 9.5, bold);
-    text(first, 276, resTop - 70, `Dadi: ${res.sneakAttackDice}d6`, 8);
-    fit(first, 222, resTop - 92, '1 v/turno: vantaggio o alleato entro 1,5 m', 148, 6.8);
-    fit(first, 222, resTop - 104, 'Richiede arma accurata o a distanza', 148, 6.8);
+    drawFantasyShield(first, { x: 224, y: resTop - 82, width: 44, height: 44 }, res.sneakAttackDamage, bold);
+    text(first, 276, resTop - 52, `Danno: ${res.sneakAttackDamage}`, 9.5, bold);
+    text(first, 276, resTop - 66, `Dadi: ${res.sneakAttackDice}d6`, 8);
+    fit(first, 222, resTop - 84, '1 v/turno: vantaggio o alleato entro 1,5 m', 148, 6.8);
+    fit(first, 222, resTop - 96, 'Richiede arma accurata o a distanza', 148, 6.8);
   } else if (monk) {
     const res = monk.resources;
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'PUNTI KI E ARTI MARZIALI' : 'ARTI MARZIALI');
-    drawFantasyShield(first, { x: 224, y: resTop - 84, width: 44, height: 44 }, res.martialArtsDie, bold);
+    drawFantasyShield(first, { x: 224, y: resTop - 82, width: 44, height: 44 }, res.martialArtsDie, bold);
     if (res.kiPoints > 0) {
-      text(first, 276, resTop - 54, `Punti Ki: ${res.kiPoints}`, 9.5, bold);
-      text(first, 276, resTop - 68, `CD Ki: ${res.kiSaveDc}`, 8.5);
-      drawFantasyTracker(first, { x: 270, y: resTop - 88, width: 100, height: 16 }, Math.min(res.kiPoints, 6));
-      text(first, 222, resTop - 104, 'Recupero Ki: riposo breve o lungo', 7.2);
+      text(first, 276, resTop - 50, `Punti Ki: ${res.kiPoints}`, 9.5, bold);
+      text(first, 276, resTop - 64, `CD Ki: ${res.kiSaveDc}`, 8.5); // Ki DC is preserved (martial ability)
+      drawFantasyTracker(first, { x: 270, y: resTop - 80, width: 100, height: 16 }, Math.min(res.kiPoints, 6));
+      text(first, 222, resTop - 96, 'Recupero Ki: riposo breve o lungo', 7.2);
     } else {
-      text(first, 276, resTop - 58, `Dado Arti: ${res.martialArtsDie}`, 8.5, bold);
-      text(first, 276, resTop - 72, '1 att. senz\'armi bonus', 7.2);
-      text(first, 222, resTop - 102, 'Senza armatura e senza scudo', 7);
+      text(first, 276, resTop - 54, `Dado Arti: ${res.martialArtsDie}`, 8.5, bold);
+      text(first, 276, resTop - 68, '1 att. senz\'armi bonus', 7.2);
+      text(first, 222, resTop - 96, 'Senza armatura e senza scudo', 7);
     }
   } else if (paladin) {
     const res = paladin.resources;
     frame(first, 212, resTop, 168, resH, 'RISORSE DEL PALADINO');
-    text(first, 224, resTop - 30, `Imposizione Mani: ${res.layOnHandsPool} PF`, 8, bold);
-    fit(first, 224, resTop - 44, `Riserva PF: ${res.layOnHandsPool} (5 PF curano veleno)`, 144, 6.8);
-    text(first, 224, resTop - 62, `Senso del Divino: ${res.divineSenseUses} usi / lungo`, 7.8, bold);
-    drawFantasyTracker(first, { x: 224, y: resTop - 80, width: 140, height: 16 }, Math.min(res.divineSenseUses, 9));
+    text(first, 224, resTop - 28, `Imposizione Mani: ${res.layOnHandsPool} PF`, 8, bold);
+    fit(first, 224, resTop - 40, `Riserva PF: ${res.layOnHandsPool} (5 PF curano veleno)`, 144, 6.8);
+    text(first, 224, resTop - 55, `Senso del Divino: ${res.divineSenseUses} usi / lungo`, 7.8, bold);
+    drawFantasyTracker(first, { x: 224, y: resTop - 70, width: 140, height: 16 }, Math.min(res.divineSenseUses, 9));
     if (res.channelDivinityUses > 0) {
-      text(first, 224, resTop - 94, `Incanalare Divinità: ${res.channelDivinityUses} uso / riposo breve`, 7.3);
+      text(first, 224, resTop - 84, `Incanalare Divinità: ${res.channelDivinityUses} uso / riposo breve`, 7.3);
     }
-    text(first, 224, resTop - 107, s.level >= 2 ? 'Punizione Divina e magie nelle pagg. seguenti.' : 'Recupero risorse a riposo lungo.', 6.6);
+    text(first, 224, resTop - 96, s.level >= 2 ? 'Punizione Divina e magie nelle pagg. seguenti.' : 'Recupero risorse a riposo lungo.', 6.8);
   } else if (ranger) {
     const res = ranger.resources;
     frame(first, 212, resTop, 168, resH, 'RISORSE DEL RANGER');
-    text(first, 224, resTop - 30, 'Nemico Prescelto:', 7.8, bold);
-    fit(first, 224, resTop - 42, res.favoredEnemies.join(', ') || 'Nessuno', 144, 7);
-    text(first, 224, resTop - 58, 'Esploratore Nato (Terreni):', 7.8, bold);
-    fit(first, 224, resTop - 70, res.favoredTerrains.join(', ') || 'Nessuno', 144, 7);
+    text(first, 224, resTop - 28, 'Nemico Prescelto:', 7.8, bold);
+    fit(first, 224, resTop - 40, res.favoredEnemies.join(', ') || 'Nessuno', 144, 7);
+    text(first, 224, resTop - 54, 'Esploratore Nato (Terreni):', 7.8, bold);
+    fit(first, 224, resTop - 66, res.favoredTerrains.join(', ') || 'Nessuno', 144, 7);
     if (s.level >= 3) {
-      fit(first, 224, resTop - 86, `Archetipo: ${s.classSubclass ?? 'Ranger'}`, 144, 7.5, bold);
-      text(first, 224, resTop - 100, `CD Incantesimi: ${res.spellSaveDc} | TpC: ${sign(res.spellAttackBonus)}`, 7.2);
-    } else if (s.level >= 2) {
-      text(first, 224, resTop - 92, `CD Incantesimi: ${res.spellSaveDc} | TpC: ${sign(res.spellAttackBonus)}`, 7.2);
-    } else {
-      text(first, 224, resTop - 96, 'Vantaggio a seguire tracce dei nemici prescelti', 6.8);
+      fit(first, 224, resTop - 80, `Archetipo: ${s.classSubclass ?? 'Ranger'}`, 144, 7.5, bold);
     }
+    text(first, 224, resTop - 96, 'Magie e capacità nelle pagine seguenti.', 6.8);
   } else if (sorcerer) {
     const res = sorcerer.resources;
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'PUNTI STREGONERIA' : 'MAGIA INNATA');
     if (res.sorceryPoints > 0) {
-      text(first, 224, resTop - 30, `Punti Stregoneria: ${res.sorceryPoints}`, 8.5, bold);
-      drawFantasyTracker(first, { x: 224, y: resTop - 50, width: 140, height: 16 }, Math.min(res.sorceryPoints, 9));
+      text(first, 224, resTop - 28, `Punti Stregoneria: ${res.sorceryPoints}`, 8.5, bold);
+      drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, Math.min(res.sorceryPoints, 9));
       if (s.level >= 3) {
-        text(first, 224, resTop - 68, `Metamagia: ${res.metamagic.length} opzioni note`, 7.8);
+        text(first, 224, resTop - 64, `Metamagia: ${res.metamagic.length} opzioni note`, 7.8);
       }
-      fit(first, 224, resTop - 84, 'Converti punti <-> slot con azione bonus', 144, 6.8);
-      text(first, 224, resTop - 102, 'Recupero Punti: riposo lungo', 7.2);
+      fit(first, 224, resTop - 78, 'Converti punti <-> slot con azione bonus', 144, 6.8);
+      text(first, 224, resTop - 96, 'Recupero Punti: riposo lungo', 7.2);
     } else {
-      fit(first, 224, resTop - 36, `Origine: ${s.classSubclass ?? '-'}`, 144, 8, bold);
-      text(first, 224, resTop - 54, `Trucchetti: ${res.cantripsKnown} | Inc. noti: ${res.spellsKnown}`, 7.5);
-      text(first, 224, resTop - 72, `CD Incantesimi: ${res.spellSaveDc} | TpC: ${sign(res.spellAttackBonus)}`, 7.5);
+      fit(first, 224, resTop - 32, `Origine: ${s.classSubclass ?? '-'}`, 144, 8, bold);
+      text(first, 224, resTop - 50, `Trucchetti: ${res.cantripsKnown} | Inc. noti: ${res.spellsKnown}`, 7.5);
+      text(first, 224, resTop - 68, 'Privilegi di origine draconica / magica', 7.2);
+      text(first, 224, resTop - 96, 'Incantesimi e slot nelle pagine seguenti.', 6.8);
     }
   } else if (warlock) {
     const res = warlock.resources;
     frame(first, 212, resTop, 168, resH, 'MAGIA DEL PATTO');
-    text(first, 224, resTop - 30, `Slot del Patto: ${res.pactSlotsCount} di ${res.pactSlotLevel}° Liv.`, 8.5, bold);
-    drawFantasyTracker(first, { x: 224, y: resTop - 50, width: 140, height: 16 }, res.pactSlotsCount);
+    text(first, 224, resTop - 28, `Slot del Patto: ${res.pactSlotsCount} di ${res.pactSlotLevel}° Liv.`, 8.5, bold);
+    drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, res.pactSlotsCount);
     if (s.level >= 2) {
-      text(first, 224, resTop - 68, `Suppliche Occulte: ${res.invocationsCount} note`, 7.8);
+      text(first, 224, resTop - 64, `Suppliche Occulte: ${res.invocationsCount} note`, 7.8);
     }
     if (s.level >= 3 && res.pactBoon) {
-      fit(first, 224, resTop - 84, `Dono del Patto: ${res.pactBoon.name}`, 144, 7.5);
+      fit(first, 224, resTop - 78, `Dono del Patto: ${res.pactBoon.name}`, 144, 7.5);
     }
-    text(first, 224, resTop - 102, 'Recupero Slot: riposo breve o lungo', 7.2);
+    text(first, 224, resTop - 96, 'Recupero Slot: riposo breve o lungo', 7.2);
   } else if (wizard) {
     const res = wizard.resources;
     frame(first, 212, resTop, 168, resH, 'RECUPERO ARCANO');
-    text(first, 224, resTop - 30, `Recupero Arcano: ${res.arcaneRecoveryLevels} liv. slot`, 7.8, bold);
-    fit(first, 224, resTop - 44, '1 volta/giorno al termine di un riposo breve', 144, 7.2);
-    text(first, 224, resTop - 62, `Incantesimi Preparabili: ${res.spellsPrepared}`, 7.8, bold);
+    text(first, 224, resTop - 28, `Recupero Arcano: ${res.arcaneRecoveryLevels} liv. slot`, 7.8, bold);
+    fit(first, 224, resTop - 40, '1 volta/giorno al termine di un riposo breve', 144, 7.2);
+    text(first, 224, resTop - 54, `Incantesimi Preparabili: ${res.spellsPrepared}`, 7.8, bold);
     if (res.arcaneWardHp) {
-      text(first, 224, resTop - 80, `Barriera Arcana: ${res.arcaneWardHp} PF`, 7.8, bold);
+      text(first, 224, resTop - 68, `Barriera Arcana: ${res.arcaneWardHp} PF`, 7.8, bold);
     } else if (res.portentDiceCount) {
-      text(first, 224, resTop - 80, `Presagio: ${res.portentDiceCount} d20 dopo riposo lungo`, 7.8, bold);
+      text(first, 224, resTop - 68, `Presagio: ${res.portentDiceCount} d20 dopo riposo lungo`, 7.8, bold);
     } else if (res.bladesongUses) {
-      text(first, 224, resTop - 80, `Canto Lama: ${res.bladesongUses} usi (+${res.bladesongAcBonus} CA)`, 7.8, bold);
+      text(first, 224, resTop - 68, `Canto Lama: ${res.bladesongUses} usi (+${res.bladesongAcBonus} CA)`, 7.8, bold);
     } else {
-      text(first, 224, resTop - 80, `Trucchetti noti: ${res.cantripsKnown} | CD ${res.spellSaveDc}`, 7.5);
+      fit(first, 224, resTop - 68, `Tradizione: ${s.classSubclass ?? 'Mago'}`, 144, 7.8, bold);
     }
-    text(first, 224, resTop - 104, 'Incantesimi e rituali nelle pagine seguenti.', 6.8);
+    text(first, 224, resTop - 80, `Trucchetti conosciuti: ${res.cantripsKnown}`, 7.5);
+    text(first, 224, resTop - 96, 'Incantesimi e rituali nelle pagine seguenti.', 6.8);
   }
 
-  // RIGHT COLUMN (PAGE 1): Combat & Core Reference Cards (level-gated, choice-filtered, true measured height)
-  const buildPage1CandidateCards = (): Array<{ title: string; body: string }> => {
-    if (artificer) {
-      const sub = (s.classSubclass ?? '').toLowerCase();
-      const cards: Array<{ title: string; body: string }> = [];
-      if (s.level >= 3 && (sub.includes('fabbro da battaglia') || sub.includes('battle smith'))) {
-        cards.push({
-          title: 'Pronto per la Battaglia',
-          body: 'Ottieni competenza nelle armi da guerra. Quando attacchi con un\'arma magica, puoi usare il modificatore di Intelligenza invece di Forza o Destrezza per i tiri per colpire e per i danni.',
-        });
-      } else if (s.level >= 3 && (sub.includes('armaiolo') || sub.includes('armorer'))) {
-        const isInfiltrator = s.weaponRows.some((w) => w.name.includes('Fulmini'));
-        cards.push({
-          title: `Armatura Arcana (${isInfiltrator ? 'Infiltrato' : 'Custode'})`,
-          body: isInfiltrator
-            ? 'Lanciatore di Fulmini (gittata 27/90 m, 1d6 da fulmine, +1d6 extra 1 volta/turno), Passo Veloce (+1,5 m velocità) e Campo Smorzante (vantaggio a Furtività).'
-            : 'Guanti Tonanti (mischia, 1d8 da tuono; bersaglio colpito ha svantaggio ai TpC contro bersagli diversi da te) e Campo Difensivo (azione bonus: PF temp pari al livello, BC usi/riposo lungo).',
-        });
-      } else if (s.level >= 3 && (sub.includes('alchimista') || sub.includes('alchemist'))) {
-        cards.push({
-          title: 'Elisir Sperimentale',
-          body: `Fine riposo lungo (con scorte da alchimista): crei ${s.level >= 15 ? 3 : s.level >= 6 ? 2 : 1} elisir casuale (d6: Guarigione, Rapidità, Resilienza, Audacia, Volo o Trasformazione). Puoi spendere 1 slot incantesimo per crearne uno scelto. Bere/somministrare richiede 1 azione.`,
-        });
-      } else if (s.level >= 3 && (sub.includes('artigliere') || sub.includes('artillerist'))) {
-        cards.push({
-          title: 'Cannone Occulto',
-          body: 'Azione (con strumenti da falegname o da fabbro): crei 1 Cannone Occulto Piccolo o Minuscolo entro 1,5 m (1 gratis/riposo lungo o spendendo 1 slot; dura 1 ora). Nel tuo turno usi azione bonus per attivarlo entro 18 m (vedi scheda Compagno).',
-        });
-      }
-      if (s.level >= 5 && (sub.includes('fabbro da battaglia') || sub.includes('battle smith') || sub.includes('armaiolo') || sub.includes('armorer'))) {
-        cards.push({
-          title: 'Attacco Extra',
-          body: 'Puoi attaccare due volte invece di una ogni volta che effettui l\'azione di Attacco nel tuo turno.',
-        });
-      }
-      const refCards = artificerReferenceCards(s.level);
-      const flash = refCards.find((c) => canonicalFeatureKey(c.title) === 'lampo di genio');
-      if (flash) {
-        cards.push({
-          title: 'Lampo di Genio',
-          body: `Reazione: quando tu o un'altra creatura entro 9 m che sei in grado di vedere effettuate una prova di caratteristica o un TS, puoi aggiungere il tuo modificatore di Intelligenza (${sign(s.abilityMods.int)}) al tiro. Usi: ${Math.max(1, s.abilityMods.int)} / riposo lungo.`,
-        });
-      }
-      const tinkering = refCards.find((c) => canonicalFeatureKey(c.title) === 'inventore arcano');
-      if (tinkering) {
-        cards.push({
-          title: 'Inventore Arcano',
-          body: `Azione: infondi magia lieve in fino a ${Math.max(1, s.abilityMods.int)} oggetti non magici Minuscoli (luce 1,5 m + 1,5 m fioca, messaggio registrato di 6 s udibile a 3 m, odore/suono costante a 3 m, o immagine/testo statico max 25 parole).`,
-        });
-      }
-      for (const rc of refCards) {
-        if (rc.level >= 10) {
-          cards.push({ title: rc.title, body: rc.body });
-        }
-      }
-      return cards;
-    }
+  const resBottom = resTop - resH;
+  const centerRemainingTop = resBottom - 6;
+  const centerRemainingBottom = 42;
+  const centerRemainingH = centerRemainingTop - centerRemainingBottom;
 
-    if (warlock) {
-      const res = warlock.resources;
-      const cards: Array<{ title: string; body: string }> = [
-        {
-          title: 'Magia del Patto',
-          body: `Disponi di ${res.pactSlotsCount} slot incantesimo, tutti di ${res.pactSlotLevel}° livello, e recuperi tutti gli slot spesi completando un riposo breve o lungo. Caratteristica da incantatore: Carisma (CD ${res.spellSaveDc}, TpC ${sign(res.spellAttackBonus)}).`,
-        },
-      ];
-      if (s.level >= 3 && res.pactBoon) {
-        cards.push({
-          title: `Dono del Patto: ${res.pactBoon.name}`,
-          body: res.pactBoon.desc,
-        });
-      }
-      if (s.level >= 11 && res.mysticArcanum.length > 0) {
-        cards.push({
-          title: 'Arcanum Mistico',
-          body: `Lanci ciascun Arcanum 1 volta senza spendere slot, recuperando tutti gli usi dopo un riposo lungo: ${res.mysticArcanum.map((a) => `${a.level}° liv. ${a.spellName}`).join('; ')}.`,
-        });
-      }
-      if (s.level >= 20) {
-        cards.push({
-          title: 'Maestro dell\'Occulto',
-          body: 'Trascorrendo 1 minuto invocando l\'aiuto del tuo patrono recuperi tutti gli slot incantesimo spesi della Magia del Patto (1 volta per riposo lungo).',
-        });
-      }
-      return cards;
-    }
-
-    const rawCards: PrintFeature[] = bard
-      ? bardReferenceCards(s.level)
-      : barbarian
-      ? barbarianReferenceCards(s.level)
-      : cleric
-      ? clericReferenceCards(s.level, cleric.undeadCr)
-      : druid
-      ? druidReferenceCards(s.level, s.classSubclass)
-      : fighter
-      ? fighterReferenceCards(
-          s.level,
-          options.fighterChoices?.fightingStyle,
-          options.fighterChoices?.secondFightingStyle,
-          /campione/i.test(s.classSubclass ?? '')
-        )
-      : rogue
-      ? rogueReferenceCards(s.level)
-      : wizard
-      ? wizardReferenceCards(s.level)
-      : monk
-      ? monkReferenceCards(s.level)
-      : paladin
-      ? paladinReferenceCards(s.level, paladin.resources.fightingStyle)
-      : ranger
-      ? rangerReferenceCards(s.level)
-      : sorcerer
-      ? sorcererReferenceCards(s.level)
-      : [];
-
-    return rawCards.map((c) => ({ title: c.title, body: c.body }));
-  };
-
-  const candidateCards = buildPage1CandidateCards();
-  const renderedOnPage1Keys = new Set<string>();
-  const overflowPage1Cards: Array<{ title: string; body: string }> = [];
-
-  let ry = 724;
-  for (const card of candidateCards) {
-    const lines = wrapSheetText(card.body, font, 7.6, 158);
-    // Exact true height: header/padding (34pt) + lines * 9.5pt + bottom margin (8pt) — NEVER clamped!
-    const cardHeight = 34 + lines.length * 9.5 + 8;
-    if (ry - cardHeight >= 44) {
-      frame(first, 390, ry, 178, cardHeight, card.title);
-      lines.forEach((l, i) => text(first, 398, ry - 33 - i * 9.5, l, 7.6));
-      renderedOnPage1Keys.add(canonicalFeatureKey(card.title));
-      ry -= cardHeight + 7;
-    } else {
-      overflowPage1Cards.push(card);
-    }
-  }
-
-  // --- PAGE 2+: DYNAMIC TWO-COLUMN FLOW FOR CAPACITÀ, RAZZA, SOTTOCLASSE E DOTAZIONE ---
-  // Separate base-class features vs subclass features from the resolved evidence/model
+  // --- CANDIDATE CONTENT FOR PAGE 1 PROMOTION & PAGE 2+ CONTINUITY ---
+  // Subclass features (level-gated)
   const rawSubclassFeatures: PrintFeature[] = barbarian
     ? options.barbarianEvidence?.pathFeatures ?? []
     : bard
@@ -1006,39 +930,7 @@ export async function renderCharacterSheetV2(
     : [];
 
   const subclassTitleSet = new Set(rawSubclassFeatures.map((f) => f.title));
-
-  // For Artificer, exclude raw known-infusion items appended in artificer-print-model because they have dedicated tables
   const artificerInfusionTitleSet = new Set((artificer?.state.known ?? []).map((k) => k.title));
-
-  const classFeatureItems: FlowItem[] = [];
-  const seenFeatureKeys = new Set<string>(renderedOnPage1Keys);
-
-  for (const ov of overflowPage1Cards) {
-    const key = canonicalFeatureKey(ov.title);
-    if (seenFeatureKeys.has(key)) continue;
-    seenFeatureKeys.add(key);
-    classFeatureItems.push({ kind: 'feature', title: ov.title, body: ov.body });
-  }
-
-  for (const feat of model.features) {
-    if (feat.level > s.level) continue;
-    if (subclassTitleSet.has(feat.title)) continue;
-    if (artificer && artificerInfusionTitleSet.has(feat.title)) continue;
-    // Skip features dedicated to structured boxes on Page 2 right column (e.g. Warlock Invocations/Pact Boon/Arcanum, Sorcerer Metamagic)
-    const key = canonicalFeatureKey(feat.title);
-    if (seenFeatureKeys.has(key)) continue;
-    if (warlock && (key === 'suppliche occulte' || key === 'dono del patto' || key === 'arcanum mistico')) continue;
-    if (sorcerer && key === 'metamagia') continue;
-
-    const summarized = summarizeResolvedFeature(feat, s);
-    if (!summarized) continue;
-    seenFeatureKeys.add(key);
-    classFeatureItems.push({
-      kind: 'feature',
-      title: summarized.title,
-      body: summarized.body,
-    });
-  }
 
   // Operational Racial Traits (no .slice truncation, exact racial spell ability!)
   const getOperationalRacialTraits = (
@@ -1051,7 +943,6 @@ export async function renderCharacterSheetV2(
     const re = /\*{2,3}([^*]+?)\.?\*{2,3}\s*([\s\S]*?)(?=\n\s*\*{2,3}[^*]+?\.?\*{2,3}|$)/g;
     let m: RegExpExecArray | null;
     const isExcludedRacialTrait = (normTitle: string): boolean => {
-      // Exclude ability score increases and their title variants (already integrated into scores)
       if (
         normTitle.includes('incremento') ||
         normTitle.includes('aumento') ||
@@ -1061,7 +952,6 @@ export async function renderCharacterSheetV2(
       ) {
         return true;
       }
-      // Exclude meta/informational headings (age, alignment, size, languages, subrace choice text)
       const pureMeta =
         /^(eta|allineamento|taglia|velocita|linguaggi|linguaggio extra|nomi|tratti|tratti razziali|sottorazza|sottorazze|elfo|nano|umano|gnomo|mezzelfo|mezzorco|halfling|dragonide|tiefling)$/;
       return pureMeta.test(normTitle) || normTitle.startsWith('sottorazz');
@@ -1191,131 +1081,437 @@ export async function renderCharacterSheetV2(
     ];
   };
 
+  // Infusions (Artificer)
+  const appliedInfusions = artificer?.state.assignments ?? [];
+  const getInfusionRow = (inf: (typeof appliedInfusions)[number]): InfusionTableRow => {
+    const bonus = s.level >= 10 ? 2 : 1;
+    const norm = inf.infusionId.toLowerCase();
+    const stateLabels: Record<string, string> = {
+      self: 'usato',
+      attuned: 'in sintonia',
+      carried: 'portato (non attivo)',
+      'carried-attuned': 'portato in sintonia',
+      other: 'assegnato ad altri',
+    };
+    const stateSuffix = inf.state ? ` [${stateLabels[inf.state] ?? inf.state}]` : '';
+    const itemWithState = `${inf.itemLabel}${stateSuffix}`;
+
+    if (norm === 'weapon' || norm.includes('arma-migliorata')) {
+      const matchedWeapon = s.weaponRows.find((w) =>
+        inf.itemLabel.toLowerCase().includes(w.name.toLowerCase().split(' ')[0])
+      );
+      const weaponStatsNote =
+        matchedWeapon && (inf.state === 'self' || inf.state === 'attuned')
+          ? ` (${matchedWeapon.name}: TpC ${matchedWeapon.toHit}, danno ${resolveDamageFormula(matchedWeapon.damage, s.abilityMods)}).`
+          : '.';
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'No',
+        effect: `+${bonus} magico ai tiri per colpire e per i danni con quest'arma${weaponStatsNote}`,
+      };
+    }
+    if (norm === 'defense' || norm.includes('difesa')) {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'No',
+        effect: `+${bonus} bonus magico alla CA mentre indossi l'armatura o impugni lo scudo infuso.`,
+      };
+    }
+    if (norm === 'repulsion' || norm.includes('repulsione')) {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'Sì',
+        effect: '+1 alla CA mentre impugnato. 4 cariche (rec. 1d4 all\'alba): subito dopo essere stato colpito in mischia, reazione (1 carica) per spingere l\'attaccante fino a 4,5 m.',
+      };
+    }
+    if (norm === 'repeating' || norm.includes('ripetizione')) {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'Sì',
+        effect: '+1 a TpC e danni; ignora la proprietà ricarica e genera automaticamente 1 munizione magica quando attacchi se non è carica.',
+      };
+    }
+    if (norm === 'resistant' || norm.includes('resistente')) {
+      const resType = inf.resistance ? ` ai danni da ${inf.resistance}` : ' a 1 tipo di danno scelto';
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'Sì',
+        effect: `Mentre indossi questa armatura ottieni resistenza${resType}.`,
+      };
+    }
+    if (norm === 'mind' || norm.includes('ment')) {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'No',
+        effect: '4 cariche (rec. 1d4 all\'alba): quando fallisci un TS su Costituzione per mantenere la concentrazione, reazione (1 carica) per superarlo invece.',
+      };
+    }
+    if (norm === 'focus') {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'Sì',
+        effect: `Mentre impugnato: +${bonus} ai tiri per colpire degli incantesimi e ignori la mezza copertura quando effettui un attacco con incantesimo.`,
+      };
+    }
+    if (norm === 'homunculus' || norm.includes('omuncolo')) {
+      return {
+        title: inf.title,
+        itemLabel: itemWithState,
+        sintonia: 'No',
+        effect: 'Determina l\'aspetto e anima il Servo Omuncolo (vedi mini scheda Compagno dedicata; comando con azione bonus).',
+      };
+    }
+
+    const knownDef = artificer?.state.known.find((k) => k.id === inf.infusionId);
+    const rawDesc = knownDef ? `${knownDef.replicaBody ?? knownDef.body}` : '';
+    const cleanedDesc = rawDesc
+      ? cleanAndFilterManualFeatureBody(
+          rawDesc.replace(/^\*?(?:Prerequisiti|Oggetto):[^\n]*\*?\n*/gim, ''),
+          s.level
+        )
+      : 'Oggetto infuso attivo secondo le regole dell\'infusione selezionata.';
+
+    return {
+      title: inf.title,
+      itemLabel: itemWithState,
+      sintonia: inf.requiresAttunement ? 'Sì' : 'No',
+      effect: cleanedDesc,
+    };
+  };
+
+  // Complete Inventory (NO .slice(0, 12) truncation!)
+  const filteredInv = s.inventory.filter((it) => {
+    const t = it.trim();
+    return (
+      !t.includes('->') &&
+      !t.startsWith('* ARMA') &&
+      !t.startsWith('* DIFESA') &&
+      !t.startsWith('* SCUDO DELLA REPULSIONE')
+    );
+  });
+  const invItems = filteredInv.length > 0 ? filteredInv : s.inventory;
+
+  // --- ASSEMBLE ADAPTIVE CANDIDATE BLOCKS (STABLE IDS & PRIORITIES 1..5) ---
+  const candidateBlocks: AdaptiveBlock[] = [];
+
+  // Priority 1: Subclass operative features (level-gated)
+  if (s.classSubclass && rawSubclassFeatures.length > 0) {
+    for (const sf of rawSubclassFeatures) {
+      if (sf.level > s.level) continue;
+      const summarized = summarizeResolvedFeature(sf, s);
+      if (!summarized) continue;
+      candidateBlocks.push({
+        id: `sf-${canonicalFeatureKey(summarized.title)}`,
+        title: summarized.title,
+        priority: 1,
+        category: 'subclass_feature',
+        body: summarized.body,
+      });
+    }
+  }
+
+  // Priority 1: Subclass-specific operative abilities for Artificer
+  if (artificer) {
+    const sub = (s.classSubclass ?? '').toLowerCase();
+    if (s.level >= 3 && (sub.includes('fabbro da battaglia') || sub.includes('battle smith'))) {
+      candidateBlocks.push({
+        id: 'sf-pronto-per-la-battaglia',
+        title: 'Pronto per la Battaglia',
+        priority: 1,
+        category: 'subclass_feature',
+        body: "Ottieni competenza nelle armi da guerra. Quando attacchi con un'arma magica, puoi usare il modificatore di Intelligenza invece di Forza o Destrezza per i tiri per colpire e per i danni.",
+      });
+    } else if (s.level >= 3 && (sub.includes('armaiolo') || sub.includes('armorer'))) {
+      const isInfiltrator = s.weaponRows.some((w) => w.name.includes('Fulmini'));
+      candidateBlocks.push({
+        id: 'sf-armatura-arcana',
+        title: `Armatura Arcana (${isInfiltrator ? 'Infiltrato' : 'Custode'})`,
+        priority: 1,
+        category: 'subclass_feature',
+        body: isInfiltrator
+          ? 'Lanciatore di Fulmini (gittata 27/90 m, 1d6 da fulmine, +1d6 extra 1 volta/turno), Passo Veloce (+1,5 m velocità) e Campo Smorzante (vantaggio a Furtività).'
+          : 'Guanti Tonanti (mischia, 1d8 da tuono; bersaglio colpito ha svantaggio ai TpC contro bersagli diversi da te) e Campo Difensivo (azione bonus: PF temp pari al livello, BC usi/riposo lungo).',
+      });
+    } else if (s.level >= 3 && (sub.includes('alchimista') || sub.includes('alchemist'))) {
+      candidateBlocks.push({
+        id: 'sf-elisir-sperimentale',
+        title: 'Elisir Sperimentale',
+        priority: 1,
+        category: 'subclass_feature',
+        body: `Fine riposo lungo (con scorte da alchimista): crei ${s.level >= 15 ? 3 : s.level >= 6 ? 2 : 1} elisir casuale (d6: Guarigione, Rapidità, Resilienza, Audacia, Volo o Trasformazione). Puoi spendere 1 slot incantesimo per crearne uno scelto. Bere/somministrare richiede 1 azione.`,
+      });
+    } else if (s.level >= 3 && (sub.includes('artigliere') || sub.includes('artillerist'))) {
+      candidateBlocks.push({
+        id: 'sf-cannone-occulto',
+        title: 'Cannone Occulto',
+        priority: 1,
+        category: 'subclass_feature',
+        body: 'Azione (con strumenti da falegname o da fabbro): crei 1 Cannone Occulto Piccolo o Minuscolo entro 1,5 m (1 gratis/riposo lungo o spendendo 1 slot; dura 1 ora). Nel tuo turno usi azione bonus per attivarlo entro 18 m (vedi scheda Compagno).',
+      });
+    }
+  }
+
+  // Priority 1: Key operative reference features (level-gated, excluding fighting styles)
+  const rawReferenceCards: PrintFeature[] = bard
+    ? bardReferenceCards(s.level)
+    : barbarian
+    ? barbarianReferenceCards(s.level)
+    : cleric
+    ? clericReferenceCards(s.level, cleric.undeadCr)
+    : druid
+    ? druidReferenceCards(s.level, s.classSubclass)
+    : fighter
+    ? fighterReferenceCards(
+        s.level,
+        options.fighterChoices?.fightingStyle,
+        options.fighterChoices?.secondFightingStyle,
+        /campione/i.test(s.classSubclass ?? ''),
+        false
+      )
+    : rogue
+    ? rogueReferenceCards(s.level)
+    : wizard
+    ? wizardReferenceCards(s.level)
+    : monk
+    ? monkReferenceCards(s.level)
+    : paladin
+    ? paladinReferenceCards(s.level, paladin.resources.fightingStyle)
+    : ranger
+    ? rangerReferenceCards(s.level)
+    : sorcerer
+    ? sorcererReferenceCards(s.level)
+    : artificer
+    ? artificerReferenceCards(s.level)
+    : [];
+
+  for (const rc of rawReferenceCards) {
+    const key = canonicalFeatureKey(rc.title);
+    if (candidateBlocks.some((b) => b.id === `sf-${key}` || b.id === `rc-${key}`)) continue;
+    const isStyle = key.startsWith('stile');
+    candidateBlocks.push({
+      id: `rc-${key}`,
+      title: rc.title,
+      priority: isStyle ? 2 : 1,
+      category: isStyle ? 'chosen_option' : 'class_feature',
+      body: rc.body,
+    });
+  }
+
+  // Priority 2: Chosen fighting style for Ranger (which is tracked in ranger.resources.fightingStyle)
+  if (ranger && ranger.resources.fightingStyle) {
+    const st = ranger.resources.fightingStyle;
+    candidateBlocks.push({
+      id: 'opt-style-ranger',
+      title: 'Stile di Combattimento',
+      priority: 2,
+      category: 'chosen_option',
+      body: `${st}: ${FIGHTING_STYLE_DESCRIPTIONS[st as PhbFightingStyle] ?? 'Stile di combattimento del Ranger.'}`,
+    });
+  }
+
+  // Priority 2: Artificer Active Infusions
+  if (artificer && s.level >= 2 && appliedInfusions.length > 0) {
+    candidateBlocks.push({
+      id: 'opt-artificer-infusions-active',
+      title: 'OGGETTI INFUSI (ATTIVI)',
+      priority: 2,
+      category: 'chosen_option',
+      isInfusionTable: true,
+      items: appliedInfusions.map((inf) => ({ kind: 'infusionRow' as const, row: getInfusionRow(inf) })),
+    });
+  }
+
+  // Priority 2: Warlock chosen Invocations and Pact Boon
+  if (warlock && s.level >= 2 && warlock.resources.invocations.length > 0) {
+    candidateBlocks.push({
+      id: 'opt-warlock-invocations',
+      title: 'SUPPLICHE OCCULTE (SCELTE)',
+      priority: 2,
+      category: 'chosen_option',
+      items: warlock.resources.invocations.map((inv) => ({
+        kind: 'inline' as const,
+        label: `• ${inv.name}`,
+        body: inv.desc,
+        indentContinuation: 8,
+      })),
+    });
+  }
+  if (warlock && s.level >= 3 && warlock.resources.pactBoon) {
+    candidateBlocks.push({
+      id: 'opt-warlock-pact-boon',
+      title: `Dono del Patto: ${warlock.resources.pactBoon.name}`,
+      priority: 2,
+      category: 'chosen_option',
+      body: warlock.resources.pactBoon.desc,
+    });
+  }
+
+  // Priority 2: Sorcerer chosen Metamagic
+  if (sorcerer && s.level >= 3 && sorcerer.resources.metamagic.length > 0) {
+    candidateBlocks.push({
+      id: 'opt-sorcerer-metamagic',
+      title: 'OPZIONI DI METAMAGIA (SCELTE)',
+      priority: 2,
+      category: 'chosen_option',
+      items: sorcerer.resources.metamagic.map((mm) => ({
+        kind: 'inline' as const,
+        label: `• ${mm.name} (${mm.cost} pt)`,
+        body: mm.desc,
+        indentContinuation: 8,
+      })),
+    });
+  }
+
+  // Priority 3: Operational racial traits
+  const operationalRacialTraits = getOperationalRacialTraits(s.raceTraitsMd, s.subraceTraitsMd, s.spells);
+  if (operationalRacialTraits.length > 0) {
+    candidateBlocks.push({
+      id: 'traits-racial-all',
+      title: `TRATTI RAZZIALI (${(s.subraceLabel ?? s.raceLabel).toUpperCase()})`,
+      priority: 3,
+      category: 'racial_trait',
+      items: operationalRacialTraits,
+    });
+  }
+
+  // Priority 4: Languages & Proficiencies
+  const profItems = buildProficiencyItems();
+  candidateBlocks.push({
+    id: 'proficiencies-all',
+    title: 'LINGUAGGI E COMPETENZE',
+    priority: 4,
+    category: 'proficiency',
+    items: profItems,
+  });
+
+  // Priority 5: Inventory & Equipment
+  if (invItems.length > 0) {
+    candidateBlocks.push({
+      id: 'inventory-all',
+      title: 'INVENTARIO ED EQUIPAGGIAMENTO',
+      priority: 5,
+      category: 'inventory',
+      items: invItems.map((it) => ({
+        kind: 'bullet' as const,
+        text: it.replace(/^\*\s*/, '').trim(),
+      })),
+    });
+  }
+
+  // --- PLAN PAGE 1 SLOTS ---
+  const page1Slots: AvailableSlot[] = [
+    {
+      id: 'right_col',
+      x: 390,
+      width: 178,
+      topY: bodyTopY,
+      bottomY: 42,
+      maxHeight: bodyTopY - 42,
+    },
+  ];
+  if (centerRemainingH >= 55) {
+    page1Slots.push({
+      id: 'center_bottom',
+      x: 212,
+      width: 168,
+      topY: centerRemainingTop,
+      bottomY: 42,
+      maxHeight: centerRemainingH,
+    });
+  }
+
+  const { placed, unplaced, placedBlockIds } = planAdaptivePage1(
+    candidateBlocks,
+    page1Slots,
+    font,
+    bold,
+    7
+  );
+
+  for (const pl of placed) {
+    renderPlacedBlockOnPage1(first, pl, font, bold, text);
+  }
+
+  const seenFeatureKeys = new Set<string>();
+  for (const pid of placedBlockIds) {
+    seenFeatureKeys.add(pid);
+  }
+  for (const pl of placed) {
+    seenFeatureKeys.add(canonicalFeatureKey(pl.block.title));
+  }
+  if (placedBlockIds.has('opt-style-1') || placedBlockIds.has('opt-style-paladin') || placedBlockIds.has('opt-style-ranger')) {
+    seenFeatureKeys.add('stile di combattimento');
+  }
+  if (placedBlockIds.has('opt-style-2')) {
+    seenFeatureKeys.add('stile di combattimento aggiuntivo');
+  }
+  if (placedBlockIds.has('opt-warlock-pact-boon')) {
+    seenFeatureKeys.add('dono del patto');
+  }
+
+  // --- PAGE 2+: DYNAMIC TWO-COLUMN FLOW FOR UNPLACED CAPACITÀ, RAZZA, SOTTOCLASSE E DOTAZIONE ---
+  const classFeatureItems: FlowItem[] = [];
+
+  // Add any unplaced features from candidate blocks
+  for (const un of unplaced) {
+    if (un.category === 'subclass_feature' || un.category === 'class_feature') {
+      const key = canonicalFeatureKey(un.title);
+      if (!seenFeatureKeys.has(key)) {
+        seenFeatureKeys.add(key);
+        classFeatureItems.push({ kind: 'feature', title: un.title, body: un.body ?? '' });
+      }
+    }
+  }
+
+  // Add any other model features not already placed or covered
+  for (const feat of model.features) {
+    if (feat.level > s.level) continue;
+    if (subclassTitleSet.has(feat.title)) continue;
+    if (artificer && artificerInfusionTitleSet.has(feat.title)) continue;
+    const key = canonicalFeatureKey(feat.title);
+    if (seenFeatureKeys.has(key)) continue;
+    if (warlock && (key === 'suppliche occulte' || key === 'dono del patto' || key === 'arcanum mistico')) continue;
+    if (sorcerer && key === 'metamagia') continue;
+
+    const summarized = summarizeResolvedFeature(feat, s);
+    if (!summarized) continue;
+    seenFeatureKeys.add(key);
+    classFeatureItems.push({
+      kind: 'feature',
+      title: summarized.title,
+      body: summarized.body,
+    });
+  }
+
   const leftSections: FlowSection[] = [];
   if (classFeatureItems.length > 0) {
     leftSections.push({ title: 'PRIVILEGI DI CLASSE', items: classFeatureItems });
   }
-  const operationalRacialTraits = getOperationalRacialTraits(s.raceTraitsMd, s.subraceTraitsMd, s.spells);
-  if (operationalRacialTraits.length > 0) {
+  if (!placedBlockIds.has('traits-racial-all') && operationalRacialTraits.length > 0) {
     leftSections.push({
       title: `TRATTI RAZZIALI (${(s.subraceLabel ?? s.raceLabel).toUpperCase()})`,
       items: operationalRacialTraits,
     });
   }
-  leftSections.push({
-    title: 'LINGUAGGI E COMPETENZE',
-    items: buildProficiencyItems(),
-  });
+  if (!placedBlockIds.has('proficiencies-all')) {
+    leftSections.push({
+      title: 'LINGUAGGI E COMPETENZE',
+      items: profItems,
+    });
+  }
 
-  // Build Right-Column Priority Sections: Artificer Infusions OR Subclass Features + Chosen Options + Inventory
   const rightSections: FlowSection[] = [];
-  const appliedInfusions = artificer?.state.assignments ?? [];
 
-  if (artificer) {
-    if (s.level >= 2) {
-      const getInfusionRow = (inf: (typeof appliedInfusions)[number]): InfusionTableRow => {
-        const bonus = s.level >= 10 ? 2 : 1;
-        const norm = inf.infusionId.toLowerCase();
-        const stateLabels: Record<string, string> = {
-          self: 'usato',
-          attuned: 'in sintonia',
-          carried: 'portato (non attivo)',
-          'carried-attuned': 'portato in sintonia',
-          other: 'assegnato ad altri',
-        };
-        const stateSuffix = inf.state ? ` [${stateLabels[inf.state] ?? inf.state}]` : '';
-        const itemWithState = `${inf.itemLabel}${stateSuffix}`;
-
-        if (norm === 'weapon' || norm.includes('arma-migliorata')) {
-          const matchedWeapon = s.weaponRows.find((w) =>
-            inf.itemLabel.toLowerCase().includes(w.name.toLowerCase().split(' ')[0])
-          );
-          const weaponStatsNote =
-            matchedWeapon && (inf.state === 'self' || inf.state === 'attuned')
-              ? ` (${matchedWeapon.name}: TpC ${matchedWeapon.toHit}, danno ${resolveDamageFormula(matchedWeapon.damage, s.abilityMods)}).`
-              : '.';
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'No',
-            effect: `+${bonus} magico ai tiri per colpire e per i danni con quest'arma${weaponStatsNote}`,
-          };
-        }
-        if (norm === 'defense' || norm.includes('difesa')) {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'No',
-            effect: `+${bonus} bonus magico alla CA mentre indossi l'armatura o impugni lo scudo infuso.`,
-          };
-        }
-        if (norm === 'repulsion' || norm.includes('repulsione')) {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'Sì',
-            effect: '+1 alla CA mentre impugnato. 4 cariche (rec. 1d4 all\'alba): subito dopo essere stato colpito in mischia, reazione (1 carica) per spingere l\'attaccante fino a 4,5 m.',
-          };
-        }
-        if (norm === 'repeating' || norm.includes('ripetizione')) {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'Sì',
-            effect: '+1 a TpC e danni; ignora la proprietà ricarica e genera automaticamente 1 munizione magica quando attacchi se non è carica.',
-          };
-        }
-        if (norm === 'resistant' || norm.includes('resistente')) {
-          const resType = inf.resistance ? ` ai danni da ${inf.resistance}` : ' a 1 tipo di danno scelto';
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'Sì',
-            effect: `Mentre indossi questa armatura ottieni resistenza${resType}.`,
-          };
-        }
-        if (norm === 'mind' || norm.includes('ment')) {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'No',
-            effect: '4 cariche (rec. 1d4 all\'alba): quando fallisci un TS su Costituzione per mantenere la concentrazione, reazione (1 carica) per superarlo invece.',
-          };
-        }
-        if (norm === 'focus') {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'Sì',
-            effect: `Mentre impugnato: +${bonus} ai tiri per colpire degli incantesimi e ignori la mezza copertura quando effettui un attacco con incantesimo.`,
-          };
-        }
-        if (norm === 'homunculus' || norm.includes('omuncolo')) {
-          return {
-            title: inf.title,
-            itemLabel: itemWithState,
-            sintonia: 'No',
-            effect: 'Determina l\'aspetto e anima il Servo Omuncolo (vedi mini scheda Compagno dedicata; comando con azione bonus).',
-          };
-        }
-
-        const knownDef = artificer.state.known.find((k) => k.id === inf.infusionId);
-        const rawDesc = knownDef ? `${knownDef.replicaBody ?? knownDef.body}` : '';
-        const cleanedDesc = rawDesc
-          ? cleanAndFilterManualFeatureBody(
-              rawDesc.replace(/^\*?(?:Prerequisiti|Oggetto):[^\n]*\*?\n*/gim, ''),
-              s.level
-            )
-          : 'Oggetto infuso attivo secondo le regole dell\'infusione selezionata.';
-
-        return {
-          title: inf.title,
-          itemLabel: itemWithState,
-          sintonia: inf.requiresAttunement ? 'Sì' : 'No',
-          effect: cleanedDesc,
-        };
-      };
-
+  // Artificer Infusions
+  if (artificer && s.level >= 2) {
+    if (!placedBlockIds.has('opt-artificer-infusions-active')) {
       const infRows: FlowItem[] =
         appliedInfusions.length > 0
           ? appliedInfusions.map((inf) => ({ kind: 'infusionRow', row: getInfusionRow(inf) }))
@@ -1326,43 +1522,43 @@ export async function renderCharacterSheetV2(
         hasInfusionHeader: appliedInfusions.length > 0,
         items: infRows,
       });
-
-      const activeInfusionIds = new Set(appliedInfusions.map((a) => a.infusionId));
-      const UNAPPLIED_INFUSION_SUMMARIES: Record<string, string> = {
-        homunculus: 'Gemma/cristallo da almeno 100 mo: crea il compagno Servo Omuncolo che obbedisce ai tuoi comandi (azione bonus).',
-        mind: 'Armatura o veste (4 cariche, rec. 1d4 all\'alba): reazione (1 carica) per superare un TS Costituzione fallito sulla concentrazione.',
-        repeating: 'Arma a distanza con munizioni (sintonia): +1 a TpC e danni, ignora ricarica e genera munizioni magiche se scarica.',
-        resistant: 'Armatura (sintonia, 6° liv): conferisce resistenza a 1 tipo di danno scelto (acido, freddo, fuoco, forza, fulmine, necrotico, psichico, radioso, tuono o veleno).',
-        focus: `Verga, bastone o bacchetta (sintonia): +${s.level >= 10 ? 2 : 1} a TpC degli incantesimi e ignora mezza copertura.`,
-        weapon: `Arma semplice o da guerra: +${s.level >= 10 ? 2 : 1} a TpC e danni.`,
-        defense: `Armatura o scudo: +${s.level >= 10 ? 2 : 1} alla CA.`,
-        repulsion: 'Scudo (sintonia, 6° liv, 4 cariche): +1 CA; reazione dopo colpo in mischia (1 carica) per spingere l\'attaccante fino a 4,5 m.',
-      };
-
-      const unappliedItems: FlowItem[] = (artificer.state.known ?? [])
-        .filter((k) => !activeInfusionIds.has(k.id))
-        .map((k) => {
-          const knownSummary = UNAPPLIED_INFUSION_SUMMARIES[k.id.toLowerCase()];
-          if (knownSummary) {
-            return { kind: 'inline' as const, label: `• ${k.title}`, body: knownSummary, indentContinuation: 8 };
-          }
-          const cleaned = cleanAndFilterManualFeatureBody(
-            k.body.replace(/^\*?(?:Prerequisiti|Oggetto):[^\n]*\*?\n*/gim, ''),
-            s.level
-          );
-          return { kind: 'inline' as const, label: `• ${k.title}`, body: cleaned, indentContinuation: 8 };
-        });
-
-      rightSections.push({
-        title: 'INFUSIONI NOTE (NON ATTIVE)',
-        items:
-          unappliedItems.length > 0
-            ? unappliedItems
-            : [{ kind: 'bullet', text: 'Nessuna infusione non attiva (tutte assegnate).' }],
-      });
     }
+
+    const activeInfusionIds = new Set(appliedInfusions.map((a) => a.infusionId));
+    const UNAPPLIED_INFUSION_SUMMARIES: Record<string, string> = {
+      homunculus: 'Gemma/cristallo da almeno 100 mo: crea il compagno Servo Omuncolo che obbedisce ai tuoi comandi (azione bonus).',
+      mind: 'Armatura o veste (4 cariche, rec. 1d4 all\'alba): reazione (1 carica) per superare un TS Costituzione fallito sulla concentrazione.',
+      repeating: 'Arma a distanza con munizioni (sintonia): +1 a TpC e danni, ignora ricarica e genera munizioni magiche se scarica.',
+      resistant: 'Armatura (sintonia, 6° liv): conferisce resistenza a 1 tipo di danno scelto (acido, freddo, fuoco, forza, fulmine, necrotico, psichico, radioso, tuono o veleno).',
+      focus: `Verga, bastone o bacchetta (sintonia): +${s.level >= 10 ? 2 : 1} a TpC degli incantesimi e ignora mezza copertura.`,
+      weapon: `Arma semplice o da guerra: +${s.level >= 10 ? 2 : 1} a TpC e danni.`,
+      defense: `Armatura o scudo: +${s.level >= 10 ? 2 : 1} alla CA.`,
+      repulsion: 'Scudo (sintonia, 6° liv, 4 cariche): +1 CA; reazione dopo colpo in mischia (1 carica) per spingere l\'attaccante fino a 4,5 m.',
+    };
+
+    const unappliedItems: FlowItem[] = (artificer.state.known ?? [])
+      .filter((k) => !activeInfusionIds.has(k.id))
+      .map((k) => {
+        const knownSummary = UNAPPLIED_INFUSION_SUMMARIES[k.id.toLowerCase()];
+        if (knownSummary) {
+          return { kind: 'inline' as const, label: `• ${k.title}`, body: knownSummary, indentContinuation: 8 };
+        }
+        const cleaned = cleanAndFilterManualFeatureBody(
+          k.body.replace(/^\*?(?:Prerequisiti|Oggetto):[^\n]*\*?\n*/gim, ''),
+          s.level
+        );
+        return { kind: 'inline' as const, label: `• ${k.title}`, body: cleaned, indentContinuation: 8 };
+      });
+
+    rightSections.push({
+      title: 'INFUSIONI NOTE (NON ATTIVE)',
+      items:
+        unappliedItems.length > 0
+          ? unappliedItems
+          : [{ kind: 'bullet', text: 'Nessuna infusione non attiva (tutte assegnate).' }],
+    });
   } else {
-    // Subclass features (strictly resolved from evidence & gated by s.level)
+    // Subclass features for other classes
     if (s.classSubclass && rawSubclassFeatures.length > 0) {
       const subItems: FlowItem[] = [];
       for (const sf of rawSubclassFeatures) {
@@ -1382,8 +1578,8 @@ export async function renderCharacterSheetV2(
       }
     }
 
-    // Warlock Chosen Eldritch Invocations (only when level >= 2)
-    if (warlock && s.level >= 2) {
+    // Warlock Invocations
+    if (warlock && s.level >= 2 && !placedBlockIds.has('opt-warlock-invocations')) {
       const invItems: FlowItem[] =
         warlock.resources.invocations.length > 0
           ? warlock.resources.invocations.map((inv) => ({
@@ -1399,8 +1595,8 @@ export async function renderCharacterSheetV2(
       });
     }
 
-    // Sorcerer Chosen Metamagic Options (only when level >= 3)
-    if (sorcerer && s.level >= 3 && sorcerer.resources.metamagic.length > 0) {
+    // Sorcerer Metamagic
+    if (sorcerer && s.level >= 3 && !placedBlockIds.has('opt-sorcerer-metamagic') && sorcerer.resources.metamagic.length > 0) {
       rightSections.push({
         title: 'OPZIONI DI METAMAGIA (SCELTE)',
         items: sorcerer.resources.metamagic.map((mm) => ({
@@ -1425,26 +1621,18 @@ export async function renderCharacterSheetV2(
   }
 
   // Complete Inventory (NO .slice(0, 12) truncation!)
-  const filteredInv = s.inventory.filter((it) => {
-    const t = it.trim();
-    return (
-      !t.includes('->') &&
-      !t.startsWith('* ARMA') &&
-      !t.startsWith('* DIFESA') &&
-      !t.startsWith('* SCUDO DELLA REPULSIONE')
-    );
-  });
-  const invItems = filteredInv.length > 0 ? filteredInv : s.inventory;
-  rightSections.push({
-    title: 'INVENTARIO ED EQUIPAGGIAMENTO',
-    items:
-      invItems.length > 0
-        ? invItems.map((it) => ({
-            kind: 'bullet' as const,
-            text: it.replace(/^\*\s*/, '').trim(),
-          }))
-        : [{ kind: 'bullet', text: 'Nessun oggetto in inventario.' }],
-  });
+  if (!placedBlockIds.has('inventory-all')) {
+    rightSections.push({
+      title: 'INVENTARIO ED EQUIPAGGIAMENTO',
+      items:
+        invItems.length > 0
+          ? invItems.map((it) => ({
+              kind: 'bullet' as const,
+              text: it.replace(/^\*\s*/, '').trim(),
+            }))
+          : [{ kind: 'bullet', text: 'Nessun oggetto in inventario.' }],
+    });
+  }
 
   // --- DYNAMIC TWO-COLUMN MEASUREMENT & PAGINATION ENGINE ---
   const COL_X = [27, 302] as const;
@@ -1466,6 +1654,8 @@ export async function renderCharacterSheetV2(
         lines: string[];
         indentContinuation: number;
         height: number;
+        isSplitLabel?: boolean;
+        labelLines?: string[];
       }
     | {
         kind: 'bullet';
@@ -1501,34 +1691,37 @@ export async function renderCharacterSheetV2(
           });
         }
       } else if (item.kind === 'inline') {
-        const labelStr = `${item.label}: `;
-        const labelW = bold.widthOfTextAtSize(clean(labelStr), 7.4) + 1.5;
+        const labelStr = `${item.label}:`;
+        const labelW = bold.widthOfTextAtSize(clean(labelStr), 7.4);
         const contIndent = item.indentContinuation ?? 0;
-        // Wrap line 1 in remaining width (innerW - labelW), and subsequent lines in (innerW - contIndent)
-        const words = printPlainText(item.body).replace(/\s+/g, ' ').trim().split(' ').filter(Boolean);
-        const lines: string[] = [];
-        let cur = '';
-        let firstLine = true;
-        for (const w of words) {
-          const avail = firstLine ? Math.max(60, innerW - labelW) : innerW - contIndent;
-          const candidate = cur ? `${cur} ${w}` : w;
-          if (cur && font.widthOfTextAtSize(clean(candidate), 7.1) > avail) {
-            lines.push(cur);
-            cur = w;
-            firstLine = false;
-          } else {
-            cur = candidate;
-          }
+        const bodyText = item.body ?? '';
+
+        if (labelW + 45 > innerW) {
+          const labelLines = wrapSheetText(labelStr, bold, 7.4, innerW);
+          const bodyLines = wrapSheetText(bodyText, font, 7.1, innerW - contIndent);
+          out.push({
+            kind: 'inline',
+            isSplitLabel: true,
+            labelLines,
+            labelStr,
+            labelW,
+            lines: bodyLines,
+            indentContinuation: contIndent,
+            height: (labelLines.length + Math.max(1, bodyLines.length)) * 8.8 + 3.5,
+          });
+        } else {
+          const firstAvail = innerW - (labelW + 3);
+          const contAvail = innerW - contIndent;
+          const lines = wrapInlineBody(bodyText, font, 7.1, firstAvail, contAvail);
+          out.push({
+            kind: 'inline',
+            labelStr,
+            labelW,
+            lines,
+            indentContinuation: contIndent,
+            height: Math.max(1, lines.length) * 8.8 + 3.2,
+          });
         }
-        if (cur || lines.length === 0) lines.push(cur);
-        out.push({
-          kind: 'inline',
-          labelStr,
-          labelW,
-          lines,
-          indentContinuation: contIndent,
-          height: Math.max(1, lines.length) * 8.8 + 3.2,
-        });
       } else if (item.kind === 'bullet') {
         const lines = wrapSheetText(`• ${item.text}`, font, 7.1, innerW - 4);
         out.push({
@@ -1557,11 +1750,24 @@ export async function renderCharacterSheetV2(
     return out;
   };
 
-  let flowPage = newSubsequentPage('CAPACITÀ, RAZZA E DOTAZIONE');
+  let flowPage: PDFPage | null = null;
   let flowCol: 0 | 1 = 0;
   let flowY = FLOW_TOP_Y;
 
+  const getOrCreateFlowPage = (): PDFPage => {
+    if (!flowPage) {
+      flowPage = newSubsequentPage('CAPACITÀ, RAZZA E DOTAZIONE');
+      flowCol = 0;
+      flowY = FLOW_TOP_Y;
+    }
+    return flowPage;
+  };
+
   const advanceColumnOrPage = () => {
+    if (!flowPage) {
+      getOrCreateFlowPage();
+      return;
+    }
     if (flowCol === 0) {
       flowCol = 1;
       flowY = FLOW_TOP_Y;
@@ -1578,6 +1784,7 @@ export async function renderCharacterSheetV2(
     let chunkIdx = 0;
 
     while (remainingRaw.length > 0) {
+      const page = getOrCreateFlowPage();
       const colX = COL_X[flowCol];
       const colW = COL_W[flowCol];
       const measured = expandAndMeasureItems(remainingRaw, colW);
@@ -1602,49 +1809,61 @@ export async function renderCharacterSheetV2(
       }
 
       const boxTitle = chunkIdx === 0 ? section.title : `${section.title} (CONT.)`;
-      frame(flowPage, colX, flowY, colW, accH, boxTitle);
+      frame(page, colX, flowY, colW, accH, boxTitle);
       let drawY = flowY - 30;
 
       if (section.hasInfusionHeader) {
-        flowPage.drawRectangle({
+        page.drawRectangle({
           x: colX + 6,
           y: drawY - 14,
           width: colW - 12,
           height: 14,
           color: rgb(0.92, 0.92, 0.9),
         });
-        text(flowPage, colX + 10, drawY - 10, 'Infusione / Oggetto', 7, bold);
-        text(flowPage, colX + 118, drawY - 10, 'Sint.', 7, bold);
-        text(flowPage, colX + 146, drawY - 10, 'Effetto Operativo', 7, bold);
+        text(page, colX + 10, drawY - 10, 'Infusione / Oggetto', 7, bold);
+        text(page, colX + 118, drawY - 10, 'Sint.', 7, bold);
+        text(page, colX + 146, drawY - 10, 'Effetto Operativo', 7, bold);
         drawY -= 18;
       }
 
       for (let i = 0; i < count; i++) {
         const it = measured[i];
         if (it.kind === 'feature') {
-          text(flowPage, colX + 8, drawY, it.title, 7.8, bold);
+          text(page, colX + 8, drawY, it.title, 7.8, bold);
           drawY -= 9.5;
           it.lines.forEach((l) => {
-            text(flowPage, colX + 8, drawY, l, 7.2);
+            text(page, colX + 8, drawY, l, 7.2);
             drawY -= 8.9;
           });
           drawY -= 4.5;
         } else if (it.kind === 'inline') {
-          text(flowPage, colX + 8, drawY, it.labelStr, 7.4, bold);
-          it.lines.forEach((l, idx) => {
-            const xOff = idx === 0 ? it.labelW : it.indentContinuation;
-            text(flowPage, colX + 8 + xOff, drawY - idx * 8.8, l, 7.1);
-          });
-          drawY -= it.height;
+          if (it.isSplitLabel && it.labelLines) {
+            it.labelLines.forEach((ll) => {
+              text(page, colX + 8, drawY, ll, 7.4, bold);
+              drawY -= 8.8;
+            });
+            it.lines.forEach((l) => {
+              text(page, colX + 8 + it.indentContinuation, drawY, l, 7.1);
+              drawY -= 8.8;
+            });
+            drawY -= 3.5;
+          } else {
+            text(page, colX + 8, drawY, it.labelStr, 7.4, bold);
+            it.lines.forEach((l, idx) => {
+              const xOff = idx === 0 ? it.labelW + 3 : it.indentContinuation;
+              text(page, colX + 8 + xOff, drawY - idx * 8.8, l, 7.1);
+            });
+            drawY -= it.height;
+          }
         } else if (it.kind === 'bullet') {
           it.lines.forEach((l, idx) => {
-            text(flowPage, colX + 8 + (idx === 0 ? 0 : 7), drawY - idx * 8.8, l, 7.1);
+            text(page, colX + 8 + (idx === 0 ? 0 : 7), drawY - idx * 8.8, l, 7.1);
           });
           drawY -= it.height;
         } else if (it.kind === 'infusionRow') {
           const rx = colX + 6;
           const rw = colW - 12;
-          flowPage.drawRectangle({
+          page.drawRectangle({
             x: rx,
             y: drawY - it.rowHeight,
             width: rw,
@@ -1652,28 +1871,28 @@ export async function renderCharacterSheetV2(
             borderColor: rgb(0.65, 0.65, 0.65),
             borderWidth: 0.5,
           });
-          flowPage.drawLine({
+          page.drawLine({
             start: { x: colX + 116, y: drawY },
             end: { x: colX + 116, y: drawY - it.rowHeight },
             color: rgb(0.8, 0.8, 0.8),
             thickness: 0.4,
           });
-          flowPage.drawLine({
+          page.drawLine({
             start: { x: colX + 142, y: drawY },
             end: { x: colX + 142, y: drawY - it.rowHeight },
             color: rgb(0.8, 0.8, 0.8),
             thickness: 0.4,
           });
           it.titleLines.forEach((tl, idx) => {
-            text(flowPage, rx + 4, drawY - 10.5 - idx * 9, tl, 7.6, bold);
+            text(page, rx + 4, drawY - 10.5 - idx * 9, tl, 7.6, bold);
           });
           const itemStartY = drawY - 10.5 - it.titleLines.length * 9 - 1.5;
           it.itemLines.forEach((il, idx) => {
-            text(flowPage, rx + 4, itemStartY - idx * 8.2, il, 6.8);
+            text(page, rx + 4, itemStartY - idx * 8.2, il, 6.8);
           });
-          text(flowPage, colX + 121, drawY - 10.5, it.sintonia, 7.3, bold);
+          text(page, colX + 121, drawY - 10.5, it.sintonia, 7.3, bold);
           it.effLines.forEach((el, idx) => {
-            text(flowPage, colX + 146, drawY - 10.5 - idx * 8.6, el, 7.0);
+            text(page, colX + 146, drawY - 10.5 - idx * 8.6, el, 7.0);
           });
           drawY -= it.height;
         }
@@ -1725,7 +1944,7 @@ export async function renderCharacterSheetV2(
     renderFlowSection(sec);
   }
   // Start right-priority sections cleanly at the top of Column 1 if we are still in Column 0 on Page 2
-  if (flowCol === 0 && flowY < FLOW_TOP_Y) {
+  if (flowPage && flowCol === 0 && flowY < FLOW_TOP_Y) {
     flowCol = 1;
     flowY = FLOW_TOP_Y;
   }

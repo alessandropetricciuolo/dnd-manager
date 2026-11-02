@@ -258,6 +258,7 @@ test('Ogni archetipo di Guerriero produce un PDF valido e completo; salva sample
   const e1 = await loadFighterEvidence(s1);
   const bytes1 = await renderCharacterSheetV2(s1, logo, { fighterEvidence: e1 });
   const pdf1 = await PDFDocument.load(bytes1);
-  assert.ok(pdf1.getPageCount() >= 2);
+  // Con il planner adattivo V2, un guerriero di 1° livello senza sottoclasse entra interamente in 1 pagina evitando pagine vuote
+  assert.ok(pdf1.getPageCount() >= 1);
 });
 

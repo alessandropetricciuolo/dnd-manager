@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { PDFDocument } from 'pdf-lib';
 import { buildGeneratedCharacterSheet } from '../build-engine';
 import { loadFighterEvidence, addFighterGrantedSpells } from '@/lib/server/fighter-source';
@@ -9,6 +10,7 @@ import { loadRangerEvidence, addRangerGrantedSpells } from '@/lib/server/ranger-
 import { loadWarlockEvidence, addWarlockGrantedSpells } from '@/lib/server/warlock-source';
 import { loadSorcererEvidence, addSorcererGrantedSpells } from '@/lib/server/sorcerer-source';
 import { loadMonkEvidence, addMonkGrantedSpells } from '@/lib/server/monk-source';
+import { loadWizardEvidence, addWizardGrantedSpells } from '@/lib/server/wizard-source';
 import { loadBardCollegeFeatures, addBardCollegeGrantedSpells } from '@/lib/server/bard-college-source';
 import { buildBardPrintModel } from '../bard-print-model';
 import { buildFighterPrintModel } from '../fighter-print-model';
@@ -60,11 +62,11 @@ async function simulateSheetPdfV2Api(payload: {
       classSubclass: payload.input.classSubclass ?? null,
       backgroundSlug: payload.input.backgroundSlug ?? 'soldato',
       level,
-      alignment: null,
-      age: null,
-      height: null,
-      weight: null,
-      sex: null,
+      alignment: payload.input.alignment ?? null,
+      age: payload.input.age ?? null,
+      height: payload.input.height ?? null,
+      weight: payload.input.weight ?? null,
+      sex: payload.input.sex ?? null,
       buildOverrides: effectiveOverrides as CharacterBuildOverrides,
     },
     undefined
@@ -92,6 +94,9 @@ async function simulateSheetPdfV2Api(payload: {
   } else if (classLabel === 'Monaco') {
     evidence = await loadMonkEvidence(baseSheet, undefined, reconciled.monkChoices ?? payload.monkChoices);
     fullSheet = addMonkGrantedSpells(baseSheet, evidence);
+  } else if (classLabel === 'Mago') {
+    evidence = await loadWizardEvidence(baseSheet, undefined, (reconciled as any).wizardChoices ?? (payload as any).wizardChoices);
+    fullSheet = addWizardGrantedSpells(baseSheet, evidence);
   } else if (classLabel === 'Bardo') {
     collegeFeatures = await loadBardCollegeFeatures(baseSheet);
     fullSheet = await addBardCollegeGrantedSpells(baseSheet);
@@ -129,6 +134,8 @@ async function simulateSheetPdfV2Api(payload: {
     sorcererChoices: reconciled.sorcererChoices ?? payload.sorcererChoices,
     monkEvidence: classLabel === 'Monaco' ? evidence : undefined,
     monkChoices: reconciled.monkChoices ?? payload.monkChoices,
+    wizardEvidence: classLabel === 'Mago' ? evidence : undefined,
+    wizardChoices: (reconciled as any).wizardChoices ?? (payload as any).wizardChoices,
     bonusSkills: reconciled.bonusSkills,
     collegeFeatures,
     fightingStyle: reconciled.fightingStyle as any,
@@ -550,4 +557,111 @@ test('Difesa Paladino e Ranger: stili multipli, cambi espliciti, equipaggiamento
   const pmUnarmoredRan = buildRangerPrintModel(unarmoredRan, await loadRangerEvidence(unarmoredRan), { fightingStyle: 'Difesa' });
   assert.equal(pmUnarmoredRan.sheet.armorClass, 12, 'Senza armatura fisica, Difesa per Ranger NON può aggiungere +1');
   assert.equal(pmUnarmoredRan.sheet.defenseStyleApplied, false);
+});
+
+test('Adaptive Page 1 V2: header dati fisici su 3 righe, zero duplicazioni stili, assenza CD magia da P1', async () => {
+  const tmpDir = '/tmp';
+
+  // 1. Dati fisici nell'header su tre righe distinte + sesso distinto
+  const { bytes: heroBytes } = await simulateSheetPdfV2Api({
+    input: {
+      characterName: 'Thorin',
+      classLabel: 'Guerriero',
+      level: '2',
+      age: '55',
+      height: '1.40 m',
+      weight: '75 kg',
+      sex: 'Maschio',
+      alignment: 'Legale Buono',
+    },
+    fighterChoices: { fightingStyle: 'Difesa' },
+  });
+  const heroPdfPath = `${tmpDir}/test-hero-p1.pdf`;
+  fs.writeFileSync(heroPdfPath, heroBytes);
+  const heroP1Text = execFileSync('pdftotext', ['-layout', '-f', '1', '-l', '1', heroPdfPath, '-'], { encoding: 'utf8' });
+
+  assert.match(heroP1Text, /Età:\s*55/, 'Età deve avere etichetta esplicita su riga propria');
+  assert.match(heroP1Text, /Altezza:\s*1\.40\s*m/, 'Altezza deve avere etichetta esplicita su riga propria');
+  assert.match(heroP1Text, /Peso:\s*75\s*kg/, 'Peso deve avere etichetta esplicita su riga propria');
+  assert.match(heroP1Text, /Maschio/, 'Sesso deve comparire nel proprio riquadro');
+  assert.doesNotMatch(heroP1Text, /55\s*[•*]\s*1\.40/, 'Non devono esserci concatenazioni con asterischi o pallini nei dati fisici');
+
+  // 2. Cioccolo (Campione 12): entrambi gli stili presenti, ciascuno descritto esattamente 1 volta
+  const { bytes: cioccoloBytes } = await simulateSheetPdfV2Api({
+    input: {
+      characterName: 'cioccolo',
+      classLabel: 'Guerriero',
+      classSubclass: 'Campione',
+      raceSlug: 'tiefling',
+      backgroundSlug: 'eremita',
+      level: '12',
+      buildOverridesJson: JSON.stringify({
+        fightingStyle: 'Duellare',
+        abilities: { str: 20, dex: 14, con: 18, int: 11, wis: 12, cha: 12 },
+        fighter: {
+          fightingStyle: 'Duellare',
+          secondFightingStyle: 'Combattere con Armi Possenti',
+        },
+      }),
+    },
+    fighterChoices: {
+      fightingStyle: 'Duellare',
+      secondFightingStyle: 'Combattere con Armi Possenti',
+    },
+  });
+  const cioccoloPdfPath = `${tmpDir}/test-cioccolo-p1.pdf`;
+  fs.writeFileSync(cioccoloPdfPath, cioccoloBytes);
+  const cioccoloP1Text = execFileSync('pdftotext', ['-f', '1', '-l', '1', cioccoloPdfPath, '-'], { encoding: 'utf8' });
+  const cioccoloFullText = execFileSync('pdftotext', [cioccoloPdfPath, '-'], { encoding: 'utf8' });
+
+  // Conta le occorrenze di Duellare: e Combattere con Armi Possenti: in Pagina 1
+  const duellareMatches = (cioccoloP1Text.match(/Duellare:/g) || []).length;
+  const gwfMatches = (cioccoloP1Text.match(/Combattere con Armi Possenti:/g) || []).length;
+  assert.equal(duellareMatches, 1, 'Duellare deve essere descritto esattamente 1 volta in P1');
+  assert.equal(gwfMatches, 1, 'Combattere con Armi Possenti deve essere descritto esattamente 1 volta in P1');
+
+  // Assicura che nel testo completo del PDF il secondo stile non sia duplicato anche altrove
+  const gwfFullCount = (cioccoloFullText.match(/Stile scelto:\s*Combattere con Armi Possenti/g) || []).length;
+  assert.equal(gwfFullCount, 1, 'Il secondo stile non deve essere duplicato nelle pagine successive');
+
+  // 3. Verifica assenza di CD magia / tiro per colpire incantesimi da Pagina 1 per incantatori
+  const { bytes: wizardBytes } = await simulateSheetPdfV2Api({
+    input: {
+      characterName: 'Elminster',
+      classLabel: 'Mago',
+      classSubclass: 'Scuola di Invocazione',
+      level: '15',
+    },
+  });
+  const wizardPdfPath = `${tmpDir}/test-wizard-p1.pdf`;
+  fs.writeFileSync(wizardPdfPath, wizardBytes);
+  const wizardP1Text = execFileSync('pdftotext', ['-f', '1', '-l', '1', wizardPdfPath, '-'], { encoding: 'utf8' });
+  const wizardP3Text = execFileSync('pdftotext', ['-f', '3', '-l', '3', wizardPdfPath, '-'], { encoding: 'utf8' });
+
+  assert.doesNotMatch(wizardP1Text, /CD TIRO SALVEZZA/i, 'P1 non deve contenere CD Salvezza per Mago');
+  assert.doesNotMatch(wizardP1Text, /Bonus Attacco Incantesimi/i, 'P1 non deve contenere Bonus Attacco Incantesimi per Mago');
+  assert.match(wizardP3Text, /CD TIRO SALVEZZA/i, 'Pagina incantesimi deve conservare la CD Tiro Salvezza');
+  assert.match(wizardP3Text, /Bonus Attacco Incantesimi/i, 'Pagina incantesimi deve conservare il Bonus Attacco Incantesimi');
+
+  // 4. Monaco conserva la CD Ki su Pagina 1
+  const { bytes: monkBytes } = await simulateSheetPdfV2Api({
+    input: {
+      characterName: 'Kwai Chang',
+      classLabel: 'Monaco',
+      classSubclass: 'Via della Mano Aperta',
+      level: '5',
+      buildOverridesJson: JSON.stringify({
+        monk: {
+          artisanTool: 'Strumenti da calligrafo',
+        },
+      }),
+    },
+    monkChoices: {
+      artisanTool: 'Strumenti da calligrafo',
+    },
+  });
+  const monkPdfPath = `${tmpDir}/test-monk-p1.pdf`;
+  fs.writeFileSync(monkPdfPath, monkBytes);
+  const monkP1Text = execFileSync('pdftotext', ['-f', '1', '-l', '1', monkPdfPath, '-'], { encoding: 'utf8' });
+  assert.match(monkP1Text, /CD Ki:\s*\d+/, 'Monaco deve conservare la CD Ki nel riquadro risorse di Pagina 1');
 });

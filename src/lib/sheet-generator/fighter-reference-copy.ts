@@ -22,13 +22,14 @@ export function fighterReferenceCards(
   level: number,
   style?: PhbFightingStyle,
   secondStyle?: PhbFightingStyle,
-  isChampion: boolean = true
+  isChampion: boolean = true,
+  includeSecondStyle: boolean = true
 ): PrintFeature[] {
   const source = 'Scheda Guerriero 5e / pagina 1';
   let styleText = 'Adotti una particolare specializzazione nel tuo stile di combattimento.';
   if (style) {
     styleText = `${style}: ${FIGHTING_STYLE_DESCRIPTIONS[style] ?? ''}`;
-    if (level >= 10 && isChampion && secondStyle && secondStyle !== style) {
+    if (includeSecondStyle && level >= 10 && isChampion && secondStyle && secondStyle !== style) {
       styleText += `\n\n${secondStyle}: ${FIGHTING_STYLE_DESCRIPTIONS[secondStyle] ?? ''}`;
     }
   }

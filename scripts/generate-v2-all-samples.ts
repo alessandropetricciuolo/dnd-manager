@@ -253,6 +253,7 @@ async function main() {
     },
   });
   fs.writeFileSync(path.join(verifDir, 'cioccolo-v2-rigenerato.pdf'), cioccoloPdf);
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/cioccolo-v2-rigenerato.pdf'), cioccoloPdf);
   console.log(`cioccolo-v2-rigenerato.pdf written (${(await PDFDocument.load(cioccoloPdf)).getPageCount()} pages)`);
 
   // Edge 7: Bardo Collegio della Sapienza L5 (competenze ordinarie + 3 competenze aggiuntive Sapienza separate)
@@ -281,6 +282,141 @@ async function main() {
   });
   fs.writeFileSync(path.join(verifDir, 'bardo-sapienza-v2.pdf'), brdLorePdf);
   console.log(`bardo-sapienza-v2.pdf written (${(await PDFDocument.load(brdLorePdf)).getPageCount()} pages)`);
+
+  console.log('\n--- 4. Generating Adaptive Page 1 Specific Verification PDFs ---');
+
+  // Specific 1: Guerriero L2 senza magie razziali
+  const ftr2Gen = await buildGeneratedCharacterSheet({
+    characterName: 'Ragnar Spaccascudi',
+    raceSlug: 'nano',
+    subraceSlug: 'nano_delle_montagne',
+    backgroundSlug: 'soldato',
+    classLabel: 'Guerriero',
+    level: 2,
+    alignment: 'Legale Neutrale',
+    buildOverrides: {
+      fightingStyle: 'Difesa',
+    },
+  });
+  const ftr2Ev = await loadFighterEvidence(ftr2Gen.sheet, undefined, { fightingStyle: 'Difesa' });
+  const ftr2WithSpells = await addFighterGrantedSpells(ftr2Gen.sheet, ftr2Ev, { fightingStyle: 'Difesa' });
+  const ftr2Pdf = await renderCharacterSheetV2(ftr2WithSpells, logoBytes, {
+    fighterEvidence: ftr2Ev,
+    fighterChoices: { fightingStyle: 'Difesa' },
+  });
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/guerriero-l2.pdf'), ftr2Pdf);
+  console.log(`guerriero-l2.pdf written (${(await PDFDocument.load(ftr2Pdf)).getPageCount()} pages)`);
+
+  // Specific 2: Mago L15
+  const wiz15Gen = await buildGeneratedCharacterSheet({
+    characterName: 'Mastro Valthor',
+    raceSlug: 'elfo',
+    subraceSlug: 'elfo_alto',
+    backgroundSlug: 'sapiente',
+    classLabel: 'Mago',
+    classSubclass: 'Scuola di Invocazione',
+    level: 15,
+    alignment: 'Neutrale Buono',
+  });
+  const wiz15Ev = await loadWizardEvidence(wiz15Gen.sheet);
+  const wiz15Pdf = await renderCharacterSheetV2(addWizardGrantedSpells(wiz15Gen.sheet, wiz15Ev), logoBytes, {
+    wizardEvidence: wiz15Ev,
+  });
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/mago-l15.pdf'), wiz15Pdf);
+  console.log(`mago-l15.pdf written (${(await PDFDocument.load(wiz15Pdf)).getPageCount()} pages)`);
+
+  // Specific 3: Artefice L8 con difensore d'acciaio
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/artefice-l8.pdf'), art8Pdf);
+  console.log(`artefice-l8.pdf written (${art8Doc.getPageCount()} pages)`);
+
+  // Specific 4: Personaggio con nome e sottoclasse lunghi
+  const longNameGen = await buildGeneratedCharacterSheet({
+    characterName: 'Lord Alessandro Valeriano Massimo De Montfort Dei Draghi Dorati',
+    raceSlug: 'dragonide',
+    backgroundSlug: 'nobile',
+    classLabel: 'Barbaro',
+    classSubclass: 'Cammino del Combattente Totemico',
+    level: 8,
+    alignment: 'Caotico Buono',
+    age: '45',
+    height: '2.10 m',
+    weight: '135 kg',
+  });
+  const longNameEv = await loadBarbarianEvidence(longNameGen.sheet);
+  const longNamePdf = await renderCharacterSheetV2(await addBarbarianGrantedSpells(longNameGen.sheet), logoBytes, {
+    barbarianEvidence: longNameEv,
+  });
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/nome-lungo.pdf'), longNamePdf);
+  console.log(`nome-lungo.pdf written (${(await PDFDocument.load(longNamePdf)).getPageCount()} pages)`);
+
+  // Specific 5: Personaggio con molte opzioni e inventario esteso
+  const optionsGen = await buildGeneratedCharacterSheet({
+    characterName: 'Morvath il Collezionista di Occulto',
+    raceSlug: 'tiefling',
+    backgroundSlug: 'sapiente',
+    classLabel: 'Warlock',
+    classSubclass: 'Il Signore Fatato',
+    level: 12,
+    alignment: 'Neutrale',
+    age: '110',
+    height: '1.85 m',
+    weight: '75 kg',
+    buildOverrides: {
+      abilities: { str: 10, dex: 14, con: 16, int: 14, wis: 12, cha: 20 },
+      classSkills: ['arcana', 'history'],
+    },
+  });
+  // Add extensive inventory
+  optionsGen.sheet.inventory = [
+    'Verga del Patto +2 (Sintonia)',
+    'Mantello della Protezione (Sintonia)',
+    'Anello dell\'Azione Libera (Sintonia)',
+    'Pugnale cerimoniale d\'argento',
+    'Pergamena di Teletrasporto',
+    'Pozione di Guarigione Superiore (x3)',
+    'Pozione di Invisibilità',
+    'Libro delle Ombre rilegato in pelle',
+    'Zaino da esploratore',
+    'Corda di seta (15 m) con rampino',
+    'Pietra focaia e acciarino',
+    'Torce (x10)',
+    'Razioni da viaggio (14 giorni)',
+    'Otre d\'acqua (2 litri)',
+    'Specchietto di metallo',
+    'Set di dadi da gioco in osso',
+    'Inchiostro nero e penna d\'oca',
+    'Pergamene vuote (x10)',
+    'Borsa per componenti magici',
+    'Simbolo sacro antico',
+    'Monete d\'oro (450 mo), gemme preziose (x4)',
+  ];
+  const optionsEv = await loadWarlockEvidence(optionsGen.sheet, undefined, {
+    pactBoon: 'Patto del Tomo',
+    invocations: [
+      'Deflagrazione Agonizzante',
+      'Libro degli Antichi Segreti',
+      'Armatura delle Ombre',
+      'Occhi del Guardiano delle Rune',
+      'Scultore della Carne',
+      'Sussurri dell\'Entità Superiore',
+    ],
+  });
+  const optionsPdf = await renderCharacterSheetV2(addWarlockGrantedSpells(optionsGen.sheet, optionsEv), logoBytes, {
+    warlockEvidence: optionsEv,
+    warlockChoices: {
+      pactBoon: 'Patto del Tomo',
+      invocations: [
+        'Deflagrazione Agonizzante',
+        'Libro degli Antichi Segreti',
+        'Armatura delle Ombre',
+        'Occhi del Guardiano delle Rune',
+        'Scultore della Carne',
+        'Sussurri dell\'Entità Superiore',
+      ],
+    },
+  });
+  fs.writeFileSync(path.join(process.cwd(), 'output/pdf/molte-opzioni.pdf'), optionsPdf);
+  console.log(`molte-opzioni.pdf written (${(await PDFDocument.load(optionsPdf)).getPageCount()} pages)`);
 
   console.log('\nAll PDFs generated successfully!');
 }
