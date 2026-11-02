@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { GeneratedCharacterSheet, SkillKey } from "@/lib/sheet-generator/types";
+import type { CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import { SKILL_LABELS } from "@/lib/sheet-generator/bard-print-model";
 import { BARD_FIGHTING_STYLES, type BardFightingStyle } from "@/lib/sheet-generator/bard-colleges";
 
@@ -14,6 +15,9 @@ import {
   FIGHTER_FIGHTING_STYLES,
   ARCANE_ARCHER_CANTRIPS,
   ARCANE_ARCHER_SKILLS,
+  ARCANE_SHOT_OPTIONS,
+  BATTLE_MASTER_MANEUVERS,
+  RUNE_KNIGHT_RUNES,
   CAVALIER_SKILLS,
   SAMURAI_SKILLS,
   fighterArchetypeFromLabel,
@@ -66,30 +70,65 @@ import {
 } from '@/lib/sheet-generator/warlock-patrons';
 
 export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
+  const overrides = useMemo<CharacterBuildOverrides>(() => {
+    try {
+      return input.buildOverridesJson ? JSON.parse(input.buildOverridesJson) : {};
+    } catch {
+      return {};
+    }
+  }, [input.buildOverridesJson]);
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [bonusSkills, setBonusSkills] = useState<SkillKey[] | null>(null);
-  const [fightingStyle,setFightingStyle]=useState<BardFightingStyle>('Duellare');
-  const [barbarianChoices,setBarbarianChoices]=useState<BarbarianChoices>({});
-  const [clericSkills,setClericSkills]=useState<SkillKey[]|null>(null);
-  const [clericLanguages,setClericLanguages]=useState<string[]|null>(null);
-  const [druidTerrain,setDruidTerrain]=useState<DruidChoices['landTerrain']>('Foresta');
-  const [druidCantrip,setDruidCantrip]=useState<string|null>(null);
-  const [fighterChoices, setFighterChoices] = useState<FighterChoices>({});
-  const [rogueChoices, setRogueChoices] = useState<RogueChoices>({});
-  const [wizardChoices, setWizardChoices] = useState<WizardChoices>({});
-  const [monkChoices, setMonkChoices] = useState<MonkChoices>({});
-  const [paladinChoices, setPaladinChoices] = useState<PaladinChoices>({});
-  const [rangerChoices, setRangerChoices] = useState<RangerChoices>({});
-  const [sorcererChoices, setSorcererChoices] = useState<SorcererChoices>({});
-  const [warlockChoices, setWarlockChoices] = useState<WarlockChoices>({ pactBoon: 'Patto del Tomo', genieKind: 'Dao', hexbladeWeapon: 'Spada lunga' });
+  const [bonusSkills, setBonusSkills] = useState<SkillKey[] | null>(
+    overrides.bonusSkills ?? overrides.bardBonusSkills ?? null
+  );
+  const [fightingStyle, setFightingStyle] = useState<BardFightingStyle>(
+    (overrides.fightingStyle as BardFightingStyle) ?? 'Duellare'
+  );
+  const [barbarianChoices, setBarbarianChoices] = useState<BarbarianChoices>(overrides.barbarian ?? {});
+  const [clericSkills, setClericSkills] = useState<SkillKey[] | null>(overrides.cleric?.skills ?? null);
+  const [clericLanguages, setClericLanguages] = useState<string[] | null>(overrides.cleric?.languages ?? null);
+  const [druidTerrain, setDruidTerrain] = useState<DruidChoices['landTerrain']>(
+    overrides.druid?.landTerrain ?? 'Foresta'
+  );
+  const [druidCantrip, setDruidCantrip] = useState<string | null>(overrides.druid?.landCantrip ?? null);
+  const [fighterChoices, setFighterChoices] = useState<FighterChoices>({
+    ...(overrides.fightingStyle ? { fightingStyle: overrides.fightingStyle as PhbFightingStyle } : {}),
+    ...(overrides.secondFightingStyle
+      ? { secondFightingStyle: overrides.secondFightingStyle as PhbFightingStyle }
+      : {}),
+    ...overrides.fighter,
+  });
+  const [rogueChoices, setRogueChoices] = useState<RogueChoices>(overrides.rogue ?? {});
+  const [wizardChoices, setWizardChoices] = useState<WizardChoices>(overrides.wizard ?? {});
+  const [monkChoices, setMonkChoices] = useState<MonkChoices>(overrides.monk ?? {});
+  const [paladinChoices, setPaladinChoices] = useState<PaladinChoices>({
+    ...(overrides.fightingStyle ? { fightingStyle: overrides.fightingStyle as PaladinFightingStyle } : {}),
+    ...overrides.paladin,
+  });
+  const [rangerChoices, setRangerChoices] = useState<RangerChoices>({
+    ...(overrides.fightingStyle ? { fightingStyle: overrides.fightingStyle as RangerFightingStyle } : {}),
+    ...overrides.ranger,
+  });
+  const [sorcererChoices, setSorcererChoices] = useState<SorcererChoices>(overrides.sorcerer ?? {});
+  const [warlockChoices, setWarlockChoices] = useState<WarlockChoices>({
+    pactBoon: (overrides.warlockPact as WarlockPactBoon) ?? 'Patto del Tomo',
+    ...(overrides.warlockInvocations ? { invocations: overrides.warlockInvocations } : {}),
+    genieKind: 'Dao',
+    hexbladeWeapon: 'Spada lunga',
+    ...overrides.warlock,
+  });
   const fighterArchetype = sheet.classLabel === 'Guerriero' && sheet.level >= 3 ? fighterArchetypeFromLabel(sheet.classSubclass) : null;
   const rogueArchetype = sheet.classLabel === 'Ladro' && sheet.level >= 3 ? rogueArchetypeFromLabel(sheet.classSubclass) : null;
   const wizardTradition = sheet.classLabel === 'Mago' && sheet.level >= 2 ? wizardTraditionFromLabel(sheet.classSubclass) : null;
   const monkTradition = sheet.classLabel === 'Monaco' && sheet.level >= 3 ? monkTraditionFromLabel(sheet.classSubclass) : null;
   const isChampion10 = fighterArchetype?.slug === 'phb-guerriero-campione' && sheet.level >= 10;
-  const fighterStyle = fighterChoices.fightingStyle ?? 'Duellare';
-  const fighterSecondStyle = fighterChoices.secondFightingStyle ?? (fighterStyle === 'Difesa' ? 'Tiro' : 'Difesa');
+  const fighterStyle = fighterChoices.fightingStyle ?? (overrides.fightingStyle as PhbFightingStyle) ?? 'Duellare';
+  const fighterSecondStyle =
+    fighterChoices.secondFightingStyle ??
+    (overrides.secondFightingStyle as PhbFightingStyle) ??
+    (fighterStyle === 'Difesa' ? 'Tiro' : 'Difesa');
   const domain=sheet.classLabel==='Chierico'?clericDomainFromLabel(sheet.classSubclass):null;
   const clericPool=domain?CLERIC_SKILL_CHOICES[domain.slug]:undefined;
   const knowledge=domain?.slug==='phb-chierico-conoscenza',nature=domain?.slug==='phb-chierico-natura';
@@ -127,12 +166,39 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
   const isSorcerer = sheet.classLabel === 'Stregone';
   const sorcererOrigin = isSorcerer ? sorcererOriginFromLabel(sheet.classSubclass) : null;
   const metamagicCount = isSorcerer ? metamagicCountForLevel(sheet.level) : 0;
+  const defaultMetamagics = metamagicCount > 0 ? SORCERER_METAMAGIC_OPTIONS.slice(0, metamagicCount).map((m) => m.name) : [];
+  const chosenMetamagic: string[] = sorcererChoices.metamagic ?? overrides.sorcerer?.metamagic ?? defaultMetamagics;
   const isWarlock = sheet.classLabel === 'Warlock';
   const warlockPatron = isWarlock ? warlockPatronFromLabel(sheet.classSubclass) : null;
+
+  const bmManeuverCount = sheet.level >= 15 ? 9 : sheet.level >= 10 ? 7 : sheet.level >= 7 ? 5 : 3;
+  const chosenManeuvers: string[] = fighterChoices.maneuvers ?? overrides.fighter?.maneuvers ?? [...BATTLE_MASTER_MANEUVERS.slice(0, bmManeuverCount)];
+
+  const runeCount = sheet.level >= 15 ? 5 : sheet.level >= 10 ? 4 : sheet.level >= 7 ? 3 : 2;
+  const chosenRunes: string[] = fighterChoices.runes ?? overrides.fighter?.runes ?? [...RUNE_KNIGHT_RUNES.filter(r => !r.includes('Colline') || sheet.level >= 7).slice(0, runeCount)];
+
+  const arcaneShotCount = sheet.level >= 18 ? 6 : sheet.level >= 15 ? 5 : sheet.level >= 10 ? 4 : sheet.level >= 7 ? 3 : 2;
+  const chosenShots: string[] = fighterChoices.arcaneShots ?? overrides.fighter?.arcaneShots ?? [...ARCANE_SHOT_OPTIONS.slice(0, arcaneShotCount)];
+
   const finalFighterChoices: FighterChoices = {
+    ...fighterChoices,
     fightingStyle: fighterStyle as PhbFightingStyle,
     ...(isChampion10 ? { secondFightingStyle: fighterSecondStyle as PhbFightingStyle } : {}),
-    ...fighterChoices,
+  };
+
+  const finalPaladinChoices: PaladinChoices = {
+    ...paladinChoices,
+    fightingStyle: (paladinChoices.fightingStyle ?? (overrides.fightingStyle as PaladinFightingStyle) ?? 'Difesa'),
+  };
+
+  const finalRangerChoices: RangerChoices = {
+    ...rangerChoices,
+    fightingStyle: (rangerChoices.fightingStyle ?? (overrides.fightingStyle as RangerFightingStyle) ?? 'Tiro'),
+  };
+
+  const finalSorcererChoices: SorcererChoices = {
+    ...sorcererChoices,
+    ...(metamagicCount > 0 ? { metamagic: chosenMetamagic } : {}),
   };
 
   async function download() {
@@ -140,7 +206,24 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ input, bonusSkills: lore ? chosen : [], ...(swords?{fightingStyle}:{}), ...(path?{barbarianChoices:pathChoices}:{}),...(domain?{clericChoices}:{}),...(druidCircle?.slug==='phb-druido-terra'?{druidChoices:{landTerrain:druidTerrain??'Foresta',landCantrip:druidCantrip??availableLandCantrips[0]}}:{}), ...(isFighter?{fighterChoices:finalFighterChoices}:{}), ...(isRogue?{rogueChoices}:{}), ...(isWizard?{wizardChoices}:{}), ...(isMonk?{monkChoices}:{}), ...(isPaladin?{paladinChoices}:{}), ...(isRanger?{rangerChoices}:{}), ...(isSorcerer?{sorcererChoices}:{}), ...(isWarlock?{warlockChoices}:{}) }),
+        body: JSON.stringify({
+          input,
+          bonusSkills: lore ? chosen : [],
+          ...(swords ? { fightingStyle: fightingStyle ?? (overrides.fightingStyle as BardFightingStyle) ?? 'Duellare' } : {}),
+          ...(path ? { barbarianChoices: pathChoices } : {}),
+          ...(domain ? { clericChoices } : {}),
+          ...(druidCircle?.slug === 'phb-druido-terra'
+            ? { druidChoices: { landTerrain: druidTerrain ?? 'Foresta', landCantrip: druidCantrip ?? availableLandCantrips[0] } }
+            : {}),
+          ...(isFighter ? { fighterChoices: finalFighterChoices } : {}),
+          ...(isRogue ? { rogueChoices } : {}),
+          ...(isWizard ? { wizardChoices } : {}),
+          ...(isMonk ? { monkChoices } : {}),
+          ...(isPaladin ? { paladinChoices: finalPaladinChoices } : {}),
+          ...(isRanger ? { rangerChoices: finalRangerChoices } : {}),
+          ...(isSorcerer ? { sorcererChoices: finalSorcererChoices } : {}),
+          ...(isWarlock ? { warlockChoices } : {}),
+        }),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -208,13 +291,13 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     </label>}
     {isFighter && <fieldset disabled={busy} className="space-y-3">
       <legend className="text-sm font-medium text-barber-gold">Opzioni Guerriero</legend>
-      <label className="block text-sm">Stile di combattimento
-        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterStyle} onChange={e=>setFighterChoices({...fighterChoices, fightingStyle: e.target.value as PhbFightingStyle})}>
+      <label className="block text-sm" htmlFor="v2-fighter-fighting-style">Stile di combattimento
+        <select id="v2-fighter-fighting-style" name="fighterFightingStyle" className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterStyle} onChange={e=>setFighterChoices({...fighterChoices, fightingStyle: e.target.value as PhbFightingStyle})}>
           {FIGHTER_FIGHTING_STYLES.map(style=><option key={style}>{style}</option>)}
         </select>
       </label>
-      {isChampion10 && <label className="block text-sm">Stile di combattimento aggiuntivo (Campione 10°)
-        <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterSecondStyle} onChange={e=>setFighterChoices({...fighterChoices, secondFightingStyle: e.target.value as PhbFightingStyle})}>
+      {isChampion10 && <label className="block text-sm" htmlFor="v2-fighter-second-fighting-style">Stile di combattimento aggiuntivo (Campione 10°)
+        <select id="v2-fighter-second-fighting-style" name="fighterSecondFightingStyle" className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterSecondStyle} onChange={e=>setFighterChoices({...fighterChoices, secondFightingStyle: e.target.value as PhbFightingStyle})}>
           {FIGHTER_FIGHTING_STYLES.filter(s=>s!==fighterStyle).map(style=><option key={style}>{style}</option>)}
         </select>
       </label>}
@@ -229,7 +312,68 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
             {ARCANE_ARCHER_CANTRIPS.map(c=><option key={c}>{c}</option>)}
           </select>
         </label>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-barber-gold">Opzioni di Tiro Arcano: scegli {arcaneShotCount} ({chosenShots.length}/{arcaneShotCount})</legend>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {ARCANE_SHOT_OPTIONS.map((shot) => (
+              <label key={shot} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={chosenShots.includes(shot)}
+                  disabled={!chosenShots.includes(shot) && chosenShots.length >= arcaneShotCount}
+                  onChange={(e) => {
+                    const next = e.target.checked ? [...chosenShots, shot] : chosenShots.filter((s: string) => s !== shot);
+                    setFighterChoices({ ...fighterChoices, arcaneShots: next });
+                  }}
+                />
+                {shot}
+              </label>
+            ))}
+          </div>
+        </fieldset>
       </div>}
+      {fighterArchetype?.slug==='phb-guerriero-maestro-battaglia' && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-barber-gold">Manovre: scegli {bmManeuverCount} ({chosenManeuvers.length}/{bmManeuverCount})</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {BATTLE_MASTER_MANEUVERS.map((man) => (
+              <label key={man} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={chosenManeuvers.includes(man)}
+                  disabled={!chosenManeuvers.includes(man) && chosenManeuvers.length >= bmManeuverCount}
+                  onChange={(e) => {
+                    const next = e.target.checked ? [...chosenManeuvers, man] : chosenManeuvers.filter((m: string) => m !== man);
+                    setFighterChoices({ ...fighterChoices, maneuvers: next });
+                  }}
+                />
+                {man}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {fighterArchetype?.slug==='tce-guerriero-runico' && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-barber-gold">Rune da incidere: scegli {runeCount} ({chosenRunes.length}/{runeCount})</legend>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {RUNE_KNIGHT_RUNES.filter(r => !r.includes('Colline') || sheet.level >= 7).map((rune) => (
+              <label key={rune} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={chosenRunes.includes(rune)}
+                  disabled={!chosenRunes.includes(rune) && chosenRunes.length >= runeCount}
+                  onChange={(e) => {
+                    const next = e.target.checked ? [...chosenRunes, rune] : chosenRunes.filter((r: string) => r !== rune);
+                    setFighterChoices({ ...fighterChoices, runes: next });
+                  }}
+                />
+                {rune}
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {fighterArchetype?.slug==='xge-guerriero-cavaliere-errante' && <label className="block text-sm">Competenza bonus (Cavaliere Errante)
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={fighterChoices.cavalierSkill??'animal_handling'} onChange={e=>setFighterChoices({...fighterChoices, cavalierSkill: e.target.value as SkillKey})}>
           {CAVALIER_SKILLS.map(k=><option key={k} value={k}>{SKILL_LABELS[k]}</option>)}
@@ -303,9 +447,45 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
           {RANGER_BEAST_COMPANIONS.map(b => <option key={b} value={b}>{b}</option>)}
         </select>
       </label>}
+      {sheet.level >= 3 && rangerArchetypeFromLabel(sheet.classSubclass)?.slug === 'phb-ranger-cacciatore' && (
+        <label className="block text-sm">Preda del Cacciatore (3° livello)
+          <select
+            className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2"
+            value={rangerChoices.hunterPrey ?? 'Sterminatore di Colossi'}
+            onChange={(e) => setRangerChoices({ ...rangerChoices, hunterPrey: e.target.value as any })}
+          >
+            {["Devastatore dell'Orda", 'Sterminatore di Colossi', 'Uccisore di Giganti'].map((hp) => (
+              <option key={hp} value={hp}>{hp}</option>
+            ))}
+          </select>
+        </label>
+      )}
     </fieldset>}
     {isSorcerer && <fieldset disabled={busy} className="space-y-3">
       <legend className="text-sm font-medium text-barber-gold">Opzioni dello Stregone</legend>
+      {sheet.level >= 3 && metamagicCount > 0 && (
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium text-barber-gold">Metamagia: scegli {metamagicCount} opzioni ({chosenMetamagic.length}/{metamagicCount})</legend>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+            {SORCERER_METAMAGIC_OPTIONS.map((mm) => (
+              <label key={mm.name} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={chosenMetamagic.includes(mm.name)}
+                  disabled={!chosenMetamagic.includes(mm.name) && chosenMetamagic.length >= metamagicCount}
+                  onChange={(e) => {
+                    const next = e.target.checked
+                      ? [...chosenMetamagic, mm.name]
+                      : chosenMetamagic.filter((m: string) => m !== mm.name);
+                    setSorcererChoices({ ...sorcererChoices, metamagic: next });
+                  }}
+                />
+                {mm.name} ({mm.cost})
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
       {sorcererOrigin?.slug === 'phb-stregone-draconico' && <label className="block text-sm">Antenato Draconico
         <select className="mt-2 block w-full rounded border border-barber-gold/40 bg-barber-dark p-2" value={sorcererChoices.draconicAncestry ?? 'Rosso'} onChange={e => setSorcererChoices({ ...sorcererChoices, draconicAncestry: e.target.value })}>
           {Object.keys(DRACONIC_ANCESTRIES).map(name => <option key={name} value={name}>{name} ({DRACONIC_ANCESTRIES[name].damageType})</option>)}

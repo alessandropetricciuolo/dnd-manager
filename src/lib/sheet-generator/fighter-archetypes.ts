@@ -85,6 +85,33 @@ export const FIGHTER_ARCHETYPE_FEATURES: Record<string, Array<[string, number]>>
 
 export const ARCANE_ARCHER_SKILLS: SkillKey[] = ['arcana', 'nature'];
 export const ARCANE_ARCHER_CANTRIPS = ['Prestidigitazione', 'Artificio Druidico'] as const;
+export const ARCANE_SHOT_OPTIONS = [
+  'Freccia Afferrante',
+  'Freccia Ammaliante',
+  'Freccia Cercatrice',
+  "Freccia d'Ombra",
+  'Freccia Esiliante',
+] as const;
+
+export const BATTLE_MASTER_MANEUVERS = [
+  'Attacco Adescante',
+  'Attacco con Affondo',
+  'Attacco con Finta',
+  'Attacco con Manovra',
+  'Attacco con Spazzata',
+  'Attacco con Spinta',
+  'Attacco Disarmante',
+  'Attacco Minaccioso',
+  'Attacco Preciso',
+] as const;
+
+export const RUNE_KNIGHT_RUNES = [
+  'Runa delle Nuvole',
+  'Runa del Fuoco',
+  'Runa del Gelo',
+  'Runa delle Pietre',
+  'Runa delle Colline',
+] as const;
 
 export const CAVALIER_SKILLS: SkillKey[] = ['animal_handling', 'performance', 'insight', 'persuasion', 'history'];
 export const SAMURAI_SKILLS: SkillKey[] = ['performance', 'insight', 'persuasion', 'history'];

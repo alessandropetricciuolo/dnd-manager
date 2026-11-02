@@ -4,6 +4,10 @@ import path from 'node:path';
 import { z } from 'zod';
 import { getRequestAuthContext } from '@/utils/supabase/request-auth-context';
 import { generateSheetAction } from '@/lib/actions/generator-actions';
+import {
+  reconcileV2ExportPayload,
+  ReconcileChoicesError,
+} from '@/lib/sheet-generator/reconcile-v2-choices';
 import { renderCharacterSheetV2 } from '@/lib/pdf/character-sheet-v2';
 import { loadBarbarianEvidence, addBarbarianGrantedSpells } from '@/lib/server/barbarian-source';
 import { TOTEM_ANIMALS, STORM_ENVIRONMENTS } from '@/lib/sheet-generator/barbarian-paths';
@@ -106,6 +110,21 @@ export async function POST(req: Request) {
   if (!parsed.success || !['Bardo','Barbaro','Chierico','Artefice','Druido','Guerriero','Ladro','Mago','Monaco','Paladino','Ranger','Stregone','Warlock'].includes(parsed.data.input.classLabel)) return Response.json({ error: 'La V2 richiede i dati di una classe supportata.' }, { status: 400 });
   const form = new FormData();
   for (const [key, value] of Object.entries(parsed.data.input)) form.set(key, value);
+
+  // Unify and reconcile confirmed choices with build overrides via shared production function
+  let reconciled;
+  try {
+    reconciled = reconcileV2ExportPayload(parsed.data);
+  } catch (err) {
+    if (err instanceof ReconcileChoicesError) {
+      return Response.json({ error: err.message }, { status: err.statusCode });
+    }
+    return Response.json({ error: err instanceof Error ? err.message : 'Errore validazione scelte.' }, { status: 400 });
+  }
+
+  const { effectiveOverrides } = reconciled;
+  form.set('buildOverridesJson', JSON.stringify(effectiveOverrides));
+
   // Rebuild from manuals: client-supplied rule text or sheet values are never accepted.
   const result = await generateSheetAction(form);
   if (!result.success || !result.sheet) return Response.json({ error: result.message }, { status: 400 });
@@ -137,20 +156,20 @@ export async function POST(req: Request) {
     const collegeFeatures=bard?await loadBardCollegeFeatures(sheet,origin):undefined;
     const barbarianEvidence=barbarian?await loadBarbarianEvidence(sheet,origin):undefined;
     const bytes = await renderCharacterSheetV2(sheet, logo, {
-      warlockEvidence,warlockChoices:parsed.data.warlockChoices,
-      sorcererEvidence,sorcererChoices:parsed.data.sorcererChoices,
-      rangerEvidence,rangerChoices:parsed.data.rangerChoices,
-      clericEvidence,clericChoices:parsed.data.clericChoices,
+      warlockEvidence,warlockChoices:reconciled.warlockChoices ?? parsed.data.warlockChoices,
+      sorcererEvidence,sorcererChoices:reconciled.sorcererChoices ?? parsed.data.sorcererChoices,
+      rangerEvidence,rangerChoices:reconciled.rangerChoices ?? parsed.data.rangerChoices,
+      clericEvidence,clericChoices:reconciled.clericChoices ?? parsed.data.clericChoices,
       druidEvidence,
-      fighterEvidence,fighterChoices:parsed.data.fighterChoices,
-      rogueEvidence,rogueChoices:parsed.data.rogueChoices,
-      wizardEvidence,wizardChoices:parsed.data.wizardChoices,
-      monkEvidence,monkChoices:parsed.data.monkChoices,
-      paladinEvidence,paladinChoices:parsed.data.paladinChoices,
-      barbarianEvidence,barbarianChoices:parsed.data.barbarianChoices,
-      bonusSkills: parsed.data.bonusSkills,
+      fighterEvidence,fighterChoices:reconciled.fighterChoices ?? parsed.data.fighterChoices,
+      rogueEvidence,rogueChoices:reconciled.rogueChoices ?? parsed.data.rogueChoices,
+      wizardEvidence,wizardChoices:reconciled.wizardChoices ?? parsed.data.wizardChoices,
+      monkEvidence,monkChoices:reconciled.monkChoices ?? parsed.data.monkChoices,
+      paladinEvidence,paladinChoices:reconciled.paladinChoices ?? parsed.data.paladinChoices,
+      barbarianEvidence,barbarianChoices:reconciled.barbarianChoices ?? parsed.data.barbarianChoices,
+      bonusSkills: reconciled.bonusSkills,
       collegeFeatures,
-      fightingStyle: parsed.data.fightingStyle,
+      fightingStyle: reconciled.fightingStyle as any,
       story: result.includeBackgroundStoryInPdf ? result.characterStory ?? '' : '',
       quickManualSections: result.quickManualSections ?? [],
     });

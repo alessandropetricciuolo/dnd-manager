@@ -449,6 +449,8 @@ function computeCoreFromAbilities(
   | "passivePerception"
   | "speed"
   | "armorClass"
+  | "defenseStyleApplied"
+  | "armorItem"
   | "initiative"
   | "hpMax"
   | "hitDie"
@@ -498,30 +500,86 @@ function computeCoreFromAbilities(
 
   const passivePerception = 10 + skills.perception.value;
   const initiative = abilityMods.dex;
+  const activeFightingStyles: string[] = [
+    buildOverrides?.fightingStyle,
+    buildOverrides?.secondFightingStyle,
+  ].filter((s): s is string => typeof s === "string" && s.trim().length > 0);
+  const hasDefenseStyle = activeFightingStyles.some((s) => s.toLowerCase().includes("difesa"));
+  const hasArchery = activeFightingStyles.some((s) => s.toLowerCase().includes("tiro"));
+  const hasDueling = activeFightingStyles.some((s) => s.toLowerCase().includes("duellare"));
+
   const armor = computeArmorClass({
     classLabel,
     abilityMods,
-    fightingStyle: buildOverrides?.fightingStyle,
+    fightingStyle: hasDefenseStyle ? "Difesa" : undefined,
     spells: buildOverrides?.spells,
     cantrips: buildOverrides?.cantrips,
     warlockInvocations: buildOverrides?.warlockInvocations,
   });
   const armorClass = armor.ac;
+  const defenseStyleApplied = Boolean(hasDefenseStyle && armor.armorItem);
+  const armorItem = armor.armorItem;
   const hpMax = computeHpMax(lvl, cfg.hitDie, abilityMods.con);
   const monkDieFaces = lvl >= 17 ? 10 : lvl >= 11 ? 8 : lvl >= 5 ? 6 : 4;
   const weaponRows = cfg.weaponSet.map((w) => {
     let damage = w.damage;
+    const norm = w.name.toLowerCase();
+    const isRanged =
+      norm.includes("arco") ||
+      norm.includes("balestra") ||
+      norm.includes("fionda") ||
+      norm.includes("dardo") ||
+      norm.includes("lanciatore di fulmini") ||
+      norm.includes("cerbottana");
+    const isFinesse =
+      norm.includes("stocco") ||
+      norm.includes("spada corta") ||
+      norm.includes("scimitarra") ||
+      norm.includes("pugnale") ||
+      norm.includes("daga") ||
+      norm.includes("frusta");
+    const isMonkAttack =
+      classLabel === "Monaco" &&
+      (norm.includes("colpo senz") ||
+        isFinesse ||
+        norm.includes("bastone ferrato") ||
+        norm.includes("mazza") ||
+        norm.includes("giavellotto") ||
+        norm.includes("lancia") ||
+        norm.includes("martello leggero"));
+
     if (classLabel === "Monaco") {
       const m = damage.match(/^1d(\d+)(.*)$/);
       if (m && Number(m[1]) < monkDieFaces) {
         damage = `1d${monkDieFaces}${m[2]}`;
       }
     }
+
+    let toHitBonus = 0;
+    if (isRanged) {
+      toHitBonus = pb + abilityMods.dex + (hasArchery ? 2 : 0);
+    } else if (isFinesse || isMonkAttack) {
+      toHitBonus = pb + Math.max(abilityMods.str, abilityMods.dex);
+    } else {
+      toHitBonus = pb + abilityMods.str;
+    }
+
+    const isTwoHanded =
+      norm.includes("bipenne") ||
+      norm.includes("spadone") ||
+      norm.includes("maglio") ||
+      norm.includes("alabarda") ||
+      norm.includes("picca");
+
+    if (hasDueling && !isRanged && !isTwoHanded) {
+      damage = `${damage} (+2 a 1 mano)`;
+    }
+
     return {
       name: w.name,
       damage,
       type: w.type,
-      toHit: `+${pb + Math.max(abilityMods.str, abilityMods.dex)}`,
+      toHit: `${toHitBonus >= 0 ? "+" : ""}${toHitBonus}`,
     };
   });
 
@@ -534,6 +592,8 @@ function computeCoreFromAbilities(
     passivePerception,
     speed: cfg.speed,
     armorClass,
+    defenseStyleApplied,
+    armorItem,
     initiative,
     hpMax,
     hitDie: `d${cfg.hitDie}`,
@@ -737,6 +797,8 @@ export function computeCoreSheet(
   | "passivePerception"
   | "speed"
   | "armorClass"
+  | "defenseStyleApplied"
+  | "armorItem"
   | "initiative"
   | "hpMax"
   | "hitDie"

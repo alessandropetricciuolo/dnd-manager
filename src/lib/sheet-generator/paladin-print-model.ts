@@ -1,4 +1,5 @@
 import type { GeneratedCharacterSheet } from './types';
+import { syncDefenseFightingStyle } from './defense-fighting-style';
 import {
   paladinOathFromLabel,
   type PaladinChoices,
@@ -32,11 +33,9 @@ export function buildPaladinPrintModel(
     .filter((f) => f.level <= sheet.level)
     .map((f) => ({ ...f }));
 
-  // Fighting style: Difesa confers +1 AC when wearing armor
+  // Fighting style: Difesa confers +1 AC when wearing armor (autorevole, tracciato e non duplicato)
   const fightingStyle = choices.fightingStyle ?? evidence.resources.fightingStyle ?? 'Difesa';
-  if (fightingStyle === 'Difesa' && sheet.level >= 2) {
-    sheet.armorClass += 1;
-  }
+  syncDefenseFightingStyle(sheet, fightingStyle === 'Difesa', 2);
 
   // Aura di Protezione (Livello 6+): aggiunge il modificatore di Carisma (minimo +1) a TUTTI i tiri salvezza
   if (sheet.level >= 6) {

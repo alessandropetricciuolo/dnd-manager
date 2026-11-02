@@ -103,6 +103,10 @@ export type GeneratedCharacterSheet = {
 
   speed: string;
   armorClass: number;
+  /** Indica se il bonus di +1 dello Stile Difesa è già stato applicato alla CA. */
+  defenseStyleApplied?: boolean;
+  /** Nome dell'armatura fisica indossata (es. 'cotta di maglia', 'armatura di scaglie'), oppure null se non protetto da armatura fisica. */
+  armorItem?: string | null;
   initiative: number;
   hpMax: number;
   hitDie: string;

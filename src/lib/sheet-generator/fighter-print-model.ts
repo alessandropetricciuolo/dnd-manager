@@ -1,4 +1,5 @@
 import type { GeneratedCharacterSheet, SkillKey } from './types';
+import { syncDefenseFightingStyle } from './defense-fighting-style';
 import {
   fighterArchetypeFromLabel,
   type FighterChoices,
@@ -30,6 +31,16 @@ export function buildFighterPrintModel(
 
   if (!features.some((f) => f.title === 'RECUPERARE ENERGIE')) {
     throw new Error('Regola Recuperare Energie non risolta dal manuale.');
+  }
+
+  // Fighting style: Difesa (livello 1+, Campione livello 10+ secondo stile)
+  const activeStyles = [
+    choices.fightingStyle,
+    choices.secondFightingStyle,
+  ].filter((s): s is NonNullable<typeof s> => Boolean(s && s.trim().length > 0));
+  if (activeStyles.length > 0) {
+    const wantsDefense = activeStyles.some((s) => s.toLowerCase().includes('difesa'));
+    syncDefenseFightingStyle(sheet, wantsDefense, 1);
   }
 
   // Subclass: Campione - Atleta Straordinario (Liv 7+)

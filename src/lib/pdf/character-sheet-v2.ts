@@ -938,7 +938,8 @@ export async function renderCharacterSheetV2(
       ? fighterReferenceCards(
           s.level,
           options.fighterChoices?.fightingStyle,
-          options.fighterChoices?.secondFightingStyle
+          options.fighterChoices?.secondFightingStyle,
+          /campione/i.test(s.classSubclass ?? '')
         )
       : rogue
       ? rogueReferenceCards(s.level)

@@ -1,4 +1,5 @@
 import type { GeneratedCharacterSheet, SkillKey } from './types';
+import { syncDefenseFightingStyle } from './defense-fighting-style';
 import {
   rangerArchetypeFromLabel,
   type RangerChoices,
@@ -32,11 +33,9 @@ export function buildRangerPrintModel(
     .filter((f) => f.level <= sheet.level)
     .map((f) => ({ ...f }));
 
-  // Fighting style: Difesa confers +1 AC when wearing armor
+  // Fighting style: Difesa confers +1 AC when wearing armor (autorevole, tracciato e non duplicato)
   const fightingStyle = choices.fightingStyle ?? evidence.resources.fightingStyle ?? 'Tiro';
-  if (fightingStyle === 'Difesa' && sheet.level >= 2) {
-    sheet.armorClass += 1;
-  }
+  syncDefenseFightingStyle(sheet, fightingStyle === 'Difesa', 2);
 
   // Cacciatore delle Tenebre (Gloom Stalker)
   if (archetype?.slug === 'xge-ranger-tenebre' && sheet.level >= 3) {

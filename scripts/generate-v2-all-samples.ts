@@ -216,6 +216,72 @@ async function main() {
   fs.writeFileSync(path.join(verifDir, 'tiefling-chierico-dual-ability.pdf'), tiefClrPdf);
   console.log(`tiefling-chierico-dual-ability.pdf written (${(await PDFDocument.load(tiefClrPdf)).getPageCount()} pages)`);
 
+  // Edge 6: Champion L12 (Riproduzione fedele di cioccolo-v2.pdf originale: Tiefling Eremita L12, dati anagrafici e caratteristiche esatte)
+  const cioccoloGen = await buildGeneratedCharacterSheet({
+    characterName: 'cioccolo',
+    raceSlug: 'tiefling',
+    subraceSlug: null,
+    backgroundSlug: 'eremita',
+    classLabel: 'Guerriero',
+    classSubclass: 'Campione',
+    level: 12,
+    alignment: 'cc',
+    sex: 'M',
+    age: '321',
+    height: '123',
+    weight: '22',
+    buildOverrides: {
+      abilities: { str: 20, dex: 14, con: 16, int: 12, wis: 12, cha: 10 },
+      classSkills: ['athletics', 'perception'],
+      fightingStyle: 'Duellare',
+      secondFightingStyle: 'Combattere con Armi Possenti',
+    },
+  });
+  const cioccoloFtrEv = await loadFighterEvidence(cioccoloGen.sheet, undefined, {
+    fightingStyle: 'Duellare',
+    secondFightingStyle: 'Combattere con Armi Possenti',
+  });
+  const cioccoloWithSpells = await addFighterGrantedSpells(cioccoloGen.sheet, cioccoloFtrEv, {
+    fightingStyle: 'Duellare',
+    secondFightingStyle: 'Combattere con Armi Possenti',
+  }, false);
+  const cioccoloPdf = await renderCharacterSheetV2(cioccoloWithSpells, logoBytes, {
+    fighterEvidence: cioccoloFtrEv,
+    fighterChoices: {
+      fightingStyle: 'Duellare',
+      secondFightingStyle: 'Combattere con Armi Possenti',
+    },
+  });
+  fs.writeFileSync(path.join(verifDir, 'cioccolo-v2-rigenerato.pdf'), cioccoloPdf);
+  console.log(`cioccolo-v2-rigenerato.pdf written (${(await PDFDocument.load(cioccoloPdf)).getPageCount()} pages)`);
+
+  // Edge 7: Bardo Collegio della Sapienza L5 (competenze ordinarie + 3 competenze aggiuntive Sapienza separate)
+  const brdLoreGen = await buildGeneratedCharacterSheet({
+    characterName: 'Lyra Cantastorie',
+    raceSlug: 'halfling',
+    backgroundSlug: 'intrattenitore',
+    classLabel: 'Bardo',
+    classSubclass: 'Collegio della Sapienza',
+    level: 5,
+    alignment: 'Caotico Buono',
+    sex: 'Femmina',
+    age: '28',
+    height: '0.92 m',
+    weight: '19 kg',
+    buildOverrides: {
+      classSkills: ['acrobatics', 'insight', 'persuasion'],
+      bonusSkills: ['arcana', 'history', 'religion'],
+    },
+  });
+  const brdLoreFeatures = await loadBardCollegeFeatures(brdLoreGen.sheet);
+  const brdLoreWithSpells = await addBardCollegeGrantedSpells(brdLoreGen.sheet);
+  const brdLorePdf = await renderCharacterSheetV2(brdLoreWithSpells, logoBytes, {
+    collegeFeatures: brdLoreFeatures,
+    bonusSkills: ['arcana', 'history', 'religion'],
+  });
+  fs.writeFileSync(path.join(verifDir, 'bardo-sapienza-v2.pdf'), brdLorePdf);
+  console.log(`bardo-sapienza-v2.pdf written (${(await PDFDocument.load(brdLorePdf)).getPageCount()} pages)`);
+
   console.log('\nAll PDFs generated successfully!');
 }
 

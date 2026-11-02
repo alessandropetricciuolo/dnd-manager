@@ -21,16 +21,17 @@ export const FIGHTING_STYLE_DESCRIPTIONS: Record<PhbFightingStyle, string> = {
 export function fighterReferenceCards(
   level: number,
   style?: PhbFightingStyle,
-  secondStyle?: PhbFightingStyle
+  secondStyle?: PhbFightingStyle,
+  isChampion: boolean = true
 ): PrintFeature[] {
   const source = 'Scheda Guerriero 5e / pagina 1';
-  const styleText = style
-    ? `${style}: ${FIGHTING_STYLE_DESCRIPTIONS[style] ?? ''}${
-        level >= 10 && secondStyle
-          ? `\n\nSecondo stile (${secondStyle}): ${FIGHTING_STYLE_DESCRIPTIONS[secondStyle] ?? ''}`
-          : ''
-      }`
-    : 'Adotti una particolare specializzazione nel tuo stile di combattimento.';
+  let styleText = 'Adotti una particolare specializzazione nel tuo stile di combattimento.';
+  if (style) {
+    styleText = `${style}: ${FIGHTING_STYLE_DESCRIPTIONS[style] ?? ''}`;
+    if (level >= 10 && isChampion && secondStyle && secondStyle !== style) {
+      styleText += `\n\n${secondStyle}: ${FIGHTING_STYLE_DESCRIPTIONS[secondStyle] ?? ''}`;
+    }
+  }
 
   const cards: Array<[string, number, string]> = [
     ['Stile di Combattimento', 1, styleText],

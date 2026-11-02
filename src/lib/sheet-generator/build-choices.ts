@@ -170,6 +170,28 @@ export async function resolveBuildChoicesPreview(
     slots.push(
       slot("fighting-style", "Stile di combattimento", "Classe", styleOptions, style)
     );
+
+    if (
+      input.classLabel === "Guerriero" &&
+      input.level >= 10 &&
+      input.classSubclass &&
+      /campione/i.test(input.classSubclass)
+    ) {
+      const secondStyleOptions = PHB_FIGHTING_STYLE_OPTIONS.filter((s) => s !== style).map((s) => ({
+        value: s,
+        label: s,
+      }));
+      const secondStyle = secondStyleOptions[0]?.value ?? (style === "Difesa" ? "Tiro" : "Difesa");
+      slots.push(
+        slot(
+          "second-fighting-style",
+          "Stile di combattimento aggiuntivo (Campione 10°)",
+          "Sottoclasse",
+          secondStyleOptions,
+          secondStyle
+        )
+      );
+    }
   }
 
   if (input.classLabel === "Ranger") {
@@ -213,7 +235,7 @@ export async function resolveBuildChoicesPreview(
   let warlockPact: string | null = null;
   if (input.classLabel === "Warlock") {
     const seed = warlockBuildSeed(input);
-    warlockPact = pickDefaultWarlockPact(seed);
+    warlockPact = input.buildOverrides?.warlockPact ?? pickDefaultWarlockPact(seed);
     const pactOptions = [
       { value: "Patto della Catena", label: "Patto della Catena" },
       { value: "Patto della Lama", label: "Patto della Lama" },
@@ -406,6 +428,8 @@ export function validateBuildOverrides(
       val = overrides.racialCantrip;
     } else if (s.id === "fighting-style") {
       val = overrides.fightingStyle;
+    } else if (s.id === "second-fighting-style") {
+      val = overrides.secondFightingStyle;
     } else if (s.id === "warlock-pact") {
       val = overrides.warlockPact;
     }
@@ -419,6 +443,14 @@ export function validateBuildOverrides(
   const skillSet = new Set(overrides.classSkills ?? []);
   if ((overrides.classSkills?.length ?? 0) > 1 && skillSet.size !== overrides.classSkills!.length) {
     errors.push("Le competenze di classe devono essere diverse.");
+  }
+
+  if (
+    overrides.fightingStyle &&
+    overrides.secondFightingStyle &&
+    overrides.fightingStyle === overrides.secondFightingStyle
+  ) {
+    errors.push("Il secondo stile di combattimento deve essere diverso dal primo.");
   }
 
   const expList = (overrides.expertiseSkills ?? []).filter(Boolean);

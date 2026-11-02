@@ -109,6 +109,23 @@ export function buildMonkPrintModel(
     if (!sheet.toolProficiencies.includes('Strumenti da calligrafo')) {
       sheet.toolProficiencies.push('Strumenti da calligrafo');
     }
+
+    if (!sheet.weaponRows.some((w) => w.name.toLowerCase() === melee.toLowerCase())) {
+      sheet.weaponRows.push({
+        name: melee,
+        damage: '1d8+DES',
+        type: 'taglienti',
+        toHit: '',
+      });
+    }
+    if (!sheet.weaponRows.some((w) => w.name.toLowerCase() === ranged.toLowerCase())) {
+      sheet.weaponRows.push({
+        name: ranged,
+        damage: '1d8+DES',
+        type: 'perforanti',
+        toHit: '',
+      });
+    }
   }
 
   // Arti Marziali: Colpo senz'armi e armi da monaco usano il migliore tra FOR e DES e scalano col dado Arti Marziali

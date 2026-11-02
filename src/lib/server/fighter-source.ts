@@ -71,20 +71,25 @@ export async function loadFighterEvidence(
 
   // Collapse Stile di Combattimento to the chosen fighting style
   const effectiveStyle = choices.fightingStyle ?? 'Difesa';
+  const isChampion = !!(sheet.classSubclass && /campione/i.test(sheet.classSubclass));
   const styleFeature = classFeatures.find((f) => f.title === 'STILE DI COMBATTIMENTO');
   if (styleFeature) {
-    const header = styleFeature.body.split(/^###\s+/m)[0].trim();
     const styleH = new RegExp(`^###\\s+${effectiveStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im');
     const m = styleH.exec(styleFeature.body);
-    if (m) {
-      styleFeature.body = `${header}\n\n**${effectiveStyle}:** ${m[1].trim()}`;
-    }
-    if (sheet.level >= 10 && choices.secondFightingStyle) {
+    const firstDesc = m ? m[1].trim() : '';
+    styleFeature.body = `**${effectiveStyle}:** ${firstDesc}`;
+
+    if (
+      sheet.level >= 10 &&
+      isChampion &&
+      choices.secondFightingStyle &&
+      choices.secondFightingStyle !== effectiveStyle
+    ) {
       const secondM = new RegExp(`^###\\s+${choices.secondFightingStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im').exec(
         chapter
       );
       if (secondM) {
-        styleFeature.body += `\n\n**Secondo stile (${choices.secondFightingStyle}):** ${secondM[1].trim()}`;
+        styleFeature.body += `\n\n**${choices.secondFightingStyle}:** ${secondM[1].trim()}`;
       }
     }
   }
@@ -104,6 +109,17 @@ export async function loadFighterEvidence(
       sheet.level,
       FIGHTER_ARCHETYPE_FEATURES[archetype.slug]
     );
+
+    if (sheet.level >= 10 && isChampion && choices.secondFightingStyle) {
+      const secFeat = archetypeFeatures.find((f) => f.title === 'STILE DI COMBATTIMENTO AGGIUNTIVO');
+      if (secFeat) {
+        const secondM = new RegExp(`^###\\s+${choices.secondFightingStyle}\\s*\\n([\\s\\S]*?)(?=^###|$)`, 'im').exec(
+          chapter
+        );
+        const desc = secondM ? secondM[1].trim() : '';
+        secFeat.body = `Stile scelto: **${choices.secondFightingStyle}**.\n\n${desc}`;
+      }
+    }
   }
 
   const resources: FighterResources = {

@@ -681,10 +681,16 @@ test('9. Manual residue cleanup: strips chapter/page artifacts without touching 
   const { sheet: warSheet } = await buildGeneratedCharacterSheet({
     characterName: 'Malakor',
     raceSlug: 'tiefling',
+    subraceSlug: null,
     backgroundSlug: 'sapiente',
     classLabel: 'Warlock',
     classSubclass: 'Il Signore Fatato',
     level: 5,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
   const warEv = await loadWarlockEvidence(warSheet, undefined, {
     pactBoon: 'Patto del Tomo',
@@ -711,10 +717,16 @@ test('10. Racial ability score increase exclusion: no increment traits or empty 
   const { sheet: warSheet } = await buildGeneratedCharacterSheet({
     characterName: 'Malakor',
     raceSlug: 'tiefling',
+    subraceSlug: null,
     backgroundSlug: 'sapiente',
     classLabel: 'Warlock',
     classSubclass: 'Il Signore Fatato',
     level: 5,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
   const warEv = await loadWarlockEvidence(warSheet, undefined, {
     pactBoon: 'Patto del Tomo',
@@ -747,10 +759,16 @@ test('10. Racial ability score increase exclusion: no increment traits or empty 
   const { sheet: mnkSheet } = await buildGeneratedCharacterSheet({
     characterName: 'Chen',
     raceSlug: 'umano',
+    subraceSlug: null,
     backgroundSlug: 'eremita',
     classLabel: 'Monaco',
     classSubclass: 'Via della Mano Aperta',
     level: 5,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
   });
   const mnkEv = await loadMonkEvidence(mnkSheet);
   const mnkFull = addMonkGrantedSpells(mnkSheet, mnkEv);

@@ -23,6 +23,7 @@ export function overridesFromSlots(slots: BuildChoiceSlot[]): CharacterBuildOver
     else if (s.id.startsWith("spell-")) spells.push(s.value);
     else if (s.id === "racial-cantrip") overrides.racialCantrip = s.value;
     else if (s.id === "fighting-style") overrides.fightingStyle = s.value;
+    else if (s.id === "second-fighting-style") overrides.secondFightingStyle = s.value;
     else if (s.id === "warlock-pact") overrides.warlockPact = s.value;
     else if (s.id.startsWith("invocation-")) invocations.push(s.value);
     else if (s.id.startsWith("favored-enemy-")) enemies.push(s.value);

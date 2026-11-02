@@ -784,4 +784,123 @@ test.describe('Generatore V2', () => {
       }
     }
   });
+
+  test('Campione livello 12: due stili dal generatore, cambio esplicito a Difesa e calcoli PDF reali', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2?classLabel=Guerriero');
+    if (page.url().includes('/login')) {
+      const credentials = (process.env.SHEET_V2_ISOLATED_TEST ? { email: 'sheet-test@example.test', password: 'local-test-password' } : JSON.parse(fs.readFileSync('tests/e2e/.auth/credentials.json', 'utf8')).admin);
+      await page.locator('#email').fill(credentials.email);
+      await page.locator('#password').fill(credentials.password);
+      await page.getByRole('button', { name: 'Entra nella Taverna' }).click();
+      await page.waitForURL('**/dashboard**');
+      await page.goto('/generator-v2?classLabel=Guerriero');
+    }
+    await page.locator('#characterName').fill('Cioccolo Real Flow');
+    await page.locator('#raceSlug').selectOption('tiefling');
+    await page.locator('#backgroundSlug').selectOption('eremita');
+    const champ = await page.locator('#classSubclass option').filter({ hasText: 'Campione' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(champ!);
+    await page.locator('#level').fill('12');
+
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await expect(page.locator('#fighting-style')).toBeVisible();
+    await page.locator('#fighting-style').selectOption('Duellare');
+    await expect(page.locator('#second-fighting-style')).toBeVisible();
+    await page.locator('#second-fighting-style').selectOption('Combattere con Armi Possenti');
+
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section).toBeVisible();
+
+    // Verifica che DownloadSheetV2 abbia idratato correttamente le scelte confermate dal form
+    await expect(section.locator('#v2-fighter-fighting-style')).toHaveValue('Duellare');
+    await expect(section.locator('#v2-fighter-second-fighting-style')).toHaveValue('Combattere con Armi Possenti');
+
+    // 1. Download con stili confermati: Duellare + Armi Possenti
+    const pendingDl1 = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const dl1 = await pendingDl1;
+    expect(await dl1.failure()).toBeNull();
+    const path1 = test.info().outputPath('cioccolo-real-1.pdf');
+    await dl1.saveAs(path1);
+
+    const text1 = execFileSync('pdftotext', [path1, '-'], { encoding: 'utf8' });
+    expect(text1).toContain('Duellare:');
+    expect(text1).toContain('Combattere con Armi Possenti:');
+    expect(text1).not.toContain('Secondo stile (');
+    expect(text1).toContain('Spada lunga +9 / 1d8+5 (+2 a 1 mano)');
+    expect(text1).toContain('Arco lungo +6 / 1d8+2');
+    expect(text1).not.toContain('Arco lungo +9');
+    expect(text1).toContain('Stile scelto: Combattere con Armi Possenti.');
+    expect(text1).not.toContain('Al 10° livello, il guerriero può scegliere una seconda opzione');
+
+    // 2. Cambio esplicito di stile nei controlli di esportazione prima del download: Difesa
+    await section.locator('#v2-fighter-second-fighting-style').selectOption('Difesa');
+    const pendingDl2 = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const dl2 = await pendingDl2;
+    expect(await dl2.failure()).toBeNull();
+    const path2 = test.info().outputPath('cioccolo-real-2-difesa.pdf');
+    await dl2.saveAs(path2);
+
+    const text2 = execFileSync('pdftotext', [path2, '-'], { encoding: 'utf8' });
+    // CA passa da 18 a 19 per Difesa (+1)
+    expect(text2).toContain('19');
+    expect(text2).toContain('Duellare:');
+    expect(text2).toContain('Difesa:');
+    expect(text2).toContain('Stile scelto: Difesa.');
+  });
+
+  test('Bardo della Sapienza reale: competenze ordinarie e tre bonus separate e download verificato', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2?classLabel=Bardo');
+    if (page.url().includes('/login')) {
+      const credentials = (process.env.SHEET_V2_ISOLATED_TEST ? { email: 'sheet-test@example.test', password: 'local-test-password' } : JSON.parse(fs.readFileSync('tests/e2e/.auth/credentials.json', 'utf8')).admin);
+      await page.locator('#email').fill(credentials.email);
+      await page.locator('#password').fill(credentials.password);
+      await page.getByRole('button', { name: 'Entra nella Taverna' }).click();
+      await page.waitForURL('**/dashboard**');
+      await page.goto('/generator-v2?classLabel=Bardo');
+    }
+    await page.locator('#characterName').fill('Lyra Real Flow');
+    await page.locator('#raceSlug').selectOption('halfling');
+    await page.locator('#backgroundSlug').selectOption('intrattenitore');
+    const loreOpt = await page.locator('#classSubclass option').filter({ hasText: 'Collegio della Sapienza' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(loreOpt!);
+    await page.locator('#level').fill('5');
+
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section).toBeVisible();
+
+    const fieldset = section.locator('fieldset').filter({ hasText: 'Collegio della Sapienza: scegli tre competenze aggiuntive' });
+    await expect(fieldset).toBeVisible();
+    await expect(fieldset.getByRole('checkbox', { checked: true })).toHaveCount(3);
+
+    // Cambio esplicito di una competenza bonus
+    const firstChecked = fieldset.getByRole('checkbox', { checked: true }).first();
+    await firstChecked.uncheck();
+    await expect(section.getByRole('button', { name: 'Genera scheda V2', exact: true })).toBeDisabled();
+
+    const firstUnchecked = fieldset.getByRole('checkbox', { checked: false }).first();
+    await firstUnchecked.check();
+    await expect(section.getByRole('button', { name: 'Genera scheda V2', exact: true })).toBeEnabled();
+
+    const pendingDl = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const dl = await pendingDl;
+    expect(await dl.failure()).toBeNull();
+
+    const dest = test.info().outputPath('bardo-sapienza-real.pdf');
+    await dl.saveAs(dest);
+    const pdfDoc = await PDFDocument.load(fs.readFileSync(dest));
+    expect(pdfDoc.getPageCount()).toBeGreaterThanOrEqual(2);
+
+    const text = execFileSync('pdftotext', [dest, '-'], { encoding: 'utf8' });
+    expect(text).toContain('Collegio della Sapienza');
+    expect(text).toContain('Ispirazione Bardica');
+  });
 });
