@@ -112,7 +112,7 @@ export async function appendCharacterStoryToPdf(
       y,
       size,
       font: boldFont,
-      color: rgb(0.12, 0.1, 0.09),
+      color: rgb(0, 0, 0),
       maxWidth: maxTextWidth,
     });
     y -= size * 1.6;
@@ -124,7 +124,7 @@ export async function appendCharacterStoryToPdf(
       y,
       size,
       font: bodyFont,
-      color: rgb(0.33, 0.3, 0.28),
+      color: rgb(0.35, 0.35, 0.35),
       maxWidth: maxTextWidth,
     });
     y -= size * 1.5;
@@ -154,7 +154,7 @@ export async function appendCharacterStoryToPdf(
         y,
         size: FONT_SIZE_BODY,
         font: bodyFont,
-        color: rgb(0.15, 0.13, 0.11),
+        color: rgb(0, 0, 0),
       });
       y -= LINE_HEIGHT_BODY;
     }

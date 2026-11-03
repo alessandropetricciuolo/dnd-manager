@@ -6,7 +6,7 @@ import { drawFantasyFrame } from './fantasy-sheet-graphics';
 
 export const clean = (v: unknown): string => sanitizeTextForStandardPdfFont(String(v ?? ''));
 
-const PAPER = rgb(0.96, 0.95, 0.92);
+const PAPER = rgb(1, 1, 1);
 
 export function wrapSheetText(value: string, font: PDFFont, size: number, width: number): string[] {
   const lines: string[] = [];
@@ -55,17 +55,19 @@ export function drawCardHeader(
     y,
     width: bannerW,
     height: h,
-    color: PAPER,
-    borderColor: rgb(0.2, 0.2, 0.2),
-    borderWidth: 0.6,
+    color: rgb(0.96, 0.96, 0.96),
+    borderColor: rgb(0, 0, 0),
+    borderWidth: 0.65,
   });
+  p.drawRectangle({ x: bx, y, width: 2.5, height: h, color: rgb(0, 0, 0) });
+  p.drawRectangle({ x: bx + bannerW - 2.5, y, width: 2.5, height: h, color: rgb(0, 0, 0) });
   const size = Math.min(8, (bannerW - 12) / Math.max(1, boldFont.widthOfTextAtSize(t, 1)));
   p.drawText(t, {
     x: bx + (bannerW - boldFont.widthOfTextAtSize(t, size)) / 2,
     y: y + (h - size) / 2 + 1,
     size,
     font: boldFont,
-    color: rgb(0.12, 0.12, 0.12),
+    color: rgb(0, 0, 0),
   });
 }
 
@@ -346,7 +348,7 @@ export function renderPlacedBlockOnPage1(
       y: drawY - 14,
       width: width - 12,
       height: 14,
-      color: rgb(0.92, 0.92, 0.9),
+      color: rgb(0.95, 0.95, 0.95),
     });
     textFn(p, x + 10, drawY - 10, 'Infusione / Oggetto', 7, boldFont);
     textFn(p, x + 74, drawY - 10, 'Sint.', 7, boldFont);

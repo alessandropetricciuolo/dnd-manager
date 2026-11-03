@@ -83,7 +83,7 @@ function drawBoldLine(ctx: RenderCtx, text: string, size: number, gapAfter = siz
     y: ctx.y,
     size,
     font: ctx.boldFont,
-    color: rgb(0.12, 0.1, 0.09),
+    color: rgb(0, 0, 0),
     maxWidth: ctx.maxTextWidth,
   });
   ctx.y -= gapAfter;
@@ -98,7 +98,7 @@ function drawBodyParagraph(ctx: RenderCtx, paragraph: string): void {
       y: ctx.y,
       size: FONT_SIZE_BODY,
       font: ctx.bodyFont,
-      color: rgb(0.15, 0.13, 0.11),
+      color: rgb(0, 0, 0),
     });
     ctx.y -= LINE_HEIGHT_BODY;
   }

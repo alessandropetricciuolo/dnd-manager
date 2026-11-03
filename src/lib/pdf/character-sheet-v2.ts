@@ -129,7 +129,9 @@ export type CharacterSheetPrintOptions = {
 const W = 595.28,
   H = 841.89;
 const sign = (n: number) => (n >= 0 ? `+${n}` : `${n}`);
-const PAPER = rgb(0.96, 0.95, 0.92);
+const PAPER = rgb(1, 1, 1);
+const INK = rgb(0, 0, 0);
+const ACCENT_BRONZE = rgb(0, 0, 0);
 
 const ABILITY_ABBR: Record<AbilityKey, string> = {
   str: 'FOR',
@@ -329,17 +331,20 @@ export async function renderCharacterSheetV2(
       y,
       width: bannerW,
       height: h,
-      color: PAPER,
-      borderColor: rgb(0.2, 0.2, 0.2),
-      borderWidth: 0.6,
+      color: rgb(0.96, 0.96, 0.96),
+      borderColor: INK,
+      borderWidth: 0.65,
     });
+    // Monochrome black side accent endcaps
+    p.drawRectangle({ x: bx, y, width: 2.5, height: h, color: INK });
+    p.drawRectangle({ x: bx + bannerW - 2.5, y, width: 2.5, height: h, color: INK });
     const size = Math.min(8, (bannerW - 12) / Math.max(1, bold.widthOfTextAtSize(t, 1)));
     p.drawText(t, {
       x: bx + (bannerW - bold.widthOfTextAtSize(t, size)) / 2,
       y: y + (h - size) / 2 + 1,
       size,
       font: bold,
-      color: rgb(0.12, 0.12, 0.12),
+      color: INK,
     });
   };
 
@@ -508,7 +513,7 @@ export async function renderCharacterSheetV2(
   };
 
   // --- PAGE 1: IMMEDIATE COMBAT & PLAY ---
-  const { page: first, bodyTopY } = newFirstPage('SCHEDA DEL PERSONAGGIO - V2');
+  const { page: first, bodyTopY } = newFirstPage('SCHEDA DEL PERSONAGGIO');
 
   // LEFT COLUMN: Proficiency Bonus + Abilities + Passive Perception + Senses (Chained dynamically from bodyTopY)
   const pbBoxH = 34;
@@ -560,13 +565,19 @@ export async function renderCharacterSheetV2(
     const leftCenter = box.x + 24;
 
     text(first, leftCenter - font.widthOfTextAtSize(score, 9.5) / 2, top - 31, score, 9.5);
-    text(first, leftCenter - bold.widthOfTextAtSize(modifier, 15) / 2, top - 46, modifier, 15, bold);
+    first.drawText(modifier, {
+      x: leftCenter - bold.widthOfTextAtSize(modifier, 15) / 2,
+      y: top - 46,
+      size: 15,
+      font: bold,
+      color: INK,
+    });
 
     first.drawLine({
       start: { x: box.x + 48, y: top - 24 },
       end: { x: box.x + 48, y: top - height + 6 },
       thickness: 0.4,
-      color: rgb(0.6, 0.6, 0.6),
+      color: rgb(0.8, 0.8, 0.8),
     });
 
     const rows = [
@@ -618,7 +629,13 @@ export async function renderCharacterSheetV2(
   drawFantasyFrame(first, { x: 212, y: defBottom, width: 52, height: defBoxH });
   text(first, 212 + (52 - bold.widthOfTextAtSize('CA', 7)) / 2, defTop - 13, 'CA', 7, bold);
   const caVal = `${s.armorClass}`;
-  text(first, 212 + (52 - bold.widthOfTextAtSize(caVal, 17)) / 2, defTop - 36, caVal, 17, bold);
+  first.drawText(caVal, {
+    x: 212 + (52 - bold.widthOfTextAtSize(caVal, 17)) / 2,
+    y: defTop - 36,
+    size: 17,
+    font: bold,
+    color: INK,
+  });
 
   drawFantasyFrame(first, { x: 268, y: defBottom, width: 52, height: defBoxH });
   const initLbl = 'INIZIATIVA';
@@ -654,17 +671,45 @@ export async function renderCharacterSheetV2(
   const hpInnerBoxW = 48;
   const hpInnerBoxH = 30;
   const hpY = hpTop - 54;
-  first.drawRectangle({ x: 218, y: hpY, width: hpInnerBoxW, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
-  text(first, 218 + (hpInnerBoxW - bold.widthOfTextAtSize('MAX', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'MAX', 6.5, bold);
-  text(first, 218 + (hpInnerBoxW - bold.widthOfTextAtSize(`${s.hpMax}`, 13)) / 2, hpY + 5, `${s.hpMax}`, 13, bold);
+  first.drawRectangle({ x: 218, y: hpY, width: hpInnerBoxW, height: hpInnerBoxH, color: rgb(0, 0, 0) });
+  first.drawText('MAX', {
+    x: 218 + (hpInnerBoxW - bold.widthOfTextAtSize('MAX', 6.5)) / 2,
+    y: hpY + hpInnerBoxH - 9,
+    size: 6.5,
+    font: bold,
+    color: rgb(0.8, 0.8, 0.8),
+  });
+  first.drawText(`${s.hpMax}`, {
+    x: 218 + (hpInnerBoxW - bold.widthOfTextAtSize(`${s.hpMax}`, 13)) / 2,
+    y: hpY + 5,
+    size: 13,
+    font: bold,
+    color: rgb(1, 1, 1),
+  });
 
-  first.drawRectangle({ x: 271, y: hpY, width: 50, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
+  first.drawRectangle({
+    x: 271,
+    y: hpY,
+    width: 50,
+    height: hpInnerBoxH,
+    borderColor: rgb(0.6, 0.6, 0.6),
+    borderWidth: 0.5,
+    color: rgb(1, 1, 1),
+  });
   text(first, 271 + (50 - bold.widthOfTextAtSize('ATTUALI', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'ATTUALI', 6.5, bold);
-  first.drawLine({ start: { x: 275, y: hpY + 7 }, end: { x: 317, y: hpY + 7 }, thickness: 0.4, color: rgb(0.5, 0.5, 0.5) });
+  first.drawLine({ start: { x: 275, y: hpY + 7 }, end: { x: 317, y: hpY + 7 }, thickness: 0.4, color: rgb(0.7, 0.7, 0.7) });
 
-  first.drawRectangle({ x: 326, y: hpY, width: 48, height: hpInnerBoxH, borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.5, color: rgb(0.98, 0.98, 0.97) });
+  first.drawRectangle({
+    x: 326,
+    y: hpY,
+    width: 48,
+    height: hpInnerBoxH,
+    borderColor: rgb(0.6, 0.6, 0.6),
+    borderWidth: 0.5,
+    color: rgb(1, 1, 1),
+  });
   text(first, 326 + (48 - bold.widthOfTextAtSize('TEMP', 6.5)) / 2, hpY + hpInnerBoxH - 9, 'TEMP', 6.5, bold);
-  first.drawLine({ start: { x: 330, y: hpY + 7 }, end: { x: 370, y: hpY + 7 }, thickness: 0.4, color: rgb(0.5, 0.5, 0.5) });
+  first.drawLine({ start: { x: 330, y: hpY + 7 }, end: { x: 370, y: hpY + 7 }, thickness: 0.4, color: rgb(0.7, 0.7, 0.7) });
 
   text(first, 222, hpY - 14, `Dadi Vita: ${s.hitDiceTotal} ${s.hitDie}`, 8, bold);
   text(first, 222, hpY - 26, 'Dadi Vita spesi: ________________', 7.5);
@@ -1818,7 +1863,7 @@ export async function renderCharacterSheetV2(
           y: drawY - 14,
           width: colW - 12,
           height: 14,
-          color: rgb(0.92, 0.92, 0.9),
+          color: rgb(0.95, 0.95, 0.95),
         });
         text(page, colX + 10, drawY - 10, 'Infusione / Oggetto', 7, bold);
         text(page, colX + 118, drawY - 10, 'Sint.', 7, bold);
@@ -2188,7 +2233,7 @@ export async function renderCharacterSheetV2(
         y: startY - 16,
         width: 541,
         height: 16,
-        color: rgb(0.9, 0.9, 0.88),
+        color: rgb(0.95, 0.95, 0.95),
         borderColor: rgb(0.4, 0.4, 0.4),
         borderWidth: 0.5,
       });

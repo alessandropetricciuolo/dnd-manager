@@ -293,7 +293,7 @@ export function drawCompanionStatBlock(
   }
 
   // Section: AZIONI
-  page.drawRectangle({ x: x + 10, y: curY - 14, width: W - 20, height: 14, color: rgb(0.9, 0.9, 0.88), borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.4 });
+  page.drawRectangle({ x: x + 10, y: curY - 14, width: W - 20, height: 14, color: rgb(0.95, 0.95, 0.95), borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.4 });
   page.drawText('AZIONI', { x: x + 14, y: curY - 11, size: 8, font: bold });
   curY -= 20;
 
@@ -321,7 +321,7 @@ export function drawCompanionStatBlock(
 
   // Section: REAZIONI
   if (data.reactions.length > 0) {
-    page.drawRectangle({ x: x + 10, y: curY - 14, width: W - 20, height: 14, color: rgb(0.9, 0.9, 0.88), borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.4 });
+    page.drawRectangle({ x: x + 10, y: curY - 14, width: W - 20, height: 14, color: rgb(0.95, 0.95, 0.95), borderColor: rgb(0.4, 0.4, 0.4), borderWidth: 0.4 });
     page.drawText('REAZIONI', { x: x + 14, y: curY - 11, size: 8, font: bold });
     curY -= 20;
 
