@@ -123,13 +123,26 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
       setStoryChatDraft(null);
       return;
     }
-    setNameValue(formSeed?.draft.name ?? "");
+    setNameValue(
+      formSeed?.draft.name?.trim() ||
+      formSeed?.generated?.build?.name?.trim() ||
+      formSeed?.generated?.sheet?.characterName?.trim() ||
+      ""
+    );
     const initialBackground =
       formSeed?.draft.background?.trim() || formSeed?.generated?.characterStory?.trim() || "";
     setBackgroundValue(initialBackground);
     setStoryChatDraft(null);
     setStoryChatKey((k) => k + 1);
-  }, [open, formMountSignature, formSeed?.draft.name, formSeed?.draft.background, formSeed?.generated?.characterStory]);
+  }, [
+    open,
+    formMountSignature,
+    formSeed?.draft.name,
+    formSeed?.draft.background,
+    formSeed?.generated?.characterStory,
+    formSeed?.generated?.build?.name,
+    formSeed?.generated?.sheet?.characterName,
+  ]);
 
   function persistDraftFromForm(form: HTMLFormElement) {
     try {
@@ -189,7 +202,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
         let pdfBase64 = gen.pdfBase64;
         const includeBgStory = gen.includeBackgroundStoryInPdf ?? !!background;
         const storyForPdf = includeBgStory ? background || gen.characterStory || "" : "";
-        if (gen.sheetData && (includeBgStory || gen.quickManualSections?.length)) {
+        if (!gen.isV2 && gen.sheetData && (includeBgStory || gen.quickManualSections?.length)) {
           try {
             const classLabel =
               (formData.get("character_class") as string | null)?.trim() ||
@@ -279,9 +292,15 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
     const classSubclass = (fd.get("class_subclass") as string | null)?.trim() ?? "";
     const backgroundSlug = (fd.get("background_slug") as string | null)?.trim() ?? "";
     const level = (fd.get("level") as string | null)?.trim() || "1";
+    const characterStory = (fd.get("background") as string | null)?.trim() || backgroundValue.trim();
+    const alignment = (fd.get("alignment") as string | null)?.trim() ?? "";
+    const age = (fd.get("age") as string | null)?.trim() ?? "";
+    const height = (fd.get("height") as string | null)?.trim() ?? "";
+    const weight = (fd.get("weight") as string | null)?.trim() ?? "";
+    const sex = (fd.get("sex") as string | null)?.trim() ?? "";
 
     if (!characterName || !raceSlug || !classLabel || !backgroundSlug) {
-      toast.error("Per l'anteprima compila almeno nome, razza, classe e background.");
+      toast.error("Per generare la scheda compila almeno nome, razza, classe e background.");
       return;
     }
 
@@ -296,9 +315,15 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
     });
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);
+    if (characterStory) params.set("characterStory", characterStory);
+    if (alignment) params.set("alignment", alignment);
+    if (age) params.set("age", age);
+    if (height) params.set("height", height);
+    if (weight) params.set("weight", weight);
+    if (sex) params.set("sex", sex);
 
     setOpen(false);
-    router.push(`/generator?${params.toString()}`);
+    router.push(`/generator-v2?${params.toString()}`);
   }
 
   return (
@@ -403,6 +428,71 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
             </div>
           </div>
 
+          <details className="rounded-lg border border-barber-gold/25 bg-barber-dark/50 p-3">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-xs font-medium text-barber-gold [&::-webkit-details-marker]:hidden">
+              <span>Caratteristiche fisiche e allineamento (opzionali)</span>
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="char-alignment" className="text-xs">Allineamento</Label>
+                  <Input
+                    id="char-alignment"
+                    name="alignment"
+                    defaultValue={formSeed?.draft.alignment ?? formSeed?.generated?.sheet?.alignment ?? ""}
+                    placeholder="Es. Legale Buono"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="char-age" className="text-xs">Età</Label>
+                  <Input
+                    id="char-age"
+                    name="age"
+                    defaultValue={formSeed?.draft.age ?? formSeed?.generated?.sheet?.age ?? ""}
+                    placeholder="Es. 28 anni"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="char-height" className="text-xs">Altezza</Label>
+                  <Input
+                    id="char-height"
+                    name="height"
+                    defaultValue={formSeed?.draft.height ?? formSeed?.generated?.sheet?.height ?? ""}
+                    placeholder="Es. 1.80 m"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="char-weight" className="text-xs">Peso</Label>
+                  <Input
+                    id="char-weight"
+                    name="weight"
+                    defaultValue={formSeed?.draft.weight ?? formSeed?.generated?.sheet?.weight ?? ""}
+                    placeholder="Es. 75 kg"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="char-sex" className="text-xs">Sesso</Label>
+                  <Input
+                    id="char-sex"
+                    name="sex"
+                    defaultValue={formSeed?.draft.sex ?? formSeed?.generated?.sheet?.sex ?? ""}
+                    placeholder="Es. Maschio"
+                    className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
+          </details>
+
           <ImageSourceField
             fileInputName="image"
             urlFieldName="image_url"
@@ -439,7 +529,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
             />
             {formSeed?.generated && (
               <p className="text-xs text-emerald-300/90">
-                Scheda PDF generata pronta: verra salvata con il personaggio se non carichi un altro PDF.
+                Scheda PDF {formSeed.generated.isV2 ? "V2 " : ""}pronta (CA: {formSeed.generated.armorClass}, PF: {formSeed.generated.hitPoints}): verrà salvata con il personaggio se non carichi un altro PDF.
               </p>
             )}
           </div>
@@ -493,15 +583,18 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
           </div>
 
           <DialogFooter>
-            {!isLongCampaign ? <Button
-              type="button"
-              variant="outline"
-              onClick={openSheetGeneratorPreview}
-              disabled={isLoading}
-              className="border-barber-gold/40 text-barber-gold"
-            >
-              Anteprima scheda
-            </Button> : null}
+            {!isLongCampaign ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={openSheetGeneratorPreview}
+                disabled={isLoading}
+                className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+              >
+                <Sparkles className="mr-1.5 h-4 w-4" />
+                Genera scheda V2
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"

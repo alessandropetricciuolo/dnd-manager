@@ -22,6 +22,7 @@ export type StoredGeneratedSheet = {
   characterStory?: string | null;
   spellcasting?: StoredSpellcastingMeta | null;
   build?: CharacterFormBuildDraft;
+  isV2?: boolean;
 };
 
 /** Validate the full generated object restored from the create-dialog localStorage handoff. */
@@ -82,6 +83,7 @@ export function parseStoredGeneratedSheet(raw: string | null): StoredGeneratedSh
       characterStory: typeof parsed.characterStory === "string" ? parsed.characterStory : undefined,
       spellcasting,
       build,
+      isV2: parsed.isV2 === true,
     };
   } catch {
     return null;

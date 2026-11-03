@@ -35,9 +35,25 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
   const initial = useMemo(
     () => ({
       characterName: searchParams.get("characterName") ?? "",
-      raceSlug: searchParams.get("raceSlug") ?? "",
+      raceSlug: (() => {
+        const raw = (searchParams.get("raceSlug") ?? "").trim();
+        const matched = RACE_OPTIONS.find(
+          (r) => r.slug.toLowerCase() === raw.toLowerCase() || r.label.toLowerCase() === raw.toLowerCase()
+        )?.slug;
+        return matched ?? raw;
+      })(),
       subraceSlug: searchParams.get("subraceSlug") ?? "",
-      classLabel: v2 ? (["Bardo","Barbaro","Chierico","Artefice","Druido","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(searchParams.get("classLabel")??"") ? searchParams.get("classLabel")! : "Bardo") : searchParams.get("classLabel") ?? "",
+      classLabel: (() => {
+        const raw = (searchParams.get("classLabel") ?? "").trim();
+        const v2Classes = [
+          "Bardo", "Barbaro", "Chierico", "Artefice", "Druido",
+          "Guerriero", "Ladro", "Mago", "Monaco", "Paladino",
+          "Ranger", "Stregone", "Warlock",
+        ];
+        const matched = v2Classes.find((c) => c.toLowerCase() === raw.toLowerCase());
+        if (v2) return matched ?? "Bardo";
+        return matched ?? raw;
+      })(),
       classSubclass: searchParams.get("classSubclass") ?? "",
       backgroundSlug: searchParams.get("backgroundSlug") ?? "",
       level: searchParams.get("level") ?? "1",
@@ -92,7 +108,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
     return "Torna ai personaggi";
   }, [initial.returnTo]);
 
-  function persistCreateDraftFromGeneratorForm() {
+  function persistCreateDraftFromGeneratorForm(finalAc?: number, finalHp?: number) {
     if (!formRef.current || !initial.campaignId) return;
     try {
       const draftKey = `${CREATE_CHARACTER_DRAFT_KEY_PREFIX}:${initial.campaignId}`;
@@ -104,6 +120,24 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
       for (const [k, v] of Object.entries(mapped)) {
         if (typeof v === "string" && v) merged[k] = v;
       }
+      const acToSave = finalAc ?? sheet?.armorClass;
+      const hpToSave = finalHp ?? sheet?.hpMax;
+      if (acToSave != null) merged.armor_class = String(acToSave);
+      if (hpToSave != null) merged.hit_points = String(hpToSave);
+
+      const fd = new FormData(formRef.current);
+      const alignment = (fd.get("alignment") as string | null)?.trim();
+      const age = (fd.get("age") as string | null)?.trim();
+      const height = (fd.get("height") as string | null)?.trim();
+      const weight = (fd.get("weight") as string | null)?.trim();
+      const sex = (fd.get("sex") as string | null)?.trim();
+      const story = (fd.get("characterStory") as string | null)?.trim();
+      if (alignment) merged.alignment = alignment;
+      if (age) merged.age = age;
+      if (height) merged.height = height;
+      if (weight) merged.weight = weight;
+      if (sex) merged.sex = sex;
+      if (story) merged.background = story;
 
       localStorage.setItem(draftKey, JSON.stringify(merged));
     } catch {
@@ -111,52 +145,95 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
     }
   }
 
-  async function handleSaveToCharacterSheet() {
+  async function handleSaveToCharacterSheet(v2Payload?: Record<string, unknown>) {
     if (isSavingSheet) return;
-    if (!sheetDataObj || !sheet) {
+    if (!sheet) {
       setResultMessage("Genera prima una scheda.");
       toast.error("Genera prima una scheda.");
       return;
     }
     setIsSavingSheet(true);
     try {
-      const pdfRes = await fetch("/api/sheet-pdf", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          buildCompiledSheetPdfRequestBody({
-            sheetData: sheetDataObj,
-            sheet,
-            quickManualSections,
-            backgroundPdfSections,
-            includeBackgroundStoryInPdf,
-            characterStory,
-          })
-        ),
-      });
-      if (!pdfRes.ok) {
-        const err = await pdfRes.json().catch(() => ({}));
-        const msg = err?.error ?? "Errore generazione PDF.";
-        setResultMessage(msg);
-        toast.error(msg);
-        return;
+      let base64 = "";
+      let finalAc = sheet.armorClass;
+      let finalHp = sheet.hpMax;
+
+      if (v2) {
+        const payload = v2Payload ?? {
+          input: v2Input ?? Object.fromEntries(
+            Array.from(new FormData(formRef.current!).entries()).filter(
+              (entry): entry is [string, string] => typeof entry[1] === "string"
+            )
+          ),
+          bonusSkills: [],
+        };
+        const pdfRes = await fetch("/api/sheet-pdf-v2", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (!pdfRes.ok) {
+          const err = await pdfRes.json().catch(() => ({}));
+          const msg = err?.error ?? "Errore generazione PDF V2.";
+          setResultMessage(msg);
+          toast.error(msg);
+          return;
+        }
+        const acHeader = pdfRes.headers.get("X-Sheet-Armor-Class");
+        const hpHeader = pdfRes.headers.get("X-Sheet-Hit-Points");
+        if (acHeader != null && !Number.isNaN(Number(acHeader))) finalAc = Number(acHeader);
+        if (hpHeader != null && !Number.isNaN(Number(hpHeader))) finalHp = Number(hpHeader);
+        const ab = await pdfRes.arrayBuffer();
+        base64 = arrayBufferToBase64(ab);
+      } else {
+        if (!sheetDataObj) {
+          setResultMessage("Dati scheda non disponibili.");
+          toast.error("Dati scheda non disponibili.");
+          return;
+        }
+        const pdfRes = await fetch("/api/sheet-pdf", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(
+            buildCompiledSheetPdfRequestBody({
+              sheetData: sheetDataObj,
+              sheet,
+              quickManualSections,
+              backgroundPdfSections,
+              includeBackgroundStoryInPdf,
+              characterStory,
+            })
+          ),
+        });
+        if (!pdfRes.ok) {
+          const err = await pdfRes.json().catch(() => ({}));
+          const msg = err?.error ?? "Errore generazione PDF.";
+          setResultMessage(msg);
+          toast.error(msg);
+          return;
+        }
+        const ab = await pdfRes.arrayBuffer();
+        base64 = arrayBufferToBase64(ab);
       }
-      const ab = await pdfRes.arrayBuffer();
-      const base64 = arrayBufferToBase64(ab);
+
       const buildMeta = parseGeneratedSheetBuildMeta(formRef.current, sheet);
+      const fileName = `${sheet.characterName || "scheda"}${v2 ? "-v2" : "-compilata"}.pdf`;
+
       if (initial.campaignId && initial.characterId) {
         const saved = await saveGeneratedSheetToCharacter(
           initial.campaignId,
           initial.characterId,
           base64,
-          `${sheet.characterName || "scheda"}-compilata.pdf`,
-          { armorClass: sheet.armorClass, hitPoints: sheet.hpMax },
+          fileName,
+          { armorClass: finalAc, hitPoints: finalHp },
           spellcastingMetaFromGeneratedSheet(sheet),
           buildMeta,
           createCharacterSheetV1("generator", sheet)
         );
         if (saved.success) {
-          const msg = "Scheda PDF salvata nella scheda tecnica del personaggio.";
+          const msg = v2
+            ? "Scheda V2 salvata nella scheda del personaggio."
+            : "Scheda PDF salvata nella scheda tecnica del personaggio.";
           setResultMessage(msg);
           toast.success(msg);
           if (initial.returnTo) {
@@ -174,16 +251,17 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
       }
 
       if (initial.campaignId && initial.returnTo) {
-        persistCreateDraftFromGeneratorForm();
+        persistCreateDraftFromGeneratorForm(finalAc, finalHp);
         const buildDraft = mapGeneratorFormToCharacterBuildDraft(formRef.current, sheet);
         try {
           localStorage.setItem(
             `${CREATE_CHARACTER_GENERATED_SHEET_KEY_PREFIX}:${initial.campaignId}`,
             JSON.stringify({
               pdfBase64: base64,
-              fileName: `${sheet.characterName || "scheda"}-compilata.pdf`,
-              armorClass: sheet.armorClass,
-              hitPoints: sheet.hpMax,
+              fileName,
+              armorClass: finalAc,
+              hitPoints: finalHp,
+              isV2: v2,
               sheet,
               sheetData: sheetDataObj,
               quickManualSections,
@@ -192,6 +270,7 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
               characterStory,
               spellcasting: spellcastingMetaFromGeneratedSheet(sheet),
               build: {
+                name: (formRef.current?.elements.namedItem("characterName") as HTMLInputElement)?.value || sheet.characterName || buildDraft.name,
                 race_slug: buildDraft.race_slug,
                 subclass_slug: buildDraft.subclass_slug,
                 character_class: buildDraft.character_class,
@@ -210,7 +289,9 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
           toast.error(msg);
           return;
         }
-        const msg = "Scheda PDF pronta: torna alla creazione PG e salva il personaggio.";
+        const msg = v2
+          ? "Scheda V2 salvata: torna alla creazione PG con CA e PF aggiornati."
+          : "Scheda PDF pronta: torna alla creazione PG e salva il personaggio.";
         setResultMessage(msg);
         toast.success(msg);
         window.location.href = initial.returnTo;
@@ -351,6 +432,9 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
 
         {v2 && <p className="mb-5 text-sm text-barber-paper/75">Laboratorio di stampa fantasy: Bardo, Barbaro, Chierico, Druido, Artefice, Guerriero, Ladro, Mago, Monaco, Paladino e Ranger. Scegli il personaggio, conferma le opzioni e scarica la scheda V2.</p>}
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
+          <input type="hidden" name="campaignId" value={initial.campaignId} />
+          <input type="hidden" name="characterId" value={initial.characterId} />
+          <input type="hidden" name="returnTo" value={initial.returnTo} />
           <div className="space-y-2">
             <label htmlFor="characterName" className="text-sm font-medium text-barber-paper">
               Nome Personaggio
@@ -650,7 +734,14 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
             ))}
           </div>
         )}
-        {sheet && v2Input && ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(sheet.classLabel) && <DownloadSheetV2 key={JSON.stringify(v2Input)} sheet={sheet} input={v2Input} />}
+        {sheet && v2Input && ["Bardo","Barbaro","Chierico","Druido","Artefice","Guerriero","Ladro","Mago","Monaco","Paladino","Ranger","Stregone","Warlock"].includes(sheet.classLabel) && (
+          <DownloadSheetV2
+            key={JSON.stringify(v2Input)}
+            sheet={sheet}
+            input={v2Input}
+            onSaveToCharacter={(v2Payload) => handleSaveToCharacterSheet(v2Payload)}
+          />
+        )}
         {sheet && (
           <GeneratedSheetView
             sheet={sheet}
@@ -689,15 +780,19 @@ function GeneratorPageContent({ v2 = false }: { v2?: boolean }) {
             )}
           </section>
         )}
-        {!v2 && sheet && sheetDataObj && (
+        {sheet && (sheetDataObj || v2) && (
           <div className="mt-6 border-t border-barber-gold/20 pt-5">
             <button
               type="button"
-              onClick={handleSaveToCharacterSheet}
+              onClick={() => handleSaveToCharacterSheet()}
               disabled={isSavingSheet}
               className="inline-flex h-11 w-full items-center justify-center rounded-md bg-barber-red px-5 text-sm font-medium text-barber-paper hover:bg-barber-red/90 disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {isSavingSheet ? "Salvataggio PDF..." : "Salva scheda PDF e torna al personaggio"}
+              {isSavingSheet
+                ? "Salvataggio..."
+                : v2
+                ? "Salva scheda V2 nel personaggio"
+                : "Salva scheda PDF e torna al personaggio"}
             </button>
           </div>
         )}

@@ -147,9 +147,11 @@ export function EditCharacterDialog({
     const backgroundSlug =
       (fd.get("background_slug") as string | null)?.trim() ?? character.background_slug ?? "";
     const levelRaw = (fd.get("level") as string | null)?.trim() ?? String(character.level ?? 1);
+    const characterStory =
+      (fd.get("background") as string | null)?.trim() || backgroundValue.trim() || character.background?.trim() || "";
 
     if (!characterName || !raceSlug || !classLabel || !backgroundSlug) {
-      toast.error("Per l'anteprima compila almeno nome, razza, classe e background.");
+      toast.error("Per generare la scheda compila almeno nome, razza, classe e background.");
       return;
     }
 
@@ -165,9 +167,20 @@ export function EditCharacterDialog({
     });
     if (subraceSlug) params.set("subraceSlug", subraceSlug);
     if (classSubclass) params.set("classSubclass", classSubclass);
+    if (characterStory) params.set("characterStory", characterStory);
+
+    const snapshot = character.rules_snapshot as Record<string, unknown> | null;
+    const sheetObj = (snapshot?.character_sheet ?? null) as Record<string, unknown> | null;
+    if (sheetObj) {
+      if (typeof sheetObj.alignment === "string" && sheetObj.alignment) params.set("alignment", sheetObj.alignment);
+      if (typeof sheetObj.age === "string" && sheetObj.age) params.set("age", sheetObj.age);
+      if (typeof sheetObj.height === "string" && sheetObj.height) params.set("height", sheetObj.height);
+      if (typeof sheetObj.weight === "string" && sheetObj.weight) params.set("weight", sheetObj.weight);
+      if (typeof sheetObj.sex === "string" && sheetObj.sex) params.set("sex", sheetObj.sex);
+    }
 
     onOpenChange(false);
-    router.push(`/generator?${params.toString()}`);
+    router.push(`/generator-v2?${params.toString()}`);
   }
 
   return (
@@ -420,15 +433,18 @@ export function EditCharacterDialog({
           </div>
 
           <DialogFooter>
-            {!isLongCampaign ? <Button
-              type="button"
-              variant="outline"
-              onClick={openSheetGeneratorPreview}
-              disabled={isLoading}
-              className="border-barber-gold/40 text-barber-gold"
-            >
-              Anteprima scheda
-            </Button> : null}
+            {!isLongCampaign ? (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={openSheetGeneratorPreview}
+                disabled={isLoading}
+                className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+              >
+                <Sparkles className="mr-1.5 h-4 w-4" />
+                Genera scheda V2
+              </Button>
+            ) : null}
             <Button
               type="button"
               variant="outline"

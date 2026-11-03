@@ -173,7 +173,16 @@ export async function POST(req: Request) {
       story: result.includeBackgroundStoryInPdf ? result.characterStory ?? '' : '',
       quickManualSections: result.quickManualSections ?? [],
     });
-    return new Response(Buffer.from(bytes), { headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': `attachment; filename="scheda-${sheet.classLabel.toLocaleLowerCase('it')}-v2.pdf"`, 'Cache-Control': 'no-store' } });
+    return new Response(Buffer.from(bytes), {
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': `attachment; filename="scheda-${sheet.classLabel.toLocaleLowerCase('it')}-v2.pdf"`,
+        'Cache-Control': 'no-store',
+        'X-Sheet-Armor-Class': String(sheet.armorClass),
+        'X-Sheet-Hit-Points': String(sheet.hpMax),
+        'Access-Control-Expose-Headers': 'X-Sheet-Armor-Class, X-Sheet-Hit-Points',
+      },
+    });
   } catch (error) {
     console.error('[sheet-pdf-v2]', error);
     return Response.json({ error: error instanceof Error ? error.message : 'Generazione PDF V2 non riuscita.' }, { status: 422 });

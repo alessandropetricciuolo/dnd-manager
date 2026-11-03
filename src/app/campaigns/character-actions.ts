@@ -1506,9 +1506,11 @@ async function saveGeneratedSheetToCharacterInner(
 
   const prevPath = row.sheet_file_path;
   const ac = combatFromSheet?.armorClass;
+  const hp = combatFromSheet?.hitPoints;
   const updateRow: {
     sheet_file_path: string;
     armor_class?: number;
+    hit_points?: number;
     rules_snapshot?: Json;
     race_slug?: string | null;
     subclass_slug?: string | null;
@@ -1523,6 +1525,9 @@ async function saveGeneratedSheetToCharacterInner(
   };
   if (typeof ac === "number" && Number.isFinite(ac) && ac >= 0) {
     updateRow.armor_class = Math.trunc(ac);
+  }
+  if (typeof hp === "number" && Number.isFinite(hp) && hp > 0) {
+    updateRow.hit_points = Math.trunc(hp);
   }
   if (buildFromSheet) {
     const race_slug = raceBySlug(buildFromSheet.raceSlug) ? buildFromSheet.raceSlug.trim() : null;

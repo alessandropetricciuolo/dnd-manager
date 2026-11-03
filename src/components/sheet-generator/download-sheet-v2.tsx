@@ -69,7 +69,15 @@ import {
   type GenieKind,
 } from '@/lib/sheet-generator/warlock-patrons';
 
-export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterSheet; input: Record<string, string> }) {
+export function DownloadSheetV2({
+  sheet,
+  input,
+  onSaveToCharacter,
+}: {
+  sheet: GeneratedCharacterSheet;
+  input: Record<string, string>;
+  onSaveToCharacter?: (v2Payload: Record<string, unknown>) => Promise<void>;
+}) {
   const overrides = useMemo<CharacterBuildOverrides>(() => {
     try {
       return input.buildOverridesJson ? JSON.parse(input.buildOverridesJson) : {};
@@ -201,29 +209,33 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
     ...(metamagicCount > 0 ? { metamagic: chosenMetamagic } : {}),
   };
 
+  function getV2Payload() {
+    return {
+      input,
+      bonusSkills: lore ? chosen : [],
+      ...(swords ? { fightingStyle: fightingStyle ?? (overrides.fightingStyle as BardFightingStyle) ?? 'Duellare' } : {}),
+      ...(path ? { barbarianChoices: pathChoices } : {}),
+      ...(domain ? { clericChoices } : {}),
+      ...(druidCircle?.slug === 'phb-druido-terra'
+        ? { druidChoices: { landTerrain: druidTerrain ?? 'Foresta', landCantrip: druidCantrip ?? availableLandCantrips[0] } }
+        : {}),
+      ...(isFighter ? { fighterChoices: finalFighterChoices } : {}),
+      ...(isRogue ? { rogueChoices } : {}),
+      ...(isWizard ? { wizardChoices } : {}),
+      ...(isMonk ? { monkChoices } : {}),
+      ...(isPaladin ? { paladinChoices: finalPaladinChoices } : {}),
+      ...(isRanger ? { rangerChoices: finalRangerChoices } : {}),
+      ...(isSorcerer ? { sorcererChoices: finalSorcererChoices } : {}),
+      ...(isWarlock ? { warlockChoices } : {}),
+    };
+  }
+
   async function download() {
     setBusy(true); setError("");
     try {
       const response = await fetch("/api/sheet-pdf-v2", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          input,
-          bonusSkills: lore ? chosen : [],
-          ...(swords ? { fightingStyle: fightingStyle ?? (overrides.fightingStyle as BardFightingStyle) ?? 'Duellare' } : {}),
-          ...(path ? { barbarianChoices: pathChoices } : {}),
-          ...(domain ? { clericChoices } : {}),
-          ...(druidCircle?.slug === 'phb-druido-terra'
-            ? { druidChoices: { landTerrain: druidTerrain ?? 'Foresta', landCantrip: druidCantrip ?? availableLandCantrips[0] } }
-            : {}),
-          ...(isFighter ? { fighterChoices: finalFighterChoices } : {}),
-          ...(isRogue ? { rogueChoices } : {}),
-          ...(isWizard ? { wizardChoices } : {}),
-          ...(isMonk ? { monkChoices } : {}),
-          ...(isPaladin ? { paladinChoices: finalPaladinChoices } : {}),
-          ...(isRanger ? { rangerChoices: finalRangerChoices } : {}),
-          ...(isSorcerer ? { sorcererChoices: finalSorcererChoices } : {}),
-          ...(isWarlock ? { warlockChoices } : {}),
-        }),
+        body: JSON.stringify(getV2Payload()),
       });
       if (!response.ok) { const data = await response.json(); throw new Error(data.error ?? "Esportazione non riuscita."); }
       const url = URL.createObjectURL(await response.blob());
@@ -231,6 +243,19 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
     } catch (e) { setError(e instanceof Error ? e.message : "Errore esportazione."); }
     finally { setBusy(false); }
+  }
+
+  async function handleSaveToCharacter() {
+    if (!onSaveToCharacter) return;
+    setBusy(true);
+    setError("");
+    try {
+      await onSaveToCharacter(getV2Payload());
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Errore salvataggio scheda.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return <section className="my-5 space-y-3 rounded-lg border border-barber-gold/40 p-4" aria-label="Esportazione scheda V2">
@@ -514,9 +539,28 @@ export function DownloadSheetV2({ sheet, input }: { sheet: GeneratedCharacterShe
       </label>}
     </fieldset>}
     <p className="text-sm text-barber-paper/70">PDF completo con risorse, capacità del livello attuale, dotazione e tabella degli incantesimi.</p>
-    <button type="button" onClick={download} disabled={busy || invalidCleric || (lore && chosen.length !== 3)} className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper disabled:opacity-60">
-      {busy ? "Preparazione della scheda V2…" : "Genera scheda V2"}
-    </button>
+    <div className="flex flex-wrap items-center gap-3 pt-2">
+      <button
+        type="button"
+        id="v2-download-button"
+        onClick={download}
+        disabled={busy || invalidCleric || (lore && chosen.length !== 3)}
+        className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper hover:bg-barber-red/90 disabled:opacity-60"
+      >
+        {busy ? "Preparazione della scheda V2…" : "Scarica scheda V2 (PDF)"}
+      </button>
+      {onSaveToCharacter && (
+        <button
+          type="button"
+          id="v2-save-to-character-button"
+          onClick={handleSaveToCharacter}
+          disabled={busy || invalidCleric || (lore && chosen.length !== 3)}
+          className="rounded-md border border-barber-gold/50 bg-barber-dark/80 px-5 py-3 text-sm font-medium text-barber-gold hover:bg-barber-gold/10 disabled:opacity-60"
+        >
+          {busy ? "Salvataggio..." : "Salva nella scheda del personaggio"}
+        </button>
+      )}
+    </div>
     {error && <p role="alert" className="text-sm text-red-300">{error}</p>}
   </section>;
 }
