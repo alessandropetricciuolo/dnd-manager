@@ -1206,7 +1206,7 @@ export type GmGalleryWikiMissionFilter = "all" | "none" | string;
 export async function listCampaignMissionsLiteForGm(
   campaignId: string
 ): Promise<
-  | { success: true; data: { id: string; title: string }[] }
+  | { success: true; data: { id: string; title: string; mission_kind: "organization" | "personal" }[] }
   | { success: false; message: string }
 > {
   if (!campaignId?.trim()) return { success: false, message: "Campagna non valida." };
@@ -1223,15 +1223,16 @@ export async function listCampaignMissionsLiteForGm(
     }
     const { data, error } = await supabase
       .from("campaign_missions")
-      .select("id, title")
+      .select("id, title, mission_kind")
       .eq("campaign_id", campaignId)
       .order("title", { ascending: true });
     if (error) return { success: false, message: error.message ?? "Errore nel caricamento missioni." };
     return {
       success: true,
-      data: (data ?? []).map((r: { id: string; title: string }) => ({
+      data: (data ?? []).map((r: { id: string; title: string; mission_kind?: string | null }) => ({
         id: r.id,
         title: r.title?.trim() ? r.title : "Senza titolo",
+        mission_kind: (r.mission_kind === "personal" ? "personal" : "organization") as "organization" | "personal",
       })),
     };
   } catch {

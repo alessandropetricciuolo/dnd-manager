@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -32,7 +33,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Coins, ExternalLink, LayoutGrid, List, MonitorPlay, Pencil, Plus, RefreshCw, Shield, Swords, Trash2 } from "lucide-react";
+import { Coins, ExternalLink, LayoutGrid, List, Lock, MonitorPlay, Pencil, Plus, RefreshCw, Search, Shield, Swords, Trash2 } from "lucide-react";
 import { NameGeneratorField } from "@/components/name-generator/name-generator-field";
 import { cn } from "@/lib/utils";
 import { openProjectionWindow } from "@/lib/browser/projection-window";
@@ -83,6 +84,25 @@ type MissionBoardGuild = {
   auto_rank?: boolean;
 };
 
+export type PersonalMission = {
+  id: string;
+  title: string;
+  description: string;
+  committente?: string | null;
+  ubicazione?: string | null;
+  urgenza?: string | null;
+  status: string;
+  created_at?: string | null;
+  updated_at?: string | null;
+};
+
+export type LinkedWikiEntity = {
+  id: string;
+  name: string;
+  type: string;
+  linked_mission_id: string | null;
+};
+
 type MissionBoardProps = {
   campaignId: string;
   missions: MissionBoardMission[];
@@ -91,6 +111,9 @@ type MissionBoardProps = {
   isAdmin: boolean;
   hideHeaderActions?: boolean;
   isProjection?: boolean;
+  personalMissions?: PersonalMission[];
+  linkedWikiEntities?: LinkedWikiEntity[];
+  canManagePersonalMissions?: boolean;
 };
 
 const EMPTY_MISSION_DRAFT = {
@@ -398,11 +421,189 @@ export function MissionBoard({
   isAdmin,
   hideHeaderActions = false,
   isProjection = false,
+  personalMissions = [],
+  linkedWikiEntities = [],
+  canManagePersonalMissions = false,
 }: MissionBoardProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [isPending, startTransition] = useTransition();
   const [displayMode, setDisplayMode] = useState<"board" | "table">("board");
+  const [activeTab, setActiveTab] = useState<"missions" | "ranking" | "personal">("missions");
+
+  useEffect(() => {
+    if (activeTab === "personal" && !canManagePersonalMissions) {
+      setActiveTab("missions");
+    }
+  }, [activeTab, canManagePersonalMissions]);
+
+  const [personalSearch, setPersonalSearch] = useState("");
+  const [personalStatusFilter, setPersonalStatusFilter] = useState<"all" | "open" | "in_progress" | "completed">("all");
+  const [personalDialogOpen, setPersonalDialogOpen] = useState(false);
+  const [personalDialogMode, setPersonalDialogMode] = useState<"add" | "edit">("add");
+  const [personalEditMissionId, setPersonalEditMissionId] = useState<string | null>(null);
+  const [personalDraft, setPersonalDraft] = useState({
+    title: "",
+    description: "",
+    committente: "",
+    ubicazione: "",
+    urgenza: "",
+  });
+
+  const wikiByMissionId = useMemo(() => {
+    const map = new Map<string, LinkedWikiEntity[]>();
+    for (const w of linkedWikiEntities) {
+      if (!w.linked_mission_id) continue;
+      const existing = map.get(w.linked_mission_id) ?? [];
+      existing.push(w);
+      map.set(w.linked_mission_id, existing);
+    }
+    return map;
+  }, [linkedWikiEntities]);
+
+  const filteredPersonalMissions = useMemo(() => {
+    return personalMissions.filter((m) => {
+      if (personalStatusFilter !== "all" && normalizeMissionStatus(m.status) !== personalStatusFilter) {
+        return false;
+      }
+      if (personalSearch.trim()) {
+        const q = personalSearch.toLowerCase();
+        const matchTitle = m.title.toLowerCase().includes(q);
+        const matchDesc = m.description.toLowerCase().includes(q);
+        const matchComm = (m.committente ?? "").toLowerCase().includes(q);
+        const matchUbic = (m.ubicazione ?? "").toLowerCase().includes(q);
+        if (!matchTitle && !matchDesc && !matchComm && !matchUbic) return false;
+      }
+      return true;
+    });
+  }, [personalMissions, personalStatusFilter, personalSearch]);
+
+  const openAddPersonalMission = () => {
+    setPersonalDialogMode("add");
+    setPersonalEditMissionId(null);
+    setPersonalDraft({
+      title: "",
+      description: "",
+      committente: "",
+      ubicazione: "",
+      urgenza: "",
+    });
+    setPersonalDialogOpen(true);
+  };
+
+  const openEditPersonalMission = (m: PersonalMission) => {
+    setPersonalDialogMode("edit");
+    setPersonalEditMissionId(m.id);
+    setPersonalDraft({
+      title: m.title,
+      description: m.description,
+      committente: m.committente ?? "",
+      ubicazione: m.ubicazione ?? "",
+      urgenza: m.urgenza ?? "",
+    });
+    setPersonalDialogOpen(true);
+  };
+
+  const submitPersonalMission = async () => {
+    const title = personalDraft.title.trim();
+    const description = personalDraft.description.trim();
+    if (!title || !description) {
+      toast.error("Titolo e descrizione sono obbligatori.");
+      return;
+    }
+    startTransition(async () => {
+      if (personalDialogMode === "add") {
+        const res = await createMissionAction(
+          campaignId,
+          "",
+          title,
+          personalDraft.committente.trim(),
+          personalDraft.ubicazione.trim(),
+          "",
+          personalDraft.urgenza.trim(),
+          description,
+          0,
+          { missionKind: "personal" }
+        );
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success("Missione fuori Egida creata.");
+          setPersonalDialogOpen(false);
+          router.refresh();
+        }
+      } else if (personalEditMissionId) {
+        const res = await updateMissionAction(
+          campaignId,
+          personalEditMissionId,
+          "",
+          title,
+          personalDraft.committente.trim(),
+          personalDraft.ubicazione.trim(),
+          "",
+          personalDraft.urgenza.trim(),
+          description,
+          0
+        );
+        if (!res.success) {
+          toast.error(res.message);
+        } else {
+          toast.success("Missione fuori Egida aggiornata.");
+          setPersonalDialogOpen(false);
+          router.refresh();
+        }
+      }
+    });
+  };
+
+  const handleSetPersonalStatus = async (missionId: string, status: "open" | "in_progress") => {
+    startTransition(async () => {
+      const res = await setMissionProgressStatusAction(campaignId, missionId, status);
+      if (!res.success) {
+        toast.error(res.message);
+      } else {
+        toast.success(`Stato aggiornato a ${status === "in_progress" ? "in corso" : "aperta"}.`);
+        router.refresh();
+      }
+    });
+  };
+
+  const handleCompletePersonalMission = async (missionId: string) => {
+    startTransition(async () => {
+      const res = await completeMissionAction(campaignId, missionId);
+      if (!res.success) {
+        toast.error(res.message);
+      } else {
+        toast.success("Missione completata.");
+        router.refresh();
+      }
+    });
+  };
+
+  const handleReopenPersonalMission = async (missionId: string) => {
+    startTransition(async () => {
+      const res = await reopenMissionAction(campaignId, missionId);
+      if (!res.success) {
+        toast.error(res.message);
+      } else {
+        toast.success("Missione riaperta.");
+        router.refresh();
+      }
+    });
+  };
+
+  const handleDeletePersonalMission = async (missionId: string) => {
+    if (!window.confirm("Eliminare definitivamente questa missione fuori Egida?")) return;
+    startTransition(async () => {
+      const res = await deleteMissionAction(campaignId, missionId);
+      if (!res.success) {
+        toast.error(res.message);
+      } else {
+        toast.success("Missione eliminata.");
+        router.refresh();
+      }
+    });
+  };
 
   const sortedGuilds = useMemo(() => {
     return [...guilds].sort((a, b) => {
@@ -867,15 +1068,29 @@ export function MissionBoard({
           )}
         </div>
 
-        <Tabs defaultValue="missions">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "missions" | "ranking" | "personal")}>
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            <TabsList className="grid h-auto w-full grid-cols-2 rounded-xl border border-brass-base/30 bg-guild-stone/80 p-1 md:inline-flex md:w-auto">
+            <TabsList className={cn(
+              "grid h-auto w-full rounded-xl border border-brass-base/30 bg-guild-stone/80 p-1 md:inline-flex md:w-auto",
+              canManagePersonalMissions ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-2"
+            )}>
               <TabsTrigger value="missions" className="text-xs font-serif uppercase tracking-wider data-[state=active]:bg-brass-base/20 data-[state=active]:text-brass-light sm:text-sm">
-                Bandi & Missioni ({sortedMissions.length})
+                Missioni dell&apos;organizzazione ({sortedMissions.length})
               </TabsTrigger>
               <TabsTrigger value="ranking" className="text-xs font-serif uppercase tracking-wider data-[state=active]:bg-brass-base/20 data-[state=active]:text-brass-light sm:text-sm">
                 Classifica Gilde ({sortedGuilds.length})
               </TabsTrigger>
+              {canManagePersonalMissions ? (
+                <TabsTrigger
+                  value="personal"
+                  className="text-xs font-serif uppercase tracking-wider data-[state=active]:bg-brass-base/20 data-[state=active]:text-brass-light sm:text-sm flex items-center justify-center gap-1.5"
+                >
+                  <span>Missioni fuori Egida ({filteredPersonalMissions.length})</span>
+                  <span className="rounded bg-amber-500/20 border border-amber-500/40 px-1.5 py-0.5 text-[9px] text-amber-300 font-sans normal-case font-medium">
+                    Riservate a GM/Admin
+                  </span>
+                </TabsTrigger>
+              ) : null}
             </TabsList>
 
             {/* Selettore Vista per la Bacheca (Bacheca Pergamene vs Tabella) */}
@@ -1143,6 +1358,268 @@ export function MissionBoard({
               </Table>
             </div>
           </TabsContent>
+
+          {canManagePersonalMissions ? (
+            <TabsContent value="personal" className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-600/30 bg-guild-stone/90 p-4 shadow-md">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-cinzel text-base sm:text-lg font-bold text-gold-relief">
+                      Missioni fuori Egida
+                    </h3>
+                    <span className="inline-flex items-center gap-1 rounded bg-amber-500/20 border border-amber-500/40 px-2 py-0.5 text-[11px] font-sans font-medium text-amber-300">
+                      <Lock className="h-3 w-3" />
+                      Riservate a GM/Admin
+                    </span>
+                  </div>
+                  <p className="text-xs text-parchment-300 font-serif">
+                    Missioni esterne alla gilda dell&apos;Egida e contenitori narrativi per raccogliere voci Wiki collegate.
+                  </p>
+                </div>
+                <Button
+                  onClick={openAddPersonalMission}
+                  disabled={isPending}
+                  className="btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider self-start sm:self-auto shrink-0 shadow-md"
+                >
+                  <Plus className="mr-1.5 h-4 w-4" />
+                  Nuova Missione fuori Egida
+                </Button>
+              </div>
+
+              {/* Filtri & Ricerca */}
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-brass-base/60" />
+                  <Input
+                    value={personalSearch}
+                    onChange={(e) => setPersonalSearch(e.target.value)}
+                    placeholder="Cerca per titolo, descrizione, committente o luogo..."
+                    className="pl-8 h-8 text-xs border-brass-base/30 bg-guild-void text-parchment-100 placeholder:text-parchment-400/50"
+                  />
+                </div>
+
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <span className="text-[11px] font-cinzel text-brass-light">Stato:</span>
+                  <div className="flex rounded-lg border border-brass-base/30 bg-guild-stone/80 p-0.5">
+                    {(
+                      [
+                        { id: "all", label: "Tutte" },
+                        { id: "open", label: "Aperte" },
+                        { id: "in_progress", label: "In corso" },
+                        { id: "completed", label: "Completate" },
+                      ] as const
+                    ).map((f) => (
+                      <button
+                        key={f.id}
+                        type="button"
+                        onClick={() => setPersonalStatusFilter(f.id)}
+                        className={cn(
+                          "px-2.5 py-1 text-[11px] font-serif rounded transition-colors",
+                          personalStatusFilter === f.id
+                            ? "bg-brass-base/25 text-brass-light font-bold"
+                            : "text-parchment-300 hover:text-parchment-100"
+                        )}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Elenco Cards */}
+              {filteredPersonalMissions.length === 0 ? (
+                <div className="rounded-xl border border-brass-base/20 bg-guild-stone/40 p-8 text-center my-6">
+                  <Lock className="mx-auto h-8 w-8 text-amber-500/50 mb-2" />
+                  <h4 className="font-cinzel text-base font-bold text-parchment-200">
+                    {personalSearch || personalStatusFilter !== "all"
+                      ? "Nessuna missione fuori Egida corrisponde ai filtri"
+                      : "Nessuna missione fuori Egida registrata"}
+                  </h4>
+                  <p className="mt-1 text-xs text-parchment-400 font-serif max-w-md mx-auto">
+                    {personalSearch || personalStatusFilter !== "all"
+                      ? "Prova a modificare i termini di ricerca o il filtro di stato."
+                      : "Crea una missione fuori Egida per gestire trame secondarie o organizzare le voci Wiki della campagna."}
+                  </p>
+                  {!personalSearch && personalStatusFilter === "all" && (
+                    <Button
+                      onClick={openAddPersonalMission}
+                      size="sm"
+                      className="mt-4 btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider"
+                    >
+                      <Plus className="mr-1.5 h-3.5 w-3.5" />
+                      Crea la prima missione
+                    </Button>
+                  )}
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredPersonalMissions.map((pm) => {
+                    const linked = wikiByMissionId.get(pm.id) ?? [];
+                    const normStatus = normalizeMissionStatus(pm.status);
+                    return (
+                      <div
+                        key={pm.id}
+                        className="rounded-xl border border-brass-base/30 bg-guild-void/90 p-4 shadow-sm flex flex-col justify-between hover:border-amber-600/50 transition-colors"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="space-y-0.5">
+                              <span className="inline-flex items-center gap-1 text-[10px] uppercase font-cinzel tracking-wider text-amber-400/90">
+                                <Lock className="h-2.5 w-2.5" />
+                                Fuori Egida
+                              </span>
+                              <h4 className="font-cinzel text-base font-bold text-gold-relief leading-snug">
+                                {pm.title}
+                              </h4>
+                            </div>
+                            <span
+                              className={cn(
+                                "shrink-0 rounded-full px-2 py-0.5 text-[10px] font-serif font-semibold border",
+                                normStatus === "open" && "border-emerald-500/40 bg-emerald-950/60 text-emerald-300",
+                                normStatus === "in_progress" && "border-amber-500/40 bg-amber-950/60 text-amber-300",
+                                normStatus === "completed" && "border-zinc-600/40 bg-zinc-900/60 text-zinc-400"
+                              )}
+                            >
+                              {normStatus === "open" ? "Aperta" : normStatus === "in_progress" ? "In corso" : "Completata"}
+                            </span>
+                          </div>
+
+                          {(pm.committente || pm.ubicazione || pm.urgenza) && (
+                            <div className="flex flex-wrap gap-2 text-[11px] text-parchment-300 font-serif border-y border-brass-base/15 py-1.5">
+                              {pm.committente && (
+                                <span title="Committente" className="flex items-center gap-1">
+                                  <span className="text-brass-base">👤</span> {pm.committente}
+                                </span>
+                              )}
+                              {pm.ubicazione && (
+                                <span title="Ubicazione" className="flex items-center gap-1">
+                                  <span className="text-brass-base">📍</span> {pm.ubicazione}
+                                </span>
+                              )}
+                              {pm.urgenza && (
+                                <span title="Urgenza" className="flex items-center gap-1">
+                                  <span className="text-brass-base">⏳</span> {pm.urgenza}
+                                </span>
+                              )}
+                            </div>
+                          )}
+
+                          <p className="text-xs text-parchment-200/90 font-serif leading-relaxed line-clamp-4 whitespace-pre-wrap">
+                            {pm.description}
+                          </p>
+
+                          {/* Sezione Wiki collegate */}
+                          <div className="pt-2 border-t border-brass-base/20 space-y-1.5">
+                            <span className="text-[10px] font-cinzel text-brass-light uppercase tracking-wider block">
+                              Voci Wiki collegate ({linked.length})
+                            </span>
+                            {linked.length === 0 ? (
+                              <p className="text-[11px] text-parchment-400/60 italic font-serif">
+                                Nessuna voce collegata
+                              </p>
+                            ) : (
+                              <div className="flex flex-wrap gap-1.5">
+                                {linked.map((w) => (
+                                  <Link
+                                    key={w.id}
+                                    href={`/campaigns/${campaignId}/wiki/${w.id}`}
+                                    className="inline-flex items-center gap-1 rounded bg-amber-950/40 border border-amber-600/30 px-2 py-0.5 text-[11px] font-serif text-amber-200 hover:bg-amber-900/40 hover:text-amber-100 transition-colors"
+                                  >
+                                    <span>📜 {w.name}</span>
+                                    <ExternalLink className="h-2.5 w-2.5 text-amber-400/70" />
+                                  </Link>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Azioni GM */}
+                        <div className="pt-4 mt-3 border-t border-brass-base/20 flex flex-wrap items-center justify-between gap-1.5">
+                          <div className="flex items-center gap-1">
+                            {normStatus === "open" && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={isPending}
+                                onClick={() => void handleSetPersonalStatus(pm.id, "in_progress")}
+                                className="h-7 px-2 text-[11px] border-amber-600/40 bg-amber-950/30 text-amber-200 hover:bg-amber-900/50"
+                              >
+                                Avvia
+                              </Button>
+                            )}
+                            {normStatus === "in_progress" && (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isPending}
+                                  onClick={() => void handleSetPersonalStatus(pm.id, "open")}
+                                  className="h-7 px-2 text-[11px] border-brass-base/40 bg-guild-stone text-parchment-200 hover:bg-brass-base/20"
+                                >
+                                  Riapri
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  disabled={isPending}
+                                  onClick={() => void handleCompletePersonalMission(pm.id)}
+                                  className="h-7 px-2 text-[11px] border-emerald-600/40 bg-emerald-950/30 text-emerald-200 hover:bg-emerald-900/50"
+                                >
+                                  Completa
+                                </Button>
+                              </>
+                            )}
+                            {normStatus === "completed" && (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                disabled={isPending}
+                                onClick={() => void handleReopenPersonalMission(pm.id)}
+                                className="h-7 px-2 text-[11px] border-brass-base/40 bg-guild-stone text-parchment-200 hover:bg-brass-base/20"
+                              >
+                                Riapri
+                              </Button>
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-1">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              disabled={isPending}
+                              onClick={() => openEditPersonalMission(pm)}
+                              className="h-7 px-2 text-[11px] border-amber-600/40 text-amber-200 hover:bg-amber-600/20"
+                            >
+                              <Pencil className="h-3 w-3 mr-1" />
+                              Modifica
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              disabled={isPending}
+                              onClick={() => void handleDeletePersonalMission(pm.id)}
+                              className="h-7 px-2 text-[11px]"
+                            >
+                              <Trash2 className="h-3 w-3 mr-1" />
+                              Elimina
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </TabsContent>
+          ) : null}
         </Tabs>
       </div>
 
@@ -1753,6 +2230,119 @@ export function MissionBoard({
           }}
         />
       ) : null}
+
+      {/* DIALOG CREA / MODIFICA MISSIONE FUORI EGIDA */}
+      <Dialog open={personalDialogOpen} onOpenChange={setPersonalDialogOpen}>
+        <DialogContent className="max-w-xl border-amber-600/40 bg-[#16120e] text-parchment-100 font-serif">
+          <DialogHeader>
+            <div className="flex items-center gap-2">
+              <Lock className="h-4 w-4 text-amber-400" />
+              <DialogTitle className="font-cinzel text-xl font-extrabold text-gold-relief">
+                {personalDialogMode === "add" ? "Nuova Missione fuori Egida" : "Modifica Missione fuori Egida"}
+              </DialogTitle>
+            </div>
+            <DialogDescription className="text-xs text-parchment-300">
+              Le missioni fuori Egida sono riservate esclusivamente a GM e Admin. Non assegnano punti gilda, né compensi economici di gilda. Funzionano come bacheca GM e contenitori di collegamenti Wiki.
+            </DialogDescription>
+          </DialogHeader>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void submitPersonalMission();
+            }}
+            className="space-y-4 pt-2"
+          >
+            <div className="space-y-1.5">
+              <Label htmlFor="pm-title" className="text-xs font-cinzel text-brass-light uppercase">
+                Titolo *
+              </Label>
+              <Input
+                id="pm-title"
+                required
+                value={personalDraft.title}
+                onChange={(e) => setPersonalDraft((d) => ({ ...d, title: e.target.value }))}
+                placeholder="es. Trame nella Città Bassa"
+                className="border-brass-base/40 bg-guild-void text-parchment-100"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="pm-committente" className="text-xs font-cinzel text-brass-light uppercase">
+                  Committente (Opzionale)
+                </Label>
+                <Input
+                  id="pm-committente"
+                  value={personalDraft.committente}
+                  onChange={(e) => setPersonalDraft((d) => ({ ...d, committente: e.target.value }))}
+                  placeholder="es. Notabile, Anonimo..."
+                  className="border-brass-base/40 bg-guild-void text-parchment-100 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pm-ubicazione" className="text-xs font-cinzel text-brass-light uppercase">
+                  Ubicazione (Opzionale)
+                </Label>
+                <Input
+                  id="pm-ubicazione"
+                  value={personalDraft.ubicazione}
+                  onChange={(e) => setPersonalDraft((d) => ({ ...d, ubicazione: e.target.value }))}
+                  placeholder="es. Moli abbandonati..."
+                  className="border-brass-base/40 bg-guild-void text-parchment-100 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="pm-urgenza" className="text-xs font-cinzel text-brass-light uppercase">
+                  Urgenza (Opzionale)
+                </Label>
+                <Input
+                  id="pm-urgenza"
+                  value={personalDraft.urgenza}
+                  onChange={(e) => setPersonalDraft((d) => ({ ...d, urgenza: e.target.value }))}
+                  placeholder="es. Immediata, 2 giorni..."
+                  className="border-brass-base/40 bg-guild-void text-parchment-100 text-xs"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="pm-desc" className="text-xs font-cinzel text-brass-light uppercase">
+                Descrizione *
+              </Label>
+              <Textarea
+                id="pm-desc"
+                required
+                rows={5}
+                value={personalDraft.description}
+                onChange={(e) => setPersonalDraft((d) => ({ ...d, description: e.target.value }))}
+                placeholder="Dettagli riservati al Master, indizi narrativi, appunti..."
+                className="border-brass-base/40 bg-guild-void text-parchment-100 text-sm"
+              />
+            </div>
+
+            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setPersonalDialogOpen(false)}
+                className="text-parchment-300 hover:text-parchment-100"
+              >
+                Annulla
+              </Button>
+              <Button
+                type="submit"
+                disabled={isPending}
+                className="btn-wax-seal text-xs font-serif font-bold uppercase tracking-wider"
+              >
+                {personalDialogMode === "add" ? "Crea Missione" : "Salva Modifiche"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

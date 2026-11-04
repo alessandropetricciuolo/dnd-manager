@@ -37,7 +37,7 @@ export function GmFiles({ campaignId }: GmFilesProps) {
   const [linkKind, setLinkKind] = useState<"free" | "wiki_section" | "mission">("free");
   const [wikiSection, setWikiSection] = useState<"npc" | "monster" | "location" | "item" | "lore" | "pg">("lore");
   const [linkedMissionId, setLinkedMissionId] = useState<string>("none");
-  const [missions, setMissions] = useState<{ id: string; title: string }[]>([]);
+  const [missions, setMissions] = useState<{ id: string; title: string; mission_kind?: "organization" | "personal" }[]>([]);
   const missionTitleById = useCallback(
     (id: string | null | undefined) => missions.find((m) => m.id === id)?.title ?? null,
     [missions]
@@ -200,11 +200,34 @@ export function GmFiles({ campaignId }: GmFilesProps) {
                 className="h-9 min-w-[190px] rounded-md border border-barber-gold/30 bg-black/50 px-2 text-xs text-barber-paper"
               >
                 <option value="none">Seleziona missione...</option>
-                {missions.map((m) => (
-                  <option key={m.id} value={m.id}>
-                    {m.title}
-                  </option>
-                ))}
+                {missions.some((m) => m.mission_kind === "personal") ? (
+                  <>
+                    <optgroup label="Missioni dell'organizzazione">
+                      {missions
+                        .filter((m) => m.mission_kind !== "personal")
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                    <optgroup label="Missioni fuori Egida (Riservate a GM/Admin)">
+                      {missions
+                        .filter((m) => m.mission_kind === "personal")
+                        .map((m) => (
+                          <option key={m.id} value={m.id}>
+                            🔒 {m.title}
+                          </option>
+                        ))}
+                    </optgroup>
+                  </>
+                ) : (
+                  missions.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.title}
+                    </option>
+                  ))
+                )}
               </select>
             </div>
           ) : null}

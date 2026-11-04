@@ -547,14 +547,15 @@ export interface Database {
         Row: {
           id: string;
           campaign_id: string;
-          grade: string;
+          mission_kind: "organization" | "personal";
+          grade: string | null;
           title: string;
-          committente: string;
-          ubicazione: string;
-          paga: string;
-          urgenza: string;
+          committente: string | null;
+          ubicazione: string | null;
+          paga: string | null;
+          urgenza: string | null;
           description: string;
-          status: "open" | "completed";
+          status: "open" | "in_progress" | "completed";
           points_reward: number;
           completed_at: string | null;
           completed_by_guild_id: string | null;
@@ -567,14 +568,15 @@ export interface Database {
         Insert: {
           id?: string;
           campaign_id: string;
-          grade: string;
+          mission_kind?: "organization" | "personal";
+          grade?: string | null;
           title: string;
-          committente: string;
-          ubicazione: string;
-          paga: string;
-          urgenza: string;
+          committente?: string | null;
+          ubicazione?: string | null;
+          paga?: string | null;
+          urgenza?: string | null;
           description: string;
-          status?: "open" | "completed";
+          status?: "open" | "in_progress" | "completed";
           points_reward?: number;
           completed_at?: string | null;
           completed_by_guild_id?: string | null;

@@ -193,16 +193,21 @@ export async function WikiList({
     );
   }
 
-  let missionsForLong: { id: string; title: string }[] = [];
+  let missionsForLong: { id: string; title: string; mission_kind?: "organization" | "personal" }[] = [];
   if (campaignType === "long") {
-    const { data: missionRows } = await supabase
+    let query = supabase
       .from("campaign_missions")
-      .select("id, title")
+      .select("id, title, mission_kind")
       .eq("campaign_id", campaignId)
       .order("title", { ascending: true });
-    missionsForLong = ((missionRows ?? []) as { id: string; title: string }[]).map((m) => ({
+    if (!isGmOrAdmin) {
+      query = query.eq("mission_kind", "organization");
+    }
+    const { data: missionRows } = await query;
+    missionsForLong = ((missionRows ?? []) as { id: string; title: string; mission_kind?: string | null }[]).map((m) => ({
       id: m.id,
       title: m.title?.trim() ? m.title : "Senza titolo",
+      mission_kind: (m.mission_kind === "personal" ? "personal" : "organization") as "organization" | "personal",
     }));
   }
   const missionTitleById = new Map(missionsForLong.map((m) => [m.id, m.title]));
@@ -223,24 +228,28 @@ export async function WikiList({
       quickDetail = `Cap. ${e.sort_order}`;
     }
 
+    const hasMission = e.linked_mission_id ? missionTitleById.has(e.linked_mission_id) : false;
+    const missionTitle = hasMission ? missionTitleById.get(e.linked_mission_id!) ?? null : null;
+    const linkedMissionId = !isGmOrAdmin && !hasMission ? null : (e.linked_mission_id ?? null);
+
     return {
-    id: e.id,
-    name: e.name,
-    type: e.type,
-    isSecret: !!e.is_secret,
-    visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
-    sortOrder: e.sort_order ?? null,
-    tags: e.tags ?? [],
-    searchText: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
-    imageUrl: e.image_url ?? null,
-    telegramFallbackId: e.telegram_fallback_id ?? null,
-    detailVersion: e.updated_at ?? null,
-    quickDetail,
-    selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
-    linkedMissionId: e.linked_mission_id ?? null,
-    missionTitle: e.linked_mission_id ? missionTitleById.get(e.linked_mission_id) ?? null : null,
-    archivedAt: e.archived_at ?? null,
-    adminOnly: Boolean(e.admin_only),
+      id: e.id,
+      name: e.name,
+      type: e.type,
+      isSecret: !!e.is_secret,
+      visibility: e.visibility ?? (e.is_secret ? "secret" : "public"),
+      sortOrder: e.sort_order ?? null,
+      tags: e.tags ?? [],
+      searchText: getWikiContentDescription(e.content) || getWikiContentBody(e.content),
+      imageUrl: e.image_url ?? null,
+      telegramFallbackId: e.telegram_fallback_id ?? null,
+      detailVersion: e.updated_at ?? null,
+      quickDetail,
+      selectiveAudienceLabel: selectiveAudienceByEntityId[e.id] ?? null,
+      linkedMissionId,
+      missionTitle,
+      archivedAt: e.archived_at ?? null,
+      adminOnly: Boolean(e.admin_only),
     };
   });
 

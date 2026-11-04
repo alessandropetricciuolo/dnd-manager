@@ -89,7 +89,7 @@ export function GmGallerySheet({
   const [category, setCategory] = useState<Category>("all");
   const [wikiMissionFilter, setWikiMissionFilter] =
     useState<GmGalleryWikiMissionFilter>("all");
-  const [missions, setMissions] = useState<{ id: string; title: string }[]>([]);
+  const [missions, setMissions] = useState<{ id: string; title: string; mission_kind?: "organization" | "personal" }[]>([]);
   const [recentIds, setRecentIds] = useState<string[]>([]);
   const [relatedFor, setRelatedFor] = useState<GmGalleryItem | null>(null);
   const [relatedLinks, setRelatedLinks] = useState<RelatedEntityLink[]>([]);
@@ -392,11 +392,34 @@ export function GmGallerySheet({
                 >
                   <option value="all">Tutte le missioni</option>
                   <option value="none">Senza missione</option>
-                  {missions.map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.title}
-                    </option>
-                  ))}
+                  {missions.some((m) => m.mission_kind === "personal") ? (
+                    <>
+                      <optgroup label="Missioni dell'organizzazione">
+                        {missions
+                          .filter((m) => m.mission_kind !== "personal")
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.title}
+                            </option>
+                          ))}
+                      </optgroup>
+                      <optgroup label="Missioni fuori Egida (Riservate a GM/Admin)">
+                        {missions
+                          .filter((m) => m.mission_kind === "personal")
+                          .map((m) => (
+                            <option key={m.id} value={m.id}>
+                              🔒 {m.title}
+                            </option>
+                          ))}
+                      </optgroup>
+                    </>
+                  ) : (
+                    missions.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.title}
+                      </option>
+                    ))
+                  )}
                 </select>
               </div>
             )}

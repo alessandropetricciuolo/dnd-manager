@@ -84,7 +84,7 @@ const ORDERED_TYPES = ["npc", "location", "monster", "item", "lore"] as const;
 
 type WikiColumnBoardProps = {
   entities: WikiEntityListItem[];
-  missions: { id: string; title: string }[];
+  missions: { id: string; title: string; mission_kind?: "organization" | "personal" }[];
   campaignType?: "oneshot" | "quest" | "long" | null;
   missionFilter: string;
   onMissionFilterChange: (m: string) => void;
@@ -403,11 +403,34 @@ export function WikiColumnBoard({
             >
               <option value="all">Tutte le missioni</option>
               <option value="none">Voci Generali (Senza missione)</option>
-              {missions.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
+              {missions.some((m) => m.mission_kind === "personal") ? (
+                <>
+                  <optgroup label="Missioni dell'organizzazione">
+                    {missions
+                      .filter((m) => m.mission_kind !== "personal")
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                  <optgroup label="Missioni fuori Egida (Riservate a GM/Admin)">
+                    {missions
+                      .filter((m) => m.mission_kind === "personal")
+                      .map((m) => (
+                        <option key={m.id} value={m.id}>
+                          🔒 {m.title}
+                        </option>
+                      ))}
+                  </optgroup>
+                </>
+              ) : (
+                missions.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.title}
+                  </option>
+                ))
+              )}
             </select>
           </div>
         )}

@@ -117,12 +117,13 @@ type CampaignMetaMemoryRow = {
 type MissionMemoryRow = {
   id: string;
   campaign_id: string;
-  grade: string;
+  mission_kind?: "organization" | "personal" | null;
+  grade?: string | null;
   title: string;
-  committente: string;
-  ubicazione: string;
-  paga: string;
-  urgenza: string;
+  committente?: string | null;
+  ubicazione?: string | null;
+  paga?: string | null;
+  urgenza?: string | null;
   description: string;
   points_reward: number | null;
   status: string | null;
@@ -593,6 +594,7 @@ function buildCampaignAiContextChunks(row: CampaignMetaMemoryRow): CampaignMemor
 }
 
 function buildMissionChunks(row: MissionMemoryRow): CampaignMemoryChunkInsert[] {
+  if (row.mission_kind === "personal") return [];
   const description = normalizeWhitespace(row.description ?? "");
   if (!description) return [];
 
@@ -885,7 +887,7 @@ export async function syncMissionToCampaignMemory(
   const { data } = await admin
     .from("campaign_missions")
     .select(
-      "id, campaign_id, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
+      "id, campaign_id, mission_kind, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
     )
     .eq("id", missionId)
     .maybeSingle();
@@ -898,7 +900,7 @@ export async function syncMissionToCampaignMemory(
   }
 
   const row = data as MissionMemoryRow;
-  if (!(await isLongCampaign(admin, row.campaign_id))) {
+  if (row.mission_kind === "personal" || !(await isLongCampaign(admin, row.campaign_id))) {
     await deleteCampaignMemorySource(admin, row.campaign_id, "mission", row.id);
     return;
   }
@@ -983,7 +985,7 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
     admin
       .from("campaign_missions")
       .select(
-        "id, campaign_id, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
+        "id, campaign_id, mission_kind, grade, title, committente, ubicazione, paga, urgenza, description, points_reward, status, updated_at"
       )
       .eq("campaign_id", campaignId)
       .order("updated_at", { ascending: false }),
@@ -1054,6 +1056,10 @@ export async function reindexCampaignMemory(admin: AdminClient, campaignId: stri
     );
   }
   for (const row of (missionRes.data ?? []) as MissionMemoryRow[]) {
-    await upsertCampaignMemoryChunks(admin, campaignId, "mission", row.id, buildMissionChunks(row));
+    if (row.mission_kind === "personal") {
+      await deleteCampaignMemorySource(admin, campaignId, "mission", row.id);
+    } else {
+      await upsertCampaignMemoryChunks(admin, campaignId, "mission", row.id, buildMissionChunks(row));
+    }
   }
 }

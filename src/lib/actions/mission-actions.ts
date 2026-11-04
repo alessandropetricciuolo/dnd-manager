@@ -51,6 +51,13 @@ async function isAdminByRole(
   return profile?.role === "admin";
 }
 
+export async function canManageCampaignPersonalMissions(
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+  _campaignId?: string
+): Promise<boolean> {
+  return isGmOrAdminByRole(supabase);
+}
+
 // =============================
 // Guilds CRUD (GM/Admin only)
 // =============================
@@ -226,28 +233,48 @@ export async function createMissionAction(
   paga: string,
   urgenza: string,
   description: string,
-  pointsReward: number
+  pointsReward: number,
+  options?: { missionKind?: "organization" | "personal" }
 ): Promise<MissionBoardResult> {
-  const g = grade.trim();
+  const isPersonal = options?.missionKind === "personal";
   const t = title.trim();
+  const d = description.trim();
+
+  if (!campaignId?.trim()) {
+    return { success: false, message: "Campagna non valida." };
+  }
+  if (!t || !d) {
+    return { success: false, message: "Titolo e descrizione sono obbligatori." };
+  }
+
+  const g = grade.trim();
   const c = committente.trim();
   const u = ubicazione.trim();
   const p = paga.trim();
   const urg = urgenza.trim();
-  const d = description.trim();
-  const pts = Number.isFinite(pointsReward) ? Math.max(0, Math.trunc(pointsReward)) : 0;
+  const pts = !isPersonal && Number.isFinite(pointsReward) ? Math.max(0, Math.trunc(pointsReward)) : 0;
 
-  if (!campaignId || !g || !t || !c || !u || !p || !urg || !d) {
+  if (!isPersonal && (!g || !c || !u || !p || !urg)) {
     return { success: false, message: "Compila tutti i campi missione." };
   }
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return {
+        success: false,
+        message: isPersonal
+          ? "Non autorizzato a gestire le missioni fuori Egida di questa campagna."
+          : "Non autorizzato.",
+      };
+    }
 
     const insertRow: Record<string, unknown> = {
       campaign_id: campaignId,
+      mission_kind: isPersonal ? "personal" : "organization",
       grade: g,
       title: t,
       committente: c,
@@ -280,7 +307,7 @@ export async function createMissionAction(
     if (error) return { success: false, message: error.message };
 
     const missionId = (inserted as { id?: string } | null)?.id;
-    if (missionId) {
+    if (missionId && !isPersonal) {
       try {
         const admin = createSupabaseAdminClient();
         await syncMissionToCampaignMemory(admin, missionId, { campaignId });
@@ -387,23 +414,50 @@ export async function updateMissionAction(
   description: string,
   pointsReward: number
 ): Promise<MissionBoardResult> {
-  const g = grade.trim();
   const t = title.trim();
-  const c = committente.trim();
-  const u = ubicazione.trim();
-  const p = paga.trim();
-  const urg = urgenza.trim();
   const d = description.trim();
-  const pts = Number.isFinite(pointsReward) ? Math.max(0, Math.trunc(pointsReward)) : 0;
 
-  if (!campaignId || !missionId || !g || !t || !c || !u || !p || !urg || !d) {
-    return { success: false, message: "Compila tutti i campi missione." };
+  if (!campaignId || !missionId || !t || !d) {
+    return { success: false, message: "Compila i campi obbligatori della missione." };
   }
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
+    const { data: current, error: curErr } = await supabase
+      .from("campaign_missions")
+      .select("id, mission_kind")
+      .eq("id", missionId)
+      .eq("campaign_id", campaignId)
+      .single();
+
+    if (curErr || !current) {
+      return { success: false, message: curErr?.message ?? "Missione non trovata." };
+    }
+
+    const isPersonal = (current as { mission_kind?: string }).mission_kind === "personal";
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return {
+        success: false,
+        message: isPersonal
+          ? "Non autorizzato a modificare questa missione fuori Egida."
+          : "Non autorizzato.",
+      };
+    }
+
+    const g = grade.trim();
+    const c = committente.trim();
+    const u = ubicazione.trim();
+    const p = paga.trim();
+    const urg = urgenza.trim();
+
+    if (!isPersonal && (!g || !c || !u || !p || !urg)) {
+      return { success: false, message: "Compila tutti i campi missione." };
+    }
+
+    const pts = isPersonal ? 0 : (Number.isFinite(pointsReward) ? Math.max(0, Math.trunc(pointsReward)) : 0);
 
     const updateRow: Record<string, unknown> = {
       grade: g,
@@ -435,11 +489,20 @@ export async function updateMissionAction(
 
     if (error) return { success: false, message: error.message };
 
-    try {
-      const admin = createSupabaseAdminClient();
-      await syncMissionToCampaignMemory(admin, missionId, { campaignId });
-    } catch (syncErr) {
-      console.error("[updateMissionAction] memory sync", syncErr);
+    if (!isPersonal) {
+      try {
+        const admin = createSupabaseAdminClient();
+        await syncMissionToCampaignMemory(admin, missionId, { campaignId });
+      } catch (syncErr) {
+        console.error("[updateMissionAction] memory sync", syncErr);
+      }
+    } else {
+      try {
+        const admin = createSupabaseAdminClient();
+        await deleteCampaignMemorySource(admin, campaignId, "mission", missionId);
+      } catch (syncErr) {
+        console.error("[updateMissionAction] memory delete", syncErr);
+      }
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
@@ -464,17 +527,27 @@ export async function setMissionProgressStatusAction(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
-
     const { data: mission, error: missionErr } = await supabase
       .from("campaign_missions")
-      .select("status")
+      .select("status, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
     if (missionErr || !mission) {
       return { success: false, message: missionErr?.message ?? "Missione non trovata." };
+    }
+
+    const isPersonal = (mission as { mission_kind?: string }).mission_kind === "personal";
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return {
+        success: false,
+        message: isPersonal
+          ? "Non autorizzato a gestire questa missione fuori Egida."
+          : "Non autorizzato.",
+      };
     }
 
     const currentStatus = String((mission as { status?: string }).status ?? "open");
@@ -533,17 +606,27 @@ export async function setMissionAvailabilityStatusAction(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
-
     const { data: mission, error: missionErr } = await supabase
       .from("campaign_missions")
-      .select("status")
+      .select("status, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
     if (missionErr || !mission) {
       return { success: false, message: missionErr?.message ?? "Missione non trovata." };
+    }
+
+    const isPersonal = (mission as { mission_kind?: string }).mission_kind === "personal";
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) {
+      return {
+        success: false,
+        message: isPersonal
+          ? "Non autorizzato a gestire questa missione fuori Egida."
+          : "Non autorizzato.",
+      };
     }
 
     const currentStatus = normalizeMissionStatus((mission as { status?: string }).status);
@@ -591,10 +674,10 @@ export async function setMissionAvailabilityStatusAction(
 export async function completeMissionAction(
   campaignId: string,
   missionId: string,
-  guildId: string,
+  guildId?: string,
   treasure?: { gp: number; sp: number; cp: number } | null
 ): Promise<MissionBoardResult> {
-  if (!campaignId || !missionId || !guildId) {
+  if (!campaignId || !missionId) {
     return { success: false, message: "Dati non validi." };
   }
 
@@ -604,12 +687,10 @@ export async function completeMissionAction(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
 
     const { data: mission, error: mErr } = await supabase
       .from("campaign_missions")
-      .select("id, status, points_reward")
+      .select("id, status, points_reward, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
@@ -618,9 +699,44 @@ export async function completeMissionAction(
       return { success: false, message: mErr?.message ?? "Missione non trovata." };
     }
 
-    const m = mission as { status?: string; points_reward?: number };
+    const m = mission as { status?: string; points_reward?: number; mission_kind?: string };
+    const isPersonal = m.mission_kind === "personal";
+
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
+
     if (m.status === "completed") {
       return { success: false, message: "Missione già completata." };
+    }
+
+    const now = new Date().toISOString();
+
+    if (isPersonal) {
+      // Invarianti fuori Egida: punti zero, nessuna gilda, nessun tesoro
+      const { error: errM } = await supabase
+        .from("campaign_missions")
+        .update({
+          status: "completed",
+          completed_at: now,
+          completed_by_guild_id: null,
+          points_reward: 0,
+          treasure_gp: 0,
+          treasure_sp: 0,
+          treasure_cp: 0,
+          updated_at: now,
+        })
+        .eq("id", missionId)
+        .eq("campaign_id", campaignId);
+
+      if (errM) return { success: false, message: errM.message };
+      revalidatePath(`/campaigns/${campaignId}`);
+      return { success: true };
+    }
+
+    if (!guildId) {
+      return { success: false, message: "Seleziona la gilda completante." };
     }
 
     const reward =
@@ -643,8 +759,6 @@ export async function completeMissionAction(
     const prevScore = typeof g.score === "number" ? g.score : 0;
     const newScore = prevScore + reward;
     const autoRank = g.auto_rank !== false;
-
-    const now = new Date().toISOString();
 
     const guildUpdate: Record<string, unknown> = {
       score: newScore,
@@ -736,12 +850,10 @@ export async function reopenMissionAction(campaignId: string, missionId: string)
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
 
     const { data: mission, error: mErr } = await supabase
       .from("campaign_missions")
-      .select("id, status, points_reward, completed_by_guild_id")
+      .select("id, status, points_reward, completed_by_guild_id, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
@@ -754,10 +866,40 @@ export async function reopenMissionAction(campaignId: string, missionId: string)
       status?: string;
       points_reward?: number;
       completed_by_guild_id?: string | null;
+      mission_kind?: string;
     };
+
+    const isPersonal = m.mission_kind === "personal";
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
 
     if (m.status !== "completed") {
       return { success: false, message: "La missione non è completata." };
+    }
+
+    const now = new Date().toISOString();
+
+    if (isPersonal) {
+      // Invarianti fuori Egida: nessun impatto su classifiche/gilde
+      const { error: errM } = await supabase
+        .from("campaign_missions")
+        .update({
+          status: "open",
+          completed_at: null,
+          completed_by_guild_id: null,
+          treasure_gp: 0,
+          treasure_sp: 0,
+          treasure_cp: 0,
+          updated_at: now,
+        })
+        .eq("id", missionId)
+        .eq("campaign_id", campaignId);
+
+      if (errM) return { success: false, message: errM.message };
+      revalidatePath(`/campaigns/${campaignId}`);
+      return { success: true };
     }
 
     const reward =
@@ -765,8 +907,6 @@ export async function reopenMissionAction(campaignId: string, missionId: string)
         ? Math.max(0, Math.trunc(m.points_reward))
         : 0;
     const gid = m.completed_by_guild_id;
-
-    const now = new Date().toISOString();
 
     const clearMission: Record<string, unknown> = {
       status: "open",
@@ -856,17 +996,26 @@ export async function deleteMissionAction(
 
   try {
     const supabase = await createSupabaseServerClient();
-    const allowed = await isGmOrAdminByRole(supabase);
-    if (!allowed) return { success: false, message: "Non autorizzato." };
 
     const { data: mission } = await supabase
       .from("campaign_missions")
-      .select("status, points_reward, completed_by_guild_id")
+      .select("status, points_reward, completed_by_guild_id, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
 
-    const m = mission as { status?: string; points_reward?: number; completed_by_guild_id?: string | null } | null;
+    const m = mission as {
+      status?: string;
+      points_reward?: number;
+      completed_by_guild_id?: string | null;
+      mission_kind?: string;
+    } | null;
+
+    const isPersonal = m?.mission_kind === "personal";
+    const allowed = isPersonal
+      ? await canManageCampaignPersonalMissions(supabase, campaignId)
+      : await isGmOrAdminByRole(supabase);
+    if (!allowed) return { success: false, message: "Non autorizzato." };
 
     const { error } = await supabase
       .from("campaign_missions")
@@ -883,8 +1032,8 @@ export async function deleteMissionAction(
       console.error("[deleteMissionAction] memory delete", syncErr);
     }
 
-    // Ripristina punti se era completata (coerenza con reopen)
-    if (m?.status === "completed" && m.completed_by_guild_id) {
+    // Ripristina punti se era completata (solo per missioni dell'organizzazione con gilda)
+    if (!isPersonal && m?.status === "completed" && m.completed_by_guild_id) {
       const reward =
         typeof m.points_reward === "number" && Number.isFinite(m.points_reward)
           ? Math.max(0, Math.trunc(m.points_reward))

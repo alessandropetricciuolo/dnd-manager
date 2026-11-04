@@ -37,7 +37,7 @@ export type WikiEntityListItem = {
 type WikiListClientProps = {
   campaignId: string;
   campaignType?: "oneshot" | "quest" | "long" | null;
-  missions?: { id: string; title: string }[];
+  missions?: { id: string; title: string; mission_kind?: "organization" | "personal" }[];
   entities: WikiEntityListItem[];
   isGmOrAdmin: boolean;
   isAdmin?: boolean;

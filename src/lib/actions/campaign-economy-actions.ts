@@ -92,6 +92,7 @@ export async function getLongCampaignEconomySnapshot(campaignId: string): Promis
       .from("campaign_missions")
       .select("id, title, status, treasure_gp, treasure_sp, treasure_cp, completed_by_guild_id")
       .eq("campaign_id", campaignId)
+      .eq("mission_kind", "organization")
       .order("created_at", { ascending: false });
 
     if (mErr) {
@@ -191,7 +192,7 @@ export async function applyCloseSessionEconomy(
       if (sum.gp > 0 || sum.sp > 0 || sum.cp > 0) {
         const { data: mission, error: mErr } = await admin
           .from("campaign_missions")
-          .select("id, campaign_id, status, treasure_gp, treasure_sp, treasure_cp")
+          .select("id, campaign_id, mission_kind, status, treasure_gp, treasure_sp, treasure_cp")
           .eq("id", payout.missionId)
           .single();
 
@@ -200,11 +201,15 @@ export async function applyCloseSessionEconomy(
         }
         const m = mission as {
           campaign_id: string;
+          mission_kind?: string;
           status: string;
           treasure_gp: number;
           treasure_sp: number;
           treasure_cp: number;
         };
+        if (m.mission_kind === "personal") {
+          return { success: false, message: "Le missioni fuori Egida non prevedono tesoretti distribuibili." };
+        }
         if (m.campaign_id !== campaignId) {
           return { success: false, message: "Missione non appartenente alla campagna." };
         }
@@ -334,12 +339,15 @@ export async function updateMissionTreasureAction(
 
     const { data: mission, error: mErr } = await supabase
       .from("campaign_missions")
-      .select("id, status")
+      .select("id, status, mission_kind")
       .eq("id", missionId)
       .eq("campaign_id", campaignId)
       .single();
     if (mErr || !mission || (mission as { status?: string }).status !== "completed") {
       return { success: false, message: "Missione non trovata o non completata." };
+    }
+    if ((mission as { mission_kind?: string }).mission_kind === "personal") {
+      return { success: false, message: "Le missioni fuori Egida non prevedono tesoretti distribuibili." };
     }
 
     const { error } = await supabase

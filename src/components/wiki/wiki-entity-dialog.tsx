@@ -306,7 +306,7 @@ export function WikiEntityDialog({
   const [relations, setRelations] = useState<RelationRow[]>([]);
   const [wikiOptions, setWikiOptions] = useState<{ id: string; name: string }[]>([]);
   const [mapOptions, setMapOptions] = useState<{ id: string; name: string }[]>([]);
-  const [missionOptions, setMissionOptions] = useState<{ id: string; title: string }[]>([]);
+  const [missionOptions, setMissionOptions] = useState<{ id: string; title: string; mission_kind?: "organization" | "personal" }[]>([]);
   const [linkedMissionId, setLinkedMissionId] = useState("");
   const aiProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -992,11 +992,34 @@ export function WikiEntityDialog({
                       className="flex h-10 w-full rounded-md border border-barber-gold/30 bg-barber-dark px-3 py-2 text-sm text-barber-paper focus:outline-none focus:ring-2 focus:ring-barber-gold"
                     >
                       <option value="">Nessuna — Generale / trasversale</option>
-                      {missionOptions.map((m) => (
-                        <option key={m.id} value={m.id}>
-                          {m.title}
-                        </option>
-                      ))}
+                      {missionOptions.some((m) => m.mission_kind === "personal") ? (
+                        <>
+                          <optgroup label="Missioni dell'organizzazione">
+                            {missionOptions
+                              .filter((m) => m.mission_kind !== "personal")
+                              .map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.title}
+                                </option>
+                              ))}
+                          </optgroup>
+                          <optgroup label="Missioni fuori Egida (Riservate a GM/Admin)">
+                            {missionOptions
+                              .filter((m) => m.mission_kind === "personal")
+                              .map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  🔒 {m.title}
+                                </option>
+                              ))}
+                          </optgroup>
+                        </>
+                      ) : (
+                        missionOptions.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.title}
+                          </option>
+                        ))
+                      )}
                     </select>
                     <p className="text-xs text-barber-paper/55">
                       Utile per ordinare il wiki e filtrare le immagini nella Regia GM per missione.
