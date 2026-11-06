@@ -134,7 +134,7 @@ export function EditCharacterDialog({
     }
   }
 
-  function openSheetGeneratorPreview() {
+  function openSheetGeneratorPreview(version: "legacy" | "v2") {
     if (!formRef.current) return;
     const fd = new FormData(formRef.current);
     const characterName = (fd.get("name") as string | null)?.trim() ?? character.name;
@@ -180,7 +180,8 @@ export function EditCharacterDialog({
     }
 
     onOpenChange(false);
-    router.push(`/generator-v2?${params.toString()}`);
+    const generatorPath = version === "v2" ? "/generator-v2" : "/generator";
+    router.push(`${generatorPath}?${params.toString()}`);
   }
 
   return (
@@ -434,16 +435,28 @@ export function EditCharacterDialog({
 
           <DialogFooter>
             {!isLongCampaign ? (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={openSheetGeneratorPreview}
-                disabled={isLoading}
-                className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
-              >
-                <Sparkles className="mr-1.5 h-4 w-4" />
-                Genera scheda V2
-              </Button>
+              <>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openSheetGeneratorPreview("legacy")}
+                  disabled={isLoading}
+                  className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                >
+                  <FileText className="mr-1.5 h-4 w-4" />
+                  Genera scheda classica
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => openSheetGeneratorPreview("v2")}
+                  disabled={isLoading}
+                  className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                >
+                  <Sparkles className="mr-1.5 h-4 w-4" />
+                  Genera scheda V2 (in prova)
+                </Button>
+              </>
             ) : null}
             <Button
               type="button"
