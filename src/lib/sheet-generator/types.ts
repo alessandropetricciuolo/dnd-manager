@@ -112,7 +112,7 @@ export type GeneratedCharacterSheet = {
   hitDie: string;
   hitDiceTotal: number;
 
-  weaponRows: Array<{ name: string; toHit: string; damage: string; type: string }>;
+  weaponRows: Array<{ name: string; toHit: string; damage: string; type: string; itemId?: string }>;
   inventory: string[];
   languages: string[];
   proficiencies: string[];

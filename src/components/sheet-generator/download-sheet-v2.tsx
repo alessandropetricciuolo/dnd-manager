@@ -543,6 +543,7 @@ export function DownloadSheetV2({
       <button
         type="button"
         id="v2-download-button"
+        aria-label="Genera scheda V2"
         onClick={download}
         disabled={busy || invalidCleric || (lore && chosen.length !== 3)}
         className="rounded-md bg-barber-red px-5 py-3 text-sm font-medium text-barber-paper hover:bg-barber-red/90 disabled:opacity-60"

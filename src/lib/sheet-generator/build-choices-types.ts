@@ -1,9 +1,11 @@
 import type { SkillKey } from "@/lib/sheet-generator/types";
+import type { SelectedWeaponChoice } from "./weapon-catalog";
 
 /** Scelte manuali del giocatore durante la generazione scheda. */
 export type CharacterBuildOverrides = {
   abilities?: Record<import("@/lib/sheet-generator/types").AbilityKey, number>;
   artificer?: import("./artificer-types").ArtificerChoices;
+  weapons?: SelectedWeaponChoice[];
   classSkills?: SkillKey[];
   /** Tre competenze aggiuntive concesse dal Collegio della Sapienza del Bardo (separate dalle normali competenze di classe). */
   bonusSkills?: SkillKey[];

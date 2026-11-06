@@ -104,6 +104,29 @@ export function buildRoguePrintModel(
     }
   }
 
+  // Subclass: Lama Spirituale - Lame Psichiche (Liv. 3+)
+  if (archetype?.slug === 'tce-ladro-lama-spirituale' && sheet.level >= 3) {
+    if (!sheet.weaponRows.some((w) => w.name.toLowerCase().includes('lama psichica'))) {
+      const atkMod = Math.max(sheet.abilityMods.str, sheet.abilityMods.dex);
+      const toHit = `+${sheet.proficiencyBonus + atkMod}`;
+      const abToken = sheet.abilityMods.dex >= sheet.abilityMods.str ? 'DES' : 'FOR';
+      sheet.weaponRows.unshift(
+        {
+          name: 'Lama psichica',
+          toHit,
+          damage: `1d6+${abToken}`,
+          type: 'psichici (lancio 18 m)',
+        },
+        {
+          name: 'Lama psichica secondaria',
+          toHit,
+          damage: `1d4+${abToken}`,
+          type: 'psichici (az. bonus, mano libera)',
+        }
+      );
+    }
+  }
+
   return {
     sheet,
     archetype,

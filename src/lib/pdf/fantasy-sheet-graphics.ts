@@ -160,22 +160,30 @@ export function drawFantasyShield(page: PDFPage, b: FantasyBox, value: string, f
   });
 }
 
-/** Precision circular nodes with concentric centers for resource tracking. */
+/** Precision circular nodes with concentric centers for resource tracking.
+ * Automatically wraps across multiple rows when needed without truncating or exceeding bounds. */
 export function drawFantasyTracker(page: PDFPage, b: FantasyBox, count: number): number {
-  if (!Number.isInteger(count) || count < 0 || count > 100) throw new Error('Invalid resource count');
-  const step = 15,
-    cols = Math.floor(b.width / step);
-  if (cols < 1) throw new Error('Tracker width too small');
-  const height = Math.ceil(count / cols) * step;
-  if (height > b.height) throw new Error('Tracker exceeds its box');
+  if (!Number.isInteger(count) || count <= 0) return 0;
+  if (count > 100) throw new Error('Invalid resource count');
+
+  const baseStep = 14;
+  const cols = Math.max(1, Math.floor((b.width - 4) / baseStep));
+  const rows = Math.ceil(count / cols);
+  const stepX = Math.min(baseStep, (b.width - 6) / Math.max(1, Math.min(count, cols)));
+  const stepY = Math.min(baseStep, Math.max(10, (b.height - 4) / Math.max(1, rows)));
+  const radius = Math.max(2.8, Math.min(4.0, Math.min(stepX, stepY) * 0.32));
+  const innerDot = Math.max(0.9, radius * 0.3);
 
   for (let i = 0; i < count; i++) {
-    const cx = b.x + 6 + (i % cols) * step,
-      cy = b.y + b.height - 7 - Math.floor(i / cols) * step;
+    const colIdx = i % cols;
+    const rowIdx = Math.floor(i / cols);
+    const cx = b.x + 4 + radius + colIdx * stepX;
+    const cy = b.y + b.height - 4 - radius - rowIdx * stepY;
+
     page.drawCircle({
       x: cx,
       y: cy,
-      size: 4.2,
+      size: radius,
       borderColor: INK,
       borderWidth: 0.8,
       color: rgb(1, 1, 1),
@@ -183,11 +191,11 @@ export function drawFantasyTracker(page: PDFPage, b: FantasyBox, count: number):
     page.drawCircle({
       x: cx,
       y: cy,
-      size: 1.2,
+      size: innerDot,
       color: INK,
     });
   }
-  return height;
+  return rows * stepY;
 }
 
 /** Supply the existing public/logo.png bytes; preserve the logo aspect ratio. */

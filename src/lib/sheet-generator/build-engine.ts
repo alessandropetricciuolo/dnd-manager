@@ -4,6 +4,13 @@ import { preloadManualMarkdownFile, preloadPhbMarkdown } from "@/lib/server/phb-
 import { computeArmorClass } from "@/lib/sheet-generator/armor-class";
 import type { CharacterBuildOverrides } from "@/lib/sheet-generator/build-choices-types";
 import { armorInventoryLines } from "@/lib/sheet-generator/inventory-armor";
+import {
+  findWeaponDefinition,
+  computeWeaponAttack,
+  getDefaultWeaponsForClass,
+  type SelectedWeaponChoice,
+  type CharacterCombatWeaponContext,
+} from "@/lib/sheet-generator/weapon-catalog";
 import { resolveGeneratorRules } from "@/lib/sheet-generator/rules-resolver";
 import {
   ALL_SKILL_KEYS,
@@ -438,7 +445,8 @@ function computeCoreFromAbilities(
   backgroundSlug?: string | null,
   buildOverrides?: CharacterBuildOverrides,
   raceSlug?: string | null,
-  subraceSlug?: string | null
+  subraceSlug?: string | null,
+  classSubclass?: string | null
 ): Pick<
   GeneratedCharacterSheet,
   | "abilities"
@@ -520,68 +528,79 @@ function computeCoreFromAbilities(
   const defenseStyleApplied = Boolean(hasDefenseStyle && armor.armorItem);
   const armorItem = armor.armorItem;
   const hpMax = computeHpMax(lvl, cfg.hitDie, abilityMods.con);
-  const monkDieFaces = lvl >= 17 ? 10 : lvl >= 11 ? 8 : lvl >= 5 ? 6 : 4;
-  const weaponRows = cfg.weaponSet.map((w) => {
-    let damage = w.damage;
-    const norm = w.name.toLowerCase();
-    const isRanged =
-      norm.includes("arco") ||
-      norm.includes("balestra") ||
-      norm.includes("fionda") ||
-      norm.includes("dardo") ||
-      norm.includes("lanciatore di fulmini") ||
-      norm.includes("cerbottana");
-    const isFinesse =
-      norm.includes("stocco") ||
-      norm.includes("spada corta") ||
-      norm.includes("scimitarra") ||
-      norm.includes("pugnale") ||
-      norm.includes("daga") ||
-      norm.includes("frusta");
-    const isMonkAttack =
-      classLabel === "Monaco" &&
-      (norm.includes("colpo senz") ||
-        isFinesse ||
-        norm.includes("bastone ferrato") ||
-        norm.includes("mazza") ||
-        norm.includes("giavellotto") ||
-        norm.includes("lancia") ||
-        norm.includes("martello leggero"));
 
-    if (classLabel === "Monaco") {
-      const m = damage.match(/^1d(\d+)(.*)$/);
-      if (m && Number(m[1]) < monkDieFaces) {
-        damage = `1d${monkDieFaces}${m[2]}`;
-      }
-    }
+  // Weapon proficiencies with racial bonuses
+  const racialWeaponProfs: string[] = [];
+  const rLower = (raceSlug ?? "").toLowerCase();
+  const srLower = (subraceSlug ?? "").toLowerCase();
 
-    let toHitBonus = 0;
-    if (isRanged) {
-      toHitBonus = pb + abilityMods.dex + (hasArchery ? 2 : 0);
-    } else if (isFinesse || isMonkAttack) {
-      toHitBonus = pb + Math.max(abilityMods.str, abilityMods.dex);
+  const isElf = rLower === "elfo" || rLower === "elf" || rLower === "elfo_mare";
+  if (isElf) {
+    if (srLower === "elfo_drow" || srLower === "drow" || srLower.includes("drow") || srLower.includes("scuro")) {
+      racialWeaponProfs.push("Stocchi", "Spade corte", "Balestre a mano");
+    } else if (rLower === "elfo_mare" || srLower === "elfo_mare" || srLower.includes("mare") || srLower.includes("sea")) {
+      racialWeaponProfs.push("Lance", "Tridenti", "Balestre leggere", "Reti");
     } else {
-      toHitBonus = pb + abilityMods.str;
+      // Elfo alto, Elfo dei boschi / silvano, default Elf
+      racialWeaponProfs.push("Spade corte", "Spade lunghe", "Archi corti", "Archi lunghi");
     }
+  } else if (rLower === "nano" || rLower === "dwarf") {
+    racialWeaponProfs.push("Asce da battaglia", "Asce", "Martelli leggeri", "Martelli da guerra");
+  }
+  // Half-elf (mezzelfo) gets NO racial weapon training.
+  const allWeaponProfs = [...new Set([...cfg.weaponProficiencies, ...racialWeaponProfs])];
 
-    const isTwoHanded =
-      norm.includes("bipenne") ||
-      norm.includes("spadone") ||
-      norm.includes("maglio") ||
-      norm.includes("alabarda") ||
-      norm.includes("picca");
+  const chosenWeaponSelections: SelectedWeaponChoice[] =
+    buildOverrides?.weapons !== undefined
+      ? buildOverrides.weapons
+      : getDefaultWeaponsForClass(classLabel);
 
-    if (hasDueling && !isRanged && !isTwoHanded) {
-      damage = `${damage} (+2 a 1 mano)`;
+  const combatWeaponCtx: CharacterCombatWeaponContext = {
+    classLabel,
+    classSubclass,
+    level: lvl,
+    proficiencyBonus: pb,
+    abilityMods,
+    fightingStyles: activeFightingStyles,
+    weaponProficiencies: allWeaponProfs,
+    kenseiWeapons: [
+      buildOverrides?.monk?.kenseiMeleeWeapon,
+      buildOverrides?.monk?.kenseiRangedWeapon,
+    ].filter((w): w is string => typeof w === "string" && w.length > 0),
+    pactWeapon:
+      buildOverrides?.warlockPact === "Patto della Lama" ||
+      (buildOverrides?.warlock as any)?.pactBoon === "Patto della Lama"
+        ? (buildOverrides?.weapons?.[0]?.weaponId ?? undefined)
+        : undefined,
+  };
+
+  const weaponRows: Array<{ name: string; toHit: string; damage: string; type: string; itemId?: string }> = [];
+  const physicalWeaponInv: string[] = [];
+
+  for (let idx = 0; idx < chosenWeaponSelections.length; idx++) {
+    const choice = chosenWeaponSelections[idx];
+    const def = findWeaponDefinition(choice.weaponId);
+    if (!def) continue;
+    const computed = computeWeaponAttack(def, combatWeaponCtx, choice);
+    const stableId = choice.id || (
+      classLabel === "Artefice" && choice.weaponId === "balestra-leggera" && idx === 0
+        ? "crossbow"
+        : classLabel === "Artefice" && choice.weaponId === "martello-leggero" && idx === 1
+        ? "hammer"
+        : `weapon-${idx + 1}`
+    );
+    weaponRows.push({
+      name: computed.name,
+      toHit: computed.toHit,
+      damage: computed.damage,
+      type: computed.type,
+      itemId: stableId,
+    });
+    if (def.id !== "colpo-senz-armi") {
+      const ammoNote = def.category.endsWith("-ranged") ? " (con munizioni)" : "";
+      physicalWeaponInv.push(`* ${def.name}${ammoNote}`);
     }
-
-    return {
-      name: w.name,
-      damage,
-      type: w.type,
-      toHit: `${toHitBonus >= 0 ? "+" : ""}${toHitBonus}`,
-    };
-  });
+  }
 
   return {
     abilities,
@@ -601,10 +620,11 @@ function computeCoreFromAbilities(
     weaponRows,
     proficiencies: [...cfg.genericProficiencies],
     armorProficiencies: cfg.armorProficiencies,
-    weaponProficiencies: cfg.weaponProficiencies,
+    weaponProficiencies: allWeaponProfs,
     toolProficiencies: cfg.toolProficiencies,
     inventory: [
       ...armorInventoryLines(armor),
+      ...physicalWeaponInv,
       ...backgroundStartingInventoryLines(backgroundSlug),
     ],
     languages: ["Comune"],
@@ -865,7 +885,8 @@ export async function buildGeneratedCharacterSheet(
     input.backgroundSlug,
     input.buildOverrides,
     input.raceSlug,
-    input.subraceSlug
+    input.subraceSlug,
+    input.classSubclass
   );
   const rules = await resolveGeneratorRules(
     {
@@ -962,6 +983,34 @@ export async function buildGeneratedCharacterSheet(
   }
 
   sheet.languages = resolveRaceLanguages(input.raceSlug);
+
+  // Lama Spirituale: aggiunge automaticamente le Lame Psichiche
+  if (
+    input.classLabel === "Ladro" &&
+    input.level >= 3 &&
+    /lama spirituale/i.test(input.classSubclass ?? "")
+  ) {
+    if (!sheet.weaponRows.some((w) => w.name.toLowerCase().includes("lama psichica"))) {
+      const atkMod = Math.max(sheet.abilityMods.str, sheet.abilityMods.dex);
+      const toHit = `+${sheet.proficiencyBonus + atkMod}`;
+      const abToken = sheet.abilityMods.dex >= sheet.abilityMods.str ? "DES" : "FOR";
+      sheet.weaponRows.unshift(
+        {
+          name: "Lama psichica",
+          toHit,
+          damage: `1d6+${abToken}`,
+          type: "psichici (lancio 18 m)",
+        },
+        {
+          name: "Lama psichica secondaria",
+          toHit,
+          damage: `1d4+${abToken}`,
+          type: "psichici (az. bonus, mano libera)",
+        }
+      );
+    }
+  }
+
   if (input.classLabel === "Artefice") {
     const { loadArtificerEvidence, addArtificerSpecialistSpells } = await import("@/lib/server/artificer-source");
     const { applyArtificerInfusions } = await import("./artificer-infusions");

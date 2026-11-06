@@ -16,7 +16,7 @@ export function applyArtificerInfusions(original:GeneratedCharacterSheet,evidenc
  if(typeof choices.shield!=='boolean')throw new Error('Scelta dello scudo non valida.');
  if(choices.armorModel&&!['Guardiano','Infiltrato'].includes(choices.armorModel))throw new Error('Modello di armatura non valido.');
  const extra=armorer&&level>=9?2:0,attunementLimit=level>=18?6:level>=14?5:level>=10?4:3;
- const items=artificerItems(level,sheet.classSubclass),known=evidence.infusions.filter(i=>knownIds.includes(i.id));
+ const items=artificerItems(level,sheet.classSubclass,sheet.weaponRows),known=evidence.infusions.filter(i=>knownIds.includes(i.id));
  if(knownIds.length!==evidence.knownLimit||new Set(knownIds).size!==knownIds.length||known.length!==knownIds.length||known.some(i=>i.level>level))throw new Error('Infusioni conosciute non valide per il livello: scegli il numero previsto di infusioni distinte.');
  if(known.some(i=>i.replica&&!i.replicaBody))throw new Error('Descrizione di un oggetto replicato non disponibile nel manuale.');
  if(assignments.length>evidence.itemLimit+extra)throw new Error('Troppi oggetti infusi per il livello.');
@@ -56,9 +56,11 @@ export function applyArtificerInfusions(original:GeneratedCharacterSheet,evidenc
  sheet.spellsPrepared=Math.max(1,Math.floor(level/2)+sheet.abilityMods.int);sheet.cantripsKnown=evidence.cantrips;sheet.spellSlots={...evidence.slots};
  const armorModel=armorer?(choices.armorModel??'Guardiano'):undefined;
  if(armorer&&armor==='nessuna')throw new Error('Il modello dell’Armaiolo richiede un’armatura indossata.');
- if(armorModel){const infiltrator=armorModel==='Infiltrato';sheet.weaponRows.push({name:infiltrator?'Lanciatore di Fulmini':'Guanti del Tuono',toHit:'',damage:infiltrator?'1d6+INT':'1d8+INT',type:infiltrator?'fulmine':'tuono'});if(infiltrator)notes.push('Infiltrato: +1,5 m di velocità; il vantaggio a Furtività si annulla con lo svantaggio dell’armatura, se presente.');}
+ if(armorModel){const infiltrator=armorModel==='Infiltrato';sheet.weaponRows.push({name:infiltrator?'Lanciatore di Fulmini':'Guanti del Tuono',toHit:'',damage:infiltrator?'1d6+INT':'1d8+INT',type:infiltrator?'fulmine':'tuono',itemId:'arcane-weapon'});if(infiltrator)notes.push('Infiltrato: +1,5 m di velocità; il vantaggio a Furtività si annulla con lo svantaggio dell’armatura, se presente.');}
  for(let index=0;index<sheet.weaponRows.length;index++){
-  const row=sheet.weaponRows[index],special=index>=2&&armorer,itemId=special?'arcane-weapon':index===0?'crossbow':'hammer';
+  const row=sheet.weaponRows[index];
+  const special=row.itemId==='arcane-weapon'||(armorer&&(row.name.includes('Fulmini')||row.name.includes('Tuono')));
+  const itemId=row.itemId??(special?'arcane-weapon':index===0?'crossbow':'hammer');
   const infused=active.find(a=>a.itemId===itemId),inf=known.find(i=>i.id===infused?.infusionId);
   let bonus=0;if(inf&&['weapon','radiant','repeating','returning'].includes(inf.id))bonus=inf.id==='weapon'&&level>=10?2:1;
   const physical=special?(armorModel==='Infiltrato'?'dex':'str'):/DES/.test(row.damage)?'dex':'str';

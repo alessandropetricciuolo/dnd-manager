@@ -146,10 +146,13 @@ export function stripManualArtifacts(text: string): string {
 
 /** Strips LaTeX ordinals, markdown formatting, progression tables, and future-level sentences (> level). */
 export function cleanAndFilterManualFeatureBody(rawBody: string, level: number): string {
+  const currentDie = level >= 17 ? 'd12' : level >= 11 ? 'd10' : level >= 5 ? 'd8' : 'd6';
   let text = stripManualArtifacts(rawBody)
     // Convert LaTeX ordinals like $1^{\circ}$ or $10^\circ$ to 1°, 10°
     .replace(/\$(\d+)\^\{\\circ\}\$/g, '$1°')
     .replace(/\$(\d+)\^\\circ\$/g, '$1°')
+    // Resolve OCR corruption like "dō" or "d?" into current progression die
+    .replace(/\bd[ō\?](?=\W|$)/gi, currentDie)
     // Remove markdown headings inside body
     .replace(/^#{1,6}\s+[^\n]+$/gm, '')
     // Remove markdown pipe tables (progression/spell tables already resolved in model)
@@ -403,6 +406,23 @@ export function summarizeResolvedFeature(
         level: feature.level,
         body: 'Conosci il gergo segreto dei ladri: puoi nascondere messaggi in conversazioni normali (richiede 4 volte il tempo) e comprendere simboli segreti che segnalano pericoli, bottini o rifugi sicuri.',
       };
+    case 'potere psionico': {
+      const die = lvl >= 17 ? 'd12' : lvl >= 11 ? 'd10' : lvl >= 5 ? 'd8' : 'd6';
+      const diceCount = 2 * pb;
+      return {
+        title: 'Potere Psionico',
+        level: feature.level,
+        body: `Riserva: ${diceCount} dadi ${die} (recuperi tutti i dadi a riposo lungo; come azione bonus recuperi 1 dado, 1 volta per riposo breve o lungo).\n• Abilità Psiconforzata: se fallisci una prova con un'abilità o strumento in cui sei competente, tiri 1 dado ${die} e lo aggiungi alla prova; spendi il dado solo se la prova ha successo.\n• Sussurri Psichici (Azione): colleghi telepaticamente fino a ${pb} creature visibili entro 1,5 km per un numero di ore pari al tiro di 1 dado ${die}. Il 1° utilizzo dopo un riposo lungo è GRATUITO; gli usi successivi spendono 1 dado di Energia Psionica.`,
+      };
+    }
+    case 'lame psichiche': {
+      const abToken = mods.dex >= mods.str ? 'DES' : 'FOR';
+      return {
+        title: 'Lame Psichiche',
+        level: feature.level,
+        body: `Azione di Attacco (mano libera): manifesti una lama psichica magica (arma semplice, accurata, lancio 18 m; infligge 1d6 + mod ${abToken} danni psichici; svanisce dopo l'attacco). Azione bonus (altra mano libera): subito dopo l'attacco con la prima lama, effettui un secondo attacco in mischia o a distanza con una seconda lama psichica (1d4 + mod ${abToken} danni psichici). Non consuma dadi psionici.`,
+      };
+    }
   }
 
   const cleaned = cleanAndFilterManualFeatureBody(feature.body, lvl);

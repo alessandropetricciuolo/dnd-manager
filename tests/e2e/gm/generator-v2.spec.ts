@@ -903,4 +903,80 @@ test.describe('Generatore V2', () => {
     expect(text).toContain('Collegio della Sapienza');
     expect(text).toContain('Ispirazione Bardica');
   });
+
+  test('Ladro Lama Spirituale (Ervin Vane): selezione armi, rimozione, versatile e verifica PDF scaricato', async ({ page }) => {
+    test.setTimeout(180_000);
+    await page.goto('/generator-v2?classLabel=Ladro');
+    if (page.url().includes('/login')) {
+      const credentials = (process.env.SHEET_V2_ISOLATED_TEST ? { email: 'sheet-test@example.test', password: 'local-test-password' } : JSON.parse(fs.readFileSync('tests/e2e/.auth/credentials.json', 'utf8')).admin);
+      await page.locator('#email').fill(credentials.email);
+      await page.locator('#password').fill(credentials.password);
+      await page.getByRole('button', { name: 'Entra nella Taverna' }).click();
+      await page.waitForURL('**/dashboard**');
+      await page.goto('/generator-v2?classLabel=Ladro');
+    }
+    await page.locator('#characterName').fill('Ervin Vane Browser Test');
+    await page.locator('#raceSlug').selectOption('mezzelfo');
+    await page.locator('#backgroundSlug').selectOption('criminale');
+    const soulknifeOpt = await page.locator('#classSubclass option').filter({ hasText: 'Lama Spirituale' }).getAttribute('value');
+    await page.locator('#classSubclass').selectOption(soulknifeOpt!);
+    await page.locator('#level').fill('5');
+
+    // 1. Submit initial form to reach choices phase
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await expect(page.getByText('Armi in dotazione')).toBeVisible();
+
+    // 2. Default weapons for Ladro: Stocco and Arco corto
+    await expect(page.locator('span.font-semibold.text-barber-gold', { hasText: 'Stocco' })).toBeVisible();
+    await expect(page.locator('span.font-semibold.text-barber-gold', { hasText: 'Arco corto' })).toBeVisible();
+
+    // 3. Remove Arco corto
+    const removeButtons = page.getByRole('button', { name: 'Rimuovi' });
+    await removeButtons.last().click();
+    await expect(page.locator('span.font-semibold.text-barber-gold', { hasText: 'Arco corto' })).not.toBeVisible();
+
+    // 4. Add Dardo from catalog
+    await page.locator('#add-weapon-select').selectOption('dardo');
+    await page.getByRole('button', { name: '+ Aggiungi arma' }).click();
+    await expect(page.locator('span.font-semibold.text-barber-gold', { hasText: 'Dardo' })).toBeVisible();
+
+    // 5. Add Spada lunga (versatile) from catalog and set to 2 hands
+    await page.locator('#add-weapon-select').selectOption('spada-lunga');
+    await page.getByRole('button', { name: '+ Aggiungi arma' }).click();
+    await expect(page.locator('span.font-semibold.text-barber-gold', { hasText: 'Spada lunga' })).toBeVisible();
+    const versatileSelect = page.getByLabel('Impugnatura per Spada lunga');
+    await expect(versatileSelect).toBeVisible();
+    await versatileSelect.selectOption('2h');
+
+    // 6. Confirm choices and generate
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+
+    // 7. Download PDF from Export region
+    const section = page.getByRole('region', { name: 'Esportazione scheda V2' });
+    await expect(section).toBeVisible();
+    const pendingDl = page.waitForEvent('download');
+    await section.getByRole('button', { name: 'Genera scheda V2', exact: true }).click();
+    const dl = await pendingDl;
+    expect(await dl.failure()).toBeNull();
+
+    const dest = test.info().outputPath('ervin-browser-weapons-test.pdf');
+    await dl.saveAs(dest);
+    const pdfDoc = await PDFDocument.load(fs.readFileSync(dest));
+    expect(pdfDoc.getPageCount()).toBeGreaterThanOrEqual(2);
+
+    const text = execFileSync('pdftotext', [dest, '-'], { encoding: 'utf8' });
+    // Check both psychic blades
+    expect(text).toContain('Lama psichica');
+    expect(text).toContain('Lama psichica secondaria');
+    // Check custom weapons
+    expect(text).toContain('Stocco +6 / 1d8+3');
+    expect(text).toContain('Dardo +6 / 1d4+3');
+    expect(text).toContain('Spada lunga +2 / 1d10-1');
+    // Check removed weapon is absent
+    expect(text).not.toContain('Arco corto');
+    // Check psionic dice
+    expect(text).toContain('Energia Psionica: 6 dadi d8');
+    expect(text).not.toContain('d?');
+    expect(text).not.toContain('dō');
+  });
 });

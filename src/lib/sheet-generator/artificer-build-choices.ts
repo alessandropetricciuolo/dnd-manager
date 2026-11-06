@@ -1,8 +1,9 @@
 import type { BuildChoiceSlot } from './build-choices-types';
 import type { ArtificerEvidence } from './artificer-types';
+import type { SelectedWeaponChoice } from './weapon-catalog';
 import { artificerItems, artificerSpecialist, defaultArtificerChoices, INFUSION_RESISTANCES } from './artificer-catalog';
-export function artificerBuildChoiceSlots(level:number,subclass:string|null,evidence:ArtificerEvidence):BuildChoiceSlot[]{
- const defaults=defaultArtificerChoices(level,subclass,evidence.infusions,evidence.knownLimit,evidence.itemLimit),items=artificerItems(level,subclass),armorer=level>=3&&artificerSpecialist(subclass)?.slug==='tce-artefice-armaiolo';
+export function artificerBuildChoiceSlots(level:number,subclass:string|null,evidence:ArtificerEvidence,customWeapons?:SelectedWeaponChoice[]):BuildChoiceSlot[]{
+ const defaults=defaultArtificerChoices(level,subclass,evidence.infusions,evidence.knownLimit,evidence.itemLimit),items=artificerItems(level,subclass,customWeapons),armorer=level>=3&&artificerSpecialist(subclass)?.slug==='tce-artefice-armaiolo';
  const slot=(id:string,label:string,options:BuildChoiceSlot['options'],value:string,group='Artefice'):BuildChoiceSlot=>({id,label,group,options,value});
  const slots:BuildChoiceSlot[]=[slot('artificer-armor','Armatura indossata',[{value:'scaglie',label:'Armatura di scaglie'},{value:'pelli',label:'Armatura di pelli'},{value:'cuoio',label:'Armatura di cuoio'},...(armorer?[{value:'cotta',label:'Cotta di maglia'}]:[]),{value:'nessuna',label:'Nessuna armatura'}],defaults.armor!),slot('artificer-shield','Scudo impugnato',[{value:'no',label:'No (mani libere per balestra o focus)'},{value:'yes',label:'Sì (+2 CA; riporre per usare la balestra)'}],defaults.shield?'yes':'no')];
  if(armorer)slots.push(slot('artificer-model','Modello dell’armatura',[{value:'Guardiano',label:'Guardiano'},{value:'Infiltrato',label:'Infiltrato'}],defaults.armorModel!));

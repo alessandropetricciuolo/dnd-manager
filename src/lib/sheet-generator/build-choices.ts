@@ -55,6 +55,10 @@ import {
   getThirdCasterWizardSpellcasting,
 } from "@/lib/sheet-generator/third-caster-subclass";
 import type { CharacterGeneratorInput, SkillKey } from "@/lib/sheet-generator/types";
+import {
+  getDefaultWeaponsForClass,
+  findWeaponDefinition,
+} from "./weapon-catalog";
 
 const CLASSES_WITH_FIGHTING_STYLE = new Set(["Guerriero", "Paladino", "Ranger"]);
 
@@ -101,7 +105,7 @@ export async function resolveBuildChoicesPreview(
   requestOrigin?: string | null
 ): Promise<BuildChoicesPreview> {
   const slots: BuildChoiceSlot[] = [];
-  if(input.classLabel==='Artefice')slots.push(...artificerBuildChoiceSlots(input.level,input.classSubclass,await loadArtificerEvidence(input.level,input.classSubclass,requestOrigin??undefined)));
+  if(input.classLabel==='Artefice')slots.push(...artificerBuildChoiceSlots(input.level,input.classSubclass,await loadArtificerEvidence(input.level,input.classSubclass,requestOrigin??undefined), input.buildOverrides?.weapons));
   const core = computeCoreSheet(input.classLabel, input.level, input.backgroundSlug);
   const classDef = classByLabel(input.classLabel);
   const tcWizard = getThirdCasterWizardSpellcasting(
@@ -390,7 +394,15 @@ export async function resolveBuildChoicesPreview(
     }
   }
 
-  return { slots, overrides: overridesFromSlots(slots) };
+  const defaultWeapons = getDefaultWeaponsForClass(input.classLabel);
+  const initialWeapons = input.buildOverrides?.weapons ?? defaultWeapons;
+  return {
+    slots,
+    overrides: {
+      ...overridesFromSlots(slots),
+      weapons: initialWeapons,
+    },
+  };
 }
 
 export { applySlotChange, slotsToOverrides } from "@/lib/sheet-generator/build-choices-client";
@@ -400,6 +412,46 @@ export function validateBuildOverrides(
   preview: BuildChoicesPreview
 ): string[] {
   const errors: string[] = [];
+
+  if (overrides.weapons) {
+    for (const w of overrides.weapons) {
+      const def = findWeaponDefinition(w.weaponId);
+      if (!def) {
+        errors.push(`Arma non riconosciuta nel catalogo: ${w.weaponId}`);
+      }
+    }
+  }
+
+  if (overrides.artificer?.assignments && overrides.weapons) {
+    for (const assign of overrides.artificer.assignments) {
+      if (['weapon', 'radiant', 'repeating', 'returning'].includes(assign.infusionId)) {
+        if (
+          assign.itemId &&
+          !overrides.weapons.some((w, idx) => {
+            const wId =
+              w.id ||
+              (w.weaponId === 'balestra-leggera' && idx === 0
+                ? 'crossbow'
+                : w.weaponId === 'martello-leggero' && idx === 1
+                ? 'hammer'
+                : `weapon-${idx + 1}`);
+            return wId === assign.itemId;
+          })
+        ) {
+          errors.push(
+            `L'infusione "${assign.infusionId}" è assegnata a un'arma (${assign.itemId}) non presente tra le armi scelte.`
+          );
+        }
+      }
+    }
+  }
+
+  if (overrides.monk?.kenseiMeleeWeapon) {
+    const def = findWeaponDefinition(overrides.monk.kenseiMeleeWeapon);
+    if (def && (def.properties.includes('heavy') || def.properties.includes('special'))) {
+      errors.push(`L'arma Kensei da mischia non può avere la proprietà pesante o speciale: ${def.name}`);
+    }
+  }
 
   for (const s of preview.slots) {
     let val: string | undefined;

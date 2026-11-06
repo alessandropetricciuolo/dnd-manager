@@ -457,14 +457,14 @@ export async function renderCharacterSheetV2(
     fit(p, 244, 716, s.alignment || '-', 96, 8.5);
 
     text(p, 354, 733, 'DATI FISICI', 5.5);
-    text(p, 354, 722, 'Età:', 7.2, bold);
-    fit(p, 386, 722, s.age ? `${s.age} a.` : '-', 90, 7.2);
+    text(p, 354, 723, 'Età:', 7.2, bold);
+    fit(p, 386, 723, s.age ? `${s.age} a.` : '-', 90, 7.2);
 
-    text(p, 354, 711, 'Altezza:', 7.2, bold);
-    fit(p, 386, 711, s.height || '-', 90, 7.2);
+    text(p, 354, 712, 'Altezza:', 7.2, bold);
+    fit(p, 386, 712, s.height || '-', 90, 7.2);
 
-    text(p, 354, 700, 'Peso:', 7.2, bold);
-    fit(p, 386, 700, s.weight || '-', 90, 7.2);
+    text(p, 354, 702, 'Peso:', 7.2, bold);
+    fit(p, 386, 702, s.weight || '-', 90, 7.2);
 
     text(p, 490, 733, 'SESSO', 5.5);
     fit(p, 490, 716, s.sex || '-', 70, 8.5, bold);
@@ -543,9 +543,9 @@ export async function renderCharacterSheetV2(
   };
 
   const abilityHeights: Record<AbilityKey, number> = {
-    str: 52,
+    str: 54,
     dex: 72,
-    con: 48,
+    con: 54,
     int: 92,
     wis: 92,
     cha: 82,
@@ -564,10 +564,10 @@ export async function renderCharacterSheetV2(
     const modifier = sign(s.abilityMods[key]);
     const leftCenter = box.x + 24;
 
-    text(first, leftCenter - font.widthOfTextAtSize(score, 9.5) / 2, top - 31, score, 9.5);
+    text(first, leftCenter - font.widthOfTextAtSize(score, 9.5) / 2, top - 29, score, 9.5);
     first.drawText(modifier, {
       x: leftCenter - bold.widthOfTextAtSize(modifier, 15) / 2,
-      y: top - 46,
+      y: top - 44,
       size: 15,
       font: bold,
       color: INK,
@@ -600,14 +600,14 @@ export async function renderCharacterSheetV2(
   }
 
   // Passive Perception Box
-  const ppBoxH = 30;
+  const ppBoxH = 34;
   const ppTop = curAbY - 3;
   const ppBottom = ppTop - ppBoxH;
   drawFantasyFrame(first, { x: 27, y: ppBottom, width: 175, height: ppBoxH });
   const ppLabel = 'PERCEZIONE PASSIVA';
-  text(first, 27 + (175 - bold.widthOfTextAtSize(ppLabel, 7)) / 2, ppTop - 12, ppLabel, 7, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(ppLabel, 7)) / 2, ppTop - 11, ppLabel, 7, bold);
   const ppVal = `${s.passivePerception}`;
-  text(first, 27 + (175 - bold.widthOfTextAtSize(ppVal, 13)) / 2, ppTop - 25, ppVal, 13, bold);
+  text(first, 27 + (175 - bold.widthOfTextAtSize(ppVal, 14)) / 2, ppTop - 25, ppVal, 14, bold);
 
   // Senses / Inspiration Notes
   const sensesBoxH = 34;
@@ -715,14 +715,14 @@ export async function renderCharacterSheetV2(
   text(first, 222, hpY - 26, 'Dadi Vita spesi: ________________', 7.5);
 
   // Salvezze da Morte
-  const dsBoxH = 52;
+  const dsBoxH = 56;
   const dsTop = hpBottom - 6;
   const dsBottom = dsTop - dsBoxH;
   frame(first, 212, dsTop, 168, dsBoxH, 'SALVEZZE DA MORTE');
-  text(first, 224, dsTop - 26, 'Successi', 7.5);
-  drawFantasyTracker(first, { x: 288, y: dsTop - 32, width: 80, height: 15 }, 3);
-  text(first, 224, dsTop - 42, 'Fallimenti', 7.5);
-  drawFantasyTracker(first, { x: 288, y: dsTop - 48, width: 80, height: 15 }, 3);
+  text(first, 224, dsTop - 29, 'Successi', 7.5);
+  drawFantasyTracker(first, { x: 288, y: dsTop - 35, width: 80, height: 14 }, 3);
+  text(first, 224, dsTop - 45, 'Fallimenti', 7.5);
+  drawFantasyTracker(first, { x: 288, y: dsTop - 51, width: 80, height: 14 }, 3);
 
   // Dynamic Attacks Box (no silent .slice(0, 3) drop!)
   const extraAttacksCount = fighter
@@ -767,7 +767,10 @@ export async function renderCharacterSheetV2(
 
   // Class Combat Resources (Page 1, placed dynamically 6pt below ATTACCHI)
   const resTop = atkBottom - 6;
-  const resH = 112;
+  const roguePsionicTrackerRows = rogue?.resources.psionicDice
+    ? Math.ceil(rogue.resources.psionicDice.count / 10)
+    : 1;
+  const resH = rogue?.resources.psionicDice ? (roguePsionicTrackerRows > 1 ? 124 : 116) : 112;
   if (artificer) {
     const state = artificer.state;
     const attuned = state.assignments.filter((a) => a.state === 'attuned' || a.state === 'carried-attuned').length;
@@ -851,12 +854,34 @@ export async function renderCharacterSheetV2(
     }
   } else if (rogue) {
     const res = rogue.resources;
-    frame(first, 212, resTop, 168, resH, 'ATTACCO FURTIVO');
-    drawFantasyShield(first, { x: 224, y: resTop - 82, width: 44, height: 44 }, res.sneakAttackDamage, bold);
-    text(first, 276, resTop - 52, `Danno: ${res.sneakAttackDamage}`, 9.5, bold);
-    text(first, 276, resTop - 66, `Dadi: ${res.sneakAttackDice}d6`, 8);
-    fit(first, 222, resTop - 84, '1 v/turno: vantaggio o alleato entro 1,5 m', 148, 6.8);
-    fit(first, 222, resTop - 96, 'Richiede arma accurata o a distanza', 148, 6.8);
+    if (res.psionicDice) {
+      frame(first, 212, resTop, 168, resH, 'RISORSE PSIONICHE & FURTIVO');
+      text(first, 222, resTop - 28, 'Attacco Furtivo:', 7.5, bold);
+      text(first, 282, resTop - 28, `${res.sneakAttackDamage} (${res.sneakAttackDice}d6)`, 7.5, bold);
+      fit(first, 222, resTop - 38, '1 v/turno con vant./alleato (arma acc./dist.)', 148, 6.2);
+
+      const pCount = res.psionicDice.count;
+      const pDie = res.psionicDice.die;
+      text(first, 222, resTop - 49, `Energia Psionica: ${pCount} dadi ${pDie}`, 7.5, bold);
+      const trackerH = roguePsionicTrackerRows > 1 ? 22 : 12;
+      drawFantasyTracker(first, { x: 222, y: resTop - 51 - trackerH, width: 148, height: trackerH }, pCount);
+      const belowTrackerY = resTop - 51 - trackerH;
+      fit(first, 222, belowTrackerY - 9, 'Recupero riserva: tutti i dadi al riposo lungo', 148, 6.4);
+
+      text(first, 222, belowTrackerY - 19, 'Ripresa Psionica: recupera 1 dado con az. bonus', 6.6, bold);
+      drawFantasyTracker(first, { x: 222, y: belowTrackerY - 31, width: 14, height: 10 }, 1);
+      text(first, 240, belowTrackerY - 28, '1 v/riposo breve o lungo', 6.5);
+
+      drawFantasyTracker(first, { x: 222, y: belowTrackerY - 44, width: 14, height: 10 }, 1);
+      fit(first, 240, belowTrackerY - 41, 'Sussurri: 1° uso gratis / riposo lungo (poi 1 dado)', 128, 6.2);
+    } else {
+      frame(first, 212, resTop, 168, resH, 'ATTACCO FURTIVO');
+      drawFantasyShield(first, { x: 224, y: resTop - 68, width: 42, height: 42 }, res.sneakAttackDamage, bold);
+      text(first, 276, resTop - 46, `Danno: ${res.sneakAttackDamage}`, 9.5, bold);
+      text(first, 276, resTop - 58, `Dadi: ${res.sneakAttackDice}d6`, 8);
+      fit(first, 222, resTop - 78, '1 v/turno: vantaggio o alleato entro 1,5 m', 148, 6.8);
+      fit(first, 222, resTop - 90, 'Richiede arma accurata o a distanza', 148, 6.8);
+    }
   } else if (monk) {
     const res = monk.resources;
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'PUNTI KI E ARTI MARZIALI' : 'ARTI MARZIALI');
@@ -864,7 +889,7 @@ export async function renderCharacterSheetV2(
     if (res.kiPoints > 0) {
       text(first, 276, resTop - 50, `Punti Ki: ${res.kiPoints}`, 9.5, bold);
       text(first, 276, resTop - 64, `CD Ki: ${res.kiSaveDc}`, 8.5); // Ki DC is preserved (martial ability)
-      drawFantasyTracker(first, { x: 270, y: resTop - 80, width: 100, height: 16 }, Math.min(res.kiPoints, 6));
+      drawFantasyTracker(first, { x: 270, y: resTop - 80, width: 100, height: 16 }, res.kiPoints);
       text(first, 222, resTop - 96, 'Recupero Ki: riposo breve o lungo', 7.2);
     } else {
       text(first, 276, resTop - 54, `Dado Arti: ${res.martialArtsDie}`, 8.5, bold);
@@ -877,7 +902,7 @@ export async function renderCharacterSheetV2(
     text(first, 224, resTop - 28, `Imposizione Mani: ${res.layOnHandsPool} PF`, 8, bold);
     fit(first, 224, resTop - 40, `Riserva PF: ${res.layOnHandsPool} (5 PF curano veleno)`, 144, 6.8);
     text(first, 224, resTop - 55, `Senso del Divino: ${res.divineSenseUses} usi / lungo`, 7.8, bold);
-    drawFantasyTracker(first, { x: 224, y: resTop - 70, width: 140, height: 16 }, Math.min(res.divineSenseUses, 9));
+    drawFantasyTracker(first, { x: 224, y: resTop - 70, width: 140, height: 16 }, res.divineSenseUses);
     if (res.channelDivinityUses > 0) {
       text(first, 224, resTop - 84, `Incanalare Divinità: ${res.channelDivinityUses} uso / riposo breve`, 7.3);
     }
@@ -898,7 +923,7 @@ export async function renderCharacterSheetV2(
     frame(first, 212, resTop, 168, resH, s.level >= 2 ? 'PUNTI STREGONERIA' : 'MAGIA INNATA');
     if (res.sorceryPoints > 0) {
       text(first, 224, resTop - 28, `Punti Stregoneria: ${res.sorceryPoints}`, 8.5, bold);
-      drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, Math.min(res.sorceryPoints, 9));
+      drawFantasyTracker(first, { x: 224, y: resTop - 46, width: 140, height: 16 }, res.sorceryPoints);
       if (s.level >= 3) {
         text(first, 224, resTop - 64, `Metamagia: ${res.metamagic.length} opzioni note`, 7.8);
       }
