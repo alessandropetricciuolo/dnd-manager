@@ -45,6 +45,9 @@ const nextConfig = {
     ];
   },
   images: {
+    // Originals are already sized by Drive/Telegram. Keep every image available
+    // even when Vercel's image transformation allowance is exhausted.
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: "https",
