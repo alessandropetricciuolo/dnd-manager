@@ -17,11 +17,11 @@ export const definitions = {
   upsert_wiki_relationship: { description: "Idempotently create one real Wiki-to-Wiki or Wiki-to-map relationship and return its database readback. Call twice for a bidirectional Wiki pair.", schema: { campaign_id, source_id: entity_id, target_id: entity_id.optional(), target_map_id: entity_id.optional(), label: z.string().trim().min(1).max(200), admin_only } },
   search_maps: { description: "List or search scoped Atlas maps before creation to resolve parent IDs and prevent duplicates.", schema: { campaign_id, query: z.string().trim().min(1).max(200).optional(), map_type: z.enum(["world", "continent", "city", "dungeon", "district", "building"]).optional(), limit: z.number().int().min(1).max(100).optional(), offset: z.number().int().min(0).max(10000).optional(), admin_only }, read: true },
   get_map: { description: "Read a scoped Atlas map by ID after search or creation.", schema: { campaign_id, map_id: entity_id, admin_only }, read: true },
-  create_lore: { description: "Create scoped private draft lore; set admin_only only for protected Admin content.", schema: create },
-  create_npc: { description: "Create a scoped private draft NPC.", schema: create },
-  create_location: { description: "Create a scoped private draft location.", schema: create },
-  create_item: { description: "Create a scoped private draft item.", schema: create },
-  create_monster: { description: "Create a scoped private draft monster, including combat attributes and XP.", schema: createMonster },
+  create_lore: { destructive: false, description: "Create scoped private draft lore; set admin_only only for protected Admin content.", schema: create },
+  create_npc: { destructive: false, description: "Create a scoped private draft NPC.", schema: create },
+  create_location: { destructive: false, description: "Create a scoped private draft location.", schema: create },
+  create_item: { destructive: false, description: "Create a scoped private draft item.", schema: create },
+  create_monster: { destructive: false, description: "Create a scoped private draft monster, including combat attributes and XP.", schema: createMonster },
   update_entity: { description: "Patch a scoped entity using its current revision. Revision conflicts must be reread.", schema: { campaign_id, entity_id, revision, name: create.name.optional(), body: create.body.optional(), attributes: create.attributes, admin_only } },
   upload_asset: { description: "Store a scoped private PNG/JPEG/WebP/PDF supplied as base64; no remote URL fetching.", schema: { campaign_id, filename: z.string().min(1).max(120), mime_type: z.enum(["image/png", "image/jpeg", "image/webp", "application/pdf"]), data_base64: z.string().max(699052) } },
   attach_asset: { description: "Attach a scoped uploaded asset to a Wiki entity.", schema: { campaign_id, entity_id, asset_id: z.string().uuid() } },
@@ -53,7 +53,7 @@ export function createServer(callBackend) {
   for (const [name, def] of Object.entries(definitions)) server.registerTool(name, {
     description: def.description,
     inputSchema: z.object(def.schema).strict(),
-    annotations: { readOnlyHint: !!def.read, destructiveHint: !def.read, idempotentHint: !!def.read, openWorldHint: false },
+    annotations: { readOnlyHint: !!def.read, destructiveHint: def.destructive ?? !def.read, idempotentHint: !!def.read, openWorldHint: false },
   }, async (args) => {
     try {
       const data = await callBackend(name, args);

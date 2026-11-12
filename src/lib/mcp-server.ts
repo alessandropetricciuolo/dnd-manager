@@ -28,14 +28,14 @@ type ContentOperation = Parameters<typeof executeContent>[1] & { operation: stri
 export function createBdMcpServer(auth: McpAuthContext) {
   const server = new McpServer({ name: "barber-and-dragons", version: "0.1.0" });
 
-  const register = (name: string, description: string, inputSchema: Record<string, z.ZodType>, readOnly: boolean) => {
+  const register = (name: string, description: string, inputSchema: Record<string, z.ZodType>, readOnly: boolean, destructive = !readOnly) => {
     server.registerTool(name, {
       title: name.replaceAll("_", " "),
       description,
       inputSchema: z.object(inputSchema).strict(),
       annotations: {
         readOnlyHint: readOnly,
-        destructiveHint: !readOnly,
+        destructiveHint: destructive,
         idempotentHint: readOnly,
         openWorldHint: false,
       },
@@ -99,11 +99,11 @@ export function createBdMcpServer(auth: McpAuthContext) {
     map_id: entityId,
     admin_only: adminOnly,
   }, true);
-  register("create_lore", "Create private draft lore; use admin_only for protected Admin content.", create, false);
-  register("create_npc", "Create a private draft NPC.", create, false);
-  register("create_location", "Create a private draft location.", create, false);
-  register("create_item", "Create a private draft item.", create, false);
-  register("create_monster", "Create a private draft monster, including combat attributes and XP.", createMonster, false);
+  register("create_lore", "Create private draft lore; use admin_only for protected Admin content.", create, false, false);
+  register("create_npc", "Create a private draft NPC.", create, false, false);
+  register("create_location", "Create a private draft location.", create, false, false);
+  register("create_item", "Create a private draft item.", create, false, false);
+  register("create_monster", "Create a private draft monster, including combat attributes and XP.", createMonster, false, false);
   register("update_entity", "Patch an entity using its current revision; is_campaign_document moves to/from Admin-only campaign documents preserving identity. Moving back preserves Admin-only. Protected content cannot be downgraded.", {
     campaign_id: campaignId,
     entity_id: entityId,
