@@ -1100,7 +1100,7 @@ export function WikiEntityDialog({
                 hint="Storia + scheda tecnica"
               >
                 <div className="space-y-2">
-                  {isAdmin && adminDraftsEnabled ? <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); setReleaseAdminOnly(false); }} disabled={isLoading} /> Solo Admin</label> : null}
+                  {isAdmin && adminDraftsEnabled ? <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm"><input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); setReleaseAdminOnly(entity?.admin_only === true && !e.target.checked); }} disabled={isLoading} /> Solo Admin</label> : null}
                   <Label htmlFor="entity-content">
                     {type === "lore" ? "Testo" : "Storia / Descrizione"}
                   </Label>
@@ -1905,7 +1905,7 @@ export function WikiEntityDialog({
                 <div className="space-y-2">
                   {isAdmin && adminDraftsEnabled ? (
                     <label className="flex items-center gap-2 rounded-md border border-violet-500/30 bg-violet-500/10 p-3 text-sm text-violet-100">
-                      <input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); setReleaseAdminOnly(false); }} disabled={isLoading} />
+                      <input type="checkbox" checked={adminOnly} onChange={(e) => { setAdminOnly(e.target.checked); setReleaseAdminOnly(entity?.admin_only === true && !e.target.checked); }} disabled={isLoading} />
                       <span><strong>Solo Admin</strong><br /><span className="text-xs text-violet-200/70">Voce riservata agli Admin; potrai rilasciarla in seguito.</span></span>
                     </label>
                   ) : null}

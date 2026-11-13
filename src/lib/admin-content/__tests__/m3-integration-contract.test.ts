@@ -21,6 +21,10 @@ test("M3 create paths suppress latent selective permissions", () => {
   assert.match(maps, /admin_only: adminOnlyRequested/);
   assert.match(maps, /!adminOnlyRequested && visibility === "selective"/);
   assert.match(source("src/components/maps/bulk-import-maps-dialog.tsx"), /isAdmin && adminDraftsEnabled/);
-  assert.match(source("src/components/wiki/edit-entity-dialog.tsx"), /adminDraftsEnabled \|\| Boolean/);
   assert.match(source("src/components/maps/edit-map-dialog.tsx"), /adminDraftsEnabled \|\| initialAdminOnly/);
+});
+
+test("Wiki admins can release protected entries independently of the draft flag", () => {
+  const editor = source("src/components/wiki/wiki-entity-dialog.tsx");
+  assert.match(editor, /entity\?\.admin_only && isAdmin && <label[^\n]*Rilascia contenuto/);
 });
