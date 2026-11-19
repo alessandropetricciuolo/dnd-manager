@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react";
 import type { InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
-import type { InitiativeRemoteCombatant } from "@/lib/gm-remote/initiative-commands";
+import { adjustInitiativeDamageTaken, type InitiativeRemoteCombatant } from "@/lib/gm-remote/initiative-commands";
 import {
   Table,
   TableBody,
@@ -1079,20 +1079,6 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
     [applyTransition]
   );
 
-  const adjustDamageTaken = useCallback(
-    (entryId: string, delta: number) => {
-      applyTransition((prev) => ({
-        ...prev,
-        entries: prev.entries.map((e) =>
-          e.id === entryId
-            ? { ...e, damageTaken: Math.max(0, (e.damageTaken ?? 0) + delta) }
-            : e
-        ),
-      }));
-    },
-    [applyTransition]
-  );
-
   const toggleReaction = useCallback(
     (entryId: string) => {
       applyTransition((prev) => ({
@@ -1202,6 +1188,23 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       );
       const updated = nextState.entries.find((e) => e.id === entryId);
       if (updated && isLongCampaign && updated.entityId && updated.isCore) {
+        const res = await setWikiEntityGlobalStatus(
+          updated.entityId,
+          campaignId,
+          updated.hp === 0 ? "dead" : "alive"
+        );
+        if (res.success) toast.success(res.message);
+      }
+    },
+    [applyTransition, isLongCampaign, campaignId]
+  );
+
+  const adjustDamageTaken = useCallback(
+    async (entryId: string, delta: number) => {
+      const previous = trackerRef.current.entries.find((entry) => entry.id === entryId);
+      const nextState = applyTransition((state) => adjustInitiativeDamageTaken(state, entryId, delta));
+      const updated = nextState.entries.find((e) => e.id === entryId);
+      if (updated && previous?.hp !== updated.hp && isLongCampaign && updated.entityId && updated.isCore) {
         const res = await setWikiEntityGlobalStatus(
           updated.entityId,
           campaignId,
@@ -1546,7 +1549,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       resetTurnTimer,
       resetRound: resetRoundCounter,
       adjustDamage: adjustDamageDealt,
-      adjustDamageTaken,
+      adjustDamageTaken: (id, delta) => void adjustDamageTaken(id, delta),
       adjustHp: (id: string, delta: number) => void adjustHp(id, delta),
       setHp: (id: string, hp: number) => void applyHpChange(id, hp),
       setTempHp,

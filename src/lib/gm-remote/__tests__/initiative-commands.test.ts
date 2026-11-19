@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   applyInitiativeRemoteCommand,
   adjustInitiativeHp,
+  adjustInitiativeDamageTaken,
   initiativeRemoteSnapshotSignature,
   isValidInitiativeRemotePayload,
   parseInitiativeRemoteSnapshot,
@@ -103,4 +104,21 @@ test("consecutive HP deltas apply to the latest state instead of a stale snapsho
   const afterDamage = adjustInitiativeHp(start, "pc-1", -5);
   const afterHealing = adjustInitiativeHp(afterDamage, "pc-1", 2);
   assert.equal(afterHealing.entries[0]?.hp, 17);
+});
+
+test("remote damage taken spends temporary HP, updates HP and records damage once", () => {
+  const start = {
+    entries: [{ id: "goblin-1", name: "Goblin", type: "monster" as const, initiative: 12, armorClass: 15, hp: 3, maxHp: 7, tempHp: 2 }],
+    currentTurnIndex: 0,
+    roundNumber: 1,
+    turnElapsedSeconds: 0,
+    isTurnTimerRunning: false,
+  };
+
+  const damaged = adjustInitiativeDamageTaken(start, "goblin-1", 5);
+  assert.deepEqual(damaged.entries[0], { ...start.entries[0], hp: 0, tempHp: 0, damageTaken: 5, isDead: true });
+
+  const corrected = adjustInitiativeDamageTaken(damaged, "goblin-1", -10);
+  assert.deepEqual(corrected.entries[0], { ...damaged.entries[0], hp: 5, damageTaken: 0, isDead: false });
+  assert.equal(adjustInitiativeDamageTaken(corrected, "goblin-1", -1), corrected);
 });

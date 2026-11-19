@@ -491,3 +491,25 @@ export function adjustInitiativeHp(
     amount: intDelta,
   });
 }
+
+export function adjustInitiativeDamageTaken(
+  state: InitiativeTrackerState,
+  entryId: string,
+  delta: number
+): InitiativeTrackerState {
+  if (delta >= 0) return adjustInitiativeHp(state, entryId, -delta);
+
+  const entry = state.entries.find((candidate) => candidate.id === entryId);
+  if (!entry) return state;
+  const damageTaken = entry.damageTaken ?? 0;
+  const correction = Math.min(damageTaken, -delta);
+  if (correction <= 0) return state;
+
+  const healed = adjustInitiativeHp(state, entryId, correction);
+  return {
+    ...healed,
+    entries: healed.entries.map((candidate) => candidate.id === entryId
+      ? { ...candidate, damageTaken: damageTaken - correction }
+      : candidate),
+  };
+}

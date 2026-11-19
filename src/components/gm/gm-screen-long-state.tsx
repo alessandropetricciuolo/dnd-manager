@@ -29,7 +29,7 @@ import {
   emptyInitiativeTrackerState,
   sanitizeInitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
-import { adjustInitiativeHp, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
+import { adjustInitiativeDamageTaken, adjustInitiativeHp, type InitiativeRemoteCommandHandlers } from "@/lib/gm-remote/initiative-commands";
 import { normalizeCombatConditions } from "@/lib/combat-conditions";
 import { createRemoteCombatCommandController } from "@/lib/gm-remote/combat-command-controller";
 import type { RemoteCombatCommandSnapshot } from "@/lib/gm-remote/combat-command-remote";
@@ -479,12 +479,14 @@ export function GmScreenLongStateProvider({
         ? { ...entry, damageDealt: Math.max(0, (entry.damageDealt ?? 0) + delta) }
         : entry),
     })),
-    adjustDamageTaken: (entryId, delta) => updateInitiativeState((state) => ({
-      ...state,
-      entries: state.entries.map((entry) => entry.id === entryId
-        ? { ...entry, damageTaken: Math.max(0, (entry.damageTaken ?? 0) + delta) }
-        : entry),
-    })),
+    adjustDamageTaken: (entryId, delta) => {
+      const current = initiativeRef.current;
+      const next = adjustInitiativeDamageTaken(current, entryId, delta);
+      if (next === current) return;
+      const updated = next.entries.find((entry) => entry.id === entryId);
+      if (updated) saveRemoteCoreStatus(entryId, updated.hp);
+      commitInitiativeState(next);
+    },
     adjustHp: (entryId, delta) => {
       const entry = initiativeRef.current.entries.find((candidate) => candidate.id === entryId);
       if (entry) {
@@ -534,7 +536,7 @@ export function GmScreenLongStateProvider({
     removeCombatant: (entryId) => updateInitiativeState((state) =>
       removeCombatantFromState(state, entryId)
     ),
-  }), [campaignId, saveRemoteCoreStatus, updateInitiativeState]);
+  }), [campaignId, commitInitiativeState, saveRemoteCoreStatus, updateInitiativeState]);
   const [xpState, setXpState] = useState<LongSessionXpState>(emptyXpState);
   const [elapsedHours, setElapsedHoursState] = useState(0);
   const [calendarBaseDate, setCalendarBaseDateState] = useState<FantasyCalendarDate>(DEFAULT_FANTASY_BASE_DATE);
