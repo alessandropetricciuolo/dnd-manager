@@ -162,6 +162,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const wantsMappeTab = requestedTab === "mappe";
   const wantsPgTab = requestedTab === "pg" || openCreateDialogOnLoad || openEditCharacterId != null;
   const wantsGmTab = requestedTab === "gm";
+  const eldariaCampaignId = "d9962add-4d55-42ef-bfd7-96eddfe49969";
+  const canAssignMasters =
+    isGmOrAdmin && wantsPgTab && campaign.id === eldariaCampaignId;
 
   /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
   let aiContextParsed: CampaignAiContext | null = null;
@@ -177,9 +180,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     excludedManualBookKeys = readExcludedManualBookKeysFromAiContextJson(rawAi);
   }
 
-  /** Lista GM/Admin per la select DM nel form Nuova Sessione (solo se isGmOrAdmin). */
+  /** Lista GM/Admin per il DM della sessione e gli assegnatari dei PG di Eldaria. */
   let gmAdminUsers: { id: string; label: string }[] = [];
-  if (isGmOrAdmin && wantsSessionTab) {
+  if ((isGmOrAdmin && wantsSessionTab) || canAssignMasters) {
     try {
       const admin = createSupabaseAdminClient();
       const { data: gmAdminsRaw } = await admin
@@ -378,6 +381,14 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     ? await getCampaignCharacters(id)
     : { success: true as const, data: [] };
   const characters = charsResult.success ? charsResult.data ?? [] : [];
+  let characterAssignees = eligiblePlayers;
+  if (canAssignMasters && gmAdminUsers.length > 0) {
+    const assigneesById = new Map(eligiblePlayers.map((player) => [player.id, player]));
+    for (const master of gmAdminUsers) {
+      assigneesById.set(master.id, { id: master.id, label: `${master.label} (Master)` });
+    }
+    characterAssignees = [...assigneesById.values()].sort((a, b) => a.label.localeCompare(b.label));
+  }
 
   const campaignInfoFooter = (
     <>
@@ -768,7 +779,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
               campaignId={campaign.id}
               campaignType={campaign.type ?? null}
               characters={characters}
-              eligiblePlayers={eligiblePlayers}
+              eligiblePlayers={characterAssignees}
               playerPartyById={playerPartyById}
               isGm={isGmOrAdmin}
               openCreateDialogOnLoad={openCreateDialogOnLoad}

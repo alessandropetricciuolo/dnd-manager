@@ -753,10 +753,10 @@ export function CharacterCardGm({
           )}
 
           <div className="space-y-1.5">
-            <label className="text-xs font-medium text-barber-paper/75">Giocatore assegnato</label>
+            <label htmlFor={`character-assignee-${character.id}`} className="text-xs font-medium text-barber-paper/75">Account assegnato</label>
             <Select value={assignedTo ?? "__none__"} onValueChange={onAssign} disabled={assigning}>
-              <SelectTrigger className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
-                <SelectValue placeholder="Seleziona giocatore" />
+              <SelectTrigger id={`character-assignee-${character.id}`} className="h-9 border-barber-gold/30 bg-barber-dark text-barber-paper text-sm">
+                <SelectValue placeholder="Seleziona account" />
               </SelectTrigger>
               <SelectContent className="border-barber-gold/30 bg-barber-dark">
                 <SelectItem value="__none__" className="text-barber-paper focus:bg-barber-gold/20">Nessuno</SelectItem>
