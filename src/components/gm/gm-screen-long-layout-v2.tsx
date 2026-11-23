@@ -54,6 +54,7 @@ function LongWorkspace({
     sessions,
     loadingSessions,
     selectedSessionId,
+    isSessionReady,
     setSelectedSessionId,
     signups,
     sessionCharacters,
@@ -81,6 +82,7 @@ function LongWorkspace({
   } = useGmScreenLongState();
 
   const [debriefOpen, setDebriefOpen] = useState(Boolean(selectedSessionId && autoOpenDebrief));
+  const [resumeSavedDraft, setResumeSavedDraft] = useState(Boolean(autoOpenDebrief));
   useEffect(() => { setDraftPaused(debriefOpen); return () => setDraftPaused(false); }, [debriefOpen,setDraftPaused]);
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -521,8 +523,11 @@ function LongWorkspace({
               type="button"
               size="sm"
               className="h-6 bg-amber-600 px-2 text-[10px] text-zinc-950 hover:bg-amber-500"
-              onClick={() => setDebriefOpen(true)}
-              disabled={!selectedSessionId}
+              onClick={() => {
+                setResumeSavedDraft(false);
+                setDebriefOpen(true);
+              }}
+              disabled={!isSessionReady}
             >
               <Flag className="mr-1 h-3 w-3" />
               Chiudi
@@ -546,6 +551,7 @@ function LongWorkspace({
             sessionId={selectedSessionId}
             campaignId={campaignId}
             campaignType="long"
+            resumeSavedDraft={resumeSavedDraft}
             sessionLabel={selectedSessionLabel}
             initialAttendance={attendance}
             initialXpGained={xpAwards.basePerPlayer}

@@ -8,6 +8,7 @@ import {
   type SessionEconomyPayload,
 } from "@/lib/actions/campaign-economy-actions";
 import { useRouter } from "nextjs-toploader/app";
+import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -35,11 +36,11 @@ import {
   getAchievementsForWizard,
   closeSessionAction,
   preCloseSessionAction,
-  getSessionWizardMeta,
   type CloseSessionActionPayload,
   type UnlockableItem,
   type AchievementForWizard,
 } from "@/app/campaigns/actions";
+import { getSessionXpDraftAction } from "@/app/campaigns/session-xp-actions";
 import { getCoreEntitiesForDebrief, type CoreEntityForDebrief } from "@/app/campaigns/gm-actions";
 import { getCampaignCharacters, type CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import {
@@ -119,6 +120,7 @@ type EndSessionWizardProps = {
   initialCalendarBaseDate?: FantasyCalendarDate;
   initialCalendarConfig?: FantasyCalendarConfig;
   perPlayerXpAwards?: { playerId: string; xp: number }[];
+  resumeSavedDraft?: boolean;
   economyManagedInGmScreen?: boolean;
   onSuccess?: () => void;
 };
@@ -139,12 +141,15 @@ export function EndSessionWizard({
   initialCalendarBaseDate,
   initialCalendarConfig,
   perPlayerXpAwards,
+  resumeSavedDraft = false,
   economyManagedInGmScreen = false,
   onSuccess,
 }: EndSessionWizardProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const campaignPath = `/campaigns/${campaignId}`;
   const [step, setStep] = useState<StepId>(1);
-  const [loadingSignups, setLoadingSignups] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [signups, setSignups] = useState<ApprovedSignupForWizard[]>([]);
 
   const [attendance, setAttendance] = useState<Record<string, "attended" | "absent">>({});
@@ -245,12 +250,14 @@ export function EndSessionWizard({
     }
   }, [campaignId]);
 
-  const initializedWizardRef = useRef<string | null>(null);
+  const initializedWizardRef = useRef<{ sessionId: string } | null>(null);
   useEffect(() => {
     if (!open) { initializedWizardRef.current = null; return; }
-    if (initializedWizardRef.current === sessionId) return;
-    initializedWizardRef.current = sessionId;
+    if (initializedWizardRef.current?.sessionId === sessionId) return;
+    const opening = { sessionId };
+    initializedWizardRef.current = opening;
     setExpectedXpDraftRevision(undefined);
+    setLoadError(null);
     setStep(1);
     setIsPreClosed(false);
     setSummary("");
@@ -261,91 +268,56 @@ export function EndSessionWizard({
     setStatusByEntityId({});
     setAwardedAchievements([]);
     setAchievementSearchByPlayer({});
-    setElapsedHours(Math.max(0, Math.floor(initialElapsedHours ?? 0)));
     setPayoutMissionId("");
     setPayoutAlloc({});
     setCoinDeltaAlloc({});
     setEconomyMissions([]);
     setEconomyCharacters([]);
-    setXpGained(Math.max(0, Math.floor(initialXpGained ?? 0)));
-    setResolvedPerPlayerXpAwards(perPlayerXpAwards);
     (async () => {
-      // Recupera gli importi salvati soltanto quando il chiamante non li ha forniti.
-      const [meta, xpCharacters] = await Promise.all([getSessionWizardMeta(sessionId),getCampaignCharacters(campaignId)]);
-      setXpReviewCharacters(xpCharacters.success ? xpCharacters.data ?? [] : []);
-      if (meta.success && meta.data) setExpectedXpDraftRevision(meta.data.xp_draft_revision);
-      if (meta.success && meta.data?.is_pre_closed) {
-        setIsPreClosed(true);
-        if (initialXpGained == null && meta.data.pre_closed_xp_gained != null) {
-          setXpGained(Math.max(0, Math.floor(meta.data.pre_closed_xp_gained)));
-        }
-        if (perPlayerXpAwards == null && meta.data.pre_closed_xp_awards.length > 0) {
-          setResolvedPerPlayerXpAwards(meta.data.pre_closed_xp_awards);
-        }
-        // La bozza resta modificabile: EXP e presenze vanno sempre riviste.
+      const [shared, xpCharacters, signupResult] = await Promise.all([
+        getSessionXpDraftAction(sessionId),
+        getCampaignCharacters(campaignId),
+        !resumeSavedDraft && initialApprovedSignups?.length
+          ? { success: true as const, data: initialApprovedSignups }
+          : getApprovedSignupsForSession(sessionId),
+      ]);
+      if (initializedWizardRef.current !== opening) return;
+      if (!shared.success || !signupResult.success) {
+        setLoadError(!shared.success ? shared.error : "Errore nel caricamento delle presenze.");
+        return;
       }
 
-      if (initialApprovedSignups?.length) {
-        setSignups(initialApprovedSignups);
-        // Se abbiamo status, usiamolo per precompilare le presenze; altrimenti tutti presenti.
-        setAttendance(
-          initialApprovedSignups.reduce(
-            (acc, s) => {
-              const st = (s.status ?? "").toLowerCase();
-              const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-              acc[s.player_id] = initialAttendance?.[s.player_id] ?? meta.data?.attendance[s.player_id] ?? value;
-              return acc;
-            },
-            {} as Record<string, "attended" | "absent">
-          )
-        );
-      } else {
-        setLoadingSignups(true);
-        const res = await getApprovedSignupsForSession(sessionId);
-        setLoadingSignups(false);
-        if (res.success && res.data) {
-          setSignups(res.data);
-          setAttendance(
-            res.data.reduce(
-              (acc, s) => {
-                const st = (s.status ?? "").toLowerCase();
-                const value: "attended" | "absent" = st === "absent" ? "absent" : "attended";
-                acc[s.player_id] = initialAttendance?.[s.player_id] ?? meta.data?.attendance[s.player_id] ?? value;
-                return acc;
-              },
-              {} as Record<string, "attended" | "absent">
-            )
-          );
-        } else {
-          setSignups([]);
-        }
-      }
+      const { draft, revision } = shared.data;
+      const useLiveXp = !resumeSavedDraft && (initialXpGained != null || perPlayerXpAwards != null);
+      const characters = xpCharacters.success ? xpCharacters.data ?? [] : [];
+      const localDraft = readSessionCloseDraft(campaignId, sessionId);
+      const localXp = !draft && !useLiveXp ? computeSessionCloseXpFromDraft(localDraft, characters) : undefined;
+      const xp = useLiveXp ? initialXpGained : draft?.xpGained ?? localXp?.initialXpGained;
+      const awards = useLiveXp ? perPlayerXpAwards : draft?.perPlayerXpAwards ?? localXp?.perPlayerXpAwards;
+      const savedAttendance = resumeSavedDraft && draft
+        ? draft.attendance
+        : { ...draft?.attendance, ...localXp?.initialAttendance, ...initialAttendance };
+      const savedHours = draft?.snapshot?.elapsedHours;
+      const hours = (resumeSavedDraft ? undefined : initialElapsedHours)
+        ?? (typeof savedHours === "number" && Number.isFinite(savedHours) ? savedHours : localDraft?.elapsedHours)
+        ?? 0;
 
-      if (
-        initialXpGained == null &&
-        perPlayerXpAwards == null
-      ) {
-        const draft = readSessionCloseDraft(campaignId, sessionId);
-        if (draft?.xpState) {
-          const charsRes = await getCampaignCharacters(campaignId);
-          const characters = (charsRes.success ? charsRes.data ?? [] : []) as CampaignCharacterRow[];
-          const computed = computeSessionCloseXpFromDraft(draft, characters);
-          if (computed.initialXpGained != null && computed.initialXpGained > 0) {
-            setXpGained(computed.initialXpGained);
-          }
-          if (computed.perPlayerXpAwards?.length) {
-            setResolvedPerPlayerXpAwards(computed.perPlayerXpAwards);
-          }
-          if (computed.initialElapsedHours != null && computed.initialElapsedHours > 0) {
-            setElapsedHours(Math.max(0, Math.floor(computed.initialElapsedHours)));
-          }
-          if (computed.initialAttendance && Object.keys(computed.initialAttendance).length > 0) {
-            setAttendance((current) => ({ ...current, ...computed.initialAttendance }));
-          }
-        }
-      }
-    })();
-  }, [open, sessionId, campaignId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained, perPlayerXpAwards]);
+      const nextSignups = signupResult.data ?? [];
+      setSignups(nextSignups);
+      setAttendance(Object.fromEntries(nextSignups.map((signup) => [
+        signup.player_id,
+        savedAttendance[signup.player_id] ?? (signup.status?.toLowerCase() === "absent" ? "absent" : "attended"),
+      ])));
+      setXpReviewCharacters(characters);
+      setXpGained(Math.max(0, Math.floor(xp ?? 0)));
+      setResolvedPerPlayerXpAwards(awards);
+      setElapsedHours(Math.max(0, Math.floor(hours)));
+      setIsPreClosed(draft != null);
+      setExpectedXpDraftRevision(revision);
+    })().catch(() => {
+      if (initializedWizardRef.current === opening) setLoadError("Errore nel caricamento della sessione.");
+    });
+  }, [open, sessionId, campaignId, initialApprovedSignups, initialAttendance, initialElapsedHours, initialXpGained, perPlayerXpAwards, resumeSavedDraft]);
 
   useEffect(() => {
     if (!open || step !== 1 || !unlockContent || !campaignId) return;
@@ -577,7 +549,8 @@ export function EndSessionWizard({
       toast.success(res.message);
       onOpenChange(false);
       onSuccess?.();
-      router.refresh();
+      if (pathname === campaignPath) router.refresh();
+      else router.replace(`${campaignPath}?tab=sessioni`);
     } else {
       toast.error(res.message);
     }
@@ -603,7 +576,7 @@ export function EndSessionWizard({
       toast.success("Sessione salvata in bozza. Puoi completare il debrief più tardi.");
       onOpenChange(false);
       // Esci dal GM Screen verso la dashboard campagna
-      router.push(`/campaigns/${campaignId}`);
+      router.push(campaignPath);
       router.refresh();
     } else {
       toast.error(res.message);
@@ -679,10 +652,12 @@ export function EndSessionWizard({
         </div>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto py-2">
-          {/* Step 1: Logistica & Presenze (saltato se la sessione è già in pre-chiusura) */}
+          {/* Step 1: Logistica & Presenze */}
           {step === 1 && (
             <>
-              {loadingSignups ? (
+              {loadError ? (
+                <p role="alert" className="text-sm text-barber-paper">{loadError} Riapri la chiusura per riprovare.</p>
+              ) : expectedXpDraftRevision == null ? (
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-barber-gold" />
                 </div>
@@ -1281,12 +1256,17 @@ export function EndSessionWizard({
               )}
               <p className="text-barber-paper/80">
                 <strong>Presenze:</strong> {presentCount} presenti su {signups.length} iscritti.
-                {resolvedPerPlayerXpAwards?.length
-                  ? ` • XP personalizzati su ${resolvedPerPlayerXpAwards.length} assegnazioni.`
-                  : xpGained > 0
-                    ? ` • XP assegnati: ${xpGained} a ciascun presente.`
-                    : ""}
               </p>
+              {presentPlayers.length > 0 && (
+                <ul aria-label="XP per giocatore" className="space-y-1 text-barber-paper/80">
+                  {presentPlayers.map((player) => (
+                    <li key={player.player_id} className="flex justify-between gap-3">
+                      <span>{player.player_name}</span>
+                      <span>{resolvedPerPlayerXpAwards?.find((award) => award.playerId === player.player_id)?.xp ?? xpGained} XP</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
               {unlockContent && selectedContentKeys.size > 0 && (
                 <p className="text-barber-paper/80">
                   <strong>Sblocco contenuti:</strong> {selectedContentKeys.size} contenuti per i presenti.
@@ -1345,7 +1325,7 @@ export function EndSessionWizard({
                   type="button"
                   variant="outline"
                   onClick={handlePreClose}
-                  disabled={preClosing || !canProceedStep1 || loadingSignups || signups.length === 0}
+                  disabled={preClosing || !canProceedStep1 || expectedXpDraftRevision == null || signups.length === 0}
                   className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
                 >
                   {preClosing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -1356,6 +1336,7 @@ export function EndSessionWizard({
                 type="button"
                 onClick={handleNext}
                 disabled={
+                  preClosing || expectedXpDraftRevision == null ||
                   (step === 1 && !canProceedStep1) ||
                   (step === 2 && !canProceedStep2) ||
                   (step === worldStep && !canProceedStep3)

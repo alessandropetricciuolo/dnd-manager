@@ -58,6 +58,7 @@ function LegacyWorkspace({
   const {sessions,selectedSessionId,setSelectedSessionId,refreshSessions:loadSessions,setDraftPaused} = shared;
   const xp = computeSessionXpAwards({characters:shared.sessionCharacters,attendance:shared.attendance,xpState:shared.xpState,initiativeEntries:shared.initiativeState.entries});
   const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
+  const [resumeSavedDraft, setResumeSavedDraft] = useState(Boolean(autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [audioForgeOpen, setAudioForgeOpen] = useState(false);
@@ -233,7 +234,11 @@ function LegacyWorkspace({
             <Button
               type="button"
               size="sm"
-              onClick={() => setDebriefOpen(true)}
+              onClick={() => {
+                setResumeSavedDraft(false);
+                setDebriefOpen(true);
+              }}
+              disabled={!shared.isSessionReady}
               className="ml-auto h-6 bg-amber-600 px-2 text-[10px] text-zinc-950 hover:bg-amber-500"
             >
               <Flag className="mr-1 h-3 w-3" />
@@ -249,6 +254,7 @@ function LegacyWorkspace({
             sessionId={selectedSessionId}
             campaignId={campaignId}
             campaignType={campaignType}
+            resumeSavedDraft={resumeSavedDraft}
             sessionLabel={sessionLabel}
             initialApprovedSignups={shared.signups}
             initialAttendance={shared.attendance}

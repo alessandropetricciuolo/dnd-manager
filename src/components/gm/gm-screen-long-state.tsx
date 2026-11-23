@@ -128,6 +128,7 @@ type LongSessionContextValue = {
   sessions: CampaignSessionOption[];
   loadingSessions: boolean;
   selectedSessionId: string | null;
+  isSessionReady: boolean;
   setSelectedSessionId: (sessionId: string | null) => void;
   signups: LongSessionSignup[];
   loadingSignups: boolean;
@@ -932,6 +933,7 @@ export function GmScreenLongStateProvider({
       sessions,
       loadingSessions,
       selectedSessionId,
+      isSessionReady: selectedSessionId != null && hydratedSessionId === selectedSessionId,
       setSelectedSessionId,
       signups,
       loadingSignups,
@@ -995,6 +997,7 @@ export function GmScreenLongStateProvider({
       loadingCharacters,
       loadingSessions,
       loadingSignups,
+      hydratedSessionId,
       missionSelection,
       refreshCharacters,
       refreshSessions,

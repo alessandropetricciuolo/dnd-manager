@@ -415,8 +415,8 @@ export function SessionListClient({
                       className="w-full border-barber-red/50 text-barber-red hover:bg-barber-red/10 font-medium text-xs"
                       onClick={() => {
                         const approved = session.signups
-                          .filter((s) => normalizeStatus(s.status) === "approved")
-                          .map((s) => ({ id: s.id, player_id: s.player_id, player_name: s.player_name }));
+                          .filter((s) => ["approved", "confirmed", "attended", "absent"].includes(s.status))
+                          .map((s) => ({ id: s.id, player_id: s.player_id, player_name: s.player_name, status: s.status }));
                         setSessionForClose({
                           sessionId: session.id,
                           approvedSignups: approved,
