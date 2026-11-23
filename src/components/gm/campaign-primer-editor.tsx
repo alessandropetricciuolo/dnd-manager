@@ -1,5 +1,6 @@
 "use client";
 
+import { ELDARIA_CAMPAIGN_ID } from "@/lib/eldaria-welcome";
 import { useState, useTransition, useRef, useCallback } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,13 @@ export function CampaignPrimerEditor({
         creare automaticamente l&apos;indice per i giocatori. Oppure usa la barra sotto per
         grassetto, corsivo, titoli e elenchi.
       </p>
+
+      {campaignId === ELDARIA_CAMPAIGN_ID && (
+        <p className="mb-3 text-xs text-barber-paper/80">
+          I giocatori aprono questa guida da «Inizia qui». Per aggiornare il benvenuto, aggiungi
+          in fondo al documento il titolo <code>## Benvenuto in Eldaria</code> e il nuovo testo.
+        </p>
+      )}
 
       {/* Toolbar formattazione Markdown */}
       <div className="mb-2 flex flex-wrap items-center gap-1 rounded-lg border border-barber-gold/20 bg-barber-dark/60 p-2">

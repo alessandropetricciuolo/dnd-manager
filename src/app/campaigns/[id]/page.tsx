@@ -1,3 +1,4 @@
+import { ELDARIA_CAMPAIGN_ID, ELDARIA_GUIDE_PATH } from "@/lib/eldaria-welcome";
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
@@ -162,9 +163,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const wantsMappeTab = requestedTab === "mappe";
   const wantsPgTab = requestedTab === "pg" || openCreateDialogOnLoad || openEditCharacterId != null;
   const wantsGmTab = requestedTab === "gm";
-  const eldariaCampaignId = "d9962add-4d55-42ef-bfd7-96eddfe49969";
-  const canAssignMasters =
-    isGmOrAdmin && wantsPgTab && campaign.id === eldariaCampaignId;
+  const isEldaria = campaign.id === ELDARIA_CAMPAIGN_ID;
+  const canAssignMasters = isGmOrAdmin && wantsPgTab && isEldaria;
 
   /** Contesto AI: solo GM/Admin (non esposto ai player nel payload). */
   let aiContextParsed: CampaignAiContext | null = null;
@@ -226,6 +226,20 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     } catch (e) {
       console.error("[campaigns/[id]] has_played_campaign RPC", e);
     }
+  }
+
+  const eldariaGuideHref = isEldaria && (isCampaignMember || isGmOrAdmin) && campaign.player_primer?.trim()
+    ? ELDARIA_GUIDE_PATH
+    : undefined;
+  let showEldariaReminder = false;
+  if (eldariaGuideHref && isCampaignMember) {
+    const { data: guideRead, error: guideReadError } = await supabase
+      .from("campaign_guide_reads")
+      .select("confirmed_at")
+      .eq("campaign_id", id)
+      .eq("player_id", user.id)
+      .maybeSingle();
+    showEldariaReminder = !guideReadError && !guideRead;
   }
 
   const isLongCampaign = isLongCampaignType(campaign.type);
@@ -397,7 +411,12 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           Partecipa a una sessione per sbloccare {showMappeTab ? "Wiki e Mappe" : "Wiki"}.
         </p>
       ) : null}
-      {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember ? (
+      {isEldaria && isViewerLockedOut ? (
+        <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-sm text-barber-paper">
+          Dopo il colloquio dal vivo, il GM aggiunge il tuo account a Eldaria.
+        </p>
+      ) : null}
+      {!isEldaria && isViewerLockedOut ? (
         <div className="space-y-2 rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-3">
           <p className="text-xs text-barber-gold">
             Per campagne Long iscriviti alla campagna, poi potrai prenotare le sessioni.
@@ -419,7 +438,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
           Iscritto alla campagna Long.
         </p>
       ) : null}
-      {isViewerLockedOut && !longRegistrationsOpen ? (
+      {!isEldaria && isViewerLockedOut && !longRegistrationsOpen ? (
         <p className="text-xs text-amber-200/90">
           Le iscrizioni sono chiuse. Contatta il GM per essere aggiunto manualmente.
         </p>
@@ -441,7 +460,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
         }}
       />
       <CampaignVisibilityToggle campaignId={campaign.id} isPublic={campaign.is_public ?? false} />
-      {isLongCampaign ? (
+      {isLongCampaign && !isEldaria ? (
         <LongRegistrationsToggle
           campaignId={campaign.id}
           registrationsOpen={longRegistrationsOpen}
@@ -591,8 +610,11 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
         description={campaign.description}
         gmDisplayName={gmDisplayName}
         playerPrimerHref={
-          campaign.player_primer?.trim() ? `/campaigns/${campaign.id}/primer` : null
+          !isEldaria && campaign.player_primer?.trim() ? `/campaigns/${campaign.id}/primer` : null
         }
+        welcomeGuideHref={eldariaGuideHref}
+        showWelcomeReminder={showEldariaReminder}
+        manualAdmission={isEldaria}
         isLongCampaign={isLongCampaign}
         hasPlayedCampaign={hasPlayedCampaign}
         defaultTab={defaultTab}
@@ -643,7 +665,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
                   <strong className="font-serif text-brass-light">✦ Campagna privata:</strong> I player non vedono le sessioni in calendario e non possono prenotarsi. Usa il pulsante &quot;Privata&quot; in alto per renderla pubblica.
                 </div>
               )}
-              {!isGmOrAdmin && campaign.type === "long" && !isCampaignMember && (
+              {!isEldaria && isViewerLockedOut && (
                 <div className="card-guild-stone mb-4 rounded-xl border border-brass-base/40 p-5 shadow-lg">
                   <p className="mb-2 font-serif text-sm font-bold text-gold-relief">
                     ✦ Iscriviti alla Campagna per prenotare le sessioni al tavolo

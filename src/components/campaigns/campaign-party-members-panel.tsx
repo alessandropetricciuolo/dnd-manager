@@ -282,7 +282,7 @@ export function CampaignPartyMembersPanel({ campaignId }: CampaignPartyMembersPa
       toast.error(res.message);
       return;
     }
-    toast.success("Giocatore aggiunto alla campagna.");
+    toast.success(res.message);
     setSelectedPlayerToAdd("");
     setSelectedPartyForAdd("");
     setAddSheetOpen(false);

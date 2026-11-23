@@ -25,6 +25,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { CAMPAIGN_CONTENT_SHELL } from "@/lib/layout/shell-classes";
 import { CampaignPlayerSessionsHero } from "@/components/campaigns/campaign-player-sessions-hero";
+import { CampaignGuideReminder } from "@/components/campaigns/campaign-guide-reminder";
 import { CampaignCommandBar } from "@/components/campaigns/campaign-command-bar";
 import { useCampaignNavigation } from "@/components/campaigns/campaign-navigation-context";
 
@@ -53,6 +54,9 @@ export type CampaignWorkspaceProps = {
   description: string | null;
   gmDisplayName: string | null;
   playerPrimerHref: string | null;
+  welcomeGuideHref?: string;
+  showWelcomeReminder?: boolean;
+  manualAdmission?: boolean;
   hasPlayedCampaign: boolean;
   isLongCampaign?: boolean;
   defaultTab?: CampaignTabValue;
@@ -288,13 +292,16 @@ function CampaignInfoSheet({
 }
 
 export function CampaignWorkspace({
-  campaignId: _campaignId,
+  campaignId,
   campaignName,
   imageUrl,
   campaignTypeLabel,
   description,
   gmDisplayName,
   playerPrimerHref,
+  welcomeGuideHref,
+  showWelcomeReminder,
+  manualAdmission,
   hasPlayedCampaign,
   isLongCampaign = false,
   defaultTab = "sessioni",
@@ -368,6 +375,17 @@ export function CampaignWorkspace({
 
   return (
     <div className="flex h-full min-h-0 w-full max-w-full min-w-0 flex-col overflow-x-hidden">
+      {welcomeGuideHref && showWelcomeReminder && (
+        <CampaignGuideReminder key={campaignId} href={welcomeGuideHref} />
+      )}
+      {welcomeGuideHref && (
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-barber-gold/20 bg-guild-void px-3 py-1.5 sm:px-5">
+          <span className="min-w-0 truncate font-serif text-sm text-barber-paper">{campaignName}</span>
+          <Button asChild size="sm" variant="outline" className="shrink-0 gap-2 border-barber-gold/45 text-barber-gold">
+            <Link href={welcomeGuideHref}><BookOpen aria-hidden className="size-4" />Inizia qui</Link>
+          </Button>
+        </div>
+      )}
       {/* Mobile: barra compatta + tab (niente hero immagine) */}
       <div className="z-40 w-full max-w-full min-w-0 shrink-0 border-b border-barber-gold/15 bg-barber-dark/95 backdrop-blur-md supports-[backdrop-filter]:bg-barber-dark/90 lg:hidden">
         <div className="flex w-full min-w-0 gap-1.5 overflow-x-auto px-2 pb-2 pt-0.5 scrollbar-hide">
@@ -435,9 +453,11 @@ export function CampaignWorkspace({
           <div className="mx-auto max-w-lg rounded-xl border border-barber-gold/30 bg-barber-dark/80 p-6 text-center">
             <ScrollText className="mx-auto mb-3 h-8 w-8 text-barber-gold/70" />
             <p className="font-serif text-lg text-barber-paper">Accesso limitato</p>
-            <p className="mt-2 text-sm text-barber-paper/70">
-              Per questa campagna Long devi iscriverti prima di vedere sessioni e strumenti.
-            </p>
+            {!manualAdmission && (
+              <p className="mt-2 text-sm text-barber-paper/70">
+                Per questa campagna Long devi iscriverti prima di vedere sessioni e strumenti.
+              </p>
+            )}
             {infoFooter ? <div className="mt-4 text-left">{infoFooter}</div> : null}
             <Button
               type="button"

@@ -1,5 +1,6 @@
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { sendEmail, wrapInParchmentTemplate } from "@/lib/email";
+import { ELDARIA_CAMPAIGN_ID, ELDARIA_GUIDE_PATH } from "@/lib/eldaria-welcome";
+import { escapeHtml, sendEmail, wrapInParchmentTemplate } from "@/lib/email";
 
 type JoinSettingsRow = {
   join_enabled: boolean;
@@ -27,7 +28,7 @@ async function getAuthEmailMap(admin: ReturnType<typeof createSupabaseAdminClien
 export async function sendJoinCampaignEmailIfEnabled(
   campaignId: string,
   playerId: string
-): Promise<void> {
+): Promise<boolean> {
   const admin = createSupabaseAdminClient();
   const { data: rowRaw } = await admin
     .from("campaign_email_settings")
@@ -36,16 +37,24 @@ export async function sendJoinCampaignEmailIfEnabled(
     .maybeSingle();
 
   const row = rowRaw as JoinSettingsRow | null;
-  if (!row || !row.join_enabled) return;
+  if (!row || !row.join_enabled) return false;
 
-  const emails = await getAuthEmailMap(admin);
-  const email = emails.get(playerId);
-  if (!email) return;
+  const { data, error } = await admin.auth.admin.getUserById(playerId);
+  if (error) throw new Error(error.message);
+  const email = data.user?.email?.trim();
+  if (!email) return false;
 
-  await sendEmail({
+  let body = row.join_body_html;
+  if (campaignId === ELDARIA_CAMPAIGN_ID) {
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://barberanddragons.com").replace(/\/$/, "");
+    const guideUrl = escapeHtml(`${appUrl}${ELDARIA_GUIDE_PATH}`);
+    body += `<hr><p>Apri la Guida del Giocatore per preparare il tuo personaggio e consegna il background di persona ad Alessandro.</p><p><strong><a href="${guideUrl}">Inizia qui</a></strong></p>`;
+  }
+
+  return sendEmail({
     to: email,
     subject: row.join_subject,
-    html: wrapInParchmentTemplate(row.join_body_html, row.join_subject),
+    html: wrapInParchmentTemplate(body, row.join_subject),
   });
 }
 

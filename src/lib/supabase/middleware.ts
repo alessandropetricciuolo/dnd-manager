@@ -1,3 +1,4 @@
+import { ELDARIA_GUIDE_PATH } from "@/lib/eldaria-welcome";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -118,7 +119,9 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Caso B: Utente ospite che accede a rotte protette → redirect a /login
-  if (shouldRedirectUnauthenticated(Boolean(user), Boolean(authError)) && isProtectedRoute(pathname)) {
+  const missingGuideSession =
+    pathname === ELDARIA_GUIDE_PATH && authError?.name === "AuthSessionMissingError";
+  if (shouldRedirectUnauthenticated(Boolean(user), Boolean(authError) && !missingGuideSession) && isProtectedRoute(pathname)) {
     const redirectUrl = new URL("/login", request.url);
     redirectUrl.searchParams.set("next", pathname);
     return redirectWithSupabaseCookies(redirectUrl, supabaseResponse);

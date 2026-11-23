@@ -10,6 +10,7 @@ import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getPlayerEmails, getNotificationsPaused, hasNotificationsDisabled } from "@/lib/player-emails";
 import { sendEmail, wrapInTemplate, escapeHtml } from "@/lib/email";
+import { ELDARIA_CAMPAIGN_ID } from "@/lib/eldaria-welcome";
 import { sendJoinCampaignEmailIfEnabled } from "@/lib/campaign-long-emails";
 import { uploadToTelegram } from "@/lib/telegram-storage";
 import { incrementSessionsAttendedWithAdmin, applyAwardedAchievementWithAdmin } from "@/lib/actions/gamification";
@@ -772,6 +773,16 @@ export async function addCampaignMemberForGm(
     }
 
     revalidatePath(`/campaigns/${campaignId}`);
+    if (campaignId === ELDARIA_CAMPAIGN_ID) {
+      revalidatePath("/dashboard");
+      const sent = await sendJoinCampaignEmailIfEnabled(campaignId, playerId).catch((error) => {
+        console.error("[addCampaignMemberForGm] missiva Eldaria", error);
+        return false;
+      });
+      if (!sent) {
+        return { success: true, message: "Giocatore aggiunto alla campagna. La missiva non è stata inviata." };
+      }
+    }
     return { success: true, message: "Giocatore aggiunto alla campagna." };
   } catch (err) {
     console.error("[addCampaignMemberForGm]", err);
@@ -946,6 +957,10 @@ export async function joinLongCampaign(campaignId: string): Promise<JoinLongCamp
       .maybeSingle();
     if (existing) {
       return { success: true, message: "Sei già iscritto a questa campagna.", justJoined: false };
+    }
+
+    if (campaignId === ELDARIA_CAMPAIGN_ID) {
+      return { success: false, message: "Il GM ti aggiungerà a Eldaria dopo il colloquio dal vivo." };
     }
 
     if (!registrationsOpen) {
