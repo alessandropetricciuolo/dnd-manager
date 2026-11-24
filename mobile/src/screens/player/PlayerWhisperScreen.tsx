@@ -30,6 +30,7 @@ import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
 import { useRealtimeWhispers } from '../../hooks/useRealtimeWhispers';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { blockWhisperUser, reportWhisper } from '../../api/whisperSafety';
+import { showWhisperRules } from '../../lib/whisper-rules-prompt';
 
 const QUICK_PRESETS = [
   'Tiro furtivo',
@@ -76,11 +77,14 @@ export const PlayerWhisperScreen: React.FC = () => {
   const handleSend = useCallback(async () => {
     if (!inputText.trim() || isSending) return;
     const textToSend = inputText.trim();
+    const result = await sendWhisper(effectiveCampaignId, effectiveGmId, textToSend);
+    if (!result.success) {
+      if (result.requiresRules) showWhisperRules();
+      else Alert.alert('Invio non riuscito', result.error || 'Il testo è stato conservato.');
+      return;
+    }
     setInputText('');
 
-    await sendWhisper(effectiveCampaignId, effectiveGmId, textToSend);
-
-    // Scroll to bottom immediately
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);

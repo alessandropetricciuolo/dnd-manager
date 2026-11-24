@@ -32,6 +32,7 @@ import { useGmCampaigns } from '../../hooks/useGmCampaigns';
 import { useRealtimeWhispers } from '../../hooks/useRealtimeWhispers';
 import { Character, WhisperMessage } from '../../types';
 import { blockWhisperUser, reportWhisper } from '../../api/whisperSafety';
+import { showWhisperRules } from '../../lib/whisper-rules-prompt';
 
 interface PlayerTarget {
   id: string;
@@ -163,15 +164,21 @@ export const GmWhispersInboxScreen: React.FC = () => {
       return;
     }
     const textToSend = replyText.trim();
-    setReplyText('');
 
-    if (activeTarget.isBroadcast) {
-      // Broadcast to every individual player in party
-      for (const target of realBroadcastTargets) {
-        await sendWhisper(activeCampaignId, target.id, `[TAVOLO] ${textToSend}`);
+    const targets = activeTarget.isBroadcast ? realBroadcastTargets : [activeTarget];
+    const text = activeTarget.isBroadcast ? `[TAVOLO] ${textToSend}` : textToSend;
+    const failed: string[] = [];
+    for (const target of targets) {
+      const result = await sendWhisper(activeCampaignId, target.id, text);
+      if (result.requiresRules) {
+        showWhisperRules();
+        return;
       }
-    } else {
-      await sendWhisper(activeCampaignId, activeTarget.id, textToSend);
+      if (!result.success) failed.push(target.charName);
+    }
+    if (failed.length < targets.length) setReplyText('');
+    if (failed.length > 0) {
+      Alert.alert('Invio non riuscito', `Sussurro non recapitato a ${failed.join(', ')}.`);
     }
 
     setTimeout(() => {

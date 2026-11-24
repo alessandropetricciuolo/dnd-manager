@@ -39,7 +39,8 @@ export function DeleteUserButton({
     try {
       const result = await deleteUser(userId);
       if (result.success) {
-        toast.success(result.message);
+        if (result.confirmationPending) toast.warning(result.message);
+        else toast.success(result.message);
         setOpen(false);
         if (redirectAfter) {
           router.push("/admin");
@@ -73,9 +74,8 @@ export function DeleteUserButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Eliminare utente?</AlertDialogTitle>
           <AlertDialogDescription className="text-barber-paper/70">
-            Stai per eliminare <strong>{userLabel}</strong>. Verranno rimossi account, profilo e iscrizioni alle sessioni.
-            Le sessioni di cui è DM verranno lasciate senza DM. Non puoi eliminare un utente che è GM di una campagna:
-            assegna prima un altro GM. Questa azione non è reversibile.
+            Stai per eliminare definitivamente <strong>{userLabel}</strong>. Le sue campagne e sessioni passeranno
+            al tuo account admin. Al termine verrà inviata un’email di conferma all’indirizzo associato.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="gap-2">

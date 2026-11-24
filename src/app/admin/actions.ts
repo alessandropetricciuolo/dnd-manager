@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
+import { ACCOUNT_SAFETY_PATH, getAccountSafetyAdmin, sendDeletionConfirmation } from "@/lib/admin-account-safety";
 
 const ALLOWED_ROLES = ["player", "gm", "admin"] as const;
 
@@ -239,63 +240,33 @@ export async function updateUserProfile(
 export type DeleteUserResult = {
   success: boolean;
   message: string;
+  confirmationPending?: boolean;
 };
 
-/** Elimina un utente (auth + profile). Blocca se è GM di campagne. Solo admin. */
+/** Trasferisce la gestione delle campagne ed elimina l'account in una transazione. */
 export async function deleteUser(userId: string): Promise<DeleteUserResult> {
   try {
-    const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return { success: false, message: "Non autenticato." };
-    }
-
-    if (user.id === userId) {
+    const caller = await getAccountSafetyAdmin();
+    if (!caller) return { success: false, message: "Accesso riservato agli admin." };
+    if (caller.userId === userId) {
       return { success: false, message: "Non puoi eliminare il tuo account." };
     }
 
-    const { data: callerProfile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
-
-    if (callerProfile?.role !== "admin") {
-      return { success: false, message: "Solo gli admin possono eliminare utenti." };
+    const { data: requestId, error } = await caller.admin.rpc("complete_barber_account_deletion", {
+      p_user_id: userId,
+      p_admin_id: caller.userId,
+    });
+    if (error || !requestId) {
+      console.error("[deleteUser] deletion transaction", error?.code, error?.message);
+      return { success: false, message: error?.code === "P0001" ? error.message : "Cancellazione non riuscita. Riprova." };
     }
 
-    const admin = createSupabaseAdminClient();
-
-    const { data: campaignsAsGm } = await admin
-      .from("campaigns")
-      .select("id")
-      .eq("gm_id", userId)
-      .limit(1);
-
-    if (campaignsAsGm && campaignsAsGm.length > 0) {
-      return {
-        success: false,
-        message: "Impossibile eliminare: l'utente è GM di una o più campagne. Assegna un altro GM alle campagne prima di eliminare.",
-      };
-    }
-
-    await admin.from("sessions").update({ dm_id: null } as never).eq("dm_id", userId);
-    await admin.from("session_signups").delete().eq("player_id", userId);
-    await admin.from("profiles").delete().eq("id", userId);
-
-    const { error: authError } = await admin.auth.admin.deleteUser(userId);
-
-    if (authError) {
-      console.error("[deleteUser] auth", authError);
-      return { success: false, message: authError.message ?? "Errore durante l'eliminazione." };
-    }
-
+    const confirmationSent = await sendDeletionConfirmation(caller.admin, requestId).catch(() => false);
     revalidatePath("/admin");
-    return { success: true, message: "Utente eliminato." };
+    revalidatePath(ACCOUNT_SAFETY_PATH);
+    return confirmationSent
+      ? { success: true, message: "Utente eliminato. Email di conferma inviata." }
+      : { success: true, confirmationPending: true, message: "Utente eliminato. Riprova l’invio dell’email da Account e Whisper." };
   } catch (err) {
     console.error("[deleteUser]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };

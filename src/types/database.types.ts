@@ -800,6 +800,48 @@ export interface Database {
         Insert: Omit<Database["public"]["Tables"]["campaign_characters"]["Row"], "created_at" | "updated_at">;
         Update: Partial<Database["public"]["Tables"]["campaign_characters"]["Insert"]>;
       };
+      account_deletion_requests: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          status: "pending" | "in_progress" | "completed" | "rejected";
+          created_at: string;
+          updated_at: string;
+          handled_at: string | null;
+          handling_notes: string | null;
+          confirmation_email: string | null;
+          confirmation_claimed_at: string | null;
+          confirmation_sent_at: string | null;
+        };
+        Insert: { user_id: string };
+        Update: Partial<Database["public"]["Tables"]["account_deletion_requests"]["Row"]>;
+        Relationships: [];
+      };
+      whisper_reports: {
+        Row: {
+          id: string;
+          reporter_id: string;
+          reported_user_id: string;
+          whisper_id: string | null;
+          campaign_id: string;
+          reason: string;
+          details: string | null;
+          created_at: string;
+          review_outcome: "dismissed" | "removed" | null;
+          reviewed_at: string | null;
+          reviewed_by: string | null;
+        };
+        Insert: {
+          reporter_id: string;
+          reported_user_id: string;
+          whisper_id: string;
+          campaign_id: string;
+          reason: string;
+          details?: string | null;
+        };
+        Update: never;
+        Relationships: [];
+      };
       secret_whispers: {
         Row: {
           id: string;
@@ -1612,6 +1654,22 @@ export interface Database {
       };
     };
     Functions: {
+      complete_barber_account_deletion: {
+        Args: { p_user_id: string; p_admin_id: string };
+        Returns: string;
+      };
+      review_whisper_report: {
+        Args: { p_report_id: string; p_admin_id: string; p_remove: boolean };
+        Returns: boolean;
+      };
+      accept_whisper_rules_v1: {
+        Args: Record<PropertyKey, never>;
+        Returns: undefined;
+      };
+      has_whisper_rules_v1: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       close_session_with_xp_persisted: {
         Args: {
           p_session_id: string;

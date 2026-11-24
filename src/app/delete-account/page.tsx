@@ -12,7 +12,7 @@ export default function DeleteAccountPage() {
       <article className="mx-auto max-w-3xl">
         <h1 className="font-serif text-3xl font-semibold text-barber-gold md:text-4xl">Eliminazione account</h1>
         <p className="mt-5 leading-7 text-barber-paper/85">
-          Accedi per inviare una richiesta di cancellazione. La richiesta entra in una coda gestita manualmente dal team; l’invio non elimina automaticamente l’account o i dati associati.
+          Accedi per inviare una richiesta di cancellazione. L’admin la completa entro 30 giorni dall’invio e ti invia una conferma via email.
         </p>
         <AccountDeletionRequest />
         <p className="mt-6 text-sm leading-6 text-barber-paper/70">

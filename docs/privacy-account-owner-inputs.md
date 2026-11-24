@@ -1,15 +1,22 @@
 # Privacy and account owner inputs
 
-The account request path currently records a request as `pending` for manual handling. It does not delete an Auth user or application data. There is no operator screen, notification, or automated processing in this change. Before describing deletion timing or outcomes to users, the owner must define and implement the handling procedure.
+The request path records a request as `pending` for manual handling. The admin starts the deletion from **Account e Whisper** or the user's admin profile.
 
-The operational workflow still needs an owner:
+## Account deletion decisions
 
-1. An authorized operator checks `account_deletion_requests` for `pending` rows and verifies the linked account through the existing account identity.
-2. The operator changes the request to `in_progress` and updates `updated_at`, following a retention and campaign-data policy the owner has approved.
-3. Once the approved handling is complete, the operator records the outcome as `completed` or `rejected`, updates `updated_at`, and fills `handled_at` and concise `handling_notes` where appropriate.
-4. The owner defines and implements how the user is notified and how the result is checked. The current route sends no follow-up message and makes no claim about a processing deadline.
+Alessandro handles account deletion as the Barber & Dragons admin. The service target is to complete deletion within 30 days of receiving the request and confirm completion by email.
 
-This note documents a required operational task, not evidence that the handling workflow is currently staffed, automated, or legally complete.
+Before deleting a GM account, transfer the campaigns and sessions assigned to that account to the Barber & Dragons admin. Verify that the transfer preserves the existing campaigns and sessions and that the recipient is an active admin distinct from the account being deleted. Keep the request in progress if the transfer has not been verified.
+
+## Admin workflow
+
+1. The admin opens the request, verifies the account and confirms **Elimina**.
+2. The database transfers campaigns and sessions to the admin, clears supported personal references and deletes the Auth account in one transaction. Open Whisper reports, owned Storage files and unresolved database references must be handled first. A failed transaction leaves the account and ownership intact.
+3. The server sends a confirmation email after the transaction. If sending fails, use **Riprova invio email** in the admin panel. The email address is cleared from the receipt after a successful send.
+
+Alessandro also reviews Whisper reports in **Account e Whisper**. He can archive a report or remove the reported message from the conversation and campaign memory. Participants must accept the Whisper rules before sending their first message.
+
+The admin panel, public copy, database migration and compatible mobile build should be released together. The database starts enforcing the rules when the migration is applied, so older mobile builds cannot accept them.
 
 Owner decisions still required before expanding the privacy notice:
 
@@ -17,7 +24,7 @@ Owner decisions still required before expanding the privacy notice:
 - Which account, gameplay, communication, device, and diagnostic data are collected, and for what purposes and legal bases.
 - Retention periods or criteria for each data category, including whispers, account deletion requests, and reports.
 - How access, correction, export, objection, and deletion requests are verified, handled, and completed.
-- Who reviews abuse reports, who can access them, and the retention policy for reports and blocks.
+- How long to retain abuse reports and blocks.
 - Whether deleting an account affects campaign records, messages, backups, or other users' records, and how any exceptions are explained.
 - The support contact and any response-time commitment the owner is prepared to meet.
 

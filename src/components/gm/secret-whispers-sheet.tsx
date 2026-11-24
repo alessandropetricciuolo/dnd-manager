@@ -14,6 +14,7 @@ import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import {
   getCampaignPlayersForWhispers,
   getSecretWhispers,
+  getWhisperRulesStatus,
   insertSecretWhisper,
   type WhisperPlayer,
   type SecretWhisperRow,
@@ -23,6 +24,7 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { ReportWhisperButton, WhisperRulesDialog } from "@/components/whisper-safety-controls";
 
 type Props = {
   open: boolean;
@@ -43,6 +45,7 @@ export function SecretWhispersSheet({
   campaignId,
   currentUserId,
 }: Props) {
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [players, setPlayers] = useState<WhisperPlayer[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(false);
   const [selectedPlayer, setSelectedPlayer] = useState<WhisperPlayer | null>(null);
@@ -112,6 +115,9 @@ export function SecretWhispersSheet({
           }
         }
       )
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "secret_whispers" }, ({ old: row }) => {
+        if (row.id) setMessages((prev) => prev.filter((message) => message.id !== row.id));
+      })
       .subscribe();
     channelRef.current = channel;
     return () => {
@@ -132,6 +138,13 @@ export function SecretWhispersSheet({
       e.target.value = "";
       if (!file || !file.type.startsWith("image/")) return;
       setUploadingImage(true);
+      const rules = await getWhisperRulesStatus();
+      if (!rules.success || !rules.data) {
+        setUploadingImage(false);
+        if (rules.success) setRulesOpen(true);
+        else toast.error(rules.error);
+        return;
+      }
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", "photo");
@@ -164,6 +177,8 @@ export function SecretWhispersSheet({
         const row = res.data;
         setMessages((prev) => [...prev, row]);
       }
+    } else if (res.requiresRules) {
+      setRulesOpen(true);
     } else {
       toast.error(res.error ?? "Errore invio");
     }
@@ -171,6 +186,7 @@ export function SecretWhispersSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
+      <WhisperRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
       <SheetContent
         side="right"
         className="flex w-full flex-col border-amber-600/30 bg-zinc-950 p-0 sm:max-w-md"
@@ -278,6 +294,7 @@ export function SecretWhispersSheet({
                           >
                             {format(new Date(msg.created_at), "HH:mm · d MMM", { locale: it })}
                           </p>
+                          {msg.receiver_id === currentUserId && !isFromMe ? <ReportWhisperButton messageId={msg.id} /> : null}
                         </div>
                       );
                     })

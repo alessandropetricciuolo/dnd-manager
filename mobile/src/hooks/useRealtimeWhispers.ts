@@ -1,8 +1,18 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCampaign } from '../contexts/CampaignContext';
 import { WhisperMessage, PlayerConversationSummary } from '../types';
+import {
+  containsObjectionableContent,
+  filterWhispersByBlockedUsers,
+  formatWhisperSendError,
+  reconcileConfirmedWhisper,
+  reconcileRealtimeWhisper,
+  removeOptimisticWhisper,
+} from '../lib/whisper-state';
+import { listBlockedWhisperUsers } from '../api/whisperSafety';
+import { WHISPER_RULES_REQUIRED } from '../lib/whisper-rules';
 
 export interface UseRealtimeWhispersOptions {
   campaignId?: string | null;
@@ -14,6 +24,7 @@ export interface SendWhisperResult {
   success: boolean;
   message?: WhisperMessage;
   error?: string;
+  requiresRules?: boolean;
 }
 
 export interface UseRealtimeWhispersReturn {
@@ -31,6 +42,7 @@ export interface UseRealtimeWhispersReturn {
   isSending: boolean;
   error: string | null;
   refreshMessages: () => Promise<void>;
+  refreshBlockedUsers: () => Promise<void>;
 }
 
 export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRealtimeWhispersReturn {
@@ -43,10 +55,36 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
   const autoMarkRead = options?.autoMarkRead ?? false;
 
   const [activePartnerId, setActivePartnerId] = useState<string | null>(initialPartnerId);
-  const [allMessages, setAllMessages] = useState<WhisperMessage[]>([]);
+  const [rawMessages, setRawMessages] = useState<WhisperMessage[]>([]);
+  const [blockedUserIds, setBlockedUserIds] = useState<Set<string>>(() => new Set<string>());
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  const refreshBlockedUsers = useCallback(async () => {
+    if (!currentUserId) {
+      setBlockedUserIds(new Set());
+      return;
+    }
+    try {
+      const rows = await listBlockedWhisperUsers(currentUserId);
+      setBlockedUserIds(new Set(rows.map((r) => r.blocked_id).filter(Boolean)));
+    } catch {
+      // Keep previous blocklist if transient error occurs
+    }
+  }, [currentUserId]);
+
+  useEffect(() => {
+    void refreshBlockedUsers();
+  }, [refreshBlockedUsers]);
+
+  const allMessages = useMemo(
+    () =>
+      filterWhispersByBlockedUsers(rawMessages, blockedUserIds).filter(
+        (m) => !containsObjectionableContent(m.message || '')
+      ),
+    [rawMessages, blockedUserIds]
+  );
 
   // Set of message IDs that have been read by current user
   const [readMessageIds, setReadMessageIds] = useState<Set<string>>(() => new Set<string>());
@@ -60,38 +98,39 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
 
   // Load whispers from Supabase for the campaign
   const fetchMessages = useCallback(async () => {
+    if (!currentUserId || !campaignId) {
+      setRawMessages([]);
+      setError(null);
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
     try {
-      let query = supabase
+      await refreshBlockedUsers();
+      const { data, error: dbErr } = await supabase
         .from('secret_whispers')
         .select('*')
+        .eq('campaign_id', campaignId)
         .order('created_at', { ascending: true });
-
-      if (campaignId) {
-        query = query.eq('campaign_id', campaignId);
-      }
-
-      const { data, error: dbErr } = await query;
 
       if (dbErr) {
         console.warn('[useRealtimeWhispers] Supabase query error:', dbErr.message);
         setError(dbErr.message);
-        setAllMessages([]);
-      } else if (data && data.length > 0) {
-        setAllMessages(data as WhisperMessage[]);
+        setRawMessages([]);
       } else {
-        setAllMessages([]);
+        setRawMessages((data as WhisperMessage[]) || []);
       }
     } catch (err: any) {
       console.warn('[useRealtimeWhispers] fetchMessages exception:', err);
       setError(err?.message || 'Errore di connessione');
-      setAllMessages([]);
+      setRawMessages([]);
     } finally {
       setIsLoading(false);
     }
-  }, [campaignId]);
+  }, [campaignId, currentUserId, refreshBlockedUsers]);
 
   // Initial fetch on mount or campaign change
   useEffect(() => {
@@ -118,28 +157,7 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
             return;
           }
 
-          setAllMessages((prev) => {
-            // Check if already in list (avoid duplicate)
-            const exists = prev.some((m) => m.id === newRow.id);
-            if (exists) return prev;
-
-            // Check if replaces an optimistic message from the same sender to receiver with same text
-            const optimisticIndex = prev.findIndex(
-              (m) =>
-                m.id.startsWith('optimistic-') &&
-                m.sender_id === newRow.sender_id &&
-                m.receiver_id === newRow.receiver_id &&
-                m.message === newRow.message
-            );
-
-            if (optimisticIndex !== -1) {
-              const updated = [...prev];
-              updated[optimisticIndex] = newRow;
-              return updated;
-            }
-
-            return [...prev, newRow];
-          });
+          setRawMessages((prev) => reconcileRealtimeWhisper(prev, newRow));
 
           // Auto-mark as read if current user is active partner with the sender
           if (
@@ -152,6 +170,10 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
           }
         }
       )
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'secret_whispers' }, (payload) => {
+        const removedId = payload.old.id;
+        if (removedId) setRawMessages((prev) => prev.filter((message) => message.id !== removedId));
+      })
       .subscribe();
 
     return () => {
@@ -159,7 +181,7 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
     };
   }, [campaignId, activePartnerId, currentUserId, autoMarkRead]);
 
-  // Send whisper with optimistic offline fallback
+  // Send whisper with real persistence check and rollback on failure
   const sendWhisper = useCallback(
     async (targetCampaignId: string, receiverId: string, text: string): Promise<SendWhisperResult> => {
       const cleanText = text.trim();
@@ -167,12 +189,28 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
         return { success: false, error: 'Il testo del messaggio non può essere vuoto.' };
       }
 
-      const activeCampaignId = targetCampaignId || campaignId || '';
+      const activeTargetCampaignId = (targetCampaignId || campaignId || '').trim();
+      if (!currentUserId) {
+        return { success: false, error: 'Sessione non autenticata. Accedi nuovamente per inviare un sussurro.' };
+      }
+      if (!activeTargetCampaignId) {
+        return { success: false, error: 'Seleziona prima una campagna valida per inviare un sussurro.' };
+      }
+      if (!receiverId || !receiverId.trim()) {
+        return { success: false, error: 'Destinatario non valido o non ancora assegnato per questa campagna.' };
+      }
+      if (containsObjectionableContent(cleanText)) {
+        return {
+          success: false,
+          error: 'Il messaggio contiene termini non consentiti dalle linee guida della community. Modifica il testo per inviare.',
+        };
+      }
+
       const optimisticId = `optimistic-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
 
       const optimisticMsg: WhisperMessage = {
         id: optimisticId,
-        campaign_id: activeCampaignId,
+        campaign_id: activeTargetCampaignId,
         sender_id: currentUserId,
         receiver_id: receiverId,
         message: cleanText,
@@ -181,15 +219,16 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
       };
 
       // 1. Optimistic local state update
-      setAllMessages((prev) => [...prev, optimisticMsg]);
+      setRawMessages((prev) => [...prev, optimisticMsg]);
       setIsSending(true);
+      setError(null);
 
       try {
         // 2. Perform Supabase database insert
         const { data, error: insertErr } = await supabase
           .from('secret_whispers')
           .insert({
-            campaign_id: activeCampaignId,
+            campaign_id: activeTargetCampaignId,
             sender_id: currentUserId,
             receiver_id: receiverId,
             message: cleanText,
@@ -197,23 +236,29 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
           .select('*')
           .single();
 
-        if (insertErr) {
-          console.warn('[useRealtimeWhispers] Supabase insert failed, keeping optimistic whisper:', insertErr.message);
-          // Still keep optimistic message in state so user doesn't lose text
-          return { success: true, message: optimisticMsg };
+        if (insertErr || !data) {
+          setRawMessages((prev) => removeOptimisticWhisper(prev, optimisticId));
+          if (insertErr?.code === WHISPER_RULES_REQUIRED) {
+            return { success: false, requiresRules: true };
+          }
+          const readableError = formatWhisperSendError(insertErr?.message);
+          console.warn('[useRealtimeWhispers] Supabase insert failed:', insertErr?.message);
+          setError(readableError);
+          return { success: false, error: readableError };
         }
 
-        const confirmedMsg = (data as WhisperMessage) || optimisticMsg;
+        const confirmedMsg = data as WhisperMessage;
 
-        // 3. Replace optimistic message with confirmed row
-        setAllMessages((prev) =>
-          prev.map((m) => (m.id === optimisticId ? confirmedMsg : m))
-        );
+        // 3. Reconcile optimistic message with confirmed row (deduplicated against Realtime)
+        setRawMessages((prev) => reconcileConfirmedWhisper(prev, optimisticId, confirmedMsg));
 
         return { success: true, message: confirmedMsg };
       } catch (err: any) {
-        console.warn('[useRealtimeWhispers] sendWhisper exception, offline optimistic fallback active:', err);
-        return { success: true, message: optimisticMsg };
+        const readableError = formatWhisperSendError(err?.message);
+        console.warn('[useRealtimeWhispers] sendWhisper exception:', err);
+        setRawMessages((prev) => removeOptimisticWhisper(prev, optimisticId));
+        setError(readableError);
+        return { success: false, error: readableError };
       } finally {
         setIsSending(false);
       }
@@ -335,6 +380,7 @@ export function useRealtimeWhispers(options?: UseRealtimeWhispersOptions): UseRe
     isSending,
     error,
     refreshMessages: fetchMessages,
+    refreshBlockedUsers,
   };
 }
 

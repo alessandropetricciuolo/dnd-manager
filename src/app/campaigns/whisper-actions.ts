@@ -2,12 +2,14 @@
 
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
+import { accountSafetyClient } from "@/utils/supabase/account-safety";
 import { isSafeTelegramProxyPath } from "@/lib/security/url";
 import { syncSecretWhisperToCampaignMemory } from "@/lib/campaign-memory-indexer";
+import { WHISPER_RULES_REQUIRED } from "../../../mobile/src/lib/whisper-rules";
 
 type WhisperResult<T = void> =
   | { success: true; data?: T }
-  | { success: false; error: string };
+  | { success: false; error: string; requiresRules?: boolean };
 
 export type WhisperPlayer = {
   id: string;
@@ -89,6 +91,41 @@ export type SecretWhisperRow = {
   created_at: string;
 };
 
+export async function acceptWhisperRules(): Promise<WhisperResult> {
+  const supabase = accountSafetyClient(await createSupabaseServerClient());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Non autenticato." };
+  const { error } = await supabase.rpc("accept_whisper_rules_v1");
+  if (error) return { success: false, error: "Accettazione non riuscita." };
+  return { success: true };
+}
+
+export async function getWhisperRulesStatus(): Promise<WhisperResult<boolean>> {
+  const supabase = accountSafetyClient(await createSupabaseServerClient());
+  const { data, error } = await supabase.rpc("has_whisper_rules_v1");
+  if (error) return { success: false, error: "Impossibile verificare le regole di Whisper." };
+  return { success: true, data };
+}
+
+export async function reportReceivedWhisper(whisperId: string): Promise<WhisperResult> {
+  const supabase = accountSafetyClient(await createSupabaseServerClient());
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { success: false, error: "Non autenticato." };
+  const { data: whisper } = await supabase.from("secret_whispers")
+    .select("id, sender_id, campaign_id").eq("id", whisperId).eq("receiver_id", user.id).maybeSingle();
+  if (!whisper || whisper.sender_id === user.id) return { success: false, error: "Sussurro non disponibile." };
+
+  const { error } = await supabase.from("whisper_reports").insert({
+    whisper_id: whisper.id,
+    reporter_id: user.id,
+    reported_user_id: whisper.sender_id,
+    campaign_id: whisper.campaign_id,
+    reason: "Comportamento inappropriato",
+  });
+  if (error) return { success: false, error: "Impossibile inviare la segnalazione." };
+  return { success: true };
+}
+
 /** Messaggi tra due utenti nella campagna (GM ↔ player). */
 export async function getSecretWhispers(
   campaignId: string,
@@ -126,7 +163,7 @@ export async function insertSecretWhisper(
   receiverId: string,
   payload: { message?: string | null; image_url?: string | null }
 ): Promise<WhisperResult<SecretWhisperRow>> {
-  const supabase = await createSupabaseServerClient();
+  const supabase = accountSafetyClient(await createSupabaseServerClient());
   const {
     data: { user },
     error: userError,
@@ -156,6 +193,9 @@ export async function insertSecretWhisper(
     .single();
 
   if (error) {
+    if (error.code === WHISPER_RULES_REQUIRED) {
+      return { success: false, error: "Accetta le regole di Whisper prima di inviare.", requiresRules: true };
+    }
     console.error("[insertSecretWhisper]", error);
     return { success: false, error: error.message ?? "Errore nell'invio." };
   }

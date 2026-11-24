@@ -93,7 +93,7 @@ export const AccountScreen: React.FC = () => {
       if (!response.ok) throw new Error('Richiesta non inviata');
       Alert.alert(
         'Richiesta registrata',
-        'Il team prenderà in carico la richiesta manualmente. L’invio non cancella subito l’account; riceverai un aggiornamento all’indirizzo associato.'
+        'L’admin completerà la cancellazione entro 30 giorni dall’invio. Riceverai una conferma all’indirizzo email associato.'
       );
     } catch {
       Alert.alert('Invio non riuscito', 'Non siamo riusciti a inviare la richiesta. Riprova o contatta il supporto.');
@@ -348,7 +348,7 @@ export const AccountScreen: React.FC = () => {
       <View style={[styles.card, styles.dangerCard]}>
         <Text style={styles.sectionTitle}>Eliminazione Account</Text>
         <Text style={styles.bodyText}>
-          Puoi inviare una richiesta di cancellazione. Il team la gestirà manualmente; questa azione non elimina subito l’account.
+          Puoi chiedere la cancellazione dell’account. L’admin la completerà entro 30 giorni dall’invio e ti invierà una conferma via email.
         </Text>
         <TouchableOpacity
           style={styles.deleteButton}

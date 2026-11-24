@@ -13,6 +13,7 @@ import { Mail, Loader2, Send, Image as ImageIcon, X } from "lucide-react";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import {
   getSecretWhispers,
+  getWhisperRulesStatus,
   insertSecretWhisper,
   type SecretWhisperRow,
 } from "@/app/campaigns/whisper-actions";
@@ -21,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { ReportWhisperButton, WhisperRulesDialog } from "@/components/whisper-safety-controls";
 
 type PlayerSecretChatProps = {
   campaignId: string;
@@ -36,6 +38,7 @@ function proxyImageUrl(fileIdOrUrl: string): string {
 
 export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecretChatProps) {
   const [open, setOpen] = useState(false);
+  const [rulesOpen, setRulesOpen] = useState(false);
   const [hasUnread, setHasUnread] = useState(false);
   const [messages, setMessages] = useState<SecretWhisperRow[]>([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
@@ -90,6 +93,9 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
           }
         }
       )
+      .on("postgres_changes", { event: "DELETE", schema: "public", table: "secret_whispers" }, ({ old: row }) => {
+        if (row.id) setMessages((prev) => prev.filter((message) => message.id !== row.id));
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
@@ -102,6 +108,13 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
       e.target.value = "";
       if (!file || !file.type.startsWith("image/")) return;
       setUploadingImage(true);
+      const rules = await getWhisperRulesStatus();
+      if (!rules.success || !rules.data) {
+        setUploadingImage(false);
+        if (rules.success) setRulesOpen(true);
+        else toast.error(rules.error);
+        return;
+      }
       const formData = new FormData();
       formData.append("file", file);
       formData.append("type", "photo");
@@ -132,6 +145,8 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
       if (res.data) {
         setMessages((prev) => [...prev, res.data!]);
       }
+    } else if (res.requiresRules) {
+      setRulesOpen(true);
     } else {
       toast.error(res.error ?? "Errore invio");
     }
@@ -139,6 +154,7 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
 
   return (
     <>
+      <WhisperRulesDialog open={rulesOpen} onOpenChange={setRulesOpen} />
       <div className="fixed right-6 z-30 bottom-[max(5.5rem,calc(env(safe-area-inset-bottom)+1.5rem))]">
         <Button
           type="button"
@@ -223,6 +239,7 @@ export function PlayerSecretChat({ campaignId, currentUserId, gmId }: PlayerSecr
                       >
                         {format(new Date(msg.created_at), "HH:mm · d MMM", { locale: it })}
                       </p>
+                      {msg.receiver_id === currentUserId && !isFromMe ? <ReportWhisperButton messageId={msg.id} /> : null}
                     </div>
                   );
                 })
