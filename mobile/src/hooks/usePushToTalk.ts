@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import type { AppStateStatus } from 'react-native';
+import type { AppState } from 'react-native';
 import type {
   ExpoSpeechRecognitionNativeEventMap,
   ExpoSpeechRecognitionOptions,
@@ -24,7 +24,7 @@ type SpeechModule = {
 
 export type PushToTalkState = 'idle' | 'requesting' | 'starting' | 'listening' | 'stopping' | 'unavailable';
 
-export function shouldCancelVoiceOnAppStateChange(state: PushToTalkState, appState: AppStateStatus): boolean {
+export function shouldCancelVoiceOnAppStateChange(state: PushToTalkState, appState: typeof AppState.currentState): boolean {
   // The Android permission activity can temporarily put our activity in the background.
   // Do not invalidate its pending permission result; begin() rechecks foreground state.
   return appState !== 'active' && (state === 'starting' || state === 'listening' || state === 'stopping');
@@ -39,6 +39,7 @@ export function describeSpeechRecognitionError(event: ExpoSpeechRecognitionNativ
     'no-speech': 'Nessuna voce riconosciuta. Tieni premuto, attendi “In ascolto”, parla e poi rilascia.',
     'speech-timeout': 'Il servizio non ha rilevato voce. Tieni premuto mentre parli.',
     'busy': 'Il servizio vocale è occupato. Attendi un momento e riprova.',
+    'too-many-requests': 'Il servizio vocale ha ricevuto troppe richieste. Attendi un momento e riprova.',
     'audio-capture': 'Il telefono non riesce ad aprire il microfono. Verifica che non sia usato da un’altra app.',
     'interrupted': 'La dettatura è stata interrotta dal telefono.',
     'aborted': 'Dettatura annullata.',
@@ -70,7 +71,7 @@ export function usePushToTalk() {
   const stoppingRef = useRef(false);
   const stateRef = useRef<PushToTalkState>('idle');
   const generationRef = useRef(0);
-  const appStateRef = useRef<AppStateStatus>('active');
+  const appStateRef = useRef<typeof AppState.currentState>('active');
 
   const changeState = useCallback((next: PushToTalkState) => {
     stateRef.current = next;
@@ -212,7 +213,7 @@ export function usePushToTalk() {
     changeState('idle');
   }, [changeState, clearListeners]);
 
-  const handleAppStateChange = useCallback((next: AppStateStatus) => {
+  const handleAppStateChange = useCallback((next: typeof AppState.currentState) => {
     appStateRef.current = next;
     if (shouldCancelVoiceOnAppStateChange(stateRef.current, next)) {
       cancel('Dettatura annullata: Android ha portato l’app in secondo piano. Torna qui e riprova.');

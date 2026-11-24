@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import { AppState, AppStateStatus } from 'react-native';
+import { AppState } from 'react-native';
 import { ExpoSecureStoreAdapter } from '../api/supabase';
 import { useGmCampaigns } from '../hooks/useGmCampaigns';
 import { ParsedGmRemoteQr } from '../utils/qrParser';
@@ -124,7 +124,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [isValidating, setIsValidating] = useState(false);
   const [consumers, setConsumers] = useState<Record<string, boolean>>({});
-  const appState = useRef<AppStateStatus>(AppState.currentState);
+  const appState = useRef(AppState.currentState);
   const pairingRef = useRef<Pairing | null>(null);
   const campaignRef = useRef<string | null>(activeCampaign?.id ?? null);
   const validationSequence = useRef(0);

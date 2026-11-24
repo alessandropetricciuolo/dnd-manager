@@ -4,7 +4,7 @@ Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1
 
 ## Configurazione presente
 
-- Expo SDK 57, React Native 0.86, identificatore `com.barberanddragons.mobile`.
+- Expo SDK 58, React Native 0.88, identificatore `com.barberanddragons.mobile`.
 - `mobile/eas.json` definisce `development` (development client, iOS Simulator), `preview` (distribuzione interna; APK su Android e ad hoc su iOS) e `production` (build store con incremento automatico versione nativa).
 - `app.json` registra `expo-notifications` e richiede solo iPhone (`supportsTablet: false`). Le schermate non sono state verificate su iPad e l'MVP non dichiara supporto tablet.
 - L'icona usa il wordmark esistente centrato su canvas quadrato scuro; l'illustrazione originale non è stata ridisegnata.

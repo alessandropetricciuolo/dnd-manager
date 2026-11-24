@@ -8,6 +8,7 @@ import {
   RefreshControl,
   Modal,
   TextInput,
+  type TextInputInstance,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -96,7 +97,7 @@ export const GmRegiaScreen: React.FC = () => {
   const [manualPairingOpen, setManualPairingOpen] = useState(false);
   const [manualPairingInput, setManualPairingInput] = useState('');
   const [manualPairingToken, setManualPairingToken] = useState('');
-  const manualPairingInputRef = useRef<TextInput>(null);
+  const manualPairingInputRef = useRef<TextInputInstance>(null);
   const isFocused = useIsFocused();
   const live = useGmLive();
   useEffect(() => {

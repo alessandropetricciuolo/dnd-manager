@@ -11,12 +11,6 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
-    "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0B0908"
-    },
     "ios": {
       "supportsTablet": false,
       "usesAppleSignIn": true,
@@ -40,6 +34,7 @@
       ]
     },
     "plugins": [
+      "./plugins/with-xcode-project",
       "expo-apple-authentication",
       "expo-dev-client",
       "expo-secure-store",
@@ -48,7 +43,10 @@
         {
           "microphonePermission": "Consenti a Barber & Dragons di usare il microfono per dettare comandi al GM Screen.",
           "speechRecognitionPermission": "Consenti a Barber & Dragons di trascrivere la dettatura per il GM Screen.",
-          "androidSpeechServicePackages": ["com.google.android.googlequicksearchbox", "com.google.android.tts"]
+          "androidSpeechServicePackages": [
+            "com.google.android.googlequicksearchbox",
+            "com.google.android.tts"
+          ]
         }
       ],
       "expo-asset",
@@ -59,7 +57,15 @@
           "cameraPermission": "Consenti a Barber & Dragons di utilizzare la fotocamera per scansionare il QR code del Telecomando."
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0B0908"
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -178,7 +178,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const subscription = AppState.addEventListener('change', (nextState: typeof AppState.currentState) => {
       if (nextState === 'active') supabase.auth.startAutoRefresh();
       else supabase.auth.stopAutoRefresh();
-      if (previousState.match(/inactive|background/) && nextState === 'active') {
+      if ((previousState === 'inactive' || previousState === 'background') && nextState === 'active') {
         void refreshProfile();
       }
       previousState = nextState;
