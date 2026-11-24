@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { ACCOUNT_SAFETY_PATH, getAccountSafetyAdmin, sendDeletionConfirmation } from "@/lib/admin-account-safety";
+import { ACCOUNT_SAFETY_PATH, getAccountSafetyAdmin, revokeDeletionAppleAccess, sendDeletionConfirmation } from "@/lib/admin-account-safety";
 
 export async function retryAccountDeletionEmail(requestId: string) {
   const caller = await getAccountSafetyAdmin();
@@ -32,4 +32,15 @@ export async function closeWhisperReport(reportId: string, remove: boolean) {
   revalidatePath(ACCOUNT_SAFETY_PATH);
   if (!data) return { success: false, message: "Segnalazione già chiusa o non più disponibile." };
   return { success: true, message: remove ? "Sussurro rimosso e segnalazione chiusa." : "Segnalazione archiviata." };
+}
+
+export async function retryAppleRevocation(requestId: string) {
+  const caller = await getAccountSafetyAdmin();
+  if (!caller) return { success: false, message: "Accesso riservato agli admin." };
+  const success = await revokeDeletionAppleAccess(caller.admin, requestId);
+  revalidatePath(ACCOUNT_SAFETY_PATH);
+  return {
+    success,
+    message: success ? "Accesso Apple revocato." : "Revoca Apple ancora in sospeso. Riprova.",
+  };
 }

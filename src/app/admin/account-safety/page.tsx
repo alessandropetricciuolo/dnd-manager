@@ -14,13 +14,16 @@ export default async function AccountSafetyPage() {
   if (!caller) redirect("/dashboard");
   const { admin } = caller;
 
-  const [requests, confirmations, reports, reviewedReports] = await Promise.all([
+  const [requests, confirmations, revocations, reports, reviewedReports] = await Promise.all([
     admin.from("account_deletion_requests").select("id, user_id, created_at")
       .in("status", ["pending", "in_progress"]).not("user_id", "is", null)
       .order("created_at", { ascending: true }).limit(100),
     admin.from("account_deletion_requests").select("id, handled_at")
       .eq("status", "completed").not("confirmation_email", "is", null)
       .is("confirmation_sent_at", null).order("handled_at", { ascending: true }).limit(100),
+    admin.from("account_deletion_requests").select("id")
+      .eq("status", "completed").not("apple_revocation_token", "is", null)
+      .order("handled_at", { ascending: true }).limit(100),
     admin.from("whisper_reports").select("id, reporter_id, reported_user_id, whisper_id, campaign_id, reason, details, created_at")
       .is("reviewed_at", null).order("created_at", { ascending: true }).limit(100),
     admin.from("whisper_reports").select("id, reason, review_outcome, reviewed_at")
@@ -80,6 +83,19 @@ export default async function AccountSafetyPage() {
                   Richiesta {id.slice(0, 8)} · {handled_at ? dateFormat.format(new Date(handled_at)) : "Account eliminato"}
                 </p>
                 <SafetyAction id={id} action="resend" />
+              </div>
+            ))}
+          </section>
+        ) : null}
+
+        {revocations.error || revocations.data?.length ? (
+          <section className={sectionClass} aria-labelledby="revocations-heading">
+            <h2 id="revocations-heading" className="font-semibold text-barber-gold">Revoche Apple in sospeso</h2>
+            {revocations.error ? <p role="alert">Impossibile caricare le revoche in sospeso.</p> : null}
+            {revocations.data?.map(({ id }) => (
+              <div key={id} className="flex flex-wrap items-center justify-between gap-3 border-t border-barber-gold/20 pt-3">
+                <p className="text-sm text-barber-paper/80">Richiesta {id.slice(0, 8)}</p>
+                <SafetyAction id={id} action="revoke-apple" />
               </div>
             ))}
           </section>

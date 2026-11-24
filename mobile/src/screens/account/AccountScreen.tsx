@@ -1,3 +1,5 @@
+import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
+import { linkAppleIdentity, useAppleSignInAvailability } from '../../auth/apple';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -48,9 +50,24 @@ export const AccountScreen: React.FC = () => {
     error: pushError,
     loading: pushLoading,
   } = usePushNotifications();
+  const appleAvailable = useAppleSignInAvailability();
+  const [appleLinkBusy, setAppleLinkBusy] = useState(false);
+
   const [deletionBusy, setDeletionBusy] = useState(false);
   const [blockedUsers, setBlockedUsers] = useState<Array<{ blocked_id: string; created_at: string; blocked_name?: string | null }>>([]);
   const [blocksError, setBlocksError] = useState<string | null>(null);
+
+  const handleAppleLink = async () => {
+    if (appleLinkBusy) return;
+    setAppleLinkBusy(true);
+    try {
+      const result = await linkAppleIdentity();
+      if (result.linked) Alert.alert('Account Apple collegato', 'Puoi usare Apple per accedere a questo profilo.');
+      else if (result.error) Alert.alert('Collegamento non riuscito', result.error);
+    } finally {
+      setAppleLinkBusy(false);
+    }
+  };
 
   const refreshBlockedUsers = useCallback(async () => {
     if (!user?.id) return;
@@ -296,6 +313,20 @@ export const AccountScreen: React.FC = () => {
           </Text>
         ) : null}
       </View>
+
+      {appleAvailable && user ? (
+        <View style={styles.card} pointerEvents={appleLinkBusy ? 'none' : 'auto'}>
+          <Text style={styles.sectionTitle}>Collega account Apple</Text>
+          <Text style={styles.bodyText}>Puoi usare anche «Nascondi la mia email».</Text>
+          <AppleAuthenticationButton
+            buttonType={AppleAuthenticationButtonType.CONTINUE}
+            buttonStyle={AppleAuthenticationButtonStyle.WHITE}
+            cornerRadius={8}
+            style={{ width: '100%', height: 48 }}
+            onPress={() => { void handleAppleLink(); }}
+          />
+        </View>
+      ) : null}
 
       {/* AIUTO & ASSISTENZA */}
       <View style={styles.card}>

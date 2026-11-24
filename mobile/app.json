@@ -19,6 +19,7 @@
     },
     "ios": {
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "userInterfaceStyle": "dark",
       "bundleIdentifier": "com.barberanddragons.mobile",
       "buildNumber": "1"
@@ -39,6 +40,7 @@
       ]
     },
     "plugins": [
+      "expo-apple-authentication",
       "expo-dev-client",
       "expo-secure-store",
       [

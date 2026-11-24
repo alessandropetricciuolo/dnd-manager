@@ -812,9 +812,16 @@ export interface Database {
           confirmation_email: string | null;
           confirmation_claimed_at: string | null;
           confirmation_sent_at: string | null;
+          apple_revocation_token: string | null;
         };
         Insert: { user_id: string };
         Update: Partial<Database["public"]["Tables"]["account_deletion_requests"]["Row"]>;
+        Relationships: [];
+      };
+      apple_sign_in_tokens: {
+        Row: { user_id: string; encrypted_refresh_token: string };
+        Insert: { user_id: string; encrypted_refresh_token: string };
+        Update: { encrypted_refresh_token: string };
         Relationships: [];
       };
       whisper_reports: {
@@ -1654,6 +1661,10 @@ export interface Database {
       };
     };
     Functions: {
+      has_existing_apple_account: {
+        Args: { p_subject: string; p_verified_email: string | null };
+        Returns: boolean;
+      };
       complete_barber_account_deletion: {
         Args: { p_user_id: string; p_admin_id: string };
         Returns: string;

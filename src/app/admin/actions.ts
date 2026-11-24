@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
-import { ACCOUNT_SAFETY_PATH, getAccountSafetyAdmin, sendDeletionConfirmation } from "@/lib/admin-account-safety";
+import { ACCOUNT_SAFETY_PATH, getAccountSafetyAdmin, revokeDeletionAppleAccess, sendDeletionConfirmation } from "@/lib/admin-account-safety";
 
 const ALLOWED_ROLES = ["player", "gm", "admin"] as const;
 
@@ -241,6 +241,7 @@ export type DeleteUserResult = {
   success: boolean;
   message: string;
   confirmationPending?: boolean;
+  appleRevocationPending?: boolean;
 };
 
 /** Trasferisce la gestione delle campagne ed elimina l'account in una transazione. */
@@ -261,12 +262,22 @@ export async function deleteUser(userId: string): Promise<DeleteUserResult> {
       return { success: false, message: error?.code === "P0001" ? error.message : "Cancellazione non riuscita. Riprova." };
     }
 
-    const confirmationSent = await sendDeletionConfirmation(caller.admin, requestId).catch(() => false);
+    const [confirmationSent, appleRevoked] = await Promise.all([
+      sendDeletionConfirmation(caller.admin, requestId).catch(() => false),
+      revokeDeletionAppleAccess(caller.admin, requestId).catch(() => false),
+    ]);
     revalidatePath("/admin");
     revalidatePath(ACCOUNT_SAFETY_PATH);
-    return confirmationSent
-      ? { success: true, message: "Utente eliminato. Email di conferma inviata." }
-      : { success: true, confirmationPending: true, message: "Utente eliminato. Riprova l’invio dell’email da Account e Whisper." };
+    const confirmation = confirmationSent
+      ? "Email di conferma inviata."
+      : "Riprova l’invio dell’email da Account e Whisper.";
+    const revocation = appleRevoked ? "" : " Riprova la revoca Apple da Account e Whisper.";
+    return {
+      success: true,
+      confirmationPending: !confirmationSent,
+      appleRevocationPending: !appleRevoked,
+      message: `Utente eliminato. ${confirmation}${revocation}`,
+    };
   } catch (err) {
     console.error("[deleteUser]", err);
     return { success: false, message: "Errore imprevisto. Riprova." };

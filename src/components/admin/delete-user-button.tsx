@@ -39,7 +39,7 @@ export function DeleteUserButton({
     try {
       const result = await deleteUser(userId);
       if (result.success) {
-        if (result.confirmationPending) toast.warning(result.message);
+        if (result.confirmationPending || result.appleRevocationPending) toast.warning(result.message);
         else toast.success(result.message);
         setOpen(false);
         if (redirectAfter) {

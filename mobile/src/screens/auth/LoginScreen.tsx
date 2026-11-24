@@ -10,7 +10,9 @@ import {
   ScrollView,
   Alert,
   Linking,
+  Platform,
 } from 'react-native';
+import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Mail,
@@ -25,6 +27,7 @@ import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { requestWebPasswordReset } from '../../api/supabase';
 import { signInWithGoogle } from '../../auth/google';
+import { signInWithApple, useAppleSignInAvailability } from '../../auth/apple';
 
 export const LoginScreen: React.FC = () => {
   const { signIn } = useAuth();
@@ -35,7 +38,22 @@ export const LoginScreen: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
   const [isSigningInWithGoogle, setIsSigningInWithGoogle] = useState(false);
-  const isBusy = isSubmitting || isResettingPassword || isSigningInWithGoogle;
+  const [isSigningInWithApple, setIsSigningInWithApple] = useState(false);
+  const appleAvailable = useAppleSignInAvailability();
+  const googleAvailable = Platform.OS === 'android' || appleAvailable;
+  const isBusy = isSubmitting || isResettingPassword || isSigningInWithGoogle || isSigningInWithApple;
+
+  const handleAppleLogin = async () => {
+    if (isBusy) return;
+    setErrorMessage(null);
+    setIsSigningInWithApple(true);
+    try {
+      const result = await signInWithApple();
+      if (result.error) setErrorMessage(result.error);
+    } finally {
+      setIsSigningInWithApple(false);
+    }
+  };
 
   const handleGoogleLogin = async () => {
     if (isBusy) return;
@@ -229,30 +247,38 @@ export const LoginScreen: React.FC = () => {
               </Text>
             </TouchableOpacity>
 
-            <View style={styles.socialLogin}>
-              <TouchableOpacity
-                style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
-                onPress={handleGoogleLogin}
-                disabled={isBusy}
-                accessibilityRole="button"
-                accessibilityState={{ disabled: isBusy, busy: isSigningInWithGoogle }}
-              >
-                {isSigningInWithGoogle ? <ActivityIndicator size="small" color={colors.brassLight} /> : null}
-                <Text style={styles.socialButtonText}>
-                  {isSigningInWithGoogle ? 'Apertura di Google…' : 'Accedi con Google'}
+            {googleAvailable && (
+              <View style={styles.socialLogin}>
+                <TouchableOpacity
+                  style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
+                  onPress={handleGoogleLogin}
+                  disabled={isBusy}
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: isBusy, busy: isSigningInWithGoogle }}
+                >
+                  {isSigningInWithGoogle ? <ActivityIndicator size="small" color={colors.brassLight} /> : null}
+                  <Text style={styles.socialButtonText}>
+                    {isSigningInWithGoogle ? 'Apertura di Google…' : 'Accedi con Google'}
+                  </Text>
+                </TouchableOpacity>
+                {appleAvailable && (
+                  <View pointerEvents={isBusy ? 'none' : 'auto'} style={isBusy && styles.socialButtonDisabled}>
+                    <AppleAuthenticationButton
+                      buttonType={AppleAuthenticationButtonType.SIGN_IN}
+                      buttonStyle={AppleAuthenticationButtonStyle.WHITE}
+                      cornerRadius={10}
+                      style={styles.appleButton}
+                      onPress={handleAppleLogin}
+                    />
+                  </View>
+                )}
+                <Text style={styles.socialHint}>
+                  {appleAvailable
+                    ? 'Puoi collegare Apple da Account dopo aver effettuato l’accesso con la tua email.'
+                    : 'Usa lo stesso indirizzo email del tuo account Barber & Dragons.'}
                 </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.socialButton, styles.socialButtonDisabled]}
-                disabled
-                accessibilityRole="button"
-                accessibilityState={{ disabled: true }}
-              >
-                <Text style={styles.socialButtonText}>Accedi con Apple</Text>
-                <Text style={styles.socialButtonNote}>Presto disponibile</Text>
-              </TouchableOpacity>
-              <Text style={styles.socialHint}>Usa lo stesso indirizzo email del tuo account Barber &amp; Dragons.</Text>
-            </View>
+              </View>
+            )}
 
             {__DEV__ && (
               <View style={{ marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(212,175,55,0.15)', width: '100%', gap: 8 }}>
@@ -480,7 +506,7 @@ const styles = StyleSheet.create({
   },
   socialButtonDisabled: { opacity: 0.6 },
   socialButtonText: { color: colors.parchmentLight, fontSize: 14, fontWeight: '700' },
-  socialButtonNote: { color: colors.parchmentMuted, fontSize: 12 },
+  appleButton: { width: '100%', height: 48 },
   socialHint: { color: colors.parchmentMuted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   legalLinks: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14 },
   legalLink: { color: colors.parchmentMuted, fontSize: 12, textDecorationLine: 'underline' },

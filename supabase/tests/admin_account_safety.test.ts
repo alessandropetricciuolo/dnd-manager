@@ -22,7 +22,8 @@ test("moderation is private and account deletion transfers ownership atomically"
         SELECT nullif(current_setting('test.uid', true), '')::uuid
       $$;
       GRANT USAGE ON SCHEMA auth TO authenticated;
-      CREATE TABLE auth.users(id uuid PRIMARY KEY, email text);
+      CREATE TABLE auth.users(id uuid PRIMARY KEY, email text, email_confirmed_at timestamptz);
+      CREATE TABLE auth.identities(provider text, provider_id text);
       CREATE TABLE storage.objects(owner_id text, bucket_id text);
       CREATE TABLE public.profiles(id uuid PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE, role text NOT NULL);
       CREATE TABLE public.campaigns(id uuid PRIMARY KEY, gm_id uuid NOT NULL REFERENCES public.profiles ON DELETE CASCADE);
@@ -45,7 +46,8 @@ test("moderation is private and account deletion transfers ownership atomically"
         USING (auth.uid() IN (sender_id, receiver_id));
       GRANT SELECT, INSERT ON public.secret_whispers TO authenticated;
       GRANT SELECT ON public.campaigns TO authenticated;
-      INSERT INTO auth.users VALUES ('${admin}', 'admin@example.test'), ('${gm}', 'gm@example.test'), ('${player}', 'player@example.test');
+      INSERT INTO auth.users VALUES ('${admin}', 'admin@example.test', now()), ('${gm}', 'gm@example.test', now()), ('${player}', 'player@example.test', NULL);
+      INSERT INTO auth.identities VALUES ('apple', 'apple-user'), ('google', 'google-user');
       INSERT INTO public.profiles VALUES ('${admin}', 'admin'), ('${gm}', 'gm'), ('${player}', 'player');
       INSERT INTO public.campaigns VALUES ('${campaign}', '${gm}');
       INSERT INTO public.sessions VALUES (gen_random_uuid(), '${gm}');
@@ -56,8 +58,20 @@ test("moderation is private and account deletion transfers ownership atomically"
     const migration = await readFile("supabase/migrations/20261124110006_admin_account_deletion_and_whisper_moderation.sql", "utf8");
     await db.exec(base);
     await db.exec(migration);
+    await db.exec(await readFile("supabase/migrations/20261124205433_apple_signin_token_revocation.sql", "utf8"));
+
+    await db.exec(`SET ROLE service_role;
+      INSERT INTO public.apple_sign_in_tokens VALUES ('${gm}', 'encrypted-apple-token')`);
+    assert.deepEqual((await db.query(`
+      SELECT public.has_existing_apple_account('apple-user', NULL) AS apple,
+        public.has_existing_apple_account('unknown', 'GM@example.test') AS verified,
+        public.has_existing_apple_account('google-user', 'player@example.test') AS unverified
+    `)).rows, [{ apple: true, verified: true, unverified: false }]);
+    await db.exec("RESET ROLE");
 
     await db.exec(`SET ROLE authenticated; SELECT set_config('test.uid', '${player}', false)`);
+    await assert.rejects(db.query("SELECT * FROM public.apple_sign_in_tokens"), /permission denied/);
+    await assert.rejects(db.query("SELECT public.has_existing_apple_account('apple-user', NULL)"), /permission denied/);
     const send = `INSERT INTO public.secret_whispers VALUES ('${whisper}', '${campaign}', '${player}', '${gm}', 'message')`;
     await assert.rejects(db.exec(send), /Accetta le regole/);
     assert.deepEqual((await db.query("SELECT public.has_whisper_rules_v1() AS accepted")).rows, [{ accepted: false }]);
@@ -104,8 +118,9 @@ test("moderation is private and account deletion transfers ownership atomically"
     assert.deepEqual((await db.query("SELECT dm_id FROM public.sessions")).rows, [{ dm_id: admin }]);
     assert.deepEqual((await db.query("SELECT assigned_to FROM public.characters")).rows, [{ assigned_to: null }]);
     assert.equal((await db.query("SELECT id FROM auth.users WHERE id = $1", [gm])).rows.length, 0);
-    assert.deepEqual((await db.query("SELECT id, status, user_id, confirmation_email FROM public.account_deletion_requests")).rows,
-      [{ id: result.receipt, status: "completed", user_id: null, confirmation_email: "gm@example.test" }]);
+    assert.equal((await db.query("SELECT user_id FROM public.apple_sign_in_tokens")).rows.length, 0);
+    assert.deepEqual((await db.query("SELECT id, status, user_id, confirmation_email, apple_revocation_token FROM public.account_deletion_requests")).rows,
+      [{ id: result.receipt, status: "completed", user_id: null, confirmation_email: "gm@example.test", apple_revocation_token: "encrypted-apple-token" }]);
   } finally {
     await db.close();
   }

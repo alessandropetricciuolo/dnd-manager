@@ -2,6 +2,7 @@ import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { accountSafetyClient } from "@/utils/supabase/account-safety";
 import { sendEmail, wrapInTemplate } from "@/lib/email";
+import { revokeAppleAuthorization } from "@/lib/apple-sign-in";
 
 export const ACCOUNT_SAFETY_PATH = "/admin/account-safety";
 
@@ -57,4 +58,26 @@ export async function sendDeletionConfirmation(
 
   if (updateError) console.error("[account deletion] confirmation state", updateError.code);
   return sent && Boolean(updated) && !updateError;
+}
+
+export async function revokeDeletionAppleAccess(
+  admin: ReturnType<typeof accountSafetyClient>,
+  requestId: string,
+): Promise<boolean> {
+  const { data, error } = await admin.from("account_deletion_requests")
+    .select("apple_revocation_token")
+    .eq("id", requestId)
+    .eq("status", "completed")
+    .maybeSingle();
+
+  if (error || !data) return false;
+  const token = data.apple_revocation_token;
+  if (!token) return true;
+  if (!await revokeAppleAuthorization(token).catch(() => false)) return false;
+
+  const { error: updateError } = await admin.from("account_deletion_requests")
+    .update({ apple_revocation_token: null })
+    .eq("id", requestId)
+    .eq("apple_revocation_token", token);
+  return !updateError;
 }

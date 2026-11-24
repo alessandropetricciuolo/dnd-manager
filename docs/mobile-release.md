@@ -29,7 +29,18 @@ Prima di distribuire i pulsanti, applicare la migrazione `20261124091306_restric
 
 In Supabase Auth → URL Configuration, autorizzare `com.barberanddragons.mobile://auth/callback` come URL di reindirizzamento aggiuntivo. Il sito usa `https://barberanddragons.com/auth/callback/google` con un eventuale parametro `next` per tornare alla pagina richiesta. Se `https://barberanddragons.com` è il Site URL di Supabase, i reindirizzamenti su quell’origine sono già consentiti. [Documentazione Supabase](https://supabase.com/docs/guides/auth/redirect-urls)
 
-Ricompilare i client iOS e Android per includere lo schema di reindirizzamento e le dipendenze native. Provare l’accesso con un account esistente, l’annullamento e il tentativo con un account Google mai registrato. Il pulsante Apple è disattivato in entrambi i client.
+Ricompilare i client iOS e Android per includere lo schema di reindirizzamento e le dipendenze native. Provare l’accesso con un account esistente, l’annullamento e il tentativo con un account Google mai registrato. Su iOS il pulsante Google viene mostrato quando è disponibile anche l’accesso con Apple.
+
+### Accesso con Apple su iOS
+
+1. Abilitare **Sign in with Apple** sull’App ID `com.barberanddragons.mobile` in Apple Developer e aggiornare il profilo di provisioning iOS. Conservare lo stesso App ID per build e backend.
+2. In Supabase confermare che il provider Apple accetti l’audience nativa `com.barberanddragons.mobile` e abilitare **Allow manual linking**. Verificare che l’hook **Before User Created** indicato sopra sia attivo per mantenere la registrazione con verifica dell’età. [Configurazione Apple in Supabase](https://supabase.com/docs/guides/auth/social-sign-in/auth-apple) · [Collegamento identità](https://supabase.com/docs/guides/auth/auth-identity-linking)
+3. Configurare sul server `APPLE_SIGNIN_TEAM_ID`, `APPLE_SIGNIN_KEY_ID`, `APPLE_SIGNIN_PRIVATE_KEY` (contenuto della chiave Apple Sign in with Apple `.p8`) e `APPLE_SIGNIN_TOKEN_KEY` (32 byte casuali codificati in base64url). Conservare la chiave di cifratura finché esistono token cifrati con quella chiave.
+4. Applicare `20261124205433_apple_signin_token_revocation.sql`, distribuire il backend e verificare che `GET /api/mobile/apple-sign-in` restituisca `enabled: true`. La risposta conferma la presenza di chiavi e tabelle. Lo scambio con Apple si verifica con una build firmata.
+5. Su un iPhone testare accesso con l’email verificata dell’account, collegamento da **Account** con «Nascondi la mia email», riaccesso allo stesso profilo, annullamento e tentativo con un Apple ID privo di account associato. Poi eliminare un account di prova dall’admin, controllare esito della revoca Apple, email di conferma e accesso successivo. Nelle note per la review fornire un profilo di prova e le istruzioni per collegarlo. [Revoca Apple](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple)
+
+Usare l’[inventario privacy mobile](privacy-account-owner-inputs.md#inventario-per-le-schede-privacy-degli-store) per preparare le dichiarazioni store della build candidata.
+
 
 ## Progetto e credenziali richiesti al proprietario
 
