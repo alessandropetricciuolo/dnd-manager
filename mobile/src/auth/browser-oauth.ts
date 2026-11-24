@@ -1,9 +1,10 @@
 import { Buffer } from 'buffer';
+import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import type { CryptoDigestAlgorithm } from 'expo-crypto';
 import { supabase } from '../api/supabase';
 
 const redirectTo = 'com.barberanddragons.mobile://auth/callback';
-const googleError = 'Accesso con Google non riuscito. Riprova con l’email del tuo account.';
+
 
 async function ensurePkceCrypto() {
   // Supabase uses Web Crypto for S256. Use Expo's native crypto on runtimes
@@ -26,39 +27,50 @@ async function ensurePkceCrypto() {
   globalThis.btoa ??= (text) => Buffer.from(text, 'latin1').toString('base64');
 }
 
-export async function signInWithGoogle(): Promise<{ error?: string }> {
+export async function signInWithBrowser(
+  provider: 'google' | 'apple',
+  client: SupabaseClient,
+  finalize?: (session: Session) => Promise<boolean>,
+): Promise<{ error?: string }> {
+  const providerName = provider === 'apple' ? 'Apple' : 'Google';
+  const failed = `Accesso con ${providerName} non riuscito. Riprova con l’email del tuo account.`;
   try {
     const { openAuthSessionAsync } = await import('expo-web-browser');
     await ensurePkceCrypto();
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
+    const { data, error } = await client.auth.signInWithOAuth({
+      provider,
       options: { redirectTo, skipBrowserRedirect: true },
     });
-    if (error || !data.url) return { error: googleError };
+    if (error || !data.url) return { error: failed };
 
     const result = await openAuthSessionAsync(data.url, redirectTo);
     if (result.type === 'cancel' || result.type === 'dismiss') return {};
-    if (result.type !== 'success') return { error: googleError };
+    if (result.type !== 'success') return { error: failed };
 
     const [callback, hash] = result.url.split('#', 2);
     const [destination, query] = callback.split('?', 2);
-    if (destination !== redirectTo) return { error: googleError };
+    if (destination !== redirectTo) return { error: failed };
 
     const params = new URLSearchParams(query);
     const fragment = new URLSearchParams(hash);
     const details = params.get('error_description') ?? fragment.get('error_description');
     if (details?.includes('social_signup_requires_existing_account')) {
-      return { error: 'Per accedere con Google, registrati sul sito con lo stesso indirizzo email.' };
+      return { error: `Per accedere con ${providerName}, registrati sul sito con lo stesso indirizzo email.` };
     }
     const callbackError = params.get('error') ?? fragment.get('error');
     if (callbackError === 'access_denied') return {};
 
     const code = params.get('code');
-    if (callbackError || !code) return { error: googleError };
+    if (callbackError || !code) return { error: failed };
 
-    const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
-    return sessionError || !sessionData.session ? { error: googleError } : {};
+    const { data: sessionData, error: sessionError } = await client.auth.exchangeCodeForSession(code);
+    if (sessionError || !sessionData.session) return { error: failed };
+    if (!finalize || await finalize(sessionData.session)) return {};
+    await client.auth.signOut({ scope: 'local' });
+    return { error: failed };
   } catch {
-    return { error: googleError };
+    return { error: failed };
   }
 }
+
+export const signInWithGoogle = () => signInWithBrowser('google', supabase);

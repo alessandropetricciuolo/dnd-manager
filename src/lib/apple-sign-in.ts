@@ -25,11 +25,11 @@ export function isAppleSignInConfigured(): boolean {
   return Boolean(getAppleConfiguration());
 }
 
-function appleClientSecret(config: NonNullable<ReturnType<typeof getAppleConfiguration>>): string {
+function appleClientSecret(config: NonNullable<ReturnType<typeof getAppleConfiguration>>, clientId: string): string {
   const now = Math.floor(Date.now() / 1000);
   const header = Buffer.from(JSON.stringify({ alg: "ES256", kid: config.keyId })).toString("base64url");
   const claims = Buffer.from(JSON.stringify({
-    iss: config.teamId, iat: now, exp: now + 300, aud: APPLE_ISSUER, sub: NATIVE_APPLE_CLIENT_ID,
+    iss: config.teamId, iat: now, exp: now + 300, aud: APPLE_ISSUER, sub: clientId,
   })).toString("base64url");
   const data = `${header}.${claims}`;
   const signature = sign("sha256", Buffer.from(data), {
@@ -56,12 +56,13 @@ async function requestApple(
   endpoint: "token" | "revoke",
   config: NonNullable<ReturnType<typeof getAppleConfiguration>>,
   fields: Record<string, string>,
+  clientId = NATIVE_APPLE_CLIENT_ID,
 ) {
   return fetch(`${APPLE_ISSUER}/auth/${endpoint}`, {
     method: "POST",
     body: new URLSearchParams({
-      client_id: NATIVE_APPLE_CLIENT_ID,
-      client_secret: appleClientSecret(config),
+      client_id: clientId,
+      client_secret: appleClientSecret(config, clientId),
       ...fields,
     }),
     signal: AbortSignal.timeout(8000),
@@ -69,14 +70,14 @@ async function requestApple(
   });
 }
 
-export function readAppleIdentityClaims(token: string) {
+export function readAppleIdentityClaims(token: string, clientId = NATIVE_APPLE_CLIENT_ID) {
   try {
     const payload = token.split(".")[1];
     if (!payload) return null;
     const claims = JSON.parse(Buffer.from(payload, "base64url").toString("utf8")) as {
       aud?: unknown; iss?: unknown; sub?: unknown; email?: unknown; email_verified?: unknown;
     };
-    if (claims.iss !== APPLE_ISSUER || claims.aud !== NATIVE_APPLE_CLIENT_ID || typeof claims.sub !== "string" || !claims.sub) return null;
+    if (claims.iss !== APPLE_ISSUER || claims.aud !== clientId || typeof claims.sub !== "string" || !claims.sub) return null;
     const emailVerified = claims.email_verified === true || claims.email_verified === "true";
     return {
       subject: claims.sub,
@@ -105,10 +106,27 @@ export async function exchangeAppleAuthorizationCode(code: string) {
   };
 }
 
-export async function revokeAppleAuthorization(encryptedToken: string): Promise<boolean> {
+export function getAppleWebClientId(): string | null {
+  const id = process.env.APPLE_SIGNIN_WEB_CLIENT_ID?.trim();
+  return id && id !== NATIVE_APPLE_CLIENT_ID ? id : null;
+}
+
+export async function validateAndEncryptAppleWebToken(token: string, subjects: string[]): Promise<string | null> {
   const config = getAppleConfiguration();
-  if (!config) return false;
+  const clientId = getAppleWebClientId();
+  if (!config || !clientId) return null;
+  const response = await requestApple("token", config, { refresh_token: token, grant_type: "refresh_token" }, clientId);
+  if (!response.ok) return null;
+  const body = await response.json() as { id_token?: unknown };
+  const claims = typeof body.id_token === "string" ? readAppleIdentityClaims(body.id_token, clientId) : null;
+  return claims && subjects.includes(claims.subject) ? encryptAppleToken(token, config.encryptionKey) : null;
+}
+
+export async function revokeAppleAuthorization(encryptedToken: string, web = false): Promise<boolean> {
+  const config = getAppleConfiguration();
+  const clientId = web ? getAppleWebClientId() : NATIVE_APPLE_CLIENT_ID;
+  if (!config || !clientId) return false;
   const token = decryptAppleToken(encryptedToken, config.encryptionKey);
-  const response = await requestApple("revoke", config, { token, token_type_hint: "refresh_token" });
+  const response = await requestApple("revoke", config, { token, token_type_hint: "refresh_token" }, clientId);
   return response.ok;
 }

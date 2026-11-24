@@ -60,8 +60,16 @@ test("moderation is private and account deletion transfers ownership atomically"
     await db.exec(migration);
     await db.exec(await readFile("supabase/migrations/20261124205433_apple_signin_token_revocation.sql", "utf8"));
 
+    await db.exec(await readFile("supabase/migrations/20261124225606_apple_web_signin_revocation.sql", "utf8"));
+
     await db.exec(`SET ROLE service_role;
-      INSERT INTO public.apple_sign_in_tokens VALUES ('${gm}', 'encrypted-apple-token')`);
+      INSERT INTO public.apple_sign_in_tokens (user_id, encrypted_refresh_token)
+        VALUES ('${gm}', 'encrypted-apple-token');
+      INSERT INTO public.apple_sign_in_tokens (user_id, encrypted_web_refresh_token)
+        VALUES ('${gm}', 'encrypted-web-token')
+        ON CONFLICT (user_id) DO UPDATE SET encrypted_web_refresh_token = excluded.encrypted_web_refresh_token;
+      INSERT INTO public.apple_sign_in_tokens (user_id, encrypted_web_refresh_token)
+        VALUES ('${player}', 'web-only-token')`);
     assert.deepEqual((await db.query(`
       SELECT public.has_existing_apple_account('apple-user', NULL) AS apple,
         public.has_existing_apple_account('unknown', 'GM@example.test') AS verified,
@@ -118,9 +126,9 @@ test("moderation is private and account deletion transfers ownership atomically"
     assert.deepEqual((await db.query("SELECT dm_id FROM public.sessions")).rows, [{ dm_id: admin }]);
     assert.deepEqual((await db.query("SELECT assigned_to FROM public.characters")).rows, [{ assigned_to: null }]);
     assert.equal((await db.query("SELECT id FROM auth.users WHERE id = $1", [gm])).rows.length, 0);
-    assert.equal((await db.query("SELECT user_id FROM public.apple_sign_in_tokens")).rows.length, 0);
-    assert.deepEqual((await db.query("SELECT id, status, user_id, confirmation_email, apple_revocation_token FROM public.account_deletion_requests")).rows,
-      [{ id: result.receipt, status: "completed", user_id: null, confirmation_email: "gm@example.test", apple_revocation_token: "encrypted-apple-token" }]);
+    assert.equal((await db.query("SELECT user_id FROM public.apple_sign_in_tokens WHERE user_id = $1", [gm])).rows.length, 0);
+    assert.deepEqual((await db.query("SELECT id, status, user_id, confirmation_email, apple_revocation_token, apple_web_revocation_token FROM public.account_deletion_requests")).rows,
+      [{ id: result.receipt, status: "completed", user_id: null, confirmation_email: "gm@example.test", apple_revocation_token: "encrypted-apple-token", apple_web_revocation_token: "encrypted-web-token" }]);
   } finally {
     await db.close();
   }

@@ -65,19 +65,25 @@ export async function revokeDeletionAppleAccess(
   requestId: string,
 ): Promise<boolean> {
   const { data, error } = await admin.from("account_deletion_requests")
-    .select("apple_revocation_token")
+    .select("apple_revocation_token, apple_web_revocation_token")
     .eq("id", requestId)
     .eq("status", "completed")
     .maybeSingle();
 
   if (error || !data) return false;
-  const token = data.apple_revocation_token;
-  if (!token) return true;
-  if (!await revokeAppleAuthorization(token).catch(() => false)) return false;
+  const columns = ["apple_revocation_token", "apple_web_revocation_token"] as const;
+  const revoked = await Promise.all(columns.map(async (column) => {
+    const token = data[column];
+    if (!token) return true;
+    if (!await revokeAppleAuthorization(token, column === "apple_web_revocation_token").catch(() => false)) {
+      return false;
+    }
 
-  const { error: updateError } = await admin.from("account_deletion_requests")
-    .update({ apple_revocation_token: null })
-    .eq("id", requestId)
-    .eq("apple_revocation_token", token);
-  return !updateError;
+    const { error: updateError } = await admin.from("account_deletion_requests")
+      .update({ [column]: null })
+      .eq("id", requestId)
+      .eq(column, token);
+    return !updateError;
+  }));
+  return revoked.every(Boolean);
 }

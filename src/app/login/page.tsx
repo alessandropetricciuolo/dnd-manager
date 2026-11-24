@@ -69,6 +69,18 @@ function LoginPageContent() {
         { id: "auth-recovery" }
       );
     }
+    if (error === "apple_unavailable") {
+      toast.error("L’accesso con Apple non è ancora disponibile. Puoi accedere con email o Google.", { id: "auth-apple" });
+    }
+    if (error === "apple_failed" || error === "apple_account_required") {
+      const details = new URLSearchParams(window.location.hash.slice(1));
+      if (error === "apple_account_required" ||
+        details.get("error_description")?.includes("social_signup_requires_existing_account")) {
+        toast.error("Accedi prima con la tua email. Se usi «Nascondi la mia email», puoi collegare Apple da Account nell’app iOS.", { id: "auth-apple" });
+      } else if (details.get("error") !== "access_denied") {
+        toast.error("Accesso con Apple non riuscito. Riprova.", { id: "auth-apple" });
+      }
+    }
     if (error === "google_failed" || error === "google_account_required") {
       const details = new URLSearchParams(window.location.hash.slice(1));
       if (
@@ -466,8 +478,14 @@ function LoginPageContent() {
               >
                 {isGoogleLoading ? "Apertura di Google…" : "Accedi con Google"}
               </Button>
-              <Button type="button" variant="stone" className="min-h-11 w-full gap-3" disabled>
-                Accedi con Apple <span className="text-xs font-normal">Presto disponibile</span>
+              <Button
+                type="button"
+                variant="stone"
+                className="min-h-11 w-full"
+                disabled={isLoading || isGoogleLoading}
+                onClick={() => window.location.assign(`/auth/apple?next=${encodeURIComponent(loginDestination)}`)}
+              >
+                Accedi con Apple
               </Button>
               <p className="text-center text-xs text-parchment-300">
                 Usa lo stesso indirizzo email del tuo account Barber &amp; Dragons.

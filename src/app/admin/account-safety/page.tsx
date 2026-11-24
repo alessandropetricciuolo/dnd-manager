@@ -22,7 +22,7 @@ export default async function AccountSafetyPage() {
       .eq("status", "completed").not("confirmation_email", "is", null)
       .is("confirmation_sent_at", null).order("handled_at", { ascending: true }).limit(100),
     admin.from("account_deletion_requests").select("id")
-      .eq("status", "completed").not("apple_revocation_token", "is", null)
+      .eq("status", "completed").or("apple_revocation_token.not.is.null,apple_web_revocation_token.not.is.null")
       .order("handled_at", { ascending: true }).limit(100),
     admin.from("whisper_reports").select("id, reporter_id, reported_user_id, whisper_id, campaign_id, reason, details, created_at")
       .is("reviewed_at", null).order("created_at", { ascending: true }).limit(100),

@@ -39,6 +39,12 @@ Ricompilare i client iOS e Android per includere lo schema di reindirizzamento e
 4. Applicare `20261124205433_apple_signin_token_revocation.sql`, distribuire il backend e verificare che `GET /api/mobile/apple-sign-in` restituisca `enabled: true`. La risposta conferma la presenza di chiavi e tabelle. Lo scambio con Apple si verifica con una build firmata.
 5. Su un iPhone testare accesso con l’email verificata dell’account, collegamento da **Account** con «Nascondi la mia email», riaccesso allo stesso profilo, annullamento e tentativo con un Apple ID privo di account associato. Poi eliminare un account di prova dall’admin, controllare esito della revoca Apple, email di conferma e accesso successivo. Nelle note per la review fornire un profilo di prova e le istruzioni per collegarlo. [Revoca Apple](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple)
 
+### Accesso con Apple sul sito e su Android
+
+- Registrare in Apple Developer un **Services ID** associato all’App ID iOS. Autorizzare il dominio Supabase e il suo callback HTTPS `/auth/v1/callback`. In Supabase inserire prima il Services ID, poi `com.barberanddragons.mobile`, e impostare il client secret del Services ID. [Configurazione OAuth Apple](https://supabase.com/docs/guides/auth/social-sign-in/auth-apple)
+- Su Vercel impostare `APPLE_SIGNIN_WEB_CLIENT_ID` al Services ID, mantenendo le chiavi server Apple già usate da iOS. Applicare la migrazione `apple_web_signin_revocation` prima del deploy. Il sito e Android usano il Services ID. iOS mantiene il login nativo e l’App ID. La procedura di cancellazione revoca entrambe le autorizzazioni quando presenti.
+- Verificare il redirect ad Apple e il ritorno allo stesso account su web, iOS e Android. Gli utenti con «Nascondi la mia email» possono collegare Apple da Account nell’app iOS.
+
 Usare l’[inventario privacy mobile](privacy-account-owner-inputs.md#inventario-per-le-schede-privacy-degli-store) per preparare le dichiarazioni store della build candidata.
 
 

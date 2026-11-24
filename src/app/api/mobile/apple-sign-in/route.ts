@@ -1,6 +1,7 @@
 import { createClient, type User } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 import { exchangeAppleAuthorizationCode, isAppleSignInConfigured, readAppleIdentityClaims } from "@/lib/apple-sign-in";
+import { isAppleWebSignInConfigured } from "@/lib/auth/apple-web-session";
 import { accountSafetyClient } from "@/utils/supabase/account-safety";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 
@@ -22,16 +23,21 @@ function matchesAppleIdentity(user: User, subject: string) {
 
 export async function GET() {
   let enabled = false;
+  let webEnabled = false;
   if (isAppleSignInConfigured()) {
     try {
-      const { error } = await accountSafetyClient(createSupabaseAdminClient())
-        .from("apple_sign_in_tokens").select("user_id", { head: true }).limit(1);
+      const tokens = accountSafetyClient(createSupabaseAdminClient()).from("apple_sign_in_tokens");
+      const { error } = await tokens.select("user_id", { head: true }).limit(1);
       enabled = !error;
+      if (enabled && isAppleWebSignInConfigured()) {
+        const web = await tokens.select("encrypted_web_refresh_token", { head: true }).limit(1);
+        webEnabled = !web.error;
+      }
     } catch {
       // Email login remains available during configuration or rollout.
     }
   }
-  return NextResponse.json({ enabled }, { headers: { "Cache-Control": "private, no-store" } });
+  return NextResponse.json({ enabled, webEnabled }, { headers: { "Cache-Control": "private, no-store" } });
 }
 
 export async function POST(request: Request) {

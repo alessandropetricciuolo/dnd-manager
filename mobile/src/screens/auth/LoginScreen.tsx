@@ -26,7 +26,7 @@ import {
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { requestWebPasswordReset } from '../../api/supabase';
-import { signInWithGoogle } from '../../auth/google';
+import { signInWithGoogle } from '../../auth/browser-oauth';
 import { signInWithApple, useAppleSignInAvailability } from '../../auth/apple';
 
 export const LoginScreen: React.FC = () => {
@@ -261,7 +261,7 @@ export const LoginScreen: React.FC = () => {
                     {isSigningInWithGoogle ? 'Apertura di Google…' : 'Accedi con Google'}
                   </Text>
                 </TouchableOpacity>
-                {appleAvailable && (
+                {appleAvailable && Platform.OS === 'ios' && (
                   <View pointerEvents={isBusy ? 'none' : 'auto'} style={isBusy && styles.socialButtonDisabled}>
                     <AppleAuthenticationButton
                       buttonType={AppleAuthenticationButtonType.SIGN_IN}
@@ -272,8 +272,21 @@ export const LoginScreen: React.FC = () => {
                     />
                   </View>
                 )}
+                {appleAvailable && Platform.OS === 'android' && (
+                  <TouchableOpacity
+                    style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
+                    onPress={handleAppleLogin}
+                    disabled={isBusy}
+                    accessibilityRole="button"
+                    accessibilityState={{ disabled: isBusy, busy: isSigningInWithApple }}
+                  >
+                    <Text style={styles.socialButtonText}>
+                      {isSigningInWithApple ? 'Apertura di Apple…' : 'Accedi con Apple'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
                 <Text style={styles.socialHint}>
-                  {appleAvailable
+                  {appleAvailable && Platform.OS === 'ios'
                     ? 'Puoi collegare Apple da Account dopo aver effettuato l’accesso con la tua email.'
                     : 'Usa lo stesso indirizzo email del tuo account Barber & Dragons.'}
                 </Text>

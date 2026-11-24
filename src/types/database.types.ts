@@ -813,15 +813,16 @@ export interface Database {
           confirmation_claimed_at: string | null;
           confirmation_sent_at: string | null;
           apple_revocation_token: string | null;
+          apple_web_revocation_token: string | null;
         };
         Insert: { user_id: string };
         Update: Partial<Database["public"]["Tables"]["account_deletion_requests"]["Row"]>;
         Relationships: [];
       };
       apple_sign_in_tokens: {
-        Row: { user_id: string; encrypted_refresh_token: string };
-        Insert: { user_id: string; encrypted_refresh_token: string };
-        Update: { encrypted_refresh_token: string };
+        Row: { user_id: string; encrypted_refresh_token: string | null; encrypted_web_refresh_token: string | null };
+        Insert: { user_id: string; encrypted_refresh_token?: string; encrypted_web_refresh_token?: string };
+        Update: { encrypted_refresh_token?: string; encrypted_web_refresh_token?: string };
         Relationships: [];
       };
       whisper_reports: {
