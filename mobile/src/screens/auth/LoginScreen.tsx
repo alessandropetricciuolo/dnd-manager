@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   ActivityIndicator,
   KeyboardAvoidingView,
-  Platform,
   ScrollView,
   Alert,
   Linking,
@@ -24,7 +23,8 @@ import {
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
-import { supabase } from '../../api/supabase';
+import { requestWebPasswordReset } from '../../api/supabase';
+import { signInWithGoogle } from '../../auth/google';
 
 export const LoginScreen: React.FC = () => {
   const { signIn } = useAuth();
@@ -34,8 +34,23 @@ export const LoginScreen: React.FC = () => {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [isSigningInWithGoogle, setIsSigningInWithGoogle] = useState(false);
+  const isBusy = isSubmitting || isResettingPassword || isSigningInWithGoogle;
+
+  const handleGoogleLogin = async () => {
+    if (isBusy) return;
+    setErrorMessage(null);
+    setIsSigningInWithGoogle(true);
+    try {
+      const result = await signInWithGoogle();
+      if (result.error) setErrorMessage(result.error);
+    } finally {
+      setIsSigningInWithGoogle(false);
+    }
+  };
 
   const handleLogin = async () => {
+    if (isBusy) return;
     const trimmedEmail = email.trim();
 
     if (!trimmedEmail) {
@@ -63,6 +78,7 @@ export const LoginScreen: React.FC = () => {
   };
 
   const handlePasswordReset = async () => {
+    if (isBusy) return;
     const trimmedEmail = email.trim();
     if (!trimmedEmail) {
       setErrorMessage('Inserisci prima la tua email, poi richiedi il recupero password.');
@@ -71,9 +87,7 @@ export const LoginScreen: React.FC = () => {
     setIsResettingPassword(true);
     setErrorMessage(null);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(trimmedEmail, {
-        redirectTo: 'https://barberanddragons.com/auth/callback?next=/update-password',
-      });
+      const { error } = await requestWebPasswordReset(trimmedEmail);
       if (error) throw error;
       Alert.alert('Controlla la tua email', 'Se l’indirizzo è registrato, riceverai un link per aggiornare la password.');
     } catch {
@@ -107,13 +121,17 @@ export const LoginScreen: React.FC = () => {
           <View style={styles.loginCard}>
             <Text style={styles.cardTitle}>ACCEDI ALLA GILDA</Text>
             <Text style={styles.cardSubtitle}>
-              Inserisci l&apos;email e la password del tuo account Barber &amp; Dragons
+              Usa il tuo account Barber &amp; Dragons
             </Text>
 
             {/* Error Feedback */}
             {errorMessage ? (
-              <View style={styles.errorBox}>
-                <AlertCircle size={18} color={colors.crimsonLight} />
+              <View
+                style={styles.errorBox}
+                accessibilityRole="alert"
+                accessibilityLiveRegion="polite"
+              >
+                <AlertCircle size={18} color="#FCA5A5" />
                 <Text style={styles.errorText}>{errorMessage}</Text>
               </View>
             ) : null}
@@ -136,7 +154,7 @@ export const LoginScreen: React.FC = () => {
                   autoCapitalize="none"
                   autoComplete="email"
                   autoCorrect={false}
-                  editable={!isSubmitting}
+                  editable={!isBusy}
                   accessibilityLabel="Indirizzo email"
                 />
               </View>
@@ -159,7 +177,7 @@ export const LoginScreen: React.FC = () => {
                   secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoComplete="password"
-                  editable={!isSubmitting}
+                  editable={!isBusy}
                   accessibilityLabel="Password"
                 />
                 <TouchableOpacity
@@ -181,9 +199,9 @@ export const LoginScreen: React.FC = () => {
 
             {/* Submit Button */}
             <TouchableOpacity
-              style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+              style={[styles.submitButton, isBusy && styles.submitButtonDisabled]}
               onPress={handleLogin}
-              disabled={isSubmitting}
+              disabled={isBusy}
               activeOpacity={0.85}
               accessibilityRole="button"
               accessibilityLabel="Accedi alla gilda"
@@ -203,13 +221,38 @@ export const LoginScreen: React.FC = () => {
             <TouchableOpacity
               style={styles.forgotPasswordButton}
               onPress={handlePasswordReset}
-              disabled={isSubmitting || isResettingPassword}
+              disabled={isBusy}
               accessibilityRole="button"
             >
               <Text style={styles.forgotPasswordText}>
                 {isResettingPassword ? 'INVIO DEL LINK…' : 'HAI DIMENTICATO LA PASSWORD?'}
               </Text>
             </TouchableOpacity>
+
+            <View style={styles.socialLogin}>
+              <TouchableOpacity
+                style={[styles.socialButton, isBusy && styles.socialButtonDisabled]}
+                onPress={handleGoogleLogin}
+                disabled={isBusy}
+                accessibilityRole="button"
+                accessibilityState={{ disabled: isBusy, busy: isSigningInWithGoogle }}
+              >
+                {isSigningInWithGoogle ? <ActivityIndicator size="small" color={colors.brassLight} /> : null}
+                <Text style={styles.socialButtonText}>
+                  {isSigningInWithGoogle ? 'Apertura di Google…' : 'Accedi con Google'}
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.socialButton, styles.socialButtonDisabled]}
+                disabled
+                accessibilityRole="button"
+                accessibilityState={{ disabled: true }}
+              >
+                <Text style={styles.socialButtonText}>Accedi con Apple</Text>
+                <Text style={styles.socialButtonNote}>Presto disponibile</Text>
+              </TouchableOpacity>
+              <Text style={styles.socialHint}>Usa lo stesso indirizzo email del tuo account Barber &amp; Dragons.</Text>
+            </View>
 
             {__DEV__ && (
               <View style={{ marginTop: 16, paddingTop: 14, borderTopWidth: 1, borderTopColor: 'rgba(212,175,55,0.15)', width: '100%', gap: 8 }}>
@@ -220,12 +263,14 @@ export const LoginScreen: React.FC = () => {
                   <TouchableOpacity
                     style={{ flex: 1, backgroundColor: 'rgba(59,130,246,0.15)', borderWidth: 1, borderColor: '#3b82f6', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
                     onPress={() => signIn('player@demo.com', 'demo1234')}
+                    disabled={isBusy}
                   >
                     <Text style={{ color: '#60a5fa', fontSize: 12, fontWeight: '700' }}>🛡️ Giocatore Demo</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={{ flex: 1, backgroundColor: 'rgba(217,119,6,0.15)', borderWidth: 1, borderColor: '#d97706', borderRadius: 8, paddingVertical: 9, alignItems: 'center' }}
                     onPress={() => signIn('gm@demo.com', 'demo1234')}
+                    disabled={isBusy}
                   >
                     <Text style={{ color: '#fbbf24', fontSize: 12, fontWeight: '700' }}>👑 Master Demo</Text>
                   </TouchableOpacity>
@@ -342,9 +387,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 12,
-    color: colors.crimsonLight,
+    color: '#FCA5A5',
+    fontWeight: '600',
     flex: 1,
-    lineHeight: 16,
+    lineHeight: 17,
   },
   inputGroup: {
     marginBottom: 14,
@@ -417,6 +463,25 @@ const styles = StyleSheet.create({
   },
   forgotPasswordButton: { alignItems: 'center', paddingVertical: 14 },
   forgotPasswordText: { color: colors.brassLight, fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+  socialLogin: { borderTopWidth: 1, borderTopColor: colors.stoneBorder, paddingTop: 14, gap: 8 },
+  socialButton: {
+    minHeight: 44,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.stone,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  socialButtonDisabled: { opacity: 0.6 },
+  socialButtonText: { color: colors.parchmentLight, fontSize: 14, fontWeight: '700' },
+  socialButtonNote: { color: colors.parchmentMuted, fontSize: 12 },
+  socialHint: { color: colors.parchmentMuted, fontSize: 11, lineHeight: 16, textAlign: 'center' },
   legalLinks: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 14 },
   legalLink: { color: colors.parchmentMuted, fontSize: 12, textDecorationLine: 'underline' },
   legalSeparator: { color: colors.stoneBorder },

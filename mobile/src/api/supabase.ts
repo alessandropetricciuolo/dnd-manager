@@ -19,7 +19,24 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: false,
+    flowType: 'pkce',
   },
 });
+
+export function requestWebPasswordReset(email: string) {
+  // Recovery is completed in the website's browser, which cannot read a PKCE
+  // verifier stored by the mobile app. Use the website's recovery link flow.
+  const recoveryClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: {
+      flowType: 'implicit',
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  });
+  return recoveryClient.auth.resetPasswordForEmail(email, {
+    redirectTo: 'https://barberanddragons.com/auth/callback?next=/update-password',
+  });
+}
 
 export default supabase;

@@ -23,6 +23,14 @@ npm run start
 
 La chiave anon di Supabase è una chiave pubblica destinata al client e non sostituisce RLS. Non inserire `service_role`, segreti server o chiavi APNs/FCM in variabili `EXPO_PUBLIC_*`.
 
+### Accesso con Google su sito e app
+
+Prima di distribuire i pulsanti, applicare la migrazione `20261124091306_restrict_social_signup.sql` e attivare `public.hook_restrict_social_signup` come **Before User Created** in Supabase Auth Hooks. Il controllo consente di usare Google con l’email verificata di un account esistente e mantiene la registrazione dei nuovi utenti nel flusso email del sito, che richiede la data di nascita.
+
+In Supabase Auth → URL Configuration, autorizzare `com.barberanddragons.mobile://auth/callback` come URL di reindirizzamento aggiuntivo. Il sito usa `https://barberanddragons.com/auth/callback/google` con un eventuale parametro `next` per tornare alla pagina richiesta. Se `https://barberanddragons.com` è il Site URL di Supabase, i reindirizzamenti su quell’origine sono già consentiti. [Documentazione Supabase](https://supabase.com/docs/guides/auth/redirect-urls)
+
+Ricompilare i client iOS e Android per includere lo schema di reindirizzamento e le dipendenze native. Provare l’accesso con un account esistente, l’annullamento e il tentativo con un account Google mai registrato. Il pulsante Apple è disattivato in entrambi i client.
+
 ## Progetto e credenziali richiesti al proprietario
 
 1. Collegamento Expo completato nell'account del proprietario `alexiit33`; `app.json` contiene owner e ID reali.

@@ -14,6 +14,7 @@ export function AuthHashErrorRedirect() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (pathname === "/login" && new URLSearchParams(window.location.search).get("error")?.startsWith("google_")) return;
     const hash = window.location.hash?.slice(1) || "";
     if (!hash) return;
     const params = new URLSearchParams(hash);

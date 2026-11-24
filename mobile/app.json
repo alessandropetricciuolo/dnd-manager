@@ -2,6 +2,7 @@
   "expo": {
     "name": "Barber & Dragons Mobile",
     "slug": "barber-and-dragons-mobile",
+    "scheme": "com.barberanddragons.mobile",
     "version": "1.0.0",
     "platforms": [
       "ios",

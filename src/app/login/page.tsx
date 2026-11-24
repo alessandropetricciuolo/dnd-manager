@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label";
 
 import { login, signup, updateProfileAfterSignup } from "@/app/auth/actions";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
+import { getLoginDestination } from "@/lib/auth/login-destination";
 
 type Mode = "login" | "signup";
 
@@ -53,22 +54,64 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const [mode, setMode] = useState<Mode>("login");
   const [isLoading, setIsLoading] = useState(false);
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false);
   const [signupCompleted, setSignupCompleted] = useState(false);
   const [signupWhatsappOptIn, setSignupWhatsappOptIn] = useState(false);
   const [signupRequiresEmailConfirm, setSignupRequiresEmailConfirm] = useState(false);
   const whatsappCommunityLink = process.env.NEXT_PUBLIC_WHATSAPP_COMMUNITY_LINK?.trim() ?? "";
+  const loginDestination = getLoginDestination(searchParams.get("redirect") || searchParams.get("next"));
 
   useEffect(() => {
-    if (searchParams.get("error") === "link_expired") {
+    const error = searchParams.get("error");
+    if (error === "link_expired") {
       toast.error(
-        "Il link di recupero è scaduto o non valido. Richiedi un nuovo link da «Password dimenticata»."
+        "Il link di recupero è scaduto o non valido. Richiedi un nuovo link da «Password dimenticata».",
+        { id: "auth-recovery" }
       );
+    }
+    if (error === "google_failed" || error === "google_account_required") {
+      const details = new URLSearchParams(window.location.hash.slice(1));
+      if (
+        error === "google_account_required" ||
+        details.get("error_description")?.includes("social_signup_requires_existing_account")
+      ) {
+        toast.error("Per accedere con Google, registrati prima con lo stesso indirizzo email.", { id: "auth-google" });
+      } else if (details.get("error") !== "access_denied") {
+        toast.error("Accesso con Google non riuscito. Riprova con l’email del tuo account.", { id: "auth-google" });
+      }
     }
   }, [searchParams]);
 
+  useEffect(() => {
+    const resetGoogleLoading = (event: PageTransitionEvent) => {
+      if (event.persisted) setIsGoogleLoading(false);
+    };
+    window.addEventListener("pageshow", resetGoogleLoading);
+    return () => window.removeEventListener("pageshow", resetGoogleLoading);
+  }, []);
+
+  const handleGoogleLogin = async () => {
+    if (isLoading || isGoogleLoading) return;
+    setIsGoogleLoading(true);
+    try {
+      const redirectTo = new URL("/auth/callback/google", window.location.origin);
+      if (loginDestination !== "/dashboard") redirectTo.searchParams.set("next", loginDestination);
+      const supabase = createSupabaseBrowserClient();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: redirectTo.href, skipBrowserRedirect: true },
+      });
+      if (error || !data.url) throw error ?? new Error("OAuth URL missing");
+      window.location.assign(data.url);
+    } catch {
+      toast.error("Impossibile avviare l’accesso con Google. Riprova.");
+      setIsGoogleLoading(false);
+    }
+  };
+
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (isLoading) return;
+    if (isLoading || isGoogleLoading) return;
 
     const formData = new FormData(event.currentTarget);
     const email = (formData.get("email") as string | null)?.trim() ?? "";
@@ -119,9 +162,7 @@ function LoginPageContent() {
           return;
         }
         toast.success("Accesso effettuato. Ben tornato, avventuriero!");
-        const rawRedirect = searchParams.get("redirect") || searchParams.get("next");
-        const redirectTo = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
-        router.push(redirectTo);
+        router.push(loginDestination);
         return;
       }
       const firstName = (formData.get("first_name") as string | null)?.trim() ?? "";
@@ -211,6 +252,7 @@ function LoginPageContent() {
           <div className="inline-flex w-full rounded-xl border border-brass-base/30 bg-guild-void/80 p-1 text-xs">
             <button
               type="button"
+              disabled={isLoading || isGoogleLoading}
               onClick={() => {
                 setMode("login");
                 setSignupCompleted(false);
@@ -225,6 +267,7 @@ function LoginPageContent() {
             </button>
             <button
               type="button"
+              disabled={isLoading || isGoogleLoading}
               onClick={() => setMode("signup")}
               className={`flex-1 min-h-[40px] rounded-lg font-serif uppercase tracking-wider font-semibold transition ${
                 mode === "signup"
@@ -268,9 +311,7 @@ function LoginPageContent() {
                     setSignupCompleted(false);
                     return;
                   }
-                  const rawRedirect = searchParams.get("redirect") || searchParams.get("next");
-                  const redirectTo = rawRedirect?.startsWith("/") && !rawRedirect.startsWith("//") ? rawRedirect : "/dashboard";
-                  router.push(redirectTo);
+                  router.push(loginDestination);
                 }}
               >
                 {signupRequiresEmailConfirm ? "Vai al login dopo conferma email" : "Entra nella Dashboard"}
@@ -371,7 +412,7 @@ function LoginPageContent() {
                 autoComplete="email"
                 placeholder="avventuriero@esempio.com"
                 className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 required
               />
             </div>
@@ -398,13 +439,14 @@ function LoginPageContent() {
                   mode === "login" ? "current-password" : "new-password"
                 }
                 className="h-11 border-guild-border bg-guild-void/80 text-parchment-100 placeholder:text-parchment-500/50 focus:border-brass-base"
-                disabled={isLoading}
+                disabled={isLoading || isGoogleLoading}
                 required
               />
             </div>
 
             <SubmitButton
               pending={isLoading}
+              disabled={isLoading || isGoogleLoading}
               loadingText="Accesso ai registri..."
               className="mt-2 w-full min-h-[46px] btn-wax-seal rounded-lg font-serif uppercase tracking-widest font-bold text-parchment-100 shadow-xl"
             >
@@ -412,11 +454,31 @@ function LoginPageContent() {
             </SubmitButton>
             </form>
           )}
+          {mode === "login" && (
+            <div className="space-y-2 border-t border-guild-border/80 pt-4">
+              <Button
+                type="button"
+                variant="stone"
+                className="min-h-11 w-full"
+                disabled={isLoading || isGoogleLoading}
+                aria-busy={isGoogleLoading}
+                onClick={handleGoogleLogin}
+              >
+                {isGoogleLoading ? "Apertura di Google…" : "Accedi con Google"}
+              </Button>
+              <Button type="button" variant="stone" className="min-h-11 w-full gap-3" disabled>
+                Accedi con Apple <span className="text-xs font-normal">Presto disponibile</span>
+              </Button>
+              <p className="text-center text-xs text-parchment-300">
+                Usa lo stesso indirizzo email del tuo account Barber &amp; Dragons.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 border-t border-guild-border/80 pt-4 text-center text-[11px] text-parchment-500 space-y-1">
           <p>
-            Con l&apos;accesso creiamo automaticamente un profilo{" "}
+            Con la registrazione creiamo automaticamente un profilo{" "}
             <span className="font-semibold text-brass-light font-mono">player</span>.
           </p>
           <p>In futuro potrai richiedere l&apos;abilitazione Game Master.</p>
