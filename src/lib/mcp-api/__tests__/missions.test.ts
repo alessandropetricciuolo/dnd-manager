@@ -441,7 +441,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     campaign_id,
     mission_id: personalId,
   });
-  assert.ok(listed);
+  assert.ok(listed?.resources);
   assert.equal(listed.resources.length, 3);
   assert.equal(listed.mission_kind, "personal");
 
