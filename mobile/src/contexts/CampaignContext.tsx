@@ -10,6 +10,7 @@ import React, {
 import { supabase } from '../api/supabase';
 import { useAuth } from './AuthContext';
 import { Campaign, CampaignType, PlayerCharacter } from '../types';
+import { projectMobileCharacter } from '../lib/character-projection';
 
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
   oneshot: 'One Shot',
@@ -62,6 +63,16 @@ export interface CampaignContextType {
   activeCampaignCharacter: PlayerCharacter | null;
   isGmOfActiveCampaign: boolean;
   userRoleInActiveCampaign: 'gm' | 'player';
+  joinedCampaignIds: string[];
+  joinedLongCampaigns: Campaign[];
+  hasJoinedLongCampaign: boolean;
+  upcomingNonLongCampaignIds: string[];
+  eligibleSheetCampaigns: Campaign[];
+  canAccessCharacterSheet: boolean;
+  isLongCampaignActive: boolean;
+  isMemberOfActiveCampaign: boolean;
+  canAccessLongFeatures: boolean;
+  joinLongCampaign: (campaignId: string) => Promise<{ success: boolean; message: string }>;
 }
 
 const CampaignContext = createContext<CampaignContextType | undefined>(undefined);
@@ -72,6 +83,8 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [assignedCharactersMap, setAssignedCharactersMap] = useState<Record<string, PlayerCharacter[]>>({});
+  const [joinedCampaignIds, setJoinedCampaignIds] = useState<string[]>([]);
+  const [upcomingSignupCampaignIds, setUpcomingSignupCampaignIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
@@ -101,6 +114,49 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
     return 'player';
   }, [activeMode, isGmOfActiveCampaign]);
 
+  const isLongCampaignActive = useMemo<boolean>(() => {
+    return activeCampaign?.type === 'long';
+  }, [activeCampaign?.type]);
+
+  const isMemberOfActiveCampaign = useMemo<boolean>(() => {
+    if (!activeCampaign) return false;
+    if (isGmOfActiveCampaign) return true;
+    return joinedCampaignIds.includes(activeCampaign.id);
+  }, [activeCampaign, isGmOfActiveCampaign, joinedCampaignIds]);
+
+  const canAccessLongFeatures = isLongCampaignActive && isMemberOfActiveCampaign;
+
+  const isGmOrAdminRole = role === 'gm' || role === 'admin';
+
+  const joinedLongCampaigns = useMemo<Campaign[]>(() => {
+    const longCampaigns = campaigns.filter((c) => c.type === 'long');
+    if (isGmOrAdminRole) return longCampaigns;
+    return longCampaigns.filter((c) => joinedCampaignIds.includes(c.id));
+  }, [campaigns, isGmOrAdminRole, joinedCampaignIds]);
+
+  const hasJoinedLongCampaign = joinedLongCampaigns.length > 0;
+
+  const upcomingNonLongCampaignIds = useMemo<string[]>(() => {
+    if (isGmOrAdminRole) {
+      return campaigns.filter((c) => c.type !== 'long').map((c) => c.id);
+    }
+    return upcomingSignupCampaignIds.filter((id) => {
+      const camp = campaigns.find((c) => c.id === id);
+      return camp ? camp.type !== 'long' : false;
+    });
+  }, [campaigns, isGmOrAdminRole, upcomingSignupCampaignIds]);
+
+  const eligibleSheetCampaigns = useMemo<Campaign[]>(() => {
+    if (isGmOrAdminRole) return campaigns;
+    const allowedIds = new Set<string>([
+      ...joinedLongCampaigns.map((c) => c.id),
+      ...upcomingNonLongCampaignIds,
+    ]);
+    return campaigns.filter((c) => allowedIds.has(c.id));
+  }, [campaigns, isGmOrAdminRole, joinedLongCampaigns, upcomingNonLongCampaignIds]);
+
+  const canAccessCharacterSheet = isGmOrAdminRole || eligibleSheetCampaigns.length > 0;
+
   // Load campaigns from Supabase according to role and permissions
   const loadCampaigns = useCallback(async () => {
     setIsLoading(true);
@@ -118,6 +174,8 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
         }
 
         const publicList = (publicData as Campaign[]) || [];
+        setJoinedCampaignIds([]);
+        setUpcomingSignupCampaignIds([]);
         setCampaigns(publicList);
         setActiveCampaignId((prev) => {
           if (prev && publicList.some((c) => c.id === prev)) return prev;
@@ -141,6 +199,8 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
           console.warn('[CampaignContext] GM/Admin fetch error:', error.message);
         }
         campaignList = (data as Campaign[]) || [];
+        setJoinedCampaignIds([]);
+        setUpcomingSignupCampaignIds([]);
       } else {
         // Player:
         // 1. Fetch campaigns where player is member
@@ -150,6 +210,7 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
           .eq('player_id', user.id);
 
         const memberCampaignIds = (memberRows ?? []).map((r) => r.campaign_id).filter(Boolean);
+        setJoinedCampaignIds(memberCampaignIds);
 
         // 2. Fetch campaigns where player has an assigned character
         const { data: charRows } = await supabase
@@ -162,18 +223,34 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
         // 3. Fetch campaigns where player has session signups
         const { data: signupRows } = await supabase
           .from('session_signups')
-          .select('session_id')
+          .select('session_id, status')
           .eq('player_id', user.id);
 
-        const sessionIds = (signupRows ?? []).map((s) => s.session_id).filter(Boolean);
+        const activeSignupRows = (signupRows ?? []).filter(
+          (s) => s.status !== 'rejected' && s.status !== 'absent'
+        );
+        const sessionIds = activeSignupRows.map((s) => s.session_id).filter(Boolean);
         let signupCampaignIds: string[] = [];
+        let upcomingIds: string[] = [];
         if (sessionIds.length > 0) {
           const { data: sessRows } = await supabase
             .from('sessions')
-            .select('campaign_id')
+            .select('campaign_id, scheduled_at, status')
             .in('id', sessionIds);
+          const cutoffIso = new Date(Date.now() - 4 * 3600 * 1000).toISOString();
           signupCampaignIds = (sessRows ?? []).map((s) => s.campaign_id).filter(Boolean);
+          upcomingIds = (sessRows ?? [])
+            .filter(
+              (s) =>
+                Boolean(s.campaign_id) &&
+                s.status !== 'completed' &&
+                s.status !== 'cancelled' &&
+                (!s.scheduled_at || s.scheduled_at >= cutoffIso)
+            )
+            .map((s) => s.campaign_id)
+            .filter(Boolean);
         }
+        setUpcomingSignupCampaignIds(Array.from(new Set(upcomingIds)));
 
         const combinedIds = Array.from(
           new Set([...memberCampaignIds, ...charCampaignIds, ...signupCampaignIds])
@@ -196,43 +273,17 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
         campaignList = (data as Campaign[]) || [];
       }
 
-      if (campaignList.length === 0) {
-        campaignList = [
-          {
-            id: 'demo-camp-1',
-            gm_id: user?.id || 'demo-gm-uuid-1234',
-            name: 'Le Ombre di Waterdeep',
-            description: 'Intrighi politici e pericoli nei vicoli oscuri della Città degli Splendori.',
-            is_public: true,
-            type: 'quest',
-            image_url: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-          {
-            id: 'demo-camp-2',
-            gm_id: 'other-gm-id',
-            name: 'La Corona di Pietra',
-            description: 'Una spedizione sotterranea verso i picchi innevati di Monte Drago.',
-            is_public: true,
-            type: 'long',
-            image_url: null,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          },
-        ];
-      }
-
       // Load player's assigned characters across all campaigns
       const mapping: Record<string, PlayerCharacter[]> = {};
       if (user?.id) {
         const { data: userChars, error: charErr } = await supabase
           .from('campaign_characters')
-          .select('*, campaigns(id, name)')
+          .select('*, campaigns(id, name, type)')
           .eq('assigned_to', user.id);
 
         if (!charErr && userChars && userChars.length > 0) {
-          for (const c of userChars as PlayerCharacter[]) {
+          for (const rawChar of userChars as PlayerCharacter[]) {
+            const c = projectMobileCharacter(rawChar);
             const campId = c.campaign_id;
             if (!mapping[campId]) mapping[campId] = [];
             mapping[campId].push(c);
@@ -282,6 +333,50 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
     await loadCampaigns();
   }, [loadCampaigns]);
 
+  // Join a Long campaign (required before booking sessions or reading Long content)
+  const joinLongCampaign = useCallback(
+    async (campaignId: string): Promise<{ success: boolean; message: string }> => {
+      if (!user?.id) {
+        return { success: false, message: 'Devi essere autenticato per iscriverti alla campagna.' };
+      }
+      if (role === 'gm' || role === 'admin') {
+        return { success: false, message: 'GM e Admin hanno già accesso completo alla campagna.' };
+      }
+
+      const target = campaigns.find((c) => c.id === campaignId);
+      if (!target) {
+        return { success: false, message: 'Campagna non trovata.' };
+      }
+      if (target.type !== 'long') {
+        return { success: false, message: "L'iscrizione alla campagna è richiesta solo per le campagne Long." };
+      }
+      if (!target.is_public) {
+        return { success: false, message: 'Campagna privata: chiedi al GM di aggiungerti manualmente.' };
+      }
+      if (target.long_registrations_open === false) {
+        return { success: false, message: 'Le iscrizioni a questa campagna sono chiuse. Contatta il GM.' };
+      }
+
+      const { error: insertError } = await supabase.from('campaign_members').insert({
+        campaign_id: campaignId,
+        player_id: user.id,
+      });
+
+      if (insertError) {
+        if (insertError.code === '23505') {
+          setJoinedCampaignIds((prev) => (prev.includes(campaignId) ? prev : [...prev, campaignId]));
+          return { success: true, message: 'Sei già iscritto a questa campagna Long.' };
+        }
+        return { success: false, message: insertError.message || "Errore durante l'iscrizione alla campagna." };
+      }
+
+      setJoinedCampaignIds((prev) => (prev.includes(campaignId) ? prev : [...prev, campaignId]));
+      await loadCampaigns();
+      return { success: true, message: 'Iscrizione alla campagna Long completata!' };
+    },
+    [user?.id, role, campaigns, loadCampaigns]
+  );
+
   const value = useMemo<CampaignContextType>(
     () => ({
       campaigns,
@@ -295,6 +390,16 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       activeCampaignCharacter,
       isGmOfActiveCampaign,
       userRoleInActiveCampaign,
+      joinedCampaignIds,
+      joinedLongCampaigns,
+      hasJoinedLongCampaign,
+      upcomingNonLongCampaignIds,
+      eligibleSheetCampaigns,
+      canAccessCharacterSheet,
+      isLongCampaignActive,
+      isMemberOfActiveCampaign,
+      canAccessLongFeatures,
+      joinLongCampaign,
     }),
     [
       campaigns,
@@ -308,6 +413,16 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       activeCampaignCharacter,
       isGmOfActiveCampaign,
       userRoleInActiveCampaign,
+      joinedCampaignIds,
+      joinedLongCampaigns,
+      hasJoinedLongCampaign,
+      upcomingNonLongCampaignIds,
+      eligibleSheetCampaigns,
+      canAccessCharacterSheet,
+      isLongCampaignActive,
+      isMemberOfActiveCampaign,
+      canAccessLongFeatures,
+      joinLongCampaign,
     ]
   );
 

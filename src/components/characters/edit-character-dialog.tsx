@@ -20,6 +20,7 @@ import { ImageSourceField } from "@/components/ui/image-source-field";
 import { Textarea } from "@/components/ui/textarea";
 import { updateCharacter } from "@/app/campaigns/character-actions";
 import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
+import { resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import { CharacterBuildFormFields } from "@/components/characters/character-build-form-fields";
 import { CharacterTextGenChat } from "@/components/characters/character-text-gen-chat";
 import type { CharacterAiStoryDraft } from "@/lib/ai/character-text-generator";
@@ -68,6 +69,8 @@ export function EditCharacterDialog({
     toast.success("Storia applicata al form.");
   }
 
+  const effective = resolveEffectiveCharacterFields(character);
+
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (isLoading) return;
@@ -81,16 +84,16 @@ export function EditCharacterDialog({
     const levelRaw = (formData.get("level") as string | null)?.trim() || "";
     if (levelRaw) {
       const nextLevel = Number.parseInt(levelRaw, 10);
-      if (Number.isNaN(nextLevel) || nextLevel < 1 || nextLevel > 20) {
+      if (!/^\d+$/.test(levelRaw) || Number.isNaN(nextLevel) || nextLevel < 1 || nextLevel > 20) {
         toast.error("Livello non valido (1-20).");
         return;
       }
-      if (nextLevel < (character.level ?? 1)) {
+      if (!isLongCampaign && nextLevel < (effective.level ?? 1)) {
         toast.error("Puoi solo aumentare manualmente il livello.");
         return;
       }
       const classSubclass = (formData.get("class_subclass") as string | null)?.trim() || "";
-      if (nextLevel >= 3 && !classSubclass) {
+      if (!isLongCampaign && nextLevel >= 3 && !classSubclass) {
         toast.error("Dal livello 3 in poi seleziona una sottoclasse.");
         return;
       }
@@ -219,9 +222,9 @@ export function EditCharacterDialog({
             disabled={isLoading}
             initialRaceSlug={character.race_slug}
             initialSubclassSlug={character.subclass_slug}
-            initialClassSubclass={character.class_subclass}
+            initialClassSubclass={effective.classSubclass}
             initialBackgroundSlug={character.background_slug}
-            initialClassLabel={character.character_class}
+            initialClassLabel={effective.characterClass}
           />
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
@@ -233,12 +236,14 @@ export function EditCharacterDialog({
                 type="number"
                 min={1}
                 max={20}
-                defaultValue={character.level ?? 1}
+                defaultValue={effective.level ?? 1}
                 className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
               />
               <p className="text-[11px] text-barber-paper/60">
-                Aumento manuale: dal livello 3 richiede una sottoclasse.
+                {isLongCampaign
+                  ? "Correzione libera del livello (1–20)."
+                  : "Aumento manuale: dal livello 3 richiede una sottoclasse."}
               </p>
             </div>
             <div className="space-y-2">
@@ -248,7 +253,7 @@ export function EditCharacterDialog({
                 name="armor_class"
                 type="number"
                 min={0}
-                defaultValue={character.armor_class ?? ""}
+                defaultValue={effective.armorClass ?? ""}
                 placeholder="Es. 15"
                 className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}
@@ -261,7 +266,7 @@ export function EditCharacterDialog({
                 name="hit_points"
                 type="number"
                 min={0}
-                defaultValue={character.hit_points ?? ""}
+                defaultValue={effective.hitPoints ?? ""}
                 placeholder="Es. 24"
                 className="bg-barber-dark/80 border-barber-gold/30 text-barber-paper"
                 disabled={isLoading}

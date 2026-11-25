@@ -111,7 +111,6 @@ export function extractStructuredPcSaves(
 
   const sheetRecord = sheet as Record<string, unknown>;
   const rawSaves = sheetRecord.savingThrows;
-  const rawMods = sheetRecord.abilityMods;
 
   const readSave = (key: "str" | "dex" | "con" | "int" | "wis" | "cha"): number | null => {
     if (rawSaves && typeof rawSaves === "object" && !Array.isArray(rawSaves)) {

@@ -63,6 +63,7 @@ import {
   spendCombatSpellSlot,
   spellSlotsForCharacter,
 } from "@/lib/combat-spell-slots";
+import { resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import { ConditionsCell } from "@/components/gm/conditions-cell";
 import {
   getCombatStatusDefinition,
@@ -1706,23 +1707,34 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
         portrait_url?: string | null;
       }
     ) => {
-      const hp = Math.max(0, hitPoints ?? 0);
+      const effective = resolveEffectiveCharacterFields({
+        name,
+        character_class: characterClass,
+        class_subclass: spellSlotInput?.class_subclass ?? null,
+        level: spellSlotInput?.level ?? null,
+        armor_class: armorClass,
+        hit_points: hitPoints,
+        rules_snapshot: spellSlotInput?.rules_snapshot ?? null,
+      });
+      const hp = Math.max(0, effective.hitPoints ?? effective.maxHp ?? 0);
+      const maxHp = Math.max(hp, effective.maxHp ?? hp);
+      const effectiveLevel = effective.level ?? spellSlotInput?.level ?? 1;
       const team = characterTeamMap?.[characterId];
       const spellSlots = spellSlotsForCharacter({
         rules_snapshot: spellSlotInput?.rules_snapshot ?? null,
-        character_class: characterClass,
-        class_subclass: spellSlotInput?.class_subclass ?? null,
-        level: spellSlotInput?.level ?? 1,
+        character_class: effective.characterClass,
+        class_subclass: effective.classSubclass,
+        level: effectiveLevel,
       });
       const extractedSaves = extractStructuredPcSaves(
         spellSlotInput?.rules_snapshot ?? null,
-        characterClass,
-        spellSlotInput?.level ?? 1
+        effective.characterClass,
+        effectiveLevel
       );
       const pcCombatData = extractStructuredPcCombatData(
         spellSlotInput?.rules_snapshot ?? null,
-        characterClass,
-        spellSlotInput?.level ?? 1
+        effective.characterClass,
+        effectiveLevel
       );
       applyTransition((prev) => ({
         ...prev,
@@ -1730,12 +1742,12 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           ...prev.entries,
           normalizeInitiativeEntry({
             id: generateId(),
-            name,
+            name: effective.name || name,
             type: "pc",
-            characterClass: characterClass ?? null,
-            armorClass: Math.max(0, armorClass ?? 0),
+            characterClass: effective.characterClass ?? null,
+            armorClass: Math.max(0, effective.armorClass ?? 0),
             hp,
-            maxHp: hp,
+            maxHp,
             tempHp: 0,
             initiative: 0,
             playerId: characterId,

@@ -1,3 +1,4 @@
+import { resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import { spellSlotsForCharacter } from "@/lib/combat-spell-slots";
 import {
   emptyTorneo2CombatState,
@@ -12,19 +13,29 @@ function memberToCombatant(
   side: Torneo2Side,
   team: { id: string; name: string; color: string } | null
 ): Torneo2Combatant {
-  const maxHp = member.hitPoints ?? 0;
+  const effective = resolveEffectiveCharacterFields({
+    name: member.name,
+    character_class: member.characterClass,
+    class_subclass: member.classSubclass,
+    level: member.level,
+    armor_class: member.armorClass,
+    hit_points: member.hitPoints,
+    rules_snapshot: member.rulesSnapshot,
+  });
+  const hp = Math.max(0, effective.hitPoints ?? effective.maxHp ?? 0);
+  const maxHp = Math.max(hp, effective.maxHp ?? hp);
   return {
     id: `c-${member.characterId}`,
     characterId: member.characterId,
-    name: member.name,
+    name: effective.name || member.name,
     side,
     teamId: team?.id ?? null,
     teamName: team?.name ?? null,
     teamColor: team?.color ?? null,
     portraitUrl: member.imageUrl ?? null,
-    characterClass: member.characterClass ?? null,
-    armorClass: member.armorClass ?? 10,
-    hp: maxHp,
+    characterClass: effective.characterClass ?? null,
+    armorClass: effective.armorClass ?? 10,
+    hp,
     maxHp,
     initiative: 0,
     damageDealt: 0,
@@ -37,9 +48,9 @@ function memberToCombatant(
     usedBonus: false,
     spellSlots: spellSlotsForCharacter({
       rules_snapshot: member.rulesSnapshot,
-      character_class: member.characterClass,
-      class_subclass: member.classSubclass,
-      level: member.level,
+      character_class: effective.characterClass,
+      class_subclass: effective.classSubclass,
+      level: effective.level ?? undefined,
     }),
   };
 }

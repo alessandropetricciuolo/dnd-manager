@@ -7,6 +7,7 @@ import type { CampaignCharacterRow } from "@/app/campaigns/character-actions";
 import { ImageMediaActions } from "@/components/media/image-media-actions";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { resolveCharacterSpellSlots, resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import type { CharacterRulesSnapshotV1 } from "@/lib/character-rules-snapshot";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
@@ -223,7 +224,7 @@ function SpellsTip({
           tabIndex={0}
           className="cursor-help border-b border-dotted border-barber-gold/55 text-barber-paper/90 outline-none hover:text-barber-gold focus-visible:rounded-sm focus-visible:ring-2 focus-visible:ring-barber-gold/40"
         >
-          Incantesimi
+          Lista classe (PHB)
         </span>
       </PopoverTrigger>
       <PopoverContent
@@ -261,21 +262,25 @@ export function CharacterCardPlayer({
     setImgError(false);
     setForceImageUnoptimized(false);
   }, [character.image_url]);
+  const effective = resolveEffectiveCharacterFields(character);
   const imageSrc = imgError ? PLACEHOLDER_AVATAR : (character.image_url ?? PLACEHOLDER_AVATAR);
-  const storedLevel = character.level ?? 1;
-  const classLabel = character.character_class?.trim() || "Classe non specificata";
-  const classSubclassLabel = character.class_subclass?.trim() || null;
+  const storedLevel = effective.level ?? 1;
+  const classLabel = effective.characterClass || "Classe non specificata";
+  const classSubclassLabel = effective.classSubclass;
   const raceDef = raceBySlug(character.race_slug ?? null);
-  const raceLabel = raceDef?.label ?? null;
+  const raceLabel = raceDef?.label ?? effective.sheet?.raceLabel ?? null;
   const subraceLabel =
-    raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
+    raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ??
+    effective.sheet?.subraceLabel ??
+    null;
   const bgEntry = backgroundBySlug(character.background_slug ?? null);
   const bgRulesLabel = bgEntry?.label ?? null;
   const bgRulesBookPrefix = backgroundRulesTooltipPrefix(bgEntry ?? null);
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
-  const spellSlotsLabel = formatSpellSlotsLabel(snap?.spellSlots);
+  const spellSlotsLabel = formatSpellSlotsLabel(resolveCharacterSpellSlots(character.rules_snapshot));
+  const cantripsRaw = effective.sheet?.cantripsKnown ?? snap?.cantripsKnown;
   const cantripsLabel =
-    snap?.cantripsKnown != null && snap.cantripsKnown > 0 ? `${snap.cantripsKnown} trucchetti` : null;
+    cantripsRaw != null && cantripsRaw > 0 ? `${cantripsRaw} trucchetti` : null;
 
   const hasBuild = !!(
     character.race_slug ||
@@ -431,10 +436,10 @@ export function CharacterCardPlayer({
                 </div>
                 {character.background ? <p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-barber-paper/90">{character.background}</p> : <p className="text-sm italic text-barber-paper/55">Nessun retroscena registrato.</p>}
               </section>
-              <CharacterSheetPanel character={character} section="story" />
+              <CharacterSheetPanel character={character} section="story" isLongCampaign={Boolean(isLongCampaign)} />
             </div>
           ) : (
-            <CharacterSheetPanel character={character} section={activeSection} />
+            <CharacterSheetPanel character={character} section={activeSection} isLongCampaign={Boolean(isLongCampaign)} />
           )}
         </div>
           </div>

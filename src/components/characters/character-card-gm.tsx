@@ -44,6 +44,7 @@ import {
 } from "@/components/ui/popover";
 import { forceCharacterTimeSync, setCharacterCalendarOverride } from "@/app/campaigns/character-actions";
 import { formatSpellSlotsLabel, parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { resolveCharacterSpellSlots, resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import { backgroundBySlug, backgroundRulesTooltipPrefix, raceBySlug } from "@/lib/character-build-catalog";
 import { sanitizeRaceTraitsMarkdown } from "@/lib/race-traits-sanitizer";
 import { isImageSourceOptimizable } from "@/lib/is-image-optimizable";
@@ -254,7 +255,7 @@ function SpellsTip({
           tabIndex={0}
           className="cursor-help border-b border-dotted border-barber-gold/50 text-barber-paper/90 hover:text-barber-gold"
         >
-          Incantesimi
+          Lista classe (PHB)
         </span>
       </PopoverTrigger>
       <PopoverContent
@@ -308,17 +309,19 @@ export function CharacterCardGm({
     ? eligiblePlayers.find((p) => p.id === assignedTo)?.label ?? "Assegnato"
     : "Non assegnato";
 
+  const effective = resolveEffectiveCharacterFields(character);
   const xp = character.current_xp ?? 0;
-  const storedLevel = character.level ?? 1;
+  const storedLevel = effective.level ?? 1;
   const { level: calculatedLevel, nextLevelXp, progressPercent } = calculateLevelProgress(xp);
   const hasLevelUp = calculatedLevel > storedLevel;
 
   const xpLabel =
     nextLevelXp != null ? `${xp} / ${nextLevelXp} PE` : `${xp} PE (livello massimo)`;
 
-  const classLabel = character.character_class?.trim() || "—";
-  const hpLabel = character.hit_points != null ? String(character.hit_points) : "—";
-  const acLabel = character.armor_class != null ? String(character.armor_class) : "—";
+  const classLabel = effective.characterClass || "—";
+  const effectiveSubclass = effective.classSubclass;
+  const hpLabel = effective.hitPoints != null ? String(effective.hitPoints) : "—";
+  const acLabel = effective.armorClass != null ? String(effective.armorClass) : "—";
   const calendarLabel = character.calendar_date_label ?? "Data non impostata";
 
   const backgroundPreview = character.background?.trim() ?? "";
@@ -326,12 +329,16 @@ export function CharacterCardGm({
     ? character.background
     : null;
   const snap = parseRulesSnapshot(character.rules_snapshot ?? null);
-  const spellSlotsLabel = formatSpellSlotsLabel(snap?.spellSlots);
+  const spellSlotsLabel = formatSpellSlotsLabel(resolveCharacterSpellSlots(character.rules_snapshot));
+  const cantripsRaw = effective.sheet?.cantripsKnown ?? snap?.cantripsKnown;
   const cantripsLabel =
-    snap?.cantripsKnown != null && snap.cantripsKnown > 0 ? `${snap.cantripsKnown} trucchetti` : null;
+    cantripsRaw != null && cantripsRaw > 0 ? `${cantripsRaw} trucchetti` : null;
   const raceDef = raceBySlug(character.race_slug ?? null);
-  const raceLabel = raceDef?.label ?? null;
-  const subraceLabel = raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ?? null;
+  const raceLabel = raceDef?.label ?? effective.sheet?.raceLabel ?? null;
+  const subraceLabel =
+    raceDef?.subraces?.find((s) => s.slug === character.subclass_slug)?.label ??
+    effective.sheet?.subraceLabel ??
+    null;
   const raceTraitsBody = sanitizeRaceTraitsMarkdown(character.race_slug ?? null, snap?.raceTraitsMd ?? "");
   const bgEntry = backgroundBySlug(character.background_slug ?? null);
   const bgRulesLabel = bgEntry?.label ?? null;
@@ -432,10 +439,10 @@ export function CharacterCardGm({
         </>
       ) : null}
       <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
-      {character.class_subclass?.trim() ? (
+      {effectiveSubclass ? (
         <>
           {" · "}
-          <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} />
+          <RulesTip label={effectiveSubclass} body={snap?.classSubclassMd ?? ""} />
         </>
       ) : null}
       {snap?.spellcastingMd || snap?.spellsListMd ? (
@@ -672,7 +679,7 @@ export function CharacterCardGm({
                   )}
                 </div>
               </div>
-              <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
+              <div className="mt-4 pb-6"><CharacterSheetPanel character={character} isLongCampaign={Boolean(isLongCampaign)} /></div>
             </SheetContent>
           </Sheet>
         )}
@@ -728,7 +735,7 @@ export function CharacterCardGm({
                   </>
                 ) : null}
                 <RulesTip label={classLabel} body={snap?.classPrivilegesMd ?? ""} />
-                {character.class_subclass?.trim() ? <> · <RulesTip label={character.class_subclass.trim()} body={snap?.classSubclassMd ?? ""} /></> : null}
+                {effectiveSubclass ? <> · <RulesTip label={effectiveSubclass} body={snap?.classSubclassMd ?? ""} /></> : null}
                 {snap?.spellcastingMd || snap?.spellsListMd ? <> · <SpellsTip listText={[snap?.spellcastingMd, snap?.spellsListMd].filter(Boolean).join("\n\n")} details={snap?.spellsDetailsMd} /></> : null}
                 {bgRulesLabel ? <> · <RulesTip label={`${bgRulesBookPrefix}: ${bgRulesLabel}`} body={snap?.backgroundRulesMd ?? ""} /></> : null}
               </div>
@@ -840,7 +847,7 @@ export function CharacterCardGm({
                     )}
                   </div>
                 </div>
-                <div className="mt-4 pb-6"><CharacterSheetPanel character={character} /></div>
+                <div className="mt-4 pb-6"><CharacterSheetPanel character={character} isLongCampaign={Boolean(isLongCampaign)} /></div>
               </SheetContent>
             </Sheet>
           )}

@@ -3,6 +3,7 @@ import {
   type InitiativeEntry,
   type InitiativeTrackerState,
 } from "@/components/gm/initiative-tracker";
+import { resolveEffectiveCharacterFields } from "@/lib/character-sheet";
 import { spellSlotsForCharacter } from "@/lib/combat-spell-slots";
 import type { TorneoMatchWithTeams, TorneoTeamWithMembers } from "@/lib/torneo/types";
 
@@ -12,21 +13,31 @@ function basePcInitiativeFields(
   m: TorneoMemberForInitiative,
   stamp: number
 ): Omit<InitiativeEntry, "teamId" | "teamName" | "teamColor"> {
-  const hp = Math.max(0, m.hit_points ?? 0);
-  const spellSlots = spellSlotsForCharacter({
-    rules_snapshot: m.rules_snapshot,
+  const effective = resolveEffectiveCharacterFields({
+    name: m.name,
     character_class: m.character_class,
     class_subclass: m.class_subclass,
     level: m.level,
+    armor_class: m.armor_class,
+    hit_points: m.hit_points,
+    rules_snapshot: m.rules_snapshot,
+  });
+  const hp = Math.max(0, effective.hitPoints ?? effective.maxHp ?? 0);
+  const maxHp = Math.max(hp, effective.maxHp ?? hp);
+  const spellSlots = spellSlotsForCharacter({
+    rules_snapshot: m.rules_snapshot,
+    character_class: effective.characterClass,
+    class_subclass: effective.classSubclass,
+    level: effective.level ?? undefined,
   });
   return {
     id: `init-${stamp}-${m.character_id}`,
-    name: m.name,
+    name: effective.name || m.name,
     type: "pc",
-    characterClass: m.character_class,
-    armorClass: Math.max(0, m.armor_class ?? 0),
+    characterClass: effective.characterClass,
+    armorClass: Math.max(0, effective.armorClass ?? 0),
     hp,
-    maxHp: hp,
+    maxHp,
     initiative: 0,
     playerId: m.character_id,
     portraitUrl: m.image_url ?? null,

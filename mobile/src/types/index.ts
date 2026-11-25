@@ -226,6 +226,8 @@ export interface CharacterRulesSnapshot {
     die: string;
   };
   inspiration?: boolean;
+  exhaustion?: number;
+  playerNotes?: string | null;
   speed?: string;
   initiative?: number;
   proficiency_bonus?: number;
@@ -271,6 +273,7 @@ export interface PlayerCharacter extends Character {
   campaigns?: {
     id: string;
     name: string;
+    type?: CampaignType;
   } | null;
   rules_snapshot?: CharacterRulesSnapshot | null;
 }

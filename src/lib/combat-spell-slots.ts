@@ -1,6 +1,7 @@
 import type { Json } from "@/types/database.types";
 import type { SpellSlotEntry } from "@/lib/character-rules-snapshot";
 import { parseRulesSnapshot } from "@/lib/character-rules-snapshot";
+import { readCharacterSheetSnapshot, resolveCharacterSpellSlots } from "@/lib/character-sheet";
 import { computeCharacterSpellcastingMeta } from "@/lib/sheet-generator/spell-slots";
 
 export type CombatSpellSlots = {
@@ -18,6 +19,9 @@ export function resolveMaxSpellSlotsForCharacter(input: {
   class_subclass?: string | null;
   level?: number;
 }): SpellSlotEntry[] {
+  const fromSheet = resolveCharacterSpellSlots(input.rules_snapshot ?? null);
+  if (fromSheet.length) return cloneEntries(fromSheet);
+
   const snap = parseRulesSnapshot(input.rules_snapshot ?? null);
   if (snap?.spellSlots?.length) return cloneEntries(snap.spellSlots);
 
@@ -40,7 +44,19 @@ export function spellSlotsForCharacter(input: {
   class_subclass?: string | null;
   level?: number;
 }): CombatSpellSlots | undefined {
-  return createCombatSpellSlots(resolveMaxSpellSlotsForCharacter(input));
+  const base = createCombatSpellSlots(resolveMaxSpellSlotsForCharacter(input));
+  if (!base) return undefined;
+  const raw = readCharacterSheetSnapshot(input.rules_snapshot ?? null);
+  const used = raw.usedSpellSlots;
+  if (!used || typeof used !== "object" || Array.isArray(used)) return base;
+  const remaining = base.max
+    .map((entry) => {
+      const spent = Number((used as Record<string, unknown>)[String(entry.level)] ?? 0);
+      const safeSpent = Number.isFinite(spent) ? Math.max(0, Math.trunc(spent)) : 0;
+      return { level: entry.level, count: Math.max(0, entry.count - safeSpent) };
+    })
+    .filter((entry) => entry.count > 0);
+  return { max: base.max, remaining };
 }
 
 export function normalizeCombatSpellSlots(
