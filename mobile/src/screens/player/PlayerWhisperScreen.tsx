@@ -49,9 +49,10 @@ export const PlayerWhisperScreen: React.FC = () => {
   const [campaignModalVisible, setCampaignModalVisible] = useState<boolean>(false);
   const scrollViewRef = useRef<any>(null);
 
-  const effectiveGmId = activeCampaign?.gm_id || 'gm-demo-user';
-  const effectiveCampaignTitle = activeCampaign?.name || 'Campagna Attiva';
-  const effectiveCampaignId = activeCampaignId || 'demo-campaign-quest';
+  const effectiveGmId = activeCampaign?.gm_id || '';
+  const effectiveCampaignTitle = activeCampaign?.name || 'Nessuna campagna attiva';
+  const effectiveCampaignId = activeCampaignId || '';
+  const canSendWhisper = Boolean(user?.id && effectiveCampaignId && effectiveGmId);
 
   // Realtime hook for whispers between Player and GM
   const {
@@ -59,10 +60,12 @@ export const PlayerWhisperScreen: React.FC = () => {
     sendWhisper,
     isSending,
     isLoading,
+    error,
     refreshMessages,
+    refreshBlockedUsers,
   } = useRealtimeWhispers({
     campaignId: effectiveCampaignId,
-    partnerId: effectiveGmId,
+    partnerId: effectiveGmId || null,
     autoMarkRead: true,
   });
 
@@ -75,20 +78,32 @@ export const PlayerWhisperScreen: React.FC = () => {
   }, [messages.length]);
 
   const handleSend = useCallback(async () => {
-    if (!inputText.trim() || isSending) return;
     const textToSend = inputText.trim();
-    const result = await sendWhisper(effectiveCampaignId, effectiveGmId, textToSend);
-    if (!result.success) {
-      if (result.requiresRules) showWhisperRules();
-      else Alert.alert('Invio non riuscito', result.error || 'Il testo è stato conservato.');
+    if (!textToSend || isSending) return;
+    if (!canSendWhisper) {
+      Alert.alert(
+        'Canale non disponibile',
+        'Seleziona una campagna attiva con un Game Master assegnato prima di inviare un sussurro.',
+        [
+          { text: 'OK' },
+          { text: 'Scegli Campagna', onPress: () => setCampaignModalVisible(true) },
+        ]
+      );
       return;
     }
-    setInputText('');
 
-    setTimeout(() => {
-      scrollViewRef.current?.scrollToEnd({ animated: true });
-    }, 100);
-  }, [inputText, isSending, sendWhisper, effectiveCampaignId, effectiveGmId]);
+    const res = await sendWhisper(effectiveCampaignId, effectiveGmId, textToSend);
+    if (res.success) {
+      setInputText('');
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    } else if (res.requiresRules) {
+      showWhisperRules();
+    } else {
+      Alert.alert('Invio non riuscito', res.error || 'Impossibile inviare il sussurro. Il testo è stato conservato.');
+    }
+  }, [inputText, isSending, canSendWhisper, sendWhisper, effectiveCampaignId, effectiveGmId]);
 
   const handleApplyPreset = (preset: string) => {
     setInputText((prev) => (prev ? `${prev} - ${preset}` : preset));
@@ -112,7 +127,10 @@ export const PlayerWhisperScreen: React.FC = () => {
           { text: 'Annulla', style: 'cancel' },
           { text: 'Blocca account', style: 'destructive', onPress: () => {
             void blockWhisperUser(user.id, otherUserId)
-              .then(() => Alert.alert('Account bloccato', 'Non potrai più inviare o ricevere sussurri da questo account.'))
+              .then(async () => {
+                await refreshBlockedUsers();
+                Alert.alert('Account bloccato', 'I messaggi di questo account sono stati rimossi e non potrete più inviarvi sussurri.');
+              })
               .catch(() => Alert.alert('Blocco non riuscito', 'Non siamo riusciti a bloccare l’account. Riprova.'));
           } },
         ]);
@@ -184,7 +202,29 @@ export const PlayerWhisperScreen: React.FC = () => {
             }
           }}
         >
-          {isLoading && messages.length === 0 ? (
+          {!canSendWhisper ? (
+            <View style={styles.emptyStateContainer}>
+              <EyeOff size={32} color={colors.brassBase} />
+              <Text style={styles.emptyStateTitle}>
+                {!effectiveCampaignId
+                  ? 'Nessuna campagna selezionata'
+                  : 'Game Master non assegnato'}
+              </Text>
+              <Text style={styles.emptyStateDesc}>
+                {!effectiveCampaignId
+                  ? 'Seleziona una campagna dal registro di gilda per aprire il canale privato con il tuo Master.'
+                  : 'Questa campagna non ha ancora un Game Master valido associato. Seleziona un’altra campagna o contatta lo staff.'}
+              </Text>
+              <TouchableOpacity
+                style={[styles.presetChip, { marginTop: 8 }]}
+                onPress={() => setCampaignModalVisible(true)}
+                accessibilityRole="button"
+                accessibilityLabel="Seleziona campagna"
+              >
+                <Text style={styles.presetText}>Scegli Campagna</Text>
+              </TouchableOpacity>
+            </View>
+          ) : isLoading && messages.length === 0 ? (
             <View style={styles.centerLoading}>
               <ActivityIndicator size="small" color={colors.brassBase} />
               <Text style={styles.loadingText}>Connessione al canale arcano...</Text>
@@ -288,14 +328,21 @@ export const PlayerWhisperScreen: React.FC = () => {
           </ScrollView>
         </View>
 
+        {error ? (
+          <View style={[styles.presetsContainer, { paddingHorizontal: 14, borderBottomWidth: 1, borderBottomColor: colors.crimson }]}>
+            <Text style={{ color: colors.crimsonLight, fontSize: 12 }}>{error}</Text>
+          </View>
+        ) : null}
+
         {/* Input Bar */}
         <View style={styles.inputBar}>
           <TextInput
             style={styles.inputField}
-            placeholder="Invia un sussurro segreto al GM..."
+            placeholder={canSendWhisper ? 'Invia un sussurro segreto al GM...' : 'Seleziona una campagna con un GM valido...'}
             placeholderTextColor={colors.parchmentMuted}
             value={inputText}
             onChangeText={setInputText}
+            editable={canSendWhisper}
             multiline
             maxLength={600}
             accessibilityLabel="Messaggio sussurro segreto al Game Master"
@@ -303,10 +350,10 @@ export const PlayerWhisperScreen: React.FC = () => {
           <TouchableOpacity
             style={[
               styles.sendButton,
-              (!inputText.trim() || isSending) && styles.sendButtonDisabled,
+              (!canSendWhisper || !inputText.trim() || isSending) && styles.sendButtonDisabled,
             ]}
             onPress={handleSend}
-            disabled={!inputText.trim() || isSending}
+            disabled={!canSendWhisper || !inputText.trim() || isSending}
             activeOpacity={0.8}
             accessibilityRole="button"
             accessibilityLabel="Invia sussurro"
@@ -316,7 +363,7 @@ export const PlayerWhisperScreen: React.FC = () => {
             ) : (
               <Send
                 size={18}
-                color={inputText.trim() ? colors.void : colors.stoneBorder}
+                color={canSendWhisper && inputText.trim() ? colors.void : colors.stoneBorder}
               />
             )}
           </TouchableOpacity>

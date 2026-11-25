@@ -32,23 +32,51 @@ import {
   Clock,
   Skull,
 } from 'lucide-react-native';
+import * as SecureStore from 'expo-secure-store';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCampaign } from '../../contexts/CampaignContext';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { supabase } from '../../api/supabase';
+import { resolveImageUrl } from '../../utils/imageUrl';
 import {
   WikiEntity,
   CampaignMission,
   Character,
 } from '../../types';
 
+const buildCompanionNoteKey = (userId: string, campaignId: string, companionId: string) =>
+  `bd_party_note_${userId}_${campaignId}_${companionId}`.replace(/[^a-zA-Z0-9._-]/g, '_');
+
 type ActiveTab = 'wiki' | 'missions' | 'party';
 
 export const CampaignLoreScreen: React.FC = () => {
-  const { user } = useAuth();
-  const { activeCampaign, activeCampaignId } = useCampaign();
+  const { user, role } = useAuth();
+  const {
+    activeCampaign,
+    activeCampaignId,
+    joinedLongCampaigns,
+    hasJoinedLongCampaign,
+    isLongCampaignActive,
+    isMemberOfActiveCampaign,
+    joinLongCampaign,
+  } = useCampaign();
+
+  const targetLongCampaign = useMemo(() => {
+    if (isLongCampaignActive && isMemberOfActiveCampaign && activeCampaign) {
+      return activeCampaign;
+    }
+    return joinedLongCampaigns[0] ?? activeCampaign;
+  }, [isLongCampaignActive, isMemberOfActiveCampaign, activeCampaign, joinedLongCampaigns]);
+
+  const targetLongCampaignId = targetLongCampaign?.id ?? null;
+  const isTargetLongAccessible =
+    (targetLongCampaign?.type === 'long' &&
+      (role === 'gm' || role === 'admin' || joinedLongCampaigns.some((c) => c.id === targetLongCampaign.id))) ||
+    false;
+
   const [campaignModalVisible, setCampaignModalVisible] = useState<boolean>(false);
+  const [joiningLong, setJoiningLong] = useState<boolean>(false);
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState<ActiveTab>('wiki');
@@ -57,6 +85,8 @@ export const CampaignLoreScreen: React.FC = () => {
   const [wikiEntities, setWikiEntities] = useState<WikiEntity[]>([]);
   const [missions, setMissions] = useState<CampaignMission[]>([]);
   const [companions, setCompanions] = useState<Character[]>([]);
+  const [companionNotes, setCompanionNotes] = useState<Record<string, string>>({});
+  const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -73,40 +103,106 @@ export const CampaignLoreScreen: React.FC = () => {
   // Party companion modal
   const [selectedCompanion, setSelectedCompanion] = useState<Character | null>(null);
 
-  // Fetch Lore & Missions from Supabase
+  const handleCompanionNoteChange = useCallback((companionId: string, text: string) => {
+    setCompanionNotes((prev) => ({ ...prev, [companionId]: text }));
+  }, []);
+
+  const persistCompanionNote = useCallback(
+    async (companionId: string, text: string) => {
+      if (!user?.id || !targetLongCampaignId) return;
+      setSavingNoteId(companionId);
+      try {
+        const key = buildCompanionNoteKey(user.id, targetLongCampaignId, companionId);
+        if (text.trim().length === 0) {
+          await SecureStore.deleteItemAsync(key);
+        } else {
+          await SecureStore.setItemAsync(key, text);
+        }
+      } catch (err) {
+        console.warn('[CampaignLoreScreen] Failed to save companion note:', err);
+      } finally {
+        setSavingNoteId((curr) => (curr === companionId ? null : curr));
+      }
+    },
+    [user?.id, targetLongCampaignId]
+  );
+
+  // Fetch Lore & Missions from Supabase (solo per campagne Long con accesso abilitato)
   const loadData = useCallback(async () => {
+    if (!targetLongCampaignId || !isTargetLongAccessible) {
+      setWikiEntities([]);
+      setMissions([]);
+      setCompanions([]);
+      setCompanionNotes({});
+      setLoadError(null);
+      setIsLoading(false);
+      setIsRefreshing(false);
+      return;
+    }
+
     try {
       setIsLoading(true);
       setLoadError(null);
 
-      // 1. Fetch Wiki Entities (admin_only = false or is_secret = false)
+      // 1. Fetch Wiki Entities enabled for this player in the long campaign
+      const isGmOrAdmin = role === 'gm' || role === 'admin';
       let wikiQuery = supabase
         .from('wiki_entities')
         .select('*')
+        .eq('campaign_id', targetLongCampaignId)
+        .eq('admin_only', false)
+        .eq('is_campaign_document', false)
+        .is('archived_at', null)
         .order('name', { ascending: true });
-
-      if (activeCampaignId) {
-        wikiQuery = wikiQuery.eq('campaign_id', activeCampaignId);
-      }
 
       const { data: wikiData, error: wikiErr } = await wikiQuery;
       if (!wikiErr && wikiData) {
-        setWikiEntities(wikiData as WikiEntity[]);
+        const rawEntities = wikiData as WikiEntity[];
+        if (isGmOrAdmin || !user?.id || rawEntities.length === 0) {
+          setWikiEntities(rawEntities);
+        } else {
+          const [permsRes, explorationsRes] = await Promise.all([
+            supabase
+              .from('entity_permissions')
+              .select('entity_id')
+              .eq('campaign_id', targetLongCampaignId)
+              .eq('entity_type', 'wiki')
+              .eq('user_id', user.id),
+            supabase
+              .from('explorations')
+              .select('entity_id')
+              .eq('player_id', user.id)
+              .in('entity_id', rawEntities.map((e) => e.id)),
+          ]);
+
+          const permittedIds = new Set(
+            (permsRes.data ?? []).map((p: any) => p.entity_id).filter(Boolean) as string[]
+          );
+          const unlockedIds = new Set(
+            (explorationsRes.data ?? []).map((e: any) => e.entity_id).filter(Boolean) as string[]
+          );
+
+          const visibleEntities = rawEntities.filter((e) => {
+            if (e.archived_at) return false;
+            const vis = e.visibility ?? (e.is_secret ? 'secret' : 'public');
+            if (vis === 'public') return true;
+            if (vis === 'selective') return permittedIds.has(e.id);
+            if (vis === 'secret') return unlockedIds.has(e.id);
+            return false;
+          });
+          setWikiEntities(visibleEntities);
+        }
       } else {
         setWikiEntities([]);
       }
 
       // 2. Fetch Missions (campaign_missions)
-      let missionsQuery = supabase
+      const { data: missionData, error: missionErr } = await supabase
         .from('campaign_missions')
         .select('*')
+        .eq('campaign_id', targetLongCampaignId)
         .order('created_at', { ascending: false });
 
-      if (activeCampaignId) {
-        missionsQuery = missionsQuery.eq('campaign_id', activeCampaignId);
-      }
-
-      const { data: missionData, error: missionErr } = await missionsQuery;
       if (!missionErr && missionData) {
         setMissions(missionData as CampaignMission[]);
       } else {
@@ -114,20 +210,33 @@ export const CampaignLoreScreen: React.FC = () => {
       }
 
       // 3. Fetch Party Companions (campaign_characters)
-      let compQuery = supabase
+      const { data: compData, error: compErr } = await supabase
         .from('campaign_characters')
         .select('*')
+        .eq('campaign_id', targetLongCampaignId)
         .order('name', { ascending: true });
 
-      if (activeCampaignId) {
-        compQuery = compQuery.eq('campaign_id', activeCampaignId);
-      }
-
-      const { data: compData, error: compErr } = await compQuery;
       if (!compErr && compData) {
-        setCompanions(compData as Character[]);
+        const compList = compData as Character[];
+        setCompanions(compList);
+        if (user?.id) {
+          const noteEntries = await Promise.all(
+            compList.map(async (c) => {
+              try {
+                const stored = await SecureStore.getItemAsync(
+                  buildCompanionNoteKey(user.id, targetLongCampaignId, c.id)
+                );
+                return [c.id, stored ?? ''] as const;
+              } catch {
+                return [c.id, ''] as const;
+              }
+            })
+          );
+          setCompanionNotes(Object.fromEntries(noteEntries));
+        }
       } else {
         setCompanions([]);
+        setCompanionNotes({});
       }
 
       if (wikiErr && missionErr && compErr) {
@@ -143,7 +252,7 @@ export const CampaignLoreScreen: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [activeCampaignId]);
+  }, [targetLongCampaignId, isTargetLongAccessible, role, user?.id]);
 
   useEffect(() => {
     loadData();
@@ -355,7 +464,49 @@ export const CampaignLoreScreen: React.FC = () => {
           />
         }
       >
-        {isLoading && !isRefreshing ? (
+        {!hasJoinedLongCampaign && targetLongCampaign?.type !== 'long' ? (
+          <View style={styles.emptyCard}>
+            <BookOpen size={32} color={colors.brassBase} />
+            <Text style={styles.emptyTitle}>Sezione riservata alle Campagne Long</Text>
+            <Text style={styles.emptySubtitle}>
+              Per le One Shot e le Quest puoi consultare direttamente le Sessioni e la Scheda PG. Seleziona una Campagna Long per aprire Wiki, Bacheca Missioni e Party.
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalActionButton, { paddingHorizontal: 18, marginTop: 10 }]}
+              onPress={() => setCampaignModalVisible(true)}
+            >
+              <Text style={styles.modalActionText}>Seleziona Campagna</Text>
+            </TouchableOpacity>
+          </View>
+        ) : !isTargetLongAccessible && targetLongCampaign ? (
+          <View style={styles.emptyCard}>
+            <Shield size={32} color={colors.brassBase} />
+            <Text style={styles.emptyTitle}>Iscrizione alla Campagna Long richiesta</Text>
+            <Text style={styles.emptySubtitle}>
+              {targetLongCampaign.long_registrations_open === false
+                ? 'Le iscrizioni autonome sono chiuse. Contatta il GM per essere aggiunto alla campagna.'
+                : `Iscriviti a "${targetLongCampaign.name}" per consultare Wiki, Bacheca Missioni e Compagni del Party.`}
+            </Text>
+            {targetLongCampaign.long_registrations_open !== false && (
+              <TouchableOpacity
+                style={[styles.modalActionButton, { paddingHorizontal: 18, marginTop: 10 }, joiningLong && { opacity: 0.6 }]}
+                disabled={joiningLong}
+                onPress={async () => {
+                  setJoiningLong(true);
+                  try {
+                    await joinLongCampaign(targetLongCampaign.id);
+                  } finally {
+                    setJoiningLong(false);
+                  }
+                }}
+              >
+                <Text style={styles.modalActionText}>
+                  {joiningLong ? 'Iscrizione in corso...' : 'Iscriviti alla Campagna'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        ) : isLoading && !isRefreshing ? (
           <View style={styles.loadingBox}>
             <ActivityIndicator size="small" color={colors.brassBase} />
             <Text style={styles.loadingText}>Apertura tomi di gilda...</Text>
@@ -657,65 +808,53 @@ export const CampaignLoreScreen: React.FC = () => {
                   </View>
                 ) : (
                   companions.map((comp) => {
-                  return (
-                    <TouchableOpacity
-                      key={comp.id}
-                      style={styles.companionCard}
-                      onPress={() => setSelectedCompanion(comp)}
-                      activeOpacity={0.85}
-                    >
-                      <View style={styles.companionTop}>
-                        {/* Avatar Initial Icon */}
-                        <View style={styles.companionAvatar}>
-                          <Text style={styles.avatarInitial}>
-                            {comp.name.charAt(0).toUpperCase()}
-                          </Text>
-                        </View>
-
-                        <View style={styles.companionInfo}>
-                          <Text style={styles.companionName}>{comp.name}</Text>
-                          <Text style={styles.companionRole}>
-                            {comp.race_slug ? `${comp.race_slug} ` : ''}
-                            {comp.character_class || 'Avventuriero'}
-                            {comp.level ? ` • Livello ${comp.level}` : ''}
-                          </Text>
-                          {comp.background && (
-                            <Text style={styles.companionBackground}>
-                              {comp.background}
-                            </Text>
+                    const resolvedImage = resolveImageUrl(comp.image_url);
+                    const noteValue = companionNotes[comp.id] ?? '';
+                    return (
+                      <View key={comp.id} style={styles.companionCard}>
+                        <TouchableOpacity
+                          style={styles.companionImageWrap}
+                          onPress={() => setSelectedCompanion(comp)}
+                          activeOpacity={0.85}
+                        >
+                          {resolvedImage ? (
+                            <Image
+                              source={{ uri: resolvedImage }}
+                              style={styles.companionPortraitImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.companionImagePlaceholder}>
+                              <Users size={42} color={colors.brassBase} />
+                              <Text style={styles.companionNoImageText}>
+                                Nessuna immagine disponibile
+                              </Text>
+                            </View>
                           )}
+                        </TouchableOpacity>
+
+                        <View style={styles.companionNotesWrap}>
+                          <View style={styles.companionNotesHeader}>
+                            <Text style={styles.companionNotesLabel}>NOTE PERSONALI</Text>
+                            {savingNoteId === comp.id && (
+                              <Text style={styles.companionNotesSaving}>Salvataggio...</Text>
+                            )}
+                          </View>
+                          <TextInput
+                            style={styles.companionNotesInput}
+                            value={noteValue}
+                            onChangeText={(text) => handleCompanionNoteChange(comp.id, text)}
+                            onBlur={() => { void persistCompanionNote(comp.id, noteValue); }}
+                            placeholder="Scrivi liberamente le tue note su questo compagno..."
+                            placeholderTextColor={colors.parchmentMuted}
+                            multiline
+                            textAlignVertical="top"
+                          />
                         </View>
                       </View>
-
-                      {/* Stat chips row: AC & HP */}
-                      <View style={styles.statsRow}>
-                        <View style={styles.statPill}>
-                          <Shield size={12} color={colors.brassLight} />
-                          <Text style={styles.statPillLabel}>CA:</Text>
-                          <Text style={styles.statPillValue}>
-                            {comp.armor_class ?? 10}
-                          </Text>
-                        </View>
-
-                        <View style={styles.statPill}>
-                          <Heart size={12} color={colors.crimsonLight} />
-                          <Text style={styles.statPillLabel}>PF:</Text>
-                          <Text style={styles.statPillValue}>
-                            {comp.hit_points ?? 20}
-                          </Text>
-                        </View>
-
-                        <View style={styles.statPill}>
-                          <Sparkles size={12} color={colors.emerald} />
-                          <Text style={styles.statPillLabel}>XP:</Text>
-                          <Text style={styles.statPillValue}>
-                            {comp.current_xp ?? 0}
-                          </Text>
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                }))}
+                    );
+                  })
+                )}
               </View>
             )}
           </>
@@ -934,11 +1073,7 @@ export const CampaignLoreScreen: React.FC = () => {
             <View style={styles.modalHeader}>
               <View style={styles.modalHeaderTitleBox}>
                 <Text style={styles.modalTitle} numberOfLines={1}>
-                  {selectedCompanion?.name}
-                </Text>
-                <Text style={styles.modalCompanionSub}>
-                  {selectedCompanion?.race_slug ? `${selectedCompanion.race_slug} ` : ''}
-                  {selectedCompanion?.character_class} • Lv. {selectedCompanion?.level}
+                  Compagno di Party
                 </Text>
               </View>
               <TouchableOpacity
@@ -956,37 +1091,39 @@ export const CampaignLoreScreen: React.FC = () => {
             >
               {selectedCompanion && (
                 <>
-                  <View style={styles.statsModalGrid}>
-                    <View style={styles.statGridCard}>
-                      <Shield size={16} color={colors.brassLight} />
-                      <Text style={styles.statGridVal}>
-                        {selectedCompanion.armor_class ?? 10}
+                  {resolveImageUrl(selectedCompanion.image_url) ? (
+                    <Image
+                      source={{ uri: resolveImageUrl(selectedCompanion.image_url)! }}
+                      style={styles.modalCompanionPortrait}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.companionImagePlaceholder}>
+                      <Users size={48} color={colors.brassBase} />
+                      <Text style={styles.companionNoImageText}>
+                        Nessuna immagine disponibile
                       </Text>
-                      <Text style={styles.statGridLabel}>Classe Armatura</Text>
                     </View>
+                  )}
 
-                    <View style={styles.statGridCard}>
-                      <Heart size={16} color={colors.crimsonLight} />
-                      <Text style={styles.statGridVal}>
-                        {selectedCompanion.hit_points ?? 20}
-                      </Text>
-                      <Text style={styles.statGridLabel}>Punti Ferita</Text>
-                    </View>
-
-                    <View style={styles.statGridCard}>
-                      <Sparkles size={16} color={colors.emerald} />
-                      <Text style={styles.statGridVal}>
-                        {selectedCompanion.current_xp ?? 0}
-                      </Text>
-                      <Text style={styles.statGridLabel}>Punti Esperienza</Text>
-                    </View>
-                  </View>
-
-                  <Text style={styles.detailSectionTitle}>BACKGROUND & STORIA</Text>
-                  <Text style={styles.modalContentText}>
-                    {selectedCompanion.background ||
-                      'Avventuriero legato al destino del gruppo nella campagna delle profondità del Pozzo Nero.'}
-                  </Text>
+                  <Text style={styles.detailSectionTitle}>LE TUE NOTE</Text>
+                  <TextInput
+                    style={[styles.companionNotesInput, { minHeight: 110 }]}
+                    value={companionNotes[selectedCompanion.id] ?? ''}
+                    onChangeText={(text) =>
+                      handleCompanionNoteChange(selectedCompanion.id, text)
+                    }
+                    onBlur={() => {
+                      void persistCompanionNote(
+                        selectedCompanion.id,
+                        companionNotes[selectedCompanion.id] ?? ''
+                      );
+                    }}
+                    placeholder="Scrivi liberamente le tue note su questo compagno..."
+                    placeholderTextColor={colors.parchmentMuted}
+                    multiline
+                    textAlignVertical="top"
+                  />
                 </>
               )}
             </ScrollView>
@@ -994,10 +1131,18 @@ export const CampaignLoreScreen: React.FC = () => {
             <View style={styles.modalFooter}>
               <TouchableOpacity
                 style={styles.modalActionButton}
-                onPress={() => setSelectedCompanion(null)}
+                onPress={() => {
+                  if (selectedCompanion) {
+                    void persistCompanionNote(
+                      selectedCompanion.id,
+                      companionNotes[selectedCompanion.id] ?? ''
+                    );
+                  }
+                  setSelectedCompanion(null);
+                }}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalActionText}>Chiudi Profilo</Text>
+                <Text style={styles.modalActionText}>Salva e Chiudi</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1619,6 +1764,71 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: colors.parchmentMuted,
     textAlign: 'center',
+  },
+  companionImageWrap: {
+    width: '100%',
+    height: 220,
+    borderRadius: 10,
+    overflow: 'hidden',
+    backgroundColor: colors.void,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  companionPortraitImage: {
+    width: '100%',
+    height: '100%',
+  },
+  companionImagePlaceholder: {
+    width: '100%',
+    height: 180,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: colors.void,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  companionNoImageText: {
+    fontSize: 12,
+    color: colors.parchmentMuted,
+  },
+  companionNotesWrap: {
+    marginTop: 10,
+    gap: 6,
+  },
+  companionNotesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  companionNotesLabel: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: colors.brassLight,
+    letterSpacing: 0.6,
+  },
+  companionNotesSaving: {
+    fontSize: 10.5,
+    color: colors.emerald,
+    fontWeight: '600',
+  },
+  companionNotesInput: {
+    backgroundColor: colors.void,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    color: colors.parchmentLight,
+    fontSize: 13,
+    minHeight: 74,
+  },
+  modalCompanionPortrait: {
+    width: '100%',
+    height: 280,
+    borderRadius: 10,
+    backgroundColor: colors.void,
   },
 });
 

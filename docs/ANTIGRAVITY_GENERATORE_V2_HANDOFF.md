@@ -60,7 +60,7 @@ Questi sono percorsi relativi al repository. Cercare anche i moduli specifici gi
 
 ## Procedura per ogni classe
 
-1. Leggere istruzioni applicabili, stato Git e documentazione. Sul computer di Alessandro leggere `/Users/alessandropetricciuolo/.codex/RTK.md` e rispettare il prefisso `rtk` nei comandi.
+1. Leggere `AGENTS.md` e il riferimento di prodotto `PRODUCT.md` dalla radice del repository. Controllare lo stato Git e la documentazione della classe. Sul computer di Alessandro leggere `/Users/alessandropetricciuolo/.codex/RTK.md` e rispettare il prefisso `rtk` nei comandi.
 2. Esaminare il PDF e censire classe, sottoclassi, scelte e progressioni realmente presenti nei manuali. Questa è una verifica tecnica delle fonti, non una lunga fase di ricerca da far approvare.
 3. Implementare i moduli di estrazione, catalogo e modello di stampa seguendo gli esempi. Riutilizzare i moduli esistenti; non creare agenti, integrazioni, dipendenze o framework nuovi per questo lavoro.
 4. Collegare la classe all'endpoint, al renderer e a tutti i filtri della UI. Controllare sia `/generator-v2` sia la disponibilità del pulsante V2 dopo la generazione della classe nel percorso originale. Il PDF deve includere anche tutte le pagine successive.

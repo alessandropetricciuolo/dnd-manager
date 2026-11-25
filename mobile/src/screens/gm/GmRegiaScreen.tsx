@@ -43,6 +43,7 @@ import { GmQrScannerModal } from '../../components/gm/GmQrScannerModal';
 import { QrCode } from 'lucide-react-native';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { parseGmRemoteQr } from '../../utils/qrParser';
+import { resolveCharacterMaxHp, resolveEffectiveCharacterFields } from '../../lib/character-sheet';
 
 function computeCountdown(scheduledAt: string): { label: string; isImminent: boolean } {
   try {
@@ -150,8 +151,8 @@ export const GmRegiaScreen: React.FC = () => {
   // Statistics
   const completedSessionsCount = sessions.filter((s) => s.status === 'completed').length;
   const criticalCharacters = characters.filter((c) => {
-    const maxHp = Number((c.rules_snapshot as any)?.max_hp);
-    return Number.isFinite(maxHp) && maxHp > 0 && typeof c.hit_points === 'number' && c.hit_points < maxHp * 0.3;
+    const maxHp = resolveCharacterMaxHp(c.rules_snapshot);
+    return maxHp !== null && maxHp > 0 && typeof c.hit_points === 'number' && c.hit_points < maxHp * 0.3;
   });
   const avgLevel =
     characters.length > 0
@@ -322,12 +323,13 @@ export const GmRegiaScreen: React.FC = () => {
             </View>
           ) : (
             characters.map((char) => {
-            const currentHp = typeof char.hit_points === 'number' ? char.hit_points : 0;
-            const maxHpValue = Number((char.rules_snapshot as any)?.max_hp);
-            const maxHp = Number.isFinite(maxHpValue) && maxHpValue > 0 ? maxHpValue : null;
-            const hpPercent = maxHp ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 0;
-              const isDead = currentHp === 0;
-              const isDanger = maxHp !== null && currentHp < maxHp * 0.3;
+            const effective = resolveEffectiveCharacterFields(char);
+            const hasCurrentHp = effective.hitPoints !== null;
+            const currentHp = effective.hitPoints ?? 0;
+            const maxHp = effective.maxHp;
+            const hpPercent = hasCurrentHp && maxHp && maxHp > 0 ? Math.max(0, Math.min(100, (currentHp / maxHp) * 100)) : 0;
+              const isDead = hasCurrentHp && currentHp === 0;
+              const isDanger = hasCurrentHp && maxHp !== null && maxHp > 0 && currentHp < maxHp * 0.3;
 
               return (
                 <View
@@ -341,10 +343,10 @@ export const GmRegiaScreen: React.FC = () => {
                   <View style={styles.partyMemberTop}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.charName, isDead && styles.charNameDead]} numberOfLines={1}>
-                        {char.name}
+                        {effective.name || char.name}
                       </Text>
                       <Text style={styles.charClass} numberOfLines={1}>
-                        {char.character_class || 'Avventuriero'} • Liv {char.level || 1}
+                        {effective.characterClass || 'Avventuriero'} • Liv {effective.level || 1}
                       </Text>
                     </View>
 

@@ -300,6 +300,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     description: "Appunti riservati al master",
     mission_kind: "personal",
   });
+  assert.ok(created?.mission);
   assert.equal(created.mission.mission_kind, "personal");
   assert.equal(created.mission.points_reward, 0);
   assert.equal(created.mission.title, "Trama Oscura");
@@ -308,6 +309,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
 
   // 2. Search missions with default kind -> returns only organization
   const defaultSearch = await executeMissionOperation(db, "search_missions", { campaign_id });
+  assert.ok(defaultSearch?.missions);
   assert.equal(defaultSearch.missions.length, 1);
   assert.equal(defaultSearch.missions[0].id, mission_id);
   assert.equal(defaultSearch.mission_kind, "organization");
@@ -317,6 +319,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     campaign_id,
     mission_kind: "personal",
   });
+  assert.ok(personalSearch?.missions);
   assert.equal(personalSearch.missions.length, 1);
   assert.equal(personalSearch.missions[0].id, personalId);
   assert.equal(personalSearch.mission_kind, "personal");
@@ -326,6 +329,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     campaign_id,
     mission_kind: "all",
   });
+  assert.ok(allSearch?.missions);
   assert.equal(allSearch.missions.length, 2);
 
   // 3. Duplicate title rejection
@@ -358,6 +362,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     expected_updated_at: created.mission.updated_at,
     title: "Trama Oscura Risolta",
   });
+  assert.ok(updated?.mission);
   assert.equal(updated.mission.title, "Trama Oscura Risolta");
   assert.equal(updated.mission.points_reward, 0);
 
@@ -390,7 +395,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     resource_type: "wiki",
     resource_id: wiki_id,
   });
-  assert.equal(linkWiki.action, "link");
+  assert.equal(linkWiki?.action, "link");
   assert.equal(wiki.find((w) => w.id === wiki_id)?.linked_mission_id, personalId);
 
   const linkMap = await executeMissionOperation(db, "link_mission_resource", {
@@ -399,7 +404,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     resource_type: "exploration_map",
     resource_id: map_id,
   });
-  assert.equal(linkMap.action, "link");
+  assert.equal(linkMap?.action, "link");
   assert.equal(maps.find((m) => m.id === map_id)?.linked_mission_id, personalId);
 
   const linkScene = await executeMissionOperation(db, "link_mission_resource", {
@@ -408,7 +413,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     resource_type: "scene",
     resource_id: scene_id,
   });
-  assert.equal(linkScene.action, "link");
+  assert.equal(linkScene?.action, "link");
   assert.equal(scenes.find((s) => s.id === scene_id)?.linked_mission_id, personalId);
 
   // 6. Cross-Mission Unlinking Protection:
@@ -436,6 +441,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     campaign_id,
     mission_id: personalId,
   });
+  assert.ok(listed);
   assert.equal(listed.resources.length, 3);
   assert.equal(listed.mission_kind, "personal");
 
@@ -447,7 +453,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     resource_id: wiki_id,
     unlink: true,
   });
-  assert.equal(unlinkRes.action, "unlink");
+  assert.equal(unlinkRes?.action, "unlink");
   assert.equal(wiki.find((w) => w.id === wiki_id)?.linked_mission_id, null);
 
   // 9. Personal mission complete and reopen (no points, no guild)
@@ -456,6 +462,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     mission_id: personalId,
     expected_updated_at: updated.mission.updated_at,
   });
+  assert.ok(completed?.mission);
   assert.equal(completed.mission.status, "completed");
   assert.equal(completed.mission.points_reward, 0);
   assert.equal(completed.mission.completed_by_guild_id, null);
@@ -465,6 +472,7 @@ test("executeMissionOperation handles personal mission creation, search, update,
     mission_id: personalId,
     expected_updated_at: completed.mission.updated_at,
   });
+  assert.ok(reopened?.mission);
   assert.equal(reopened.mission.status, "open");
   assert.equal(reopened.mission.completed_at, null);
 });

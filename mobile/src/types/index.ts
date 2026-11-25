@@ -78,6 +78,7 @@ export interface Character {
   campaign_id: string;
   name: string;
   image_url: string | null;
+  lowpoly_avatar_url?: string | null;
   sheet_file_path: string | null;
   current_xp: number;
   level: number;
@@ -444,6 +445,10 @@ export interface WikiEntity {
   image_url: string | null;
   tags?: string[];
   admin_only?: boolean;
+  is_secret?: boolean;
+  visibility?: 'public' | 'secret' | 'selective';
+  is_campaign_document?: boolean;
+  archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
 }

@@ -1,11 +1,12 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCampaign } from '../contexts/CampaignContext';
-import { PlayerSession, SessionSignup, SessionSignupStatus } from '../types';
+import { PlayerSession, SessionSignupStatus } from '../types';
+import { enrichPlayerSession, resolveSignupTargetStatus } from '../lib/session-booking';
 
 export function usePlayerSessions(overrideCampaignId?: string | null) {
-  const { user } = useAuth();
+  const { user, role } = useAuth();
   const { activeCampaignId } = useCampaign();
 
   const currentCampaignId = overrideCampaignId !== undefined ? overrideCampaignId : activeCampaignId;
@@ -14,141 +15,52 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
   const [filterByCampaign, setFilterByCampaign] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const inFlightSessionIdsRef = useRef<Set<string>>(new Set());
 
-  // Normalize session rows adding mySignup and occupancy indicators
   const enrichSessions = useCallback(
-    (rawSessions: any[]): PlayerSession[] => {
-      const currentUserId = user?.id;
-
-      return rawSessions.map((session) => {
-        const signups: SessionSignup[] = Array.isArray(session.session_signups)
-          ? session.session_signups
-          : [];
-
-        // Find active signup for current user (ignoring cancelled)
-        const mySignup = currentUserId
-          ? signups.find(
-              (s) => s.player_id === currentUserId && s.status !== 'cancelled'
-            ) ?? null
-          : null;
-
-        const confirmedCount = signups.filter(
-          (s) => s.status === 'confirmed' || s.status === 'approved' || s.status === 'attended'
-        ).length;
-
-        const isFull = confirmedCount >= (session.max_players ?? 6);
-        const isConfirmed = mySignup?.status === 'confirmed' || mySignup?.status === 'approved' || mySignup?.status === 'attended';
-        const isWaitlist = mySignup?.status === 'waitlist';
-
-        return {
-          ...session,
-          session_signups: signups,
-          mySignup,
-          confirmedCount,
-          isConfirmed,
-          isWaitlist,
-          isFull,
-        };
-      });
-    },
+    (rawSessions: any[]): PlayerSession[] =>
+      rawSessions.map((session) => enrichPlayerSession(session, user?.id)),
     [user?.id]
   );
 
-  // Fetch sessions from Supabase
-  const fetchSessions = useCallback(async () => {
-    try {
-      setLoading(true);
-      setError(null);
+  // Fetch sessions from Supabase (no demo fallback on empty data)
+  const fetchSessions = useCallback(
+    async (options?: { silent?: boolean }) => {
+      try {
+        if (!options?.silent) {
+          setLoading(true);
+        }
+        setError(null);
 
-      const { data, error: fetchErr } = await supabase
-        .from('sessions')
-        .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
-        .order('scheduled_at', { ascending: true });
+        const { data, error: fetchErr } = await supabase
+          .from('sessions')
+          .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
+          .order('scheduled_at', { ascending: true });
 
-      if (fetchErr) {
-        console.warn('[usePlayerSessions] Errore caricamento sessioni:', fetchErr.message);
-        setError(fetchErr.message);
-        setAllSessions([]);
-        return;
+        if (fetchErr) {
+          console.warn('[usePlayerSessions] Errore caricamento sessioni:', fetchErr.message);
+          setError('Impossibile caricare le sessioni dal server. Verifica la connessione e riprova.');
+          if (!options?.silent) {
+            setAllSessions([]);
+          }
+          return;
+        }
+
+        setAllSessions(data && data.length > 0 ? enrichSessions(data) : []);
+      } catch (err: any) {
+        console.warn('[usePlayerSessions] Eccezione:', err);
+        setError(err?.message ?? 'Errore nel caricamento delle sessioni.');
+        if (!options?.silent) {
+          setAllSessions([]);
+        }
+      } finally {
+        if (!options?.silent) {
+          setLoading(false);
+        }
       }
-
-      if (data && data.length > 0) {
-        setAllSessions(enrichSessions(data));
-      } else {
-        const today = new Date();
-        const d1 = new Date(today);
-        d1.setDate(today.getDate() + 1);
-        d1.setHours(20, 30, 0, 0);
-
-        const d2 = new Date(today);
-        d2.setDate(today.getDate() + 4);
-        d2.setHours(19, 0, 0, 0);
-
-        const d3 = new Date(today);
-        d3.setDate(today.getDate() + 8);
-        d3.setHours(21, 0, 0, 0);
-
-        const sampleRaw = [
-          {
-            id: 'demo-session-1',
-            campaign_id: 'demo-camp-1',
-            title: 'La Cripta dei Sussurri',
-            description: 'Esplorazione del dungeon sotto la vecchia cattedrale.',
-            scheduled_at: d1.toISOString(),
-            duration_hours: 3.5,
-            max_players: 5,
-            status: 'scheduled',
-            location: 'Tavolo Rosso - Sala Centrale',
-            campaigns: { id: 'demo-camp-1', name: 'Le Ombre di Waterdeep', image_url: null, type: 'long' },
-            session_signups: [
-              { id: 's1', session_id: 'demo-session-1', player_id: 'p1', status: 'confirmed' },
-              { id: 's2', session_id: 'demo-session-1', player_id: 'p2', status: 'confirmed' },
-            ],
-          },
-          {
-            id: 'demo-session-2',
-            campaign_id: 'demo-camp-2',
-            title: "L'Assedio alla Fortezza Nanica",
-            description: "Battaglia campale contro l'orda dei goblin.",
-            scheduled_at: d2.toISOString(),
-            duration_hours: 4,
-            max_players: 6,
-            status: 'scheduled',
-            location: 'Tavolo Verde',
-            campaigns: { id: 'demo-camp-2', name: 'La Corona di Pietra', image_url: null, type: 'quest' },
-            session_signups: [
-              { id: 's3', session_id: 'demo-session-2', player_id: 'p3', status: 'confirmed' },
-            ],
-          },
-          {
-            id: 'demo-session-3',
-            campaign_id: 'demo-camp-1',
-            title: 'Il Patto col Drago di Giada',
-            description: 'Negoziazione ad alta tensione nelle terre selvagge.',
-            scheduled_at: d3.toISOString(),
-            duration_hours: 4,
-            max_players: 4,
-            status: 'scheduled',
-            location: 'Tavolo Oro - Privé',
-            campaigns: { id: 'demo-camp-1', name: 'Le Ombre di Waterdeep', image_url: null, type: 'oneshot' },
-            session_signups: [
-              { id: 's4', session_id: 'demo-session-3', player_id: 'p4', status: 'confirmed' },
-              { id: 's5', session_id: 'demo-session-3', player_id: 'p5', status: 'confirmed' },
-              { id: 's6', session_id: 'demo-session-3', player_id: 'p6', status: 'confirmed' },
-              { id: 's7', session_id: 'demo-session-3', player_id: 'p7', status: 'confirmed' },
-            ],
-          },
-        ];
-        setAllSessions(enrichSessions(sampleRaw));
-      }
-    } catch (err: any) {
-      console.warn('[usePlayerSessions] Eccezione:', err);
-      setError(err?.message ?? 'Errore nel caricamento delle sessioni');
-      setAllSessions([]);
-    } finally {
-      setLoading(false);
-    }
-  }, [enrichSessions]);
+    },
+    [enrichSessions]
+  );
 
   useEffect(() => {
     void fetchSessions();
@@ -168,148 +80,160 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     return allSessions;
   }, [filterByCampaign, currentCampaignId, campaignSessions, allSessions]);
 
-  // Sign up for session
+  // Sign up for session: verify live capacity, persist first, then refresh confirmed state
   const signUpForSession = useCallback(
     async (sessionId: string): Promise<{ success: boolean; status?: SessionSignupStatus; error?: string }> => {
+      if (!user?.id) {
+        return { success: false, error: 'Devi essere autenticato per prenotare una sessione.' };
+      }
+
+      if (inFlightSessionIdsRef.current.has(sessionId)) {
+        return { success: false, error: 'Operazione già in corso per questa sessione.' };
+      }
+
       const targetSession = allSessions.find((s) => s.id === sessionId);
       if (!targetSession) {
-        return { success: false, error: 'Sessione non trovata' };
+        return { success: false, error: 'Sessione non trovata.' };
       }
 
-      const isFull = (targetSession.confirmedCount ?? 0) >= (targetSession.max_players ?? 6);
-      const targetStatus: SessionSignupStatus = isFull ? 'waitlist' : 'confirmed';
-      const playerId = user?.id || 'demo-player-id';
+      inFlightSessionIdsRef.current.add(sessionId);
+      try {
+        // Re-read current signups & capacity from DB to handle concurrent bookings accurately
+        const { data: liveSession, error: liveErr } = await supabase
+          .from('sessions')
+          .select('id, campaign_id, max_players, status, campaigns(id, type), session_signups(id, player_id, status)')
+          .eq('id', sessionId)
+          .single();
 
-      // Optimistic update
-      setAllSessions((prev) =>
-        prev.map((s) => {
-          if (s.id !== sessionId) return s;
-          const existing = s.session_signups || [];
-          const filtered = existing.filter((item) => item.player_id !== playerId);
-          const newSignup: SessionSignup = {
-            id: `signup-opt-${Date.now()}`,
-            session_id: sessionId,
-            player_id: playerId,
-            status: targetStatus,
-            signed_up_at: new Date().toISOString(),
-          };
-          const nextSignups = [...filtered, newSignup];
-          const nextConfirmedCount = nextSignups.filter(
-            (it) => it.status === 'confirmed' || it.status === 'approved'
-          ).length;
-
+        if (liveErr || !liveSession) {
           return {
-            ...s,
-            session_signups: nextSignups,
-            mySignup: newSignup,
-            confirmedCount: nextConfirmedCount,
-            isConfirmed: targetStatus === 'confirmed',
-            isWaitlist: targetStatus === 'waitlist',
-            isFull: nextConfirmedCount >= (s.max_players ?? 6),
+            success: false,
+            error: liveErr?.message || 'Impossibile verificare la disponibilità aggiornata della sessione.',
           };
-        })
-      );
+        }
 
-      // Persist to Supabase
-      if (user?.id) {
-        try {
-          const { data: existingRows } = await supabase
-            .from('session_signups')
+        const liveCampaignType = (liveSession as any)?.campaigns?.type;
+        const liveCampaignId = liveSession.campaign_id as string | null;
+        if (liveCampaignType === 'long' && liveCampaignId && role !== 'gm' && role !== 'admin') {
+          const { data: memberRow } = await supabase
+            .from('campaign_members')
             .select('id')
-            .eq('session_id', sessionId)
-            .eq('player_id', user.id);
+            .eq('campaign_id', liveCampaignId)
+            .eq('player_id', user.id)
+            .maybeSingle();
 
-          if (existingRows && existingRows.length > 0) {
-            const { error: updErr } = await supabase
-              .from('session_signups')
-              .update({
-                status: targetStatus,
-                signed_up_at: new Date().toISOString(),
-              })
-              .eq('id', existingRows[0].id);
+          if (!memberRow) {
+            return {
+              success: false,
+              error: 'Per prenotare sessioni di una campagna Long devi prima iscriverti alla campagna.',
+            };
+          }
+        }
 
-            if (updErr) {
-              console.warn('[signUpForSession] Errore update signup:', updErr.message);
-              return { success: false, error: updErr.message };
-            }
-          } else {
-            const { error: insErr } = await supabase.from('session_signups').insert({
-              session_id: sessionId,
-              player_id: user.id,
+        if (liveSession.status !== 'scheduled') {
+          await fetchSessions({ silent: true });
+          return { success: false, error: 'Questa sessione non è più aperta alle prenotazioni.' };
+        }
+
+        const liveSignups = Array.isArray(liveSession.session_signups)
+          ? liveSession.session_signups
+          : [];
+        const existingMine = liveSignups.find((row: any) => row.player_id === user.id);
+
+        if (
+          existingMine &&
+          (existingMine.status === 'confirmed' ||
+            existingMine.status === 'approved' ||
+            existingMine.status === 'attended' ||
+            existingMine.status === 'waitlist')
+        ) {
+          await fetchSessions({ silent: true });
+          return {
+            success: true,
+            status: existingMine.status as SessionSignupStatus,
+          };
+        }
+
+        const targetStatus = resolveSignupTargetStatus(liveSignups, liveSession.max_players);
+
+        if (existingMine) {
+          const { error: updErr } = await supabase
+            .from('session_signups')
+            .update({
               status: targetStatus,
               signed_up_at: new Date().toISOString(),
-            });
+            })
+            .eq('id', existingMine.id);
 
-            if (insErr) {
-              console.warn('[signUpForSession] Errore insert signup:', insErr.message);
-              return { success: false, error: insErr.message };
-            }
+          if (updErr) {
+            console.warn('[signUpForSession] Errore update signup:', updErr.message);
+            await fetchSessions({ silent: true });
+            return { success: false, error: updErr.message };
           }
-        } catch (err: any) {
-          console.warn('[signUpForSession] Eccezione:', err);
-          return { success: false, error: err?.message };
-        }
-      }
+        } else {
+          const { error: insErr } = await supabase.from('session_signups').insert({
+            session_id: sessionId,
+            player_id: user.id,
+            status: targetStatus,
+            signed_up_at: new Date().toISOString(),
+          });
 
-      return { success: true, status: targetStatus };
+          if (insErr) {
+            console.warn('[signUpForSession] Errore insert signup:', insErr.message);
+            await fetchSessions({ silent: true });
+            return { success: false, error: insErr.message };
+          }
+        }
+
+        await fetchSessions({ silent: true });
+        return { success: true, status: targetStatus };
+      } catch (err: any) {
+        console.warn('[signUpForSession] Eccezione:', err);
+        await fetchSessions({ silent: true });
+        return { success: false, error: err?.message || 'Errore durante la prenotazione.' };
+      } finally {
+        inFlightSessionIdsRef.current.delete(sessionId);
+      }
     },
-    [allSessions, user?.id]
+    [allSessions, user?.id, role, fetchSessions]
   );
 
-  // Cancel sign up
+  // Cancel sign up: persist first, then refresh confirmed state
   const cancelSignUp = useCallback(
     async (sessionId: string): Promise<{ success: boolean; error?: string }> => {
-      const playerId = user?.id || 'demo-player-id';
-
-      // Optimistic update
-      setAllSessions((prev) =>
-        prev.map((s) => {
-          if (s.id !== sessionId) return s;
-          const existing = s.session_signups || [];
-          const updatedSignups = existing.map((item) => {
-            if (item.player_id === playerId) {
-              return { ...item, status: 'cancelled' as SessionSignupStatus };
-            }
-            return item;
-          });
-          const nextConfirmedCount = updatedSignups.filter(
-            (it) => it.status === 'confirmed' || it.status === 'approved'
-          ).length;
-
-          return {
-            ...s,
-            session_signups: updatedSignups,
-            mySignup: null,
-            confirmedCount: nextConfirmedCount,
-            isConfirmed: false,
-            isWaitlist: false,
-            isFull: nextConfirmedCount >= (s.max_players ?? 6),
-          };
-        })
-      );
-
-      // Persist to Supabase
-      if (user?.id) {
-        try {
-          const { error: delErr } = await supabase
-            .from('session_signups')
-            .update({ status: 'cancelled' })
-            .eq('session_id', sessionId)
-            .eq('player_id', user.id);
-
-          if (delErr) {
-            console.warn('[cancelSignUp] Errore cancel signup:', delErr.message);
-            return { success: false, error: delErr.message };
-          }
-        } catch (err: any) {
-          console.warn('[cancelSignUp] Eccezione:', err);
-          return { success: false, error: err?.message };
-        }
+      if (!user?.id) {
+        return { success: false, error: 'Devi essere autenticato per annullare la prenotazione.' };
       }
 
-      return { success: true };
+      if (inFlightSessionIdsRef.current.has(sessionId)) {
+        return { success: false, error: 'Operazione già in corso per questa sessione.' };
+      }
+
+      inFlightSessionIdsRef.current.add(sessionId);
+      try {
+        const { error: delErr } = await supabase
+          .from('session_signups')
+          .update({ status: 'cancelled' })
+          .eq('session_id', sessionId)
+          .eq('player_id', user.id);
+
+        if (delErr) {
+          console.warn('[cancelSignUp] Errore cancel signup:', delErr.message);
+          await fetchSessions({ silent: true });
+          return { success: false, error: delErr.message };
+        }
+
+        await fetchSessions({ silent: true });
+        return { success: true };
+      } catch (err: any) {
+        console.warn('[cancelSignUp] Eccezione:', err);
+        await fetchSessions({ silent: true });
+        return { success: false, error: err?.message || 'Errore durante la disdetta.' };
+      } finally {
+        inFlightSessionIdsRef.current.delete(sessionId);
+      }
     },
-    [user?.id]
+    [user?.id, fetchSessions]
   );
 
   // Upcoming confirmed session for the player
@@ -352,7 +276,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     nextConfirmedSession,
     loading,
     error,
-    refresh: fetchSessions,
+    refresh: () => fetchSessions(),
     signUpForSession,
     cancelSignUp,
   };

@@ -244,8 +244,9 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   const isLongCampaign = isLongCampaignType(campaign.type);
   const isTorneo = isTorneoCampaignType(campaign.type);
+  const showWikiTab = isGmOrAdmin || isLongCampaign;
   const showMissionsTab = isLongCampaign && (isGmOrAdmin || isCampaignMember);
-  const showMappeTab = !isTorneo;
+  const showMappeTab = isGmOrAdmin ? !isTorneo : isLongCampaign;
 
   let hasAssignedCharacter = false;
   if (shouldResolvePlayerDefaultTab(requestedTab, isGmOrAdmin, showMissionsTab, showMappeTab)) {
@@ -374,9 +375,10 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
   const defaultTab = getCampaignDefaultTab(isGmOrAdmin, hasAssignedCharacter);
   let initialContentTab: CampaignTabValue = requestedTab ?? defaultTab;
   if (initialContentTab === "gm" && !isGmOrAdmin) initialContentTab = defaultTab;
+  if (initialContentTab === "wiki" && !showWikiTab) initialContentTab = defaultTab;
   if (initialContentTab === "missioni" && !showMissionsTab) initialContentTab = defaultTab;
   if (
-    (initialContentTab === "wiki" || (initialContentTab === "mappe" && showMappeTab)) &&
+    ((initialContentTab === "wiki" && showWikiTab) || (initialContentTab === "mappe" && showMappeTab)) &&
     !hasPlayedCampaign
   ) {
     initialContentTab = "sessioni";
@@ -385,8 +387,8 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
     initialContentTab = defaultTab;
   }
   const renderSessioniTab = initialContentTab === "sessioni";
-  const renderWikiTab = initialContentTab === "wiki";
-  const renderMappeTab = initialContentTab === "mappe";
+  const renderWikiTab = initialContentTab === "wiki" && showWikiTab;
+  const renderMappeTab = initialContentTab === "mappe" && showMappeTab;
   const renderMissioniTab = initialContentTab === "missioni";
   const renderPgTab = initialContentTab === "pg";
   const renderGmTab = initialContentTab === "gm";
@@ -406,11 +408,6 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
 
   const campaignInfoFooter = (
     <>
-      {!hasPlayedCampaign && !isLongCampaign ? (
-        <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-xs text-barber-gold">
-          Partecipa a una sessione per sbloccare {showMappeTab ? "Wiki e Mappe" : "Wiki"}.
-        </p>
-      ) : null}
       {isEldaria && isViewerLockedOut ? (
         <p className="rounded-lg border border-barber-gold/40 bg-barber-gold/10 px-3 py-2 text-sm text-barber-paper">
           Dopo il colloquio dal vivo, il GM aggiunge il tuo account a Eldaria.
@@ -829,6 +826,7 @@ export default async function CampaignPage({ params, searchParams }: PageProps) 
             ) : undefined
           }
           showGmTab={isGmOrAdmin}
+          showWikiTab={showWikiTab}
           showMissionsTab={showMissionsTab}
           showMappeTab={showMappeTab}
         />

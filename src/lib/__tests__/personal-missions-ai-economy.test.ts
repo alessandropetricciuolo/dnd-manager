@@ -215,7 +215,9 @@ test("Economy actions reject personal mission payouts and treasure sets", async 
   const payoutResult = await applyCloseSessionEconomy(fakeAdminClient, campaignId, {
     missionTreasurePayout: {
       missionId: personalMissionId,
-      allocations: [{ characterId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", coins_gp: 50 }],
+      allocations: [
+        { characterId: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", coins_gp: 50, coins_sp: 0, coins_cp: 0 },
+      ],
     },
   });
 

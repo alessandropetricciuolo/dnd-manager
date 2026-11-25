@@ -5,7 +5,7 @@ Stato: progetto Expo `@alexiit33/barber-and-dragons-mobile` collegato (ID `20cc1
 ## Configurazione presente
 
 - Expo SDK 58, React Native 0.88, identificatore `com.barberanddragons.mobile`.
-- `mobile/eas.json` definisce `development` (development client, iOS Simulator), `preview` (distribuzione interna; APK su Android e ad hoc su iOS) e `production` (build store con incremento automatico versione nativa).
+- `mobile/eas.json` definisce `development` (development client, iOS Simulator), `preview` (distribuzione interna; APK su Android e ad hoc su iOS) e `production` (build store). I numeri di build si aggiornano in `mobile/app.json` prima del commit di rilascio. Il profilo iOS di produzione usa il file locale `mobile/credentials.json`, escluso da Git, con certificato e profilo App Store.
 - `app.json` registra `expo-notifications` e richiede solo iPhone (`supportsTablet: false`). Le schermate non sono state verificate su iPad e l'MVP non dichiara supporto tablet.
 - L'icona usa il wordmark esistente centrato su canvas quadrato scuro; l'illustrazione originale non è stata ridisegnata.
 - Le variabili Expo pubbliche sono documentate in `mobile/.env.example`; il file reale `.env` resta locale e ignorato da Git.
@@ -39,14 +39,15 @@ Ricompilare i client iOS e Android per includere lo schema di reindirizzamento e
 4. Applicare `20261124205433_apple_signin_token_revocation.sql`, distribuire il backend e verificare che `GET /api/mobile/apple-sign-in` restituisca `enabled: true`. La risposta conferma la presenza di chiavi e tabelle. Lo scambio con Apple si verifica con una build firmata.
 5. Su un iPhone testare accesso con l’email verificata dell’account, collegamento da **Account** con «Nascondi la mia email», riaccesso allo stesso profilo, annullamento e tentativo con un Apple ID privo di account associato. Poi eliminare un account di prova dall’admin, controllare esito della revoca Apple, email di conferma e accesso successivo. Nelle note per la review fornire un profilo di prova e le istruzioni per collegarlo. [Revoca Apple](https://developer.apple.com/documentation/technotes/tn3194-handling-account-deletions-and-revoking-tokens-for-sign-in-with-apple)
 
-### Accesso con Apple sul sito e su Android
-
-- Registrare in Apple Developer un **Services ID** associato all’App ID iOS. Autorizzare il dominio Supabase e il suo callback HTTPS `/auth/v1/callback`. In Supabase inserire prima il Services ID, poi `com.barberanddragons.mobile`, e impostare il client secret del Services ID. [Configurazione OAuth Apple](https://supabase.com/docs/guides/auth/social-sign-in/auth-apple)
-- Su Vercel impostare `APPLE_SIGNIN_WEB_CLIENT_ID` al Services ID, mantenendo le chiavi server Apple già usate da iOS. Applicare la migrazione `apple_web_signin_revocation` prima del deploy. Il sito e Android usano il Services ID. iOS mantiene il login nativo e l’App ID. La procedura di cancellazione revoca entrambe le autorizzazioni quando presenti.
-- Verificare il redirect ad Apple e il ritorno allo stesso account su web, iOS e Android. Gli utenti con «Nascondi la mia email» possono collegare Apple da Account nell’app iOS.
-
 Usare l’[inventario privacy mobile](privacy-account-owner-inputs.md#inventario-per-le-schede-privacy-degli-store) per preparare le dichiarazioni store della build candidata.
 
+### Sviluppo iOS da Xcode
+
+Dopo l'aggiornamento a SDK 58, rigenerare i progetti nativi locali con `npx expo prebuild --clean` da `mobile/` e ricompilare le build di sviluppo. Salvare eventuali modifiche native locali prima di rigenerare.
+
+Con Xcode e CocoaPods installati, `npm run ios` da `mobile/` prepara il progetto nativo al primo avvio e installa la build di sviluppo sul simulatore. In Xcode aprire `mobile/ios/BarberDragonsMobile.xcworkspace` e selezionare lo scheme `BarberDragonsMobile`.
+
+Nel navigatore di Xcode, `App.tsx` e `src` puntano ai sorgenti Expo della stessa copia di lavoro. Avviare Metro da `mobile/` con `npm run start -- --dev-client --localhost` prima di eseguire l’app sul simulatore da Xcode. Le modifiche JavaScript e TypeScript arrivano al simulatore tramite Fast Refresh. Per modifiche a plugin, configurazione iOS o dipendenze native, eseguire `npx expo prebuild --platform ios` e poi ricompilare.
 
 ## Progetto e credenziali richiesti al proprietario
 

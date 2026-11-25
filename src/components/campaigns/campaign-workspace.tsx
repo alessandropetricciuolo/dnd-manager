@@ -75,6 +75,7 @@ export type CampaignWorkspaceProps = {
   pgContent: React.ReactNode;
   gmAreaContent?: React.ReactNode | null;
   showGmTab?: boolean;
+  showWikiTab?: boolean;
   showMissionsTab: boolean;
   /** Default true. Torneo nasconde la tab Mappe. */
   showMappeTab?: boolean;
@@ -86,6 +87,7 @@ function useCampaignTab(
   defaultTab: CampaignTabValue,
   hasPlayedCampaign: boolean,
   showGmTab: boolean,
+  showWikiTab: boolean,
   showMissionsTab: boolean,
   showMappeTab: boolean
 ) {
@@ -99,11 +101,14 @@ function useCampaignTab(
       ? (tabParam as CampaignTabValue)
       : defaultTab;
   if (tab === "gm" && !showGmTab) tab = defaultTab;
+  if (tab === "wiki" && !showWikiTab) tab = defaultTab;
   if (tab === "missioni" && !showMissionsTab) tab = defaultTab;
   if (tab === "mappe" && !showMappeTab) tab = defaultTab;
 
   const effectiveTab =
-    (tab === "wiki" || (tab === "mappe" && showMappeTab)) && !hasPlayedCampaign ? "sessioni" : tab;
+    ((tab === "wiki" && showWikiTab) || (tab === "mappe" && showMappeTab)) && !hasPlayedCampaign
+      ? "sessioni"
+      : tab;
 
   function setTab(newTab: string) {
     const params = new URLSearchParams(searchParams.toString());
@@ -318,6 +323,7 @@ export function CampaignWorkspace({
   pgContent,
   gmAreaContent,
   showGmTab = gmAreaContent != null,
+  showWikiTab = true,
   showMissionsTab,
   showMappeTab = true,
   isAdmin = false,
@@ -329,6 +335,7 @@ export function CampaignWorkspace({
     defaultTab,
     hasPlayedCampaign,
     showGmTab,
+    showWikiTab,
     showMissionsTab,
     showMappeTab
   );
@@ -338,6 +345,7 @@ export function CampaignWorkspace({
   }, [campaignName, effectiveTab, setNavigation]);
 
   const visiblePlayerTabs = PLAYER_TABS.filter((t) => {
+    if (t === "wiki" && !showWikiTab) return false;
     if (t === "missioni" && !showMissionsTab) return false;
     if (t === "mappe" && !showMappeTab) return false;
     return true;
@@ -403,7 +411,7 @@ export function CampaignWorkspace({
           </Button>
           {renderNav("pill-icon")}
         </div>
-        {!hasPlayedCampaign ? (
+        {!hasPlayedCampaign && (showWikiTab || showMappeTab) ? (
           <p className="border-t border-amber-500/20 bg-amber-500/10 px-3 py-1.5 text-[11px] leading-snug text-amber-100">
             <span className="font-medium">
               {showMappeTab ? "Wiki e Mappe" : "Wiki"}
@@ -498,7 +506,7 @@ export function CampaignWorkspace({
           {/* Main content */}
           <main className="min-h-0 min-w-0 flex-1 overflow-y-auto">
             <div className={CAMPAIGN_CONTENT_SHELL}>
-              {!hasPlayedCampaign ? (
+              {!hasPlayedCampaign && (showWikiTab || showMappeTab) ? (
                 <p className="mb-4 hidden rounded-lg border border-amber-500/25 bg-amber-500/10 px-3 py-2 text-xs text-amber-100 lg:block">
                   <span className="font-medium">
                     {showMappeTab ? "Wiki e Mappe bloccate" : "Wiki bloccata"}
@@ -525,9 +533,11 @@ export function CampaignWorkspace({
                   </>
                 ) : null}
               </TabsContent>
-              <TabsContent value="wiki" className="mt-0 outline-none">
-                {effectiveTab === "wiki" ? wikiContent : null}
-              </TabsContent>
+              {showWikiTab ? (
+                <TabsContent value="wiki" className="mt-0 outline-none">
+                  {effectiveTab === "wiki" ? wikiContent : null}
+                </TabsContent>
+              ) : null}
               {showMappeTab ? (
                 <TabsContent value="mappe" className="mt-0 outline-none">
                   {effectiveTab === "mappe" ? mappeContent : null}

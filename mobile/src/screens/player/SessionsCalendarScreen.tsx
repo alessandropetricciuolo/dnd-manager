@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,6 +9,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRoute } from '@react-navigation/native';
 import {
   Calendar,
   Clock,
@@ -32,12 +33,16 @@ import { PlayerSession } from '../../types';
 type FilterType = 'all' | 'mine' | 'available' | 'completed';
 
 export const SessionsCalendarScreen: React.FC = () => {
+  const route = useRoute<any>();
+  const notificationSessionId: string | undefined = route?.params?.notificationSessionId;
   const { activeCampaign } = useCampaign();
   const {
     sessions,
+    allSessions,
     filterByCampaign,
     setFilterByCampaign,
     loading,
+    error,
     refresh,
     signUpForSession,
     cancelSignUp,
@@ -46,6 +51,24 @@ export const SessionsCalendarScreen: React.FC = () => {
   const [filter, setFilter] = useState<FilterType>('all');
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
+  const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(null);
+  const [notificationUnavailable, setNotificationUnavailable] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!notificationSessionId || loading) return;
+    const target = allSessions.find((s) => s.id === notificationSessionId);
+    if (target) {
+      setNotificationUnavailable(false);
+      setHighlightedSessionId(target.id);
+      setFilter('all');
+      if (target.campaign_id && target.campaign_id !== activeCampaign?.id) {
+        setFilterByCampaign(false);
+      }
+    } else {
+      setHighlightedSessionId(null);
+      setNotificationUnavailable(true);
+    }
+  }, [notificationSessionId, loading, allSessions, activeCampaign?.id, setFilterByCampaign]);
 
   // Format date and time in Italian
   const formatSessionDateTime = (dateStr: string) => {
@@ -102,9 +125,9 @@ export const SessionsCalendarScreen: React.FC = () => {
     }
   };
 
-  // Filtered session list
+  // Filtered session list (bring highlighted notification session to top if present)
   const filteredSessions = useMemo(() => {
-    return sessions.filter((s) => {
+    const list = sessions.filter((s) => {
       if (filter === 'mine') {
         return Boolean(s.isConfirmed || s.isWaitlist);
       }
@@ -116,7 +139,12 @@ export const SessionsCalendarScreen: React.FC = () => {
       }
       return true;
     });
-  }, [sessions, filter]);
+
+    if (!highlightedSessionId) return list;
+    const idx = list.findIndex((s) => s.id === highlightedSessionId);
+    if (idx <= 0) return list;
+    return [list[idx], ...list.slice(0, idx), ...list.slice(idx + 1)];
+  }, [sessions, filter, highlightedSessionId]);
 
   // Handle Signup Confirmation
   const handleSignUpPrompt = (session: PlayerSession) => {
@@ -335,8 +363,35 @@ export const SessionsCalendarScreen: React.FC = () => {
           </TouchableOpacity>
         </ScrollView>
 
+        {notificationUnavailable && (
+          <View style={styles.emptyCard} accessibilityRole="alert">
+            <AlertTriangle size={28} color={colors.brassLight} />
+            <Text style={styles.emptyTitle}>Sessione non più accessibile</Text>
+            <Text style={styles.emptySubtitle}>
+              La sessione collegata alla notifica potrebbe essere stata rimossa o non essere più disponibile per il tuo account.
+            </Text>
+            <TouchableOpacity
+              style={styles.resetFilterBtn}
+              onPress={() => setNotificationUnavailable(false)}
+            >
+              <Text style={styles.resetFilterBtnText}>Chiudi avviso</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {error && !loading && (
+          <View style={styles.emptyCard} accessibilityRole="alert">
+            <AlertTriangle size={28} color={colors.crimsonLight} />
+            <Text style={styles.emptyTitle}>Errore di caricamento</Text>
+            <Text style={styles.emptySubtitle}>{error}</Text>
+            <TouchableOpacity style={styles.resetFilterBtn} onPress={() => { void refresh(); }}>
+              <Text style={styles.resetFilterBtnText}>Riprova</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Empty State */}
-        {filteredSessions.length === 0 && !loading && (
+        {filteredSessions.length === 0 && !loading && !error && (
           <View style={styles.emptyCard}>
             <CalendarCheck size={36} color={colors.parchmentMuted} />
             <Text style={styles.emptyTitle}>Nessuna sessione trovata</Text>
@@ -367,7 +422,16 @@ export const SessionsCalendarScreen: React.FC = () => {
           const maxPlayers = session.max_players ?? 6;
 
           return (
-            <View key={session.id} style={styles.sessionCard}>
+            <View
+              key={session.id}
+              style={[
+                styles.sessionCard,
+                highlightedSessionId === session.id && {
+                  borderColor: colors.brassBase,
+                  borderWidth: 2,
+                },
+              ]}
+            >
               {/* Card Top: Campaign Badge & Signup Status */}
               <View style={styles.cardHeader}>
                 <View style={styles.campaignBadge}>

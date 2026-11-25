@@ -40,6 +40,7 @@ interface PlayerTarget {
   playerName: string;
   charClass?: string;
   isBroadcast?: boolean;
+  hasAssignedPlayer?: boolean;
 }
 
 const GM_QUICK_PRESETS = [
@@ -73,14 +74,16 @@ export const GmWhispersInboxScreen: React.FC = () => {
 
     if (characters && characters.length > 0) {
       characters.forEach((c: Character) => {
-        const targetId = c.assigned_to || c.id;
+        const assignedPlayerId = c.assigned_to?.trim() || '';
+        const targetId = assignedPlayerId || `unassigned-${c.id}`;
         list.push({
           id: targetId,
           charName: c.name,
-          playerName: c.assigned_to ? 'Giocatore Assegnato' : 'PG Non Assegnato',
+          playerName: assignedPlayerId ? 'Giocatore Assegnato' : 'PG Non Assegnato',
           charClass: c.character_class
             ? `${c.character_class}${c.level ? ` Lv.${c.level}` : ''}`
             : 'Eroe',
+          hasAssignedPlayer: Boolean(assignedPlayerId),
         });
       });
     }
@@ -103,6 +106,7 @@ export const GmWhispersInboxScreen: React.FC = () => {
     isLoading,
     isSending,
     refreshMessages,
+    refreshBlockedUsers,
   } = useRealtimeWhispers({
     campaignId: activeCampaignId,
     autoMarkRead: false,
@@ -128,10 +132,12 @@ export const GmWhispersInboxScreen: React.FC = () => {
   }, [playerTargets, selectedTargetId]);
 
   const realBroadcastTargets = useMemo(
-    () => playerTargets.filter((p) => !p.isBroadcast),
+    () => playerTargets.filter((p) => !p.isBroadcast && p.hasAssignedPlayer),
     [playerTargets]
   );
-  const canSendToActiveTarget = !activeTarget.isBroadcast || realBroadcastTargets.length > 0;
+  const canSendToActiveTarget =
+    Boolean(activeCampaignId) &&
+    (activeTarget.isBroadcast ? realBroadcastTargets.length > 0 : Boolean(activeTarget.hasAssignedPlayer));
 
   // Filter messages for current view
   const currentConversationMessages = useMemo(() => {
@@ -155,36 +161,70 @@ export const GmWhispersInboxScreen: React.FC = () => {
 
   // Send reply or broadcast
   const handleSend = useCallback(async () => {
-    if (!replyText.trim() || isSending) return;
-    if (activeTarget.isBroadcast && realBroadcastTargets.length === 0) {
+    const textToSend = replyText.trim();
+    if (!textToSend || isSending) return;
+    if (!activeCampaignId) {
       Alert.alert(
-        'Nessun destinatario al tavolo',
-        'Non ci sono ancora personaggi associati a questa campagna per inviare un sussurro broadcast.'
+        'Nessuna campagna attiva',
+        'Seleziona una campagna dalla Regia per inviare sussurri ai giocatori.'
       );
       return;
     }
-    const textToSend = replyText.trim();
-
-    const targets = activeTarget.isBroadcast ? realBroadcastTargets : [activeTarget];
-    const text = activeTarget.isBroadcast ? `[TAVOLO] ${textToSend}` : textToSend;
-    const failed: string[] = [];
-    for (const target of targets) {
-      const result = await sendWhisper(activeCampaignId, target.id, text);
-      if (result.requiresRules) {
-        showWhisperRules();
-        return;
-      }
-      if (!result.success) failed.push(target.charName);
+    if (!canSendToActiveTarget) {
+      Alert.alert(
+        activeTarget.isBroadcast ? 'Nessun destinatario assegnato' : 'PG senza giocatore assegnato',
+        activeTarget.isBroadcast
+          ? 'Non ci sono ancora personaggi assegnati a un giocatore in questa campagna per inviare un broadcast.'
+          : `${activeTarget.charName} non è ancora assegnato a nessun account giocatore.`
+      );
+      return;
     }
-    if (failed.length < targets.length) setReplyText('');
-    if (failed.length > 0) {
-      Alert.alert('Invio non riuscito', `Sussurro non recapitato a ${failed.join(', ')}.`);
+
+    if (activeTarget.isBroadcast) {
+      const succeeded: string[] = [];
+      const failed: { name: string; error: string }[] = [];
+
+      for (const target of realBroadcastTargets) {
+        const res = await sendWhisper(activeCampaignId, target.id, `[TAVOLO] ${textToSend}`);
+        if (res.requiresRules) {
+          showWhisperRules();
+          return;
+        }
+        if (res.success) {
+          succeeded.push(target.charName);
+        } else {
+          failed.push({ name: target.charName, error: res.error || 'Errore sconosciuto' });
+        }
+      }
+
+      if (failed.length === 0) {
+        setReplyText('');
+      } else if (succeeded.length > 0) {
+        Alert.alert(
+          'Broadcast parziale',
+          `Inviato a: ${succeeded.join(', ')}.\n\nNon recapitato a: ${failed.map((f) => `${f.name} (${f.error})`).join('; ')}.`
+        );
+      } else {
+        Alert.alert(
+          'Broadcast non riuscito',
+          failed[0]?.error || 'Nessun destinatario ha ricevuto il messaggio. Il testo è stato conservato.'
+        );
+      }
+    } else {
+      const res = await sendWhisper(activeCampaignId, activeTarget.id, textToSend);
+      if (res.success) {
+        setReplyText('');
+      } else if (res.requiresRules) {
+        showWhisperRules();
+      } else {
+        Alert.alert('Invio non riuscito', res.error || 'Impossibile inviare il sussurro. Il testo è stato conservato.');
+      }
     }
 
     setTimeout(() => {
       scrollViewRef.current?.scrollToEnd({ animated: true });
     }, 100);
-  }, [replyText, isSending, activeTarget, realBroadcastTargets, sendWhisper, activeCampaignId]);
+  }, [replyText, isSending, activeCampaignId, canSendToActiveTarget, activeTarget, realBroadcastTargets, sendWhisper]);
 
   const handleApplyPreset = (presetText: string) => {
     setReplyText(presetText);
@@ -209,7 +249,10 @@ export const GmWhispersInboxScreen: React.FC = () => {
           { text: 'Annulla', style: 'cancel' },
           { text: 'Blocca account', style: 'destructive', onPress: () => {
             void blockWhisperUser(currentGmId, otherUserId)
-              .then(() => Alert.alert('Account bloccato', 'Non potrai più inviare o ricevere sussurri da questo account.'))
+              .then(async () => {
+                await refreshBlockedUsers();
+                Alert.alert('Account bloccato', 'I messaggi di questo account sono stati rimossi e non potrete più inviarvi sussurri.');
+              })
               .catch(() => Alert.alert('Blocco non riuscito', 'Non siamo riusciti a bloccare l’account. Riprova.'));
           } },
         ]);

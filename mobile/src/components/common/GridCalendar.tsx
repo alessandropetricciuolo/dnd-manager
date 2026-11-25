@@ -409,16 +409,19 @@ export const GridCalendar: React.FC<GridCalendarProps> = ({
           <TouchableOpacity
             style={styles.navBtn}
             onPress={handlePrevMonth}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Mese precedente"
           >
-            <ChevronLeft size={16} color={colors.parchmentLight} />
+            <ChevronLeft size={18} color={colors.parchmentLight} />
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.todayBtn}
             onPress={handleResetToday}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Torna al mese corrente"
           >
             <Text style={styles.todayBtnText}>Oggi</Text>
           </TouchableOpacity>
@@ -426,10 +429,11 @@ export const GridCalendar: React.FC<GridCalendarProps> = ({
           <TouchableOpacity
             style={styles.navBtn}
             onPress={handleNextMonth}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="Mese successivo"
           >
-            <ChevronRight size={16} color={colors.parchmentLight} />
+            <ChevronRight size={18} color={colors.parchmentLight} />
           </TouchableOpacity>
         </View>
 
@@ -941,17 +945,19 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   navBtn: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     alignItems: 'center',
     justifyContent: 'center',
   },
   todayBtn: {
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+    minHeight: 44,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderRadius: 12,
+    justifyContent: 'center',
     backgroundColor: 'rgba(212, 175, 55, 0.15)',
     borderWidth: 1,
     borderColor: 'rgba(212, 175, 55, 0.35)',

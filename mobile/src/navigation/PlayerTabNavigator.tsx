@@ -11,13 +11,16 @@ import {
   Crown,
   LogOut,
   User,
+  Flame,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
+import { useCampaign } from '../contexts/CampaignContext';
 import { PlayerHomeScreen } from '../screens/player/PlayerHomeScreen';
 import { CharacterSheetScreen } from '../screens/player/CharacterSheetScreen';
 import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen';
 import { CampaignLoreScreen } from '../screens/player/CampaignLoreScreen';
+import { CharacterTamagotchiScreen } from '../screens/player/CharacterTamagotchiScreen';
 import { PlayerWhisperScreen } from '../screens/player/PlayerWhisperScreen';
 import { AccountScreen } from '../screens/account/AccountScreen';
 
@@ -25,6 +28,7 @@ export type PlayerTabParamList = {
   PlayerHome: undefined;
   CharacterSheet: undefined;
   LoreMissions: undefined;
+  CharacterTamagotchi: undefined;
   PlayerWhisper: undefined;
   Account: undefined;
   Sessions: undefined;
@@ -42,6 +46,7 @@ const PlayerTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
   const { role, switchMode, signOut } = useAuth();
+  const { hasJoinedLongCampaign, canAccessCharacterSheet } = useCampaign();
   const canAccessGm = role === 'admin' || role === 'gm';
 
   return (
@@ -117,29 +122,47 @@ const PlayerTabs: React.FC = () => {
         }}
       />
 
-      {/* 2. SCHEDA PERSONAGGIO */}
-      <Tab.Screen
-        name="CharacterSheet"
-        component={CharacterSheetScreen}
-        options={{
-          title: 'Scheda PG',
-          tabBarLabel: 'Scheda PG',
-          headerTitle: 'Scheda Personaggio',
-          tabBarIcon: ({ color, size }) => <Shield size={size ?? 22} color={color} />,
-        }}
-      />
+      {/* 2. SCHEDA PERSONAGGIO (Iscritto a Campagna Long o a Oneshot/Quest in programma) */}
+      {canAccessCharacterSheet && (
+        <Tab.Screen
+          name="CharacterSheet"
+          component={CharacterSheetScreen}
+          options={{
+            title: 'Scheda PG',
+            tabBarLabel: 'Scheda PG',
+            headerTitle: 'Scheda Personaggio',
+            tabBarIcon: ({ color, size }) => <Shield size={size ?? 22} color={color} />,
+          }}
+        />
+      )}
 
-      {/* 3. LORE & MISSIONI */}
-      <Tab.Screen
-        name="LoreMissions"
-        component={CampaignLoreScreen}
-        options={{
-          title: 'Bacheca',
-          tabBarLabel: 'Diario & Lore',
-          headerTitle: 'Archivio & Missioni',
-          tabBarIcon: ({ color, size }) => <BookOpen size={size ?? 22} color={color} />,
-        }}
-      />
+      {/* 3. LORE & MISSIONI (Solo se iscritto a una Campagna Long) */}
+      {hasJoinedLongCampaign && (
+        <Tab.Screen
+          name="LoreMissions"
+          component={CampaignLoreScreen}
+          options={{
+            title: 'Bacheca',
+            tabBarLabel: 'Diario & Lore',
+            headerTitle: 'Archivio & Missioni',
+            tabBarIcon: ({ color, size }) => <BookOpen size={size ?? 22} color={color} />,
+          }}
+        />
+      )}
+
+      {/* 4. TAVERNA / TAMAGOTCHI PG (Esclusiva Mobile · Solo se iscritto a una Campagna Long) */}
+      {hasJoinedLongCampaign && (
+        <Tab.Screen
+          name="CharacterTamagotchi"
+          component={CharacterTamagotchiScreen}
+          options={{
+            title: 'Taverna',
+            tabBarLabel: 'Taverna',
+            headerShown: false,
+            tabBarIcon: ({ color, size }) => <Flame size={size ?? 22} color={color} />,
+          }}
+        />
+      )}
 
       {/* 4. SUSSURRI SEGRETI */}
       <Tab.Screen

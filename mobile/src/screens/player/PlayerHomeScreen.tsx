@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -114,14 +114,18 @@ export const PlayerHomeScreen: React.FC = () => {
     activeCampaignId,
     selectCampaign,
     refreshCampaigns,
+    isLongCampaignActive,
+    isMemberOfActiveCampaign,
+    hasJoinedLongCampaign,
+    canAccessCharacterSheet,
+    joinLongCampaign,
   } = useCampaign();
+  const [joiningLong, setJoiningLong] = useState(false);
 
   const {
-    activeCharacter,
     safeCharacter,
     hasAssignedCharacter,
     loading: charLoading,
-    updateHp,
     refresh: refreshCharacter,
   } = usePlayerCharacter();
 
@@ -130,6 +134,7 @@ export const PlayerHomeScreen: React.FC = () => {
     allSessions,
     nextConfirmedSession,
     loading: sessionsLoading,
+    error: sessionsError,
     refresh: refreshSessions,
     signUpForSession,
     cancelSignUp,
@@ -144,8 +149,17 @@ export const PlayerHomeScreen: React.FC = () => {
   // Modals state
   const [isDiceModalOpen, setIsDiceModalOpen] = useState<boolean>(false);
   const [isCampaignModalOpen, setIsCampaignModalOpen] = useState<boolean>(false);
-  const [selectedSessionForDetail, setSelectedSessionForDetail] = useState<PlayerSession | null>(null);
+  const [selectedSessionIdForDetail, setSelectedSessionIdForDetail] = useState<string | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState<boolean>(false);
+
+  const selectedSessionForDetail = useMemo<PlayerSession | null>(() => {
+    if (!selectedSessionIdForDetail) return null;
+    return (
+      allSessions.find((s) => s.id === selectedSessionIdForDetail) ||
+      sessions.find((s) => s.id === selectedSessionIdForDetail) ||
+      null
+    );
+  }, [selectedSessionIdForDetail, allSessions, sessions]);
 
   const displayName =
     profile?.display_name ||
@@ -211,17 +225,6 @@ export const PlayerHomeScreen: React.FC = () => {
     return initial;
   }, [filteredCampaigns, showAllCampaigns, activeCampaignId]);
 
-  // Active hero vitals
-  const currentHp = safeCharacter.hit_points ?? 0;
-  const maxHp = safeCharacter.rules_snapshot?.max_hp ?? 42;
-  const hpPercent = Math.max(0, Math.min(100, Math.round((currentHp / maxHp) * 100)));
-  const hpColor =
-    hpPercent > 50
-      ? colors.emerald
-      : hpPercent > 20
-      ? colors.brassBase
-      : colors.crimsonLight;
-
   const campType: CampaignType = activeCampaign?.type || 'quest';
   const campBadge = CAMPAIGN_TYPE_BADGES[campType] || CAMPAIGN_TYPE_BADGES.quest;
 
@@ -230,8 +233,20 @@ export const PlayerHomeScreen: React.FC = () => {
     try {
       setActionInProgressId(session.id);
       const res = await signUpForSession(session.id);
-      if (res.error) {
-        Alert.alert('Prenotazione non riuscita', res.error);
+      if (!res.success) {
+        Alert.alert(
+          'Prenotazione non riuscita',
+          res.error || 'Impossibile completare la prenotazione.',
+          [
+            { text: 'Annulla', style: 'cancel' },
+            { text: 'Riprova', onPress: () => { void handleSignUp(session); } },
+          ]
+        );
+      } else if (res.status === 'waitlist') {
+        Alert.alert(
+          'Sei in Lista d’Attesa',
+          `Il tavolo per "${session.title || session.campaigns?.name || 'la sessione'}" è al completo. Verrai avvisato se si libera un posto.`
+        );
       } else {
         Alert.alert(
           'Posto al Tavolo Riservato!',
@@ -239,7 +254,14 @@ export const PlayerHomeScreen: React.FC = () => {
         );
       }
     } catch {
-      Alert.alert('Errore', 'Impossibile completare la prenotazione. Riprova.');
+      Alert.alert(
+        'Errore',
+        'Impossibile completare la prenotazione.',
+        [
+          { text: 'Annulla', style: 'cancel' },
+          { text: 'Riprova', onPress: () => { void handleSignUp(session); } },
+        ]
+      );
     } finally {
       setActionInProgressId(null);
     }
@@ -258,8 +280,15 @@ export const PlayerHomeScreen: React.FC = () => {
             try {
               setActionInProgressId(session.id);
               const res = await cancelSignUp(session.id);
-              if (res.error) {
-                Alert.alert('Errore', res.error);
+              if (!res.success) {
+                Alert.alert(
+                  'Disdetta non riuscita',
+                  res.error || 'Impossibile annullare l’iscrizione.',
+                  [
+                    { text: 'Chiudi', style: 'cancel' },
+                    { text: 'Riprova', onPress: () => handleCancelSignUp(session) },
+                  ]
+                );
               } else {
                 Alert.alert('Iscrizione Annullata', 'Il tuo posto è stato liberato.');
               }
@@ -284,8 +313,19 @@ export const PlayerHomeScreen: React.FC = () => {
     }
   }, [activeCampaignId, selectCampaign]);
 
+  const handleJoinLongCampaign = useCallback(async () => {
+    if (!activeCampaign?.id || joiningLong) return;
+    setJoiningLong(true);
+    try {
+      const res = await joinLongCampaign(activeCampaign.id);
+      Alert.alert(res.success ? 'Iscrizione completata' : 'Iscrizione non riuscita', res.message);
+    } finally {
+      setJoiningLong(false);
+    }
+  }, [activeCampaign?.id, joiningLong, joinLongCampaign]);
+
   const handleOpenSessionDetail = (session: PlayerSession | any) => {
-    setSelectedSessionForDetail(session as PlayerSession);
+    setSelectedSessionIdForDetail(session?.id ?? null);
     setIsDetailModalOpen(true);
   };
 
@@ -346,12 +386,42 @@ export const PlayerHomeScreen: React.FC = () => {
             <View style={styles.profileStatDivider} />
             <View style={styles.profileStatItem}>
               <Text style={styles.profileStatVal}>
-                {hasAssignedCharacter ? `Lv. ${safeCharacter.level}` : '-'}
+                {hasAssignedCharacter ? `Lv. ${safeCharacter.level ?? '—'}` : '-'}
               </Text>
               <Text style={styles.profileStatLabel}>Grado Eroe</Text>
             </View>
           </View>
         </View>
+
+        {/* Banner Iscrizione Campagna Long (quando il giocatore non è ancora membro) */}
+        {isLongCampaignActive && !isMemberOfActiveCampaign && activeCampaign && (
+          <View style={styles.noSessionCard}>
+            <Text style={styles.noSessionTitle}>Campagna Long: Iscrizione Richiesta</Text>
+            <Text style={styles.noSessionSubtitle}>
+              {activeCampaign.long_registrations_open === false
+                ? `Le iscrizioni autonome per "${activeCampaign.name}" sono chiuse. Contatta il GM per essere aggiunto.`
+                : `Per prenotare le sessioni e accedere a Diario, Wiki e Missioni di "${activeCampaign.name}", iscriviti prima alla campagna.`}
+            </Text>
+            {activeCampaign.long_registrations_open !== false && (
+              <TouchableOpacity
+                style={[styles.browseSessionsBtn, joiningLong && { opacity: 0.6 }]}
+                onPress={handleJoinLongCampaign}
+                disabled={joiningLong}
+                accessibilityRole="button"
+                accessibilityLabel="Iscriviti alla campagna Long"
+              >
+                {joiningLong ? (
+                  <ActivityIndicator size="small" color={colors.void} />
+                ) : (
+                  <CheckCircle2 size={14} color={colors.void} />
+                )}
+                <Text style={styles.browseSessionsBtnText}>
+                  {joiningLong ? 'Iscrizione in corso...' : 'Iscriviti alla Campagna'}
+                </Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
 
         {/* 1. SPOTLIGHT PROSSIMA SESSIONE */}
         <View style={styles.sectionHeader}>
@@ -452,15 +522,31 @@ export const PlayerHomeScreen: React.FC = () => {
           <Text style={styles.sectionTitle}>CALENDARIO SESSIONI DELLA GILDA</Text>
         </View>
 
-        <GridCalendar
-          sessions={allSessions.length > 0 ? allSessions : sessions}
-          activeCampaignId={activeCampaignId}
-          onSelectSession={handleSelectSession}
-          onPlayerOpenSession={handleOpenSessionDetail}
-          onSignUp={handleSignUp}
-          onCancelSignUp={handleCancelSignUp}
-          actionInProgressId={actionInProgressId}
-        />
+        {sessionsError ? (
+          <View style={styles.noSessionCard} accessibilityRole="alert">
+            <Text style={styles.noSessionTitle}>Impossibile caricare le sessioni</Text>
+            <Text style={styles.noSessionSubtitle}>{sessionsError}</Text>
+            <TouchableOpacity
+              style={styles.browseSessionsBtn}
+              onPress={() => { void refreshSessions(); }}
+              accessibilityRole="button"
+              accessibilityLabel="Riprova caricamento sessioni"
+            >
+              <Repeat size={14} color={colors.void} />
+              <Text style={styles.browseSessionsBtnText}>Riprova</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <GridCalendar
+            sessions={allSessions.length > 0 ? allSessions : sessions}
+            activeCampaignId={activeCampaignId}
+            onSelectSession={handleSelectSession}
+            onPlayerOpenSession={handleOpenSessionDetail}
+            onSignUp={handleSignUp}
+            onCancelSignUp={handleCancelSignUp}
+            actionInProgressId={actionInProgressId}
+          />
+        )}
 
         {/* 3. PANORAMICA DI TUTTE LE CAMPAGNE (COME SUL SITO) */}
         <View style={styles.sectionHeader}>
@@ -547,121 +633,7 @@ export const PlayerHomeScreen: React.FC = () => {
           </TouchableOpacity>
         )}
 
-        {/* 4. SCHEDA PG RAPIDA LIVE CON BARRA HP INTERATTIVA */}
-        <View style={styles.sectionHeader}>
-          <Sparkles size={18} color={colors.brassBase} />
-          <Text style={styles.sectionTitle}>IL TUO EROE ATTIVO</Text>
-        </View>
-
-        {hasAssignedCharacter ? (
-          <View style={styles.characterPreviewCard}>
-            <View style={styles.characterHeader}>
-              <View style={styles.avatarCrest}>
-                <Text style={styles.avatarLetter}>
-                  {safeCharacter.name.charAt(0).toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.characterDetails}>
-                <Text style={styles.characterName}>{safeCharacter.name}</Text>
-                <Text style={styles.characterClass}>
-                  {safeCharacter.character_class} Livello {safeCharacter.level} •{' '}
-                  {safeCharacter.background || 'Eroe di Faerûn'}
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                style={styles.openSheetBtn}
-                onPress={() => navigation.navigate('CharacterSheet')}
-              >
-                <Text style={styles.openSheetBtnText}>Scheda</Text>
-                <ChevronRight size={12} color={colors.brassLight} />
-              </TouchableOpacity>
-            </View>
-
-            {/* Quick HP Bar and Buttons */}
-            <View style={styles.quickHpSection}>
-              <View style={styles.quickHpHeader}>
-                <View style={styles.hpLabelLeft}>
-                  <Heart size={14} color={hpColor} />
-                  <Text style={styles.quickHpTitle}>PUNTI FERITA</Text>
-                </View>
-                <Text style={[styles.quickHpValues, { color: hpColor }]}>
-                  {currentHp} / {maxHp} HP
-                </Text>
-              </View>
-
-              <View style={styles.quickHpTrack}>
-                <View
-                  style={[
-                    styles.quickHpFill,
-                    { width: `${hpPercent}%`, backgroundColor: hpColor },
-                  ]}
-                />
-              </View>
-
-              <View style={styles.quickHpButtonsRow}>
-                <TouchableOpacity
-                  style={styles.quickStepBtn}
-                  onPress={() => updateHp(Math.max(0, currentHp - 5))}
-                >
-                  <Text style={styles.quickStepBtnDamageText}>-5</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickStepBtn}
-                  onPress={() => updateHp(Math.max(0, currentHp - 1))}
-                >
-                  <Text style={styles.quickStepBtnDamageText}>-1</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickStepBtn}
-                  onPress={() => updateHp(Math.min(maxHp, currentHp + 1))}
-                >
-                  <Text style={styles.quickStepBtnHealText}>+1</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.quickStepBtn}
-                  onPress={() => updateHp(Math.min(maxHp, currentHp + 5))}
-                >
-                  <Text style={styles.quickStepBtnHealText}>+5</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {/* Core Stat Boxes */}
-            <View style={styles.statsGrid}>
-              <View style={styles.statBox}>
-                <Text style={styles.statLabel}>CA</Text>
-                <Text style={styles.statValue}>{safeCharacter.armor_class ?? 15}</Text>
-              </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statLabel}>INIZIATIVA</Text>
-                <Text style={styles.statValue}>+2</Text>
-              </View>
-              <View style={styles.statBox}>
-                <Text style={styles.statLabel}>MONETE (MO)</Text>
-                <Text style={styles.statValue}>{safeCharacter.coins_gp ?? 0}</Text>
-              </View>
-            </View>
-          </View>
-        ) : (
-          <View style={styles.noCharacterCard}>
-            <Shield size={28} color={colors.brassBase} style={{ marginBottom: 6 }} />
-            <Text style={styles.noCharacterTitle}>Nessun Personaggio Assegnato</Text>
-            <Text style={styles.noCharacterSub}>
-              Non hai ancora una scheda PG assegnata per "{activeCampaign?.name}". Seleziona un'altra campagna per vedere le altre tue schede, oppure il DM ti assegnerà un eroe al tavolo.
-            </Text>
-            <TouchableOpacity
-              style={styles.selectOtherCampaignBtn}
-              onPress={() => setIsCampaignModalOpen(true)}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.selectOtherCampaignBtnText}>Seleziona un'altra Campagna</Text>
-              <ChevronRight size={13} color={colors.void} />
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* 5. QUICK DICE ROLLER LAUNCH BANNER */}
+        {/* 4. QUICK DICE ROLLER LAUNCH BANNER */}
         <TouchableOpacity
           style={styles.diceLauncherCard}
           onPress={() => setIsDiceModalOpen(true)}
@@ -686,14 +658,16 @@ export const PlayerHomeScreen: React.FC = () => {
         </View>
 
         <View style={styles.quickGrid}>
-          <TouchableOpacity
-            style={styles.quickTile}
-            onPress={() => navigation.navigate('CharacterSheet')}
-          >
-            <Shield size={22} color={colors.brassBase} />
-            <Text style={styles.quickTileTitle}>Scheda PG</Text>
-            <Text style={styles.quickTileSub}>Gestione Eroe</Text>
-          </TouchableOpacity>
+          {canAccessCharacterSheet && (
+            <TouchableOpacity
+              style={styles.quickTile}
+              onPress={() => navigation.navigate('CharacterSheet')}
+            >
+              <Shield size={22} color={colors.brassBase} />
+              <Text style={styles.quickTileTitle}>Scheda PG</Text>
+              <Text style={styles.quickTileSub}>Gestione Eroe</Text>
+            </TouchableOpacity>
+          )}
 
           <TouchableOpacity
             style={styles.quickTile}
@@ -713,14 +687,16 @@ export const PlayerHomeScreen: React.FC = () => {
             <Text style={styles.quickTileSub}>Sussurri DM</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity
-            style={styles.quickTile}
-            onPress={() => navigation.navigate('LoreMissions')}
-          >
-            <BookOpen size={22} color={colors.brassBase} />
-            <Text style={styles.quickTileTitle}>Bacheca</Text>
-            <Text style={styles.quickTileSub}>Lore & Diario</Text>
-          </TouchableOpacity>
+          {hasJoinedLongCampaign && (
+            <TouchableOpacity
+              style={styles.quickTile}
+              onPress={() => navigation.navigate('LoreMissions')}
+            >
+              <BookOpen size={22} color={colors.brassBase} />
+              <Text style={styles.quickTileTitle}>Bacheca</Text>
+              <Text style={styles.quickTileSub}>Lore & Diario</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Avvisi e Note del Barbiere */}
@@ -757,7 +733,7 @@ export const PlayerHomeScreen: React.FC = () => {
         session={selectedSessionForDetail}
         onClose={() => {
           setIsDetailModalOpen(false);
-          setSelectedSessionForDetail(null);
+          setSelectedSessionIdForDetail(null);
         }}
         onSignUp={handleSignUp}
         onCancelSignUp={handleCancelSignUp}

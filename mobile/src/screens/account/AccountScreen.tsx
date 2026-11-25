@@ -1,5 +1,3 @@
-import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
-import { linkAppleIdentity, useAppleSignInAvailability } from '../../auth/apple';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
@@ -24,18 +22,22 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppleAuthenticationButton, AppleAuthenticationButtonStyle, AppleAuthenticationButtonType } from 'expo-apple-authentication';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '../../contexts/AuthContext';
 import { usePushNotifications } from '../../contexts/PushNotificationsContext';
 import { supabase } from '../../api/supabase';
 import { listBlockedWhisperUsers, unblockWhisperUser } from '../../api/whisperSafety';
 import { colors } from '../../theme/colors';
+import { linkAppleIdentity, useAppleSignInAvailability } from '../../auth/apple';
 
 const SITE = 'https://barberanddragons.com';
 
 export const AccountScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, profile, role, activeMode, switchMode, signOut } = useAuth();
+  const appleAvailable = useAppleSignInAvailability();
+  const [appleLinkBusy, setAppleLinkBusy] = useState(false);
   const isGmOrAdmin = role === 'gm' || role === 'admin';
   const isGmActiveView = isGmOrAdmin && activeMode === 'gm';
 
@@ -50,10 +52,8 @@ export const AccountScreen: React.FC = () => {
     error: pushError,
     loading: pushLoading,
   } = usePushNotifications();
-  const appleAvailable = useAppleSignInAvailability();
-  const [appleLinkBusy, setAppleLinkBusy] = useState(false);
-
   const [deletionBusy, setDeletionBusy] = useState(false);
+  const [deletionRequest, setDeletionRequest] = useState<{ status: string; created_at: string } | null>(null);
   const [blockedUsers, setBlockedUsers] = useState<Array<{ blocked_id: string; created_at: string; blocked_name?: string | null }>>([]);
   const [blocksError, setBlocksError] = useState<string | null>(null);
 
@@ -69,6 +69,23 @@ export const AccountScreen: React.FC = () => {
     }
   };
 
+  const refreshDeletionStatus = useCallback(async () => {
+    try {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+      const response = await fetch(`${SITE}/api/mobile/account-deletion`, {
+        method: 'GET',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!response.ok) return;
+      const payload = await response.json().catch(() => null);
+      setDeletionRequest(payload?.request ?? null);
+    } catch {
+      // Non-blocking status check
+    }
+  }, []);
+
   const refreshBlockedUsers = useCallback(async () => {
     if (!user?.id) return;
     try {
@@ -79,7 +96,10 @@ export const AccountScreen: React.FC = () => {
     }
   }, [user?.id]);
 
-  useEffect(() => { void refreshBlockedUsers(); }, [refreshBlockedUsers]);
+  useEffect(() => {
+    void refreshBlockedUsers();
+    void refreshDeletionStatus();
+  }, [refreshBlockedUsers, refreshDeletionStatus]);
 
   const removeBlock = (blockedId: string) => Alert.alert(
     'Rimuovere il blocco?',
@@ -108,6 +128,7 @@ export const AccountScreen: React.FC = () => {
         body: JSON.stringify({}),
       });
       if (!response.ok) throw new Error('Richiesta non inviata');
+      await refreshDeletionStatus();
       Alert.alert(
         'Richiesta registrata',
         'L’admin completerà la cancellazione entro 30 giorni dall’invio. Riceverai una conferma all’indirizzo email associato.'
@@ -381,19 +402,30 @@ export const AccountScreen: React.FC = () => {
         <Text style={styles.bodyText}>
           Puoi chiedere la cancellazione dell’account. L’admin la completerà entro 30 giorni dall’invio e ti invierà una conferma via email.
         </Text>
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={confirmDeletion}
-          disabled={deletionBusy}
-          accessibilityRole="button"
-        >
-          {deletionBusy ? (
-            <ActivityIndicator color={colors.parchmentLight} />
-          ) : (
-            <Trash2 size={16} color={colors.parchmentLight} />
-          )}
-          <Text style={styles.deleteButtonText}>Richiedi la cancellazione</Text>
-        </TouchableOpacity>
+        {deletionRequest ? (
+          <View style={{ backgroundColor: 'rgba(212, 175, 55, 0.12)', borderRadius: 8, padding: 10, borderWidth: 1, borderColor: colors.brassDark }}>
+            <Text style={{ color: colors.brassLight, fontSize: 12, fontWeight: '700' }}>
+              Richiesta già in corso ({deletionRequest.status})
+            </Text>
+            <Text style={{ color: colors.parchmentMuted, fontSize: 11, marginTop: 2 }}>
+              Inviata il {new Date(deletionRequest.created_at).toLocaleDateString('it-IT')}. Riceverai conferma via email a lavorazione completata.
+            </Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={confirmDeletion}
+            disabled={deletionBusy}
+            accessibilityRole="button"
+          >
+            {deletionBusy ? (
+              <ActivityIndicator color={colors.parchmentLight} />
+            ) : (
+              <Trash2 size={16} color={colors.parchmentLight} />
+            )}
+            <Text style={styles.deleteButtonText}>Richiedi la cancellazione</Text>
+          </TouchableOpacity>
+        )}
         <TouchableOpacity
           style={styles.linkRow}
           onPress={() => Linking.openURL(`${SITE}/delete-account`)}
