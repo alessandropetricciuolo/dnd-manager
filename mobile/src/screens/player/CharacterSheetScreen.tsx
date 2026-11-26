@@ -38,6 +38,7 @@ import {
   Target,
   Wand2,
   Compass,
+  Clock,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
@@ -46,7 +47,20 @@ import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
 import { CharacterSheetV1, CharacterSheetWeapon } from '../../lib/character-sheet';
 import { computeQuickHpOutcome } from '../../lib/character-hp';
 import { parseWeaponDamage } from '../../lib/weapon-damage';
+import {
+  calculateMobileLevelProgress,
+  resolveBackgroundCatalogInfo,
+  resolveMobileCharacterCalendar,
+  resolveRaceAndSubraceLabels,
+} from '../../lib/long-campaign-helpers';
+import { resolveImageUrl } from '../../utils/imageUrl';
+import { RichMarkdownView } from '../../components/common/RichMarkdownView';
 import { DiceRollerModal } from '../../components/player/DiceRollerModal';
+import {
+  CharacterPortraitModal,
+  ClassSpellListModal,
+  RulesDetailModal,
+} from '../../components/player/CharacterRulesModals';
 import {
   WeaponEditModal,
   SpellAddModal,
@@ -142,6 +156,8 @@ export const CharacterSheetScreen: React.FC = () => {
     savingThrows,
     skills,
     updateHp,
+    toggleInspiration,
+    spendHitDie,
     useFeature,
     restoreFeature,
     shortRest,
@@ -206,6 +222,14 @@ export const CharacterSheetScreen: React.FC = () => {
   const [isSpellModalOpen, setIsSpellModalOpen] = useState<boolean>(false);
   const [isInventoryModalOpen, setIsInventoryModalOpen] = useState<boolean>(false);
   const [isBioNotesModalOpen, setIsBioNotesModalOpen] = useState<boolean>(false);
+  const [isPortraitModalOpen, setIsPortraitModalOpen] = useState<boolean>(false);
+  const [isClassSpellListOpen, setIsClassSpellListOpen] = useState<boolean>(false);
+  const [rulesModalPayload, setRulesModalPayload] = useState<{
+    title: string;
+    subtitle?: string;
+    markdown: string;
+  } | null>(null);
+  const [expandedSpellIds, setExpandedSpellIds] = useState<Record<string, boolean>>({});
 
   // Character stats
   const hasCurrentHp = typeof safeCharacter.hit_points === 'number';
@@ -250,6 +274,85 @@ export const CharacterSheetScreen: React.FC = () => {
   const spellAbilityLabel: Record<AbilityKey, string> = { str: 'FOR', dex: 'DES', con: 'COS', int: 'INT', wis: 'SAG', cha: 'CAR' };
   const spellSaveDc = sheet?.spellSaveDc ?? legacySpellcasting?.saveDc;
   const spellAttackBonus = sheet?.spellAttackBonus ?? legacySpellcasting?.attackBonus;
+  const inspiration = Boolean(safeCharacter.rules_snapshot?.inspiration);
+  const cantripsKnown =
+    (safeCharacter.rules_snapshot?.cantrips_known as number | undefined) ?? sheet?.cantripsKnown;
+  const spellsPrepared =
+    (safeCharacter.rules_snapshot?.spells_prepared as number | undefined) ?? sheet?.spellsPrepared;
+  const spellcastingClassLabel =
+    sheet?.spellcastingClass ||
+    (spellAbility || spellSlots.length > 0 ? safeCharacter.character_class ?? undefined : undefined);
+
+  const derivedRules = (safeCharacter.rules_snapshot?.derived_rules ?? {}) as {
+    raceTraitsMd?: string | null;
+    subraceTraitsMd?: string | null;
+    classPrivilegesMd?: string | null;
+    classSubclassMd?: string | null;
+    backgroundRulesMd?: string | null;
+    spellcastingMd?: string | null;
+    spellsListMd?: string | null;
+    spellsDetailsMd?: Record<string, string> | null;
+    warnings?: string[];
+  };
+  const hasClassSpellList = Boolean(
+    derivedRules.spellsListMd?.trim() || derivedRules.spellcastingMd?.trim(),
+  );
+
+  const { raceLabel: resolvedRaceLabel, subraceLabel: resolvedSubraceLabel } = useMemo(
+    () =>
+      resolveRaceAndSubraceLabels({
+        raceSlug: safeCharacter.race_slug,
+        subclassSlug: safeCharacter.subclass_slug,
+        sheetRaceLabel: sheet?.raceLabel,
+        sheetSubraceLabel: sheet?.subraceLabel,
+      }),
+    [safeCharacter.race_slug, safeCharacter.subclass_slug, sheet?.raceLabel, sheet?.subraceLabel],
+  );
+  const bgCatalog = useMemo(
+    () =>
+      resolveBackgroundCatalogInfo({
+        backgroundSlug: safeCharacter.background_slug,
+        sheetBackgroundLabel: sheet?.backgroundLabel,
+      }),
+    [safeCharacter.background_slug, sheet?.backgroundLabel],
+  );
+  const xpProgress = useMemo(
+    () => calculateMobileLevelProgress(safeCharacter.current_xp, safeCharacter.level),
+    [safeCharacter.current_xp, safeCharacter.level],
+  );
+  const isTorneoSheet = selectedSheetCampaign?.type === 'torneo';
+  const calendarInfo = useMemo(() => {
+    if (isTorneoSheet) return null;
+    return resolveMobileCharacterCalendar({
+      campaignCalendarConfig: selectedSheetCampaign?.long_calendar_config,
+      campaignBaseDate: selectedSheetCampaign?.long_calendar_base_date,
+      timeOffsetHours: safeCharacter.time_offset_hours,
+      calendarAnchorDate: safeCharacter.calendar_anchor_date,
+      calendarAnchorHours: safeCharacter.calendar_anchor_hours,
+      calendarCurrentDate: safeCharacter.calendar_current_date,
+    });
+  }, [
+    isTorneoSheet,
+    selectedSheetCampaign?.long_calendar_config,
+    selectedSheetCampaign?.long_calendar_base_date,
+    safeCharacter.time_offset_hours,
+    safeCharacter.calendar_anchor_date,
+    safeCharacter.calendar_anchor_hours,
+    safeCharacter.calendar_current_date,
+  ]);
+  const trackedFeatures = useMemo(
+    () => features.filter((f) => f.usesMax !== undefined),
+    [features],
+  );
+  const heroAvatarUri = resolveImageUrl(safeCharacter.image_url);
+  const heroIdentityLine = [
+    safeCharacter.character_class &&
+      `${safeCharacter.character_class}${safeCharacter.class_subclass ? ` (${safeCharacter.class_subclass})` : ''}`,
+    resolvedRaceLabel,
+    resolvedSubraceLabel,
+  ]
+    .filter(Boolean)
+    .join(' • ');
 
   const hpPercent = maxHp ? Math.max(0, Math.min(100, Math.round((currentHp / maxHp) * 100))) : 0;
 
@@ -367,11 +470,7 @@ export const CharacterSheetScreen: React.FC = () => {
       Alert.alert('Dado Vita non valido', `Controlla il dado registrato nella scheda (${hitDice.die}).`);
       return;
     }
-    const conMod = abilityScores.find((a) => a.key === 'con')?.modifier;
-    if (conMod === undefined) {
-      Alert.alert('Modificatore mancante', 'Il modificatore di Costituzione non è compilato: non posso calcolare la cura del Dado Vita.');
-      return;
-    }
+    const conMod = abilityScores.find((a) => a.key === 'con')?.modifier ?? 0;
     const roll = Math.floor(Math.random() * dieFaces) + 1;
     const healAmount = Math.max(1, roll + conMod);
 
@@ -381,6 +480,14 @@ export const CharacterSheetScreen: React.FC = () => {
       'Riposo Breve: Dado Vita Speso',
       `Hai tirato 1${hitDice.die} (${roll}) + Mod. Costituzione (${conMod >= 0 ? '+' : ''}${conMod}) = +${healAmount} PF recuperati!`
     );
+  };
+
+  const handleSpendPhysicalHitDie = async () => {
+    if (!hitDice || hitDice.current <= 0) {
+      Alert.alert('Dadi Vita Esauriti', 'Non hai più Dadi Vita disponibili.');
+      return;
+    }
+    await spendHitDie(1);
   };
 
   // Quick HP delta
@@ -571,14 +678,16 @@ export const CharacterSheetScreen: React.FC = () => {
       {/* Hero Sticky Header */}
       <View style={styles.heroHeader}>
         <View style={styles.heroRow}>
-          {/* Avatar & Level Badge */}
+          {/* Avatar & Level Badge (Tap to open full portrait & dossier) */}
           <TouchableOpacity
             style={styles.avatarContainer}
-            onPress={() => setIsCharSelectorOpen(true)}
+            onPress={() => setIsPortraitModalOpen(true)}
             activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Apri ritratto e dossier di ${safeCharacter.name}`}
           >
-            {safeCharacter.image_url ? (
-              <Image source={{ uri: safeCharacter.image_url }} style={styles.avatarImage} />
+            {heroAvatarUri ? (
+              <Image source={{ uri: heroAvatarUri }} style={styles.avatarImage} />
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Shield size={24} color={colors.brassLight} />
@@ -612,8 +721,7 @@ export const CharacterSheetScreen: React.FC = () => {
             </TouchableOpacity>
 
             <Text style={styles.heroDetails} numberOfLines={1}>
-              {[safeCharacter.character_class && `${safeCharacter.character_class}${safeCharacter.class_subclass ? ` (${safeCharacter.class_subclass})` : ''}`, sheet?.raceLabel ?? (safeCharacter.race_slug ? safeCharacter.race_slug.replace('-', ' ') : null), sheet?.subraceLabel]
-                .filter(Boolean).join(' • ') || 'Dati identità non compilati'}
+              {heroIdentityLine || 'Dati identità non compilati'}
             </Text>
             {sheet?.source && <Text style={styles.campaignSubtitle}>Scheda: {sheet.source === 'recovered' ? 'recuperata da documento' : sheet.source === 'generator' ? 'generatore' : 'compilata dal Master'}</Text>}
 
@@ -629,9 +737,119 @@ export const CharacterSheetScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Rest Buttons Bar */}
+        {/* Interactive Rules & Compendium Badges (like Web RulesTip & SpellsTip) */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.rulesPillsRow}
+        >
+          {(resolvedSubraceLabel || resolvedRaceLabel) && (
+            <TouchableOpacity
+              style={styles.ruleBadgePill}
+              disabled={!(derivedRules.subraceTraitsMd || derivedRules.raceTraitsMd)}
+              onPress={() =>
+                setRulesModalPayload({
+                  title: resolvedSubraceLabel ?? resolvedRaceLabel ?? 'Razza',
+                  subtitle: 'Tratti Razziali D&D 5e',
+                  markdown:
+                    (resolvedSubraceLabel && derivedRules.subraceTraitsMd
+                      ? `${derivedRules.raceTraitsMd ? `${derivedRules.raceTraitsMd}\n\n` : ''}${derivedRules.subraceTraitsMd}`
+                      : derivedRules.raceTraitsMd) ?? '',
+                })
+              }
+            >
+              <Text style={styles.ruleBadgePillText}>
+                {resolvedSubraceLabel ?? resolvedRaceLabel}
+                {derivedRules.subraceTraitsMd || derivedRules.raceTraitsMd ? ' ⓘ' : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {safeCharacter.character_class && (
+            <TouchableOpacity
+              style={styles.ruleBadgePill}
+              disabled={!derivedRules.classPrivilegesMd}
+              onPress={() =>
+                setRulesModalPayload({
+                  title: safeCharacter.character_class!,
+                  subtitle: 'Privilegi di Classe',
+                  markdown: derivedRules.classPrivilegesMd ?? '',
+                })
+              }
+            >
+              <Text style={styles.ruleBadgePillText}>
+                {safeCharacter.character_class}
+                {derivedRules.classPrivilegesMd ? ' ⓘ' : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {safeCharacter.class_subclass && (
+            <TouchableOpacity
+              style={[styles.ruleBadgePill, styles.ruleBadgeSubclassPill]}
+              disabled={!derivedRules.classSubclassMd}
+              onPress={() =>
+                setRulesModalPayload({
+                  title: safeCharacter.class_subclass!,
+                  subtitle: 'Privilegi di Sottoclasse',
+                  markdown: derivedRules.classSubclassMd ?? '',
+                })
+              }
+            >
+              <Text style={styles.ruleBadgeSubclassText}>
+                {safeCharacter.class_subclass}
+                {derivedRules.classSubclassMd ? ' ⓘ' : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {bgCatalog.fullBadge && (
+            <TouchableOpacity
+              style={styles.ruleBadgePill}
+              disabled={!derivedRules.backgroundRulesMd}
+              onPress={() =>
+                setRulesModalPayload({
+                  title: bgCatalog.fullBadge!,
+                  subtitle: 'Background Regolistico',
+                  markdown: derivedRules.backgroundRulesMd ?? '',
+                })
+              }
+            >
+              <Text style={styles.ruleBadgePillText}>
+                {bgCatalog.fullBadge}
+                {derivedRules.backgroundRulesMd ? ' ⓘ' : ''}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {hasClassSpellList && (
+            <TouchableOpacity
+              style={[styles.ruleBadgePill, styles.ruleBadgeSpellListPill]}
+              onPress={() => setIsClassSpellListOpen(true)}
+            >
+              <BookOpen size={11} color={colors.brassLight} />
+              <Text style={styles.ruleBadgeSpellListText}>Lista classe (PHB)</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+
+        {/* Rest, Inspiration & XP Progress Bar */}
         <View style={styles.quickRestRow}>
           {isSaving && <Text style={styles.restPillText}>Salvataggio…</Text>}
+          <TouchableOpacity
+            style={[styles.restPill, inspiration && styles.inspirationPillActive]}
+            onPress={() => void toggleInspiration()}
+            disabled={isSaving}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel={inspiration ? 'Disattiva ispirazione' : 'Attiva ispirazione'}
+          >
+            <Sparkles size={12} color={inspiration ? colors.void : colors.brassLight} />
+            <Text style={[styles.restPillText, inspiration && styles.inspirationPillTextActive]}>
+              {inspiration ? 'Ispirazione ★' : 'Ispirazione'}
+            </Text>
+          </TouchableOpacity>
+
           <TouchableOpacity style={styles.restPill} onPress={confirmShortRest} disabled={isSaving} activeOpacity={0.7}>
             <RotateCcw size={12} color={colors.parchmentLight} />
             <Text style={styles.restPillText}>Riposo Breve</Text>
@@ -642,12 +860,25 @@ export const CharacterSheetScreen: React.FC = () => {
             <Text style={styles.restPillTextLong}>Riposo Lungo</Text>
           </TouchableOpacity>
 
-          {/* XP Pill */}
-          <View style={styles.xpPill}>
-            <Text style={styles.xpPillText}>
-              <Text style={styles.xpBold}>{safeCharacter.current_xp ?? 0}</Text> XP
-            </Text>
-          </View>
+          {/* XP & Level Progress Pill */}
+          {!isTorneoSheet && (
+            <View style={styles.xpPill}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={styles.xpPillText}>
+                  <Text style={styles.xpBold}>{safeCharacter.current_xp ?? 0}</Text>
+                  {xpProgress.nextLevelXp !== null ? `/${xpProgress.nextLevelXp}` : ''} PE
+                </Text>
+                {xpProgress.hasLevelUp && (
+                  <View style={styles.levelUpBadge}>
+                    <Text style={styles.levelUpBadgeText}>LV UP</Text>
+                  </View>
+                )}
+              </View>
+              <View style={styles.xpMiniTrack}>
+                <View style={[styles.xpMiniFill, { width: `${Math.round(xpProgress.progressPercent)}%` }]} />
+              </View>
+            </View>
+          )}
         </View>
 
         {/* Navigation Tabs Bar */}
@@ -733,6 +964,20 @@ export const CharacterSheetScreen: React.FC = () => {
                 <Text style={styles.vitalLabel}>COMPETENZA</Text>
               </View>
             </View>
+
+            {/* Cronaca Temporale (Campagne Long e non-Torneo, allineata al sito) */}
+            {calendarInfo && (
+              <View style={styles.chronicleBanner}>
+                <Clock size={15} color={colors.brassLight} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.chronicleEyebrow}>CRONACA TEMPORALE DEL PERSONAGGIO</Text>
+                  <Text style={styles.chronicleMainText}>{calendarInfo.dateLabel}</Text>
+                </View>
+                <View style={styles.chronicleHoursPill}>
+                  <Text style={styles.chronicleHoursText}>{calendarInfo.hours}h vissute</Text>
+                </View>
+              </View>
+            )}
 
             {/* Health & Hit Points Card */}
             <View style={styles.sectionCard}>
@@ -829,14 +1074,28 @@ export const CharacterSheetScreen: React.FC = () => {
               {/* Hit Dice Bar */}
               <View style={styles.hitDiceRow}>
                 <View style={styles.hitDiceLeft}>
-                  <Text style={styles.hitDiceTitle}>DADI VITA</Text>
+                  <Text style={styles.hitDiceTitle}>DADI VITA{hitDice?.die || sheet?.hitDie ? ` (${hitDice?.die ?? sheet?.hitDie})` : ''}</Text>
                   <Text style={styles.hitDiceSub}>
                     {hitDice ? <>Disponibili: <Text style={styles.textWhite}>{hitDice.current} di {hitDice.total}</Text> ({hitDice.die})</> : sheet?.hitDie ? `Risorse non salvate · ${sheet.hitDiceTotal ?? '—'} dadi ${sheet.hitDie}` : 'Dati Dadi Vita non compilati'}
                   </Text>
                 </View>
-                <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving || !hitDice || maxHp === undefined} activeOpacity={0.75}>
-                  <Text style={styles.spendHitDieBtnText}>Spendi Dado{hitDice?.die ? ` (${hitDice.die})` : ''}</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                  {hitDice && (
+                    <TouchableOpacity
+                      style={styles.inlineActionChip}
+                      onPress={() => void handleSpendPhysicalHitDie()}
+                      disabled={isSaving || hitDice.current <= 0}
+                      activeOpacity={0.75}
+                      accessibilityRole="button"
+                      accessibilityLabel="Scala 1 Dado Vita tirato dal vivo"
+                    >
+                      <Text style={styles.inlineActionChipText}>-1 dado</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving || !hitDice || hitDice.current <= 0 || maxHp === undefined} activeOpacity={0.75}>
+                    <Text style={styles.spendHitDieBtnText}>Tira e cura</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
 
               {/* Death Saves (Visible always or prominent when HP == 0) */}
@@ -1020,6 +1279,51 @@ export const CharacterSheetScreen: React.FC = () => {
                 <Text style={styles.emptyNotice}>Nessun attacco registrato.</Text>
               )}
             </View>
+
+            {/* Quick Tracked Features in Combat Tab (mirrors Web CharacterSheetResources) */}
+            {trackedFeatures.length > 0 && (
+              <View style={styles.sectionCard}>
+                <View style={styles.cardHeaderLeft}>
+                  <Award size={18} color={colors.brassBase} />
+                  <Text style={styles.cardSectionTitle}>CAPACITÀ A USI & RISORSE DI CLASSE</Text>
+                </View>
+                {trackedFeatures.map((feat) => {
+                  const resetLabel = feat.resetOn === 'shortRest' ? 'Riposo breve' : 'Riposo lungo';
+                  return (
+                    <View key={`combat-feat-${feat.id}`} style={styles.quickFeatureRow}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.featureName}>{feat.name}</Text>
+                        <Text style={styles.featureUsesLabel}>
+                          Usi: <Text style={styles.textGold}>{feat.usesCurrent ?? feat.usesMax ?? 0}/{feat.usesMax}</Text> · {resetLabel}
+                        </Text>
+                      </View>
+                      <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                        <TouchableOpacity
+                          style={[
+                            styles.inlineActionChip,
+                            (feat.usesCurrent ?? 0) >= (feat.usesMax ?? 0) && styles.useFeatureBtnDisabled,
+                          ]}
+                          disabled={(feat.usesCurrent ?? 0) >= (feat.usesMax ?? 0) || isSaving}
+                          onPress={() => void restoreFeature(feat.id)}
+                        >
+                          <Text style={styles.inlineActionChipText}>+1</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={[
+                            styles.useFeatureBtn,
+                            (feat.usesCurrent ?? 0) <= 0 && styles.useFeatureBtnDisabled,
+                          ]}
+                          disabled={(feat.usesCurrent ?? 0) <= 0 || isSaving}
+                          onPress={() => void useFeature(feat.id)}
+                        >
+                          <Text style={styles.useFeatureBtnText}>Usa</Text>
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
@@ -1142,7 +1446,33 @@ export const CharacterSheetScreen: React.FC = () => {
                 <Text style={styles.vitalLabel}>ATTACCO MAGICO (TIRA)</Text>
               </TouchableOpacity>
             </View>
-            {sheet?.spellcastingClass && <Text style={styles.emptyNotice}>Classe incantatrice: {sheet.spellcastingClass}{sheet.spellsPrepared !== undefined ? ` · ${sheet.spellsPrepared} incantesimi preparati` : ''}{sheet.cantripsKnown !== undefined ? ` · ${sheet.cantripsKnown} trucchetti` : ''}</Text>}
+            <View style={styles.spellMetaSubRow}>
+              <View style={styles.spellMetaChip}>
+                <Text style={styles.spellMetaLabel}>CLASSE: </Text>
+                <Text style={styles.spellMetaVal}>{spellcastingClassLabel || '—'}</Text>
+              </View>
+              <View style={styles.spellMetaChip}>
+                <Text style={styles.spellMetaLabel}>TRUCCHETTI: </Text>
+                <Text style={styles.spellMetaVal}>{cantripsKnown ?? '—'}</Text>
+              </View>
+              <View style={styles.spellMetaChip}>
+                <Text style={styles.spellMetaLabel}>PREPARABILI: </Text>
+                <Text style={styles.spellMetaVal}>{spellsPrepared ?? '—'}</Text>
+              </View>
+            </View>
+            {hasClassSpellList && (
+              <TouchableOpacity
+                style={styles.classSpellListBanner}
+                onPress={() => setIsClassSpellListOpen(true)}
+                activeOpacity={0.8}
+              >
+                <BookOpen size={15} color={colors.brassLight} />
+                <Text style={styles.classSpellListBannerText}>
+                  Consulta Lista Incantesimi di Classe (PHB)
+                </Text>
+                <ChevronRight size={15} color={colors.brassBase} />
+              </TouchableOpacity>
+            )}
 
             {/* Spell Slots by Level */}
             <View style={styles.sectionCard}>
@@ -1212,9 +1542,27 @@ export const CharacterSheetScreen: React.FC = () => {
                     <Text style={styles.featureSourceText}>{spell.level === 0 ? 'TRUCCHETTO' : `LIVELLO ${spell.level}`}</Text>
                   </View>
                   {spell.summary && <Text style={styles.featureDesc}>{spell.summary}</Text>}
-                  {spell.description && spell.description !== spell.summary && <Text style={styles.featureDesc}>{spell.description}</Text>}
                   {spell.components !== undefined && <Text style={styles.weaponProps}>Componenti: {spell.components || 'Nessuno indicato'}</Text>}
                   {(spell.ritual || spell.concentration) && <Text style={styles.weaponProps}>{[spell.ritual && 'Rituale', spell.concentration && 'Concentrazione'].filter(Boolean).join(' • ')}</Text>}
+                  {spell.description && spell.description !== spell.summary && (
+                    <View style={{ marginTop: 6 }}>
+                      <TouchableOpacity
+                        style={styles.spellExpandToggle}
+                        onPress={() =>
+                          setExpandedSpellIds((prev) => ({ ...prev, [spell.id]: !prev[spell.id] }))
+                        }
+                      >
+                        <Text style={styles.spellExpandToggleText}>
+                          {expandedSpellIds[spell.id] ? 'Nascondi testo completo ▴' : 'Leggi testo completo ▾'}
+                        </Text>
+                      </TouchableOpacity>
+                      {expandedSpellIds[spell.id] && (
+                        <View style={styles.spellFullTextWrap}>
+                          <RichMarkdownView markdown={spell.description} compact />
+                        </View>
+                      )}
+                    </View>
+                  )}
                   {(canEditSpell || (spell.level > 0 && spell.prepared)) && (
                     <View style={styles.spellActionsRow}>
                       {spell.level > 0 && canEditSpell ? (
@@ -1263,20 +1611,21 @@ export const CharacterSheetScreen: React.FC = () => {
             {features.length === 0 && <Text style={styles.emptyNotice}>Privilegi e tratti non ancora compilati.</Text>}
             {features.map((feat) => {
               const hasUses = feat.usesMax !== undefined;
+              const resetLabel = feat.resetOn === 'shortRest' ? 'Riposo breve' : 'Riposo lungo';
               return (
                 <View key={feat.id} style={styles.featureCard}>
                   <View style={styles.featureHeader}>
-                    <Text style={styles.featureName}>{feat.name}</Text>
+                    <Text style={[styles.featureName, { flex: 1, marginRight: 6 }]}>{feat.name}</Text>
                     <View style={styles.featureSourceBadge}>
                       <Text style={styles.featureSourceText}>{feat.source.toUpperCase()}</Text>
                     </View>
                   </View>
-                  <Text style={styles.featureDesc}>{feat.description}</Text>
+                  <RichMarkdownView markdown={feat.description} compact />
 
                   {hasUses && (
                     <View style={styles.featureUsesRow}>
                       <Text style={styles.featureUsesLabel}>
-                        Usi rimanenti: <Text style={styles.textGold}>{feat.usesCurrent ?? 0}</Text> di {feat.usesMax}
+                        Usi rimanenti: <Text style={styles.textGold}>{feat.usesCurrent ?? 0}</Text> di {feat.usesMax} · {resetLabel}
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
                         <TouchableOpacity
@@ -1439,15 +1788,21 @@ export const CharacterSheetScreen: React.FC = () => {
               {personality?.ideals && <BioRow title="IDEALE" text={personality.ideals} />}
               {personality?.bonds && <BioRow title="LEGAME" text={personality.bonds} />}
               {personality?.flaws && <BioRow title="DIFETTO" text={personality.flaws} />}
-              {sheet?.backgroundLabel && <BioRow title="BACKGROUND" text={sheet.backgroundLabel} />}
-              {(sheet?.backgroundMd || (sheet?.backgroundLabel ? null : safeCharacter.background)) && (
+              {Boolean(safeCharacter.background?.trim()) && (
                 <View style={styles.bioBlock}>
-                  <Text style={styles.bioTitle}>{sheet?.backgroundMd ? 'DESCRIZIONE DEL BACKGROUND:' : 'BACKGROUND:'}</Text>
-                  <Text style={styles.bioText}>{sheet?.backgroundMd || safeCharacter.background}</Text>
+                  <Text style={styles.bioTitle}>ORIGINI E RETROSCENA:</Text>
+                  <Text style={styles.bioText}>{safeCharacter.background}</Text>
+                </View>
+              )}
+              {bgCatalog.fullBadge && <BioRow title="BACKGROUND D&D 5E" text={bgCatalog.fullBadge} />}
+              {Boolean(derivedRules.backgroundRulesMd) && (
+                <View style={styles.bioBlock}>
+                  <Text style={[styles.bioTitle, { marginBottom: 4 }]}>REGOLE E PRIVILEGIO DI BACKGROUND:</Text>
+                  <RichMarkdownView markdown={derivedRules.backgroundRulesMd!} compact />
                 </View>
               )}
               {Boolean(playerNotes) && <BioRow title="APPUNTI DEL GIOCATORE" text={playerNotes!} />}
-              {!sheet?.alignment && !sheet?.age && !sheet?.height && !sheet?.weight && !sheet?.sex && !personality?.traits && !personality?.ideals && !personality?.bonds && !personality?.flaws && !sheet?.backgroundLabel && !sheet?.backgroundMd && !safeCharacter.background && !playerNotes && <Text style={styles.emptyNotice}>Dati personali e background non ancora compilati.</Text>}
+              {!sheet?.alignment && !sheet?.age && !sheet?.height && !sheet?.weight && !sheet?.sex && !personality?.traits && !personality?.ideals && !personality?.bonds && !personality?.flaws && !bgCatalog.fullBadge && !derivedRules.backgroundRulesMd && !safeCharacter.background?.trim() && !playerNotes && <Text style={styles.emptyNotice}>Dati personali e background non ancora compilati.</Text>}
             </View>
           </View>
         )}
@@ -1712,6 +2067,41 @@ export const CharacterSheetScreen: React.FC = () => {
         visible={isCampaignModalOpen}
         onClose={() => setIsCampaignModalOpen(false)}
       />
+
+      {/* Full Portrait & Dossier Modal */}
+      <CharacterPortraitModal
+        visible={isPortraitModalOpen}
+        name={safeCharacter.name}
+        level={safeCharacter.level}
+        identityLine={heroIdentityLine}
+        imageUrl={safeCharacter.image_url}
+        calendarDateLabel={calendarInfo?.dateLabel ?? null}
+        hoursLived={calendarInfo?.hours ?? 0}
+        isLongCampaign={isLongSheet}
+        coinsGp={safeCharacter.coins_gp ?? 0}
+        coinsSp={safeCharacter.coins_sp ?? 0}
+        coinsCp={safeCharacter.coins_cp ?? 0}
+        onClose={() => setIsPortraitModalOpen(false)}
+      />
+
+      {/* Rules Detail Popover Modal */}
+      <RulesDetailModal
+        visible={rulesModalPayload !== null}
+        title={rulesModalPayload?.title ?? ''}
+        subtitle={rulesModalPayload?.subtitle}
+        markdown={rulesModalPayload?.markdown ?? ''}
+        onClose={() => setRulesModalPayload(null)}
+      />
+
+      {/* Class Spell List (PHB) Modal */}
+      <ClassSpellListModal
+        visible={isClassSpellListOpen}
+        classNameLabel={safeCharacter.character_class}
+        spellcastingMd={derivedRules.spellcastingMd}
+        spellsListMd={derivedRules.spellsListMd}
+        spellsDetailsMd={derivedRules.spellsDetailsMd}
+        onClose={() => setIsClassSpellListOpen(false)}
+      />
     </SafeAreaView>
   );
 };
@@ -1873,9 +2263,194 @@ const styles = StyleSheet.create({
   },
   quickRestRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 8,
+  },
+  rulesPillsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingTop: 8,
+    paddingRight: 12,
+  },
+  ruleBadgePill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(200, 157, 73, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(200, 157, 73, 0.35)',
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 3.5,
+  },
+  ruleBadgePillText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+  },
+  ruleBadgeSubclassPill: {
+    backgroundColor: 'rgba(217, 119, 6, 0.16)',
+    borderColor: 'rgba(217, 119, 6, 0.45)',
+  },
+  ruleBadgeSubclassText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: '#FDE68A',
+  },
+  ruleBadgeSpellListPill: {
+    backgroundColor: colors.stone,
+    borderColor: colors.brassBase,
+  },
+  ruleBadgeSpellListText: {
+    fontSize: 10.5,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  inspirationPillActive: {
+    backgroundColor: colors.brassBase,
+    borderColor: colors.brassLight,
+  },
+  inspirationPillTextActive: {
+    color: colors.void,
+    fontWeight: '800',
+  },
+  levelUpBadge: {
+    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+    borderWidth: 1,
+    borderColor: colors.emerald,
+    borderRadius: 4,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+  },
+  levelUpBadgeText: {
+    fontSize: 8.5,
+    fontWeight: '900',
+    color: colors.emerald,
+  },
+  xpMiniTrack: {
+    height: 3,
+    width: 64,
+    borderRadius: 2,
+    backgroundColor: colors.stone,
+    overflow: 'hidden',
+    marginTop: 2,
+    alignSelf: 'flex-end',
+  },
+  xpMiniFill: {
+    height: '100%',
+    backgroundColor: colors.brassBase,
+  },
+  chronicleBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.brassBase,
+    paddingHorizontal: 12,
+    paddingVertical: 9,
+  },
+  chronicleEyebrow: {
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: colors.brassBase,
+  },
+  chronicleMainText: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+    marginTop: 1,
+  },
+  chronicleHoursPill: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderRadius: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  chronicleHoursText: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  quickFeatureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+    paddingVertical: 8,
+    borderTopWidth: 1,
+    borderTopColor: colors.stoneBorder,
+  },
+  spellMetaSubRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+  },
+  spellMetaChip: {
+    flex: 1,
+    minWidth: '30%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderRadius: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 6,
+  },
+  spellMetaLabel: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.parchmentMuted,
+  },
+  spellMetaVal: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+  },
+  classSpellListBanner: {
+    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 10,
+    backgroundColor: colors.stoneSurface,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  classSpellListBannerText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  spellExpandToggle: {
+    alignSelf: 'flex-start',
+    paddingVertical: 2,
+  },
+  spellExpandToggleText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  spellFullTextWrap: {
+    marginTop: 6,
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
   },
   restPill: {
     flexDirection: 'row',

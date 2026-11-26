@@ -1,9 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  canPlayerSeeCompletedSession,
   countConfirmedSignups,
   enrichPlayerSession,
+  normalizeSessionPartyBadge,
   resolveSignupTargetStatus,
+  validateSessionFeedbackPayload,
 } from '../session-booking';
 
 test('resolves confirmed when below capacity and waitlist when full', () => {
@@ -34,4 +37,70 @@ test('enrichPlayerSession distinguishes confirmed vs waitlist for current user',
   assert.equal(session.isFull, true);
   assert.equal(session.isConfirmed, false);
   assert.equal(session.isWaitlist, true);
+});
+
+test('canPlayerSeeCompletedSession mirrors Web Long party visibility rules', () => {
+  const memberMap = { 'camp-long': 'party-alpha' };
+
+  // Global completed session in joined Long campaign -> visible
+  assert.equal(
+    canPlayerSeeCompletedSession(
+      {
+        status: 'completed',
+        campaign_id: 'camp-long',
+        party_id: null,
+        campaigns: { name: 'Eldaria', type: 'long' },
+        isConfirmed: false,
+        mySignup: null,
+      },
+      { isGmOrAdmin: false, memberPartyByCampaignId: memberMap }
+    ),
+    true
+  );
+
+  // Own party completed session -> visible
+  assert.equal(
+    canPlayerSeeCompletedSession(
+      {
+        status: 'completed',
+        campaign_id: 'camp-long',
+        party_id: 'party-alpha',
+        campaigns: { name: 'Eldaria', type: 'long' },
+        isConfirmed: false,
+        mySignup: null,
+      },
+      { isGmOrAdmin: false, memberPartyByCampaignId: memberMap }
+    ),
+    true
+  );
+
+  // Other party completed session (not attended) -> hidden
+  assert.equal(
+    canPlayerSeeCompletedSession(
+      {
+        status: 'completed',
+        campaign_id: 'camp-long',
+        party_id: 'party-bravo',
+        campaigns: { name: 'Eldaria', type: 'long' },
+        isConfirmed: false,
+        mySignup: null,
+      },
+      { isGmOrAdmin: false, memberPartyByCampaignId: memberMap }
+    ),
+    false
+  );
+});
+
+test('normalizeSessionPartyBadge and validateSessionFeedbackPayload handle inputs safely', () => {
+  const badge = normalizeSessionPartyBadge([{ name: 'Compagnia del Corvo', color: '#22c55e' }]);
+  assert.deepEqual(badge, { name: 'Compagnia del Corvo', color: '#22c55e' });
+
+  assert.equal(
+    validateSessionFeedbackPayload({ sessionRating: 5, campaignRating: 4, comment: ' Ottima! ' }).valid,
+    true
+  );
+  assert.equal(
+    validateSessionFeedbackPayload({ sessionRating: 0, campaignRating: 4 }).valid,
+    false
+  );
 });

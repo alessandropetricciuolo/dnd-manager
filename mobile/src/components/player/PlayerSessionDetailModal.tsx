@@ -15,32 +15,42 @@ import {
   Clock,
   MapPin,
   Users,
+  User,
   CheckCircle2,
   AlertCircle,
   Sparkles,
   Shield,
   Hourglass,
   RotateCcw,
+  Star,
+  BookOpen,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
-import { CAMPAIGN_TYPE_BADGES, CAMPAIGN_TYPE_LABELS } from '../../contexts/CampaignContext';
-import { CampaignType, PlayerSession } from '../../types';
+import { CAMPAIGN_TYPE_BADGES, useCampaign } from '../../contexts/CampaignContext';
+import { CampaignType, PlayerSession, SessionFeedbackEntry } from '../../types';
+import { normalizeSessionPartyBadge } from '../../lib/session-booking';
+import { RichMarkdownView } from '../common/RichMarkdownView';
 
 interface PlayerSessionDetailModalProps {
   visible: boolean;
   session: PlayerSession | null;
+  existingFeedback?: SessionFeedbackEntry | null;
   onClose: () => void;
   onSignUp: (session: PlayerSession) => Promise<void>;
   onCancelSignUp: (session: PlayerSession) => void;
+  onOpenFeedback?: (session: PlayerSession) => void;
 }
 
 export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> = ({
   visible,
   session,
+  existingFeedback,
   onClose,
   onSignUp,
   onCancelSignUp,
+  onOpenFeedback,
 }) => {
+  const { gmNamesByCampaignId, sessionDirectoryMeta } = useCampaign();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   if (!session) return null;
@@ -48,6 +58,13 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
   const campName = session.campaigns?.name || 'Campagna di Gilda';
   const campType: CampaignType = (session.campaigns?.type as CampaignType) || 'quest';
   const badgeMeta = CAMPAIGN_TYPE_BADGES[campType] || CAMPAIGN_TYPE_BADGES.quest;
+  const partyBadge = normalizeSessionPartyBadge(session.campaign_parties);
+  const directoryEntry = sessionDirectoryMeta[session.id];
+  const dmName =
+    directoryEntry?.dmName ||
+    (session.campaign_id ? gmNamesByCampaignId[session.campaign_id] : null) ||
+    'Master di Gilda';
+  const participantNames = directoryEntry?.participants ?? [];
 
   // Format date & time
   let dateFormatted = 'Data da definire';
@@ -73,9 +90,15 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
     : 'Circa 3h 30m';
 
   const maxPlayers = session.max_players ?? 6;
-  const confirmedCount = session.confirmedCount ?? (session.session_signups ? session.session_signups.filter(
-    (s) => s.status === 'confirmed' || s.status === 'approved' || s.status === 'attended'
-  ).length : 0);
+  const confirmedCount =
+    session.confirmedCount ??
+    (session.session_signups
+      ? session.session_signups.filter(
+          (s) => s.status === 'confirmed' || s.status === 'approved' || s.status === 'attended'
+        ).length
+      : 0);
+  const isCompleted = session.status === 'completed';
+  const isAttended = session.mySignup?.status === 'attended';
   const isFull = confirmedCount >= maxPlayers;
   const isRegistered = !!session.isConfirmed;
   const isWaitlist = !!session.isWaitlist;
@@ -110,15 +133,33 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
           {/* Header Bar */}
           <View style={styles.header}>
             <View style={{ flex: 1, paddingRight: 12 }}>
-              <View
-                style={[
-                  styles.badgePill,
-                  { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
-                ]}
-              >
-                <Text style={[styles.badgeText, { color: badgeMeta.text }]}>
-                  {badgeMeta.label}
-                </Text>
+              <View style={styles.badgesWrap}>
+                <View
+                  style={[
+                    styles.badgePill,
+                    { backgroundColor: badgeMeta.bg, borderColor: badgeMeta.border },
+                  ]}
+                >
+                  <Text style={[styles.badgeText, { color: badgeMeta.text }]}>
+                    {badgeMeta.label}
+                  </Text>
+                </View>
+
+                {partyBadge && (
+                  <View
+                    style={[
+                      styles.badgePill,
+                      {
+                        backgroundColor: 'rgba(255,255,255,0.06)',
+                        borderColor: partyBadge.color,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.badgeText, { color: partyBadge.color }]}>
+                      GRUPPO: {partyBadge.name.toUpperCase()}
+                    </Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.campaignTitle}>{campName}</Text>
             </View>
@@ -137,18 +178,42 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
             showsVerticalScrollIndicator={false}
             contentContainerStyle={{ paddingBottom: 24 }}
           >
+            {/* Optional Chapter Kicker */}
+            {session.chapter_title ? (
+              <View style={styles.chapterRow}>
+                <BookOpen size={13} color={colors.brassBase} />
+                <Text style={styles.chapterText}>{session.chapter_title}</Text>
+              </View>
+            ) : null}
+
             {/* Session Title */}
             <Text style={styles.sessionTitle}>
               {session.title || 'Sessione Ufficiale al Tavolo'}
             </Text>
 
-            {/* Registration Banner */}
-            {isRegistered ? (
+            {/* Status Banner */}
+            {isCompleted ? (
+              <View style={styles.statusBannerConfirmed}>
+                <CheckCircle2 size={18} color={colors.emerald} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.statusBannerTitleConfirmed}>
+                    {isAttended ? 'SESSIONE CONCLUSA · PRESENZA REGISTRATA' : 'SESSIONE CONCLUSA'}
+                  </Text>
+                  <Text style={styles.statusBannerSub}>
+                    {isAttended
+                      ? 'Hai partecipato a questa giocata al tavolo della Gilda.'
+                      : 'Archivio storico della campagna.'}
+                  </Text>
+                </View>
+              </View>
+            ) : isRegistered ? (
               <View style={styles.statusBannerConfirmed}>
                 <CheckCircle2 size={18} color={colors.emerald} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.statusBannerTitleConfirmed}>SEI ISCRITTO A QUESTO TAVOLO</Text>
-                  <Text style={styles.statusBannerSub}>Il tuo posto è confermato. Presentati in taverna all&apos;orario indicato.</Text>
+                  <Text style={styles.statusBannerSub}>
+                    Il tuo posto è confermato. Presentati in taverna all&apos;orario indicato.
+                  </Text>
                 </View>
               </View>
             ) : isWaitlist ? (
@@ -156,15 +221,21 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
                 <Hourglass size={18} color={colors.brassLight} />
                 <View style={{ flex: 1 }}>
                   <Text style={styles.statusBannerTitleWaitlist}>SEI IN LISTA D&apos;ATTESA</Text>
-                  <Text style={styles.statusBannerSub}>Verrai promosso a confermato qualora un giocatore dovesse rinunciare.</Text>
+                  <Text style={styles.statusBannerSub}>
+                    Verrai promosso a confermato qualora un giocatore dovesse rinunciare.
+                  </Text>
                 </View>
               </View>
             ) : isFull ? (
               <View style={styles.statusBannerFull}>
                 <AlertCircle size={18} color={colors.crimsonLight} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.statusBannerTitleFull}>TAVOLO AL COMPLETO ({confirmedCount}/{maxPlayers})</Text>
-                  <Text style={styles.statusBannerSub}>Puoi comunque prenotarti in lista d&apos;attesa prioritaria.</Text>
+                  <Text style={styles.statusBannerTitleFull}>
+                    TAVOLO AL COMPLETO ({confirmedCount}/{maxPlayers})
+                  </Text>
+                  <Text style={styles.statusBannerSub}>
+                    Puoi comunque prenotarti in lista d&apos;attesa prioritaria.
+                  </Text>
                 </View>
               </View>
             ) : (
@@ -181,6 +252,16 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
 
             {/* Info Grid */}
             <View style={styles.infoBox}>
+              <View style={styles.infoRow}>
+                <User size={18} color={colors.brassLight} />
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.infoLabel}>GAME MASTER / DM</Text>
+                  <Text style={styles.infoValue}>{dmName}</Text>
+                </View>
+              </View>
+
+              <View style={styles.divider} />
+
               <View style={styles.infoRow}>
                 <Calendar size={18} color={colors.brassLight} />
                 <View style={{ flex: 1 }}>
@@ -218,27 +299,60 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
               <View style={styles.infoRow}>
                 <Users size={18} color={colors.brassLight} />
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.infoLabel}>OCCUPAZIONE TAVOLO</Text>
+                  <Text style={styles.infoLabel}>AVVENTURIERI AL TAVOLO</Text>
                   <Text style={styles.infoValue}>
                     {confirmedCount} di {maxPlayers} eroi registrati
                   </Text>
+                  {participantNames.length > 0 && (
+                    <View style={styles.participantsWrap}>
+                      {participantNames.map((pName, idx) => (
+                        <View key={`${pName}-${idx}`} style={styles.participantChip}>
+                          <Text style={styles.participantChipText}>{pName}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
               </View>
             </View>
 
-            {/* Description / Quest Notes */}
-            {(session.notes || session.session_summary || session.description) ? (
+            {/* Quest Notes */}
+            {(session.notes || session.description) ? (
               <View style={styles.descriptionSection}>
                 <Text style={styles.sectionSubtitle}>NOTE DELLA MISSIONE</Text>
-                <Text style={styles.descriptionText}>
-                  {session.notes || session.session_summary || session.description}
-                </Text>
+                <RichMarkdownView markdown={session.notes || session.description || ''} />
+              </View>
+            ) : null}
+
+            {/* Session Summary (Completed / Recap) */}
+            {session.session_summary ? (
+              <View style={styles.summarySection}>
+                <Text style={styles.sectionSubtitle}>RIASSUNTO DELLA CRONACA</Text>
+                <RichMarkdownView markdown={session.session_summary} />
               </View>
             ) : null}
 
             {/* Action CTA */}
             <View style={styles.actionContainer}>
-              {isRegistered || isWaitlist ? (
+              {isCompleted ? (
+                isAttended && onOpenFeedback ? (
+                  <TouchableOpacity
+                    style={styles.primaryBtn}
+                    onPress={() => {
+                      onClose();
+                      onOpenFeedback(session);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Star size={18} color={colors.void} />
+                    <Text style={styles.primaryBtnText}>
+                      {existingFeedback
+                        ? `Modifica Feedback (★ ${existingFeedback.session_rating}/5)`
+                        : 'Valuta Sessione (Feedback)'}
+                    </Text>
+                  </TouchableOpacity>
+                ) : null
+              ) : isRegistered || isWaitlist ? (
                 <TouchableOpacity
                   style={styles.cancelBtn}
                   onPress={handlePressAction}
@@ -267,7 +381,7 @@ export const PlayerSessionDetailModal: React.FC<PlayerSessionDetailModalProps> =
                         ]}
                       >
                         {isFull
-                          ? 'Prenota in Lista d\'Attesa'
+                          ? "Prenota in Lista d'Attesa"
                           : 'Iscriviti a questa Sessione'}
                       </Text>
                     </>
@@ -294,7 +408,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 24,
     borderWidth: 1,
     borderColor: 'rgba(200, 157, 73, 0.3)',
-    maxHeight: '85%',
+    maxHeight: '88%',
   },
   header: {
     flexDirection: 'row',
@@ -306,13 +420,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(255, 255, 255, 0.08)',
   },
+  badgesWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginBottom: 6,
+  },
   badgePill: {
     alignSelf: 'flex-start',
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 6,
     borderWidth: 1,
-    marginBottom: 6,
   },
   badgeText: {
     fontSize: 10,
@@ -335,6 +454,17 @@ const styles = StyleSheet.create({
   body: {
     paddingHorizontal: 20,
     paddingTop: 16,
+  },
+  chapterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 4,
+  },
+  chapterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.brassBase,
   },
   sessionTitle: {
     fontSize: 20,
@@ -426,7 +556,7 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 12,
     paddingVertical: 4,
   },
@@ -442,12 +572,39 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginTop: 2,
   },
+  participantsWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
+    marginTop: 8,
+  },
+  participantChip: {
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.3)',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+  },
+  participantChipText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
   divider: {
     height: 1,
     backgroundColor: 'rgba(255, 255, 255, 0.06)',
     marginVertical: 10,
   },
   descriptionSection: {
+    marginBottom: 16,
+  },
+  summarySection: {
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.2)',
+    padding: 12,
     marginBottom: 18,
   },
   sectionSubtitle: {
@@ -456,11 +613,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     letterSpacing: 0.7,
     marginBottom: 6,
-  },
-  descriptionText: {
-    color: colors.parchmentLight,
-    fontSize: 13,
-    lineHeight: 19,
   },
   actionContainer: {
     marginTop: 6,

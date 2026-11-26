@@ -18,43 +18,68 @@ import {
   Users,
   Search,
   MapPin,
+  Map as MapIcon,
   Shield,
-  Heart,
   Crown,
-  Sparkles,
   ChevronRight,
   X,
   Coins,
   Award,
   AlertTriangle,
   Compass,
-  CheckCircle2,
-  Clock,
-  Skull,
+  Layers,
+  Trophy,
 } from 'lucide-react-native';
 import * as SecureStore from 'expo-secure-store';
 import { colors } from '../../theme/colors';
 import { useAuth } from '../../contexts/AuthContext';
 import { useCampaign } from '../../contexts/CampaignContext';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
+import { RichMarkdownView } from '../../components/common/RichMarkdownView';
+import {
+  CompanionDossierModal,
+  formatMapTypeLabel,
+  MapViewerModal,
+  WikiEntityReaderModal,
+} from '../../components/player/LoreScreenModals';
 import { supabase } from '../../api/supabase';
-import { resolveImageUrl } from '../../utils/imageUrl';
+import { resolveEffectiveCharacterFields } from '../../lib/character-sheet';
+import {
+  ELDARIA_CAMPAIGN_ID,
+  extractWikiEntityBody,
+  extractWikiEntitySnippet,
+  formatMissionRankMeta,
+  formatMissionTreasureLabel,
+  resolveRaceAndSubraceLabels,
+  resolveTelegramOrImageUrl,
+} from '../../lib/long-campaign-helpers';
 import {
   WikiEntity,
   CampaignMission,
+  CampaignMap,
+  CampaignGuild,
+  CampaignParty,
   Character,
 } from '../../types';
 
 const buildCompanionNoteKey = (userId: string, campaignId: string, companionId: string) =>
   `bd_party_note_${userId}_${campaignId}_${companionId}`.replace(/[^a-zA-Z0-9._-]/g, '_');
 
-type ActiveTab = 'wiki' | 'missions' | 'party';
+type ActiveTab = 'wiki' | 'maps' | 'missions' | 'party';
+
+const WIKI_TYPE_CHIPS = [
+  { key: 'all', label: 'Tutti' },
+  { key: 'npc', label: 'PNG' },
+  { key: 'location', label: 'Luoghi' },
+  { key: 'monster', label: 'Mostri' },
+  { key: 'item', label: 'Oggetti' },
+  { key: 'lore', label: 'Cronaca' },
+] as const;
 
 export const CampaignLoreScreen: React.FC = () => {
   const { user, role } = useAuth();
   const {
     activeCampaign,
-    activeCampaignId,
     joinedLongCampaigns,
     hasJoinedLongCampaign,
     isLongCampaignActive,
@@ -70,20 +95,27 @@ export const CampaignLoreScreen: React.FC = () => {
   }, [isLongCampaignActive, isMemberOfActiveCampaign, activeCampaign, joinedLongCampaigns]);
 
   const targetLongCampaignId = targetLongCampaign?.id ?? null;
+  const isGmOrAdmin = role === 'gm' || role === 'admin';
+  const isAdmin = role === 'admin';
+  const isEldaria = targetLongCampaignId === ELDARIA_CAMPAIGN_ID;
   const isTargetLongAccessible =
     (targetLongCampaign?.type === 'long' &&
-      (role === 'gm' || role === 'admin' || joinedLongCampaigns.some((c) => c.id === targetLongCampaign.id))) ||
+      (isGmOrAdmin || joinedLongCampaigns.some((c) => c.id === targetLongCampaign.id))) ||
     false;
 
   const [campaignModalVisible, setCampaignModalVisible] = useState<boolean>(false);
   const [joiningLong, setJoiningLong] = useState<boolean>(false);
 
-  // Navigation tab
+  // 4 Sub-tabs: Wiki, Mappe, Missioni, Party
   const [activeTab, setActiveTab] = useState<ActiveTab>('wiki');
 
   // Data states
   const [wikiEntities, setWikiEntities] = useState<WikiEntity[]>([]);
+  const [maps, setMaps] = useState<CampaignMap[]>([]);
   const [missions, setMissions] = useState<CampaignMission[]>([]);
+  const [guilds, setGuilds] = useState<CampaignGuild[]>([]);
+  const [parties, setParties] = useState<CampaignParty[]>([]);
+  const [playerPartyMap, setPlayerPartyMap] = useState<Record<string, string>>({});
   const [companions, setCompanions] = useState<Character[]>([]);
   const [companionNotes, setCompanionNotes] = useState<Record<string, string>>({});
   const [savingNoteId, setSavingNoteId] = useState<string | null>(null);
@@ -94,13 +126,21 @@ export const CampaignLoreScreen: React.FC = () => {
   // Wiki tab filters
   const [wikiSearch, setWikiSearch] = useState<string>('');
   const [wikiTypeFilter, setWikiTypeFilter] = useState<string>('all');
+  const [wikiMissionFilter, setWikiMissionFilter] = useState<string>('all');
   const [selectedWikiEntity, setSelectedWikiEntity] = useState<WikiEntity | null>(null);
+
+  // Maps tab filters
+  const [mapSearch, setMapSearch] = useState<string>('');
+  const [mapTypeFilter, setMapTypeFilter] = useState<string>('all');
+  const [selectedMap, setSelectedMap] = useState<CampaignMap | null>(null);
 
   // Missions tab filters
   const [missionStatusFilter, setMissionStatusFilter] = useState<string>('all');
+  const [showGuildsBoard, setShowGuildsBoard] = useState<boolean>(true);
   const [selectedMission, setSelectedMission] = useState<CampaignMission | null>(null);
 
-  // Party companion modal
+  // Party tab filters & companion modal
+  const [selectedPartyFilter, setSelectedPartyFilter] = useState<string>('all');
   const [selectedCompanion, setSelectedCompanion] = useState<Character | null>(null);
 
   const handleCompanionNoteChange = useCallback((companionId: string, text: string) => {
@@ -124,14 +164,17 @@ export const CampaignLoreScreen: React.FC = () => {
         setSavingNoteId((curr) => (curr === companionId ? null : curr));
       }
     },
-    [user?.id, targetLongCampaignId]
+    [user?.id, targetLongCampaignId],
   );
 
-  // Fetch Lore & Missions from Supabase (solo per campagne Long con accesso abilitato)
   const loadData = useCallback(async () => {
     if (!targetLongCampaignId || !isTargetLongAccessible) {
       setWikiEntities([]);
+      setMaps([]);
       setMissions([]);
+      setGuilds([]);
+      setParties([]);
+      setPlayerPartyMap({});
       setCompanions([]);
       setCompanionNotes({});
       setLoadError(null);
@@ -144,93 +187,165 @@ export const CampaignLoreScreen: React.FC = () => {
       setIsLoading(true);
       setLoadError(null);
 
-      // 1. Fetch Wiki Entities enabled for this player in the long campaign
-      const isGmOrAdmin = role === 'gm' || role === 'admin';
+      // Build queries in parallel
       let wikiQuery = supabase
         .from('wiki_entities')
         .select('*')
         .eq('campaign_id', targetLongCampaignId)
-        .eq('admin_only', false)
         .eq('is_campaign_document', false)
         .is('archived_at', null)
         .order('name', { ascending: true });
+      if (!isAdmin) wikiQuery = wikiQuery.eq('admin_only', false);
 
-      const { data: wikiData, error: wikiErr } = await wikiQuery;
-      if (!wikiErr && wikiData) {
-        const rawEntities = wikiData as WikiEntity[];
-        if (isGmOrAdmin || !user?.id || rawEntities.length === 0) {
-          setWikiEntities(rawEntities);
-        } else {
-          const [permsRes, explorationsRes] = await Promise.all([
-            supabase
-              .from('entity_permissions')
-              .select('entity_id')
-              .eq('campaign_id', targetLongCampaignId)
-              .eq('entity_type', 'wiki')
-              .eq('user_id', user.id),
-            supabase
-              .from('explorations')
-              .select('entity_id')
-              .eq('player_id', user.id)
-              .in('entity_id', rawEntities.map((e) => e.id)),
-          ]);
-
-          const permittedIds = new Set(
-            (permsRes.data ?? []).map((p: any) => p.entity_id).filter(Boolean) as string[]
-          );
-          const unlockedIds = new Set(
-            (explorationsRes.data ?? []).map((e: any) => e.entity_id).filter(Boolean) as string[]
-          );
-
-          const visibleEntities = rawEntities.filter((e) => {
-            if (e.archived_at) return false;
-            const vis = e.visibility ?? (e.is_secret ? 'secret' : 'public');
-            if (vis === 'public') return true;
-            if (vis === 'selective') return permittedIds.has(e.id);
-            if (vis === 'secret') return unlockedIds.has(e.id);
-            return false;
-          });
-          setWikiEntities(visibleEntities);
-        }
-      } else {
-        setWikiEntities([]);
-      }
-
-      // 2. Fetch Missions (campaign_missions)
-      const { data: missionData, error: missionErr } = await supabase
-        .from('campaign_missions')
+      let mapsQuery = supabase
+        .from('maps')
         .select('*')
         .eq('campaign_id', targetLongCampaignId)
         .order('created_at', { ascending: false });
+      if (!isAdmin) mapsQuery = mapsQuery.eq('admin_only', false);
 
-      if (!missionErr && missionData) {
-        setMissions(missionData as CampaignMission[]);
-      } else {
-        setMissions([]);
-      }
+      const missionsQuery = supabase
+        .from('campaign_missions')
+        .select('*')
+        .eq('campaign_id', targetLongCampaignId)
+        .eq('mission_kind', 'organization')
+        .order('created_at', { ascending: false });
 
-      // 3. Fetch Party Companions (campaign_characters)
-      const { data: compData, error: compErr } = await supabase
+      const guildsQuery = supabase
+        .from('campaign_guilds')
+        .select('*')
+        .eq('campaign_id', targetLongCampaignId)
+        .order('score', { ascending: false });
+
+      const partiesQuery = supabase
+        .from('campaign_parties')
+        .select('id, campaign_id, name, color')
+        .eq('campaign_id', targetLongCampaignId)
+        .order('name', { ascending: true });
+
+      const membersQuery = supabase
+        .from('campaign_members')
+        .select('player_id, party_id')
+        .eq('campaign_id', targetLongCampaignId);
+
+      const companionsQuery = supabase
         .from('campaign_characters')
         .select('*')
         .eq('campaign_id', targetLongCampaignId)
         .order('name', { ascending: true });
 
-      if (!compErr && compData) {
-        const compList = compData as Character[];
+      const [
+        wikiRes,
+        mapsRes,
+        missionRes,
+        guildsRes,
+        partiesRes,
+        membersRes,
+        compRes,
+      ] = await Promise.all([
+        wikiQuery,
+        mapsQuery,
+        missionsQuery,
+        guildsQuery,
+        partiesQuery,
+        membersQuery,
+        companionsQuery,
+      ]);
+
+      // Resolve selective permissions & secret explorations for players (both Wiki & Maps)
+      let permittedWikiIds = new Set<string>();
+      let permittedMapIds = new Set<string>();
+      let unlockedWikiIds = new Set<string>();
+      let unlockedMapIds = new Set<string>();
+
+      if (!isGmOrAdmin && user?.id) {
+        const [permsRes, explorationsRes] = await Promise.all([
+          supabase
+            .from('entity_permissions')
+            .select('entity_id, entity_type')
+            .eq('campaign_id', targetLongCampaignId)
+            .eq('user_id', user.id),
+          supabase
+            .from('explorations')
+            .select('entity_id, map_id')
+            .eq('player_id', user.id),
+        ]);
+
+        for (const p of (permsRes.data ?? []) as Array<{ entity_id?: string; entity_type?: string }>) {
+          if (!p.entity_id) continue;
+          if (p.entity_type === 'wiki') permittedWikiIds.add(p.entity_id);
+          if (p.entity_type === 'map') permittedMapIds.add(p.entity_id);
+        }
+        for (const e of (explorationsRes.data ?? []) as Array<{ entity_id?: string | null; map_id?: string | null }>) {
+          if (e.entity_id) unlockedWikiIds.add(e.entity_id);
+          if (e.map_id) unlockedMapIds.add(e.map_id);
+        }
+      }
+
+      // 1. Wiki
+      if (!wikiRes.error && wikiRes.data) {
+        const rawWiki = wikiRes.data as WikiEntity[];
+        const visibleWiki = isGmOrAdmin
+          ? rawWiki
+          : rawWiki.filter((e) => {
+              if (e.archived_at) return false;
+              const vis = e.visibility ?? (e.is_secret ? 'secret' : 'public');
+              if (vis === 'public') return true;
+              if (vis === 'selective') return permittedWikiIds.has(e.id);
+              if (vis === 'secret') return unlockedWikiIds.has(e.id);
+              return false;
+            });
+        setWikiEntities(visibleWiki);
+      } else {
+        setWikiEntities([]);
+      }
+
+      // 2. Maps (exact Web MapGallery visibility parity)
+      if (!mapsRes.error && mapsRes.data) {
+        const rawMaps = mapsRes.data as CampaignMap[];
+        const visibleMaps = isGmOrAdmin
+          ? rawMaps
+          : rawMaps.filter((m) => {
+              const vis = m.visibility ?? 'public';
+              if (vis === 'public') return true;
+              if (vis === 'selective') return permittedMapIds.has(m.id);
+              if (vis === 'secret') return unlockedMapIds.has(m.id);
+              return false;
+            });
+        setMaps(visibleMaps);
+      } else {
+        setMaps([]);
+      }
+
+      // 3. Missions & Guilds
+      setMissions(!missionRes.error && missionRes.data ? (missionRes.data as CampaignMission[]) : []);
+      setGuilds(!guildsRes.error && guildsRes.data ? (guildsRes.data as CampaignGuild[]) : []);
+
+      // 4. Parties & Companions
+      setParties(!partiesRes.error && partiesRes.data ? (partiesRes.data as CampaignParty[]) : []);
+      const pMap: Record<string, string> = {};
+      for (const mRow of (membersRes.data ?? []) as Array<{ player_id?: string; party_id?: string | null }>) {
+        if (mRow.player_id && mRow.party_id) {
+          pMap[mRow.player_id] = mRow.party_id;
+        }
+      }
+      setPlayerPartyMap(pMap);
+
+      if (!compRes.error && compRes.data) {
+        const compList = compRes.data as Character[];
         setCompanions(compList);
         if (user?.id) {
           const noteEntries = await Promise.all(
             compList.map(async (c) => {
               try {
                 const stored = await SecureStore.getItemAsync(
-                  buildCompanionNoteKey(user.id, targetLongCampaignId, c.id)
+                  buildCompanionNoteKey(user.id, targetLongCampaignId, c.id),
                 );
                 return [c.id, stored ?? ''] as const;
               } catch {
                 return [c.id, ''] as const;
               }
-            })
+            }),
           );
           setCompanionNotes(Object.fromEntries(noteEntries));
         }
@@ -239,76 +354,32 @@ export const CampaignLoreScreen: React.FC = () => {
         setCompanionNotes({});
       }
 
-      if (wikiErr && missionErr && compErr) {
+      if (wikiRes.error && mapsRes.error && missionRes.error && compRes.error) {
         setLoadError('Impossibile sincronizzare i tomi di gilda. Verifica la connessione e riprova.');
       }
     } catch (err) {
       console.warn('[CampaignLoreScreen] loadData catch:', err);
-      setWikiEntities([]);
-      setMissions([]);
-      setCompanions([]);
       setLoadError('Impossibile sincronizzare i tomi di gilda. Verifica la connessione e riprova.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [targetLongCampaignId, isTargetLongAccessible, role, user?.id]);
+  }, [targetLongCampaignId, isTargetLongAccessible, isGmOrAdmin, isAdmin, user?.id]);
 
   useEffect(() => {
-    loadData();
+    void loadData();
   }, [loadData]);
 
   const onRefresh = useCallback(() => {
     setIsRefreshing(true);
-    loadData();
+    void loadData();
   }, [loadData]);
 
-  // Helper to extract plain text string from wiki entity content
-  const getEntityText = (content: any): string => {
-    if (!content) return '';
-    if (typeof content === 'string') return content;
-    if (typeof content === 'object') {
-      if (typeof content.text === 'string') return content.text;
-      if (typeof content.description === 'string') return content.description;
-      if (typeof content.summary === 'string') return content.summary;
-      if (typeof content.notes === 'string') return content.notes;
-    }
-    return '';
-  };
-
-  // Helper for difficulty badge
-  const getDifficultyBadge = (grade: string) => {
-    const g = (grade || '').toLowerCase();
-    if (g.includes('letale') || g === 's' || g.includes('difficile')) {
-      return {
-        label: 'Letale',
-        color: colors.crimsonLight,
-        borderColor: colors.crimson,
-        bgColor: 'rgba(153, 27, 27, 0.25)',
-      };
-    }
-    if (g.includes('media') || g === 'b' || g === 'a') {
-      return {
-        label: 'Media',
-        color: colors.brassLight,
-        borderColor: colors.brassDark,
-        bgColor: 'rgba(197, 155, 39, 0.2)',
-      };
-    }
-    return {
-      label: 'Facile',
-      color: colors.emerald,
-      borderColor: '#065F46',
-      bgColor: 'rgba(16, 185, 129, 0.2)',
-    };
-  };
-
-  // Helper for status badge
   const getStatusBadge = (status: string) => {
     const s = (status || '').toLowerCase();
     if (s === 'completed' || s.includes('compiut')) {
       return {
-        label: 'Compiuta',
+        label: 'Completata',
         color: colors.emerald,
         borderColor: '#065F46',
         bgColor: 'rgba(16, 185, 129, 0.15)',
@@ -323,32 +394,114 @@ export const CampaignLoreScreen: React.FC = () => {
       };
     }
     return {
-      label: 'Disponibile',
+      label: 'Accettabile',
       color: colors.brassLight,
       borderColor: colors.brassDark,
       bgColor: 'rgba(197, 155, 39, 0.15)',
     };
   };
 
-  // Filtered Wiki Entities
+  const missionTitleById = useMemo(
+    () => new Map(missions.map((m) => [m.id, m.title])),
+    [missions],
+  );
+  const guildNameById = useMemo(
+    () => new Map(guilds.map((g) => [g.id, g.name])),
+    [guilds],
+  );
+  const partyById = useMemo(
+    () => new Map(parties.map((p) => [p.id, p])),
+    [parties],
+  );
+  const wikiById = useMemo(
+    () => new Map(wikiEntities.map((w) => [w.id, w])),
+    [wikiEntities],
+  );
+
+  // Wiki counts & filtered list (sorted by chapter for lore, alphabetical otherwise)
+  const wikiTypeCounts = useMemo(() => {
+    const out: Record<string, number> = { all: wikiEntities.length };
+    for (const e of wikiEntities) {
+      out[e.type] = (out[e.type] ?? 0) + 1;
+    }
+    return out;
+  }, [wikiEntities]);
+
+  const missionsWithWiki = useMemo(() => {
+    const ids = new Set(wikiEntities.map((w) => w.linked_mission_id).filter(Boolean) as string[]);
+    return missions.filter((m) => ids.has(m.id));
+  }, [wikiEntities, missions]);
+
   const filteredWiki = useMemo(() => {
-    return wikiEntities.filter((item) => {
-      const matchesSearch =
-        wikiSearch.trim() === '' ||
-        item.name.toLowerCase().includes(wikiSearch.toLowerCase()) ||
-        (item.tags && item.tags.some((t) => t.toLowerCase().includes(wikiSearch.toLowerCase()))) ||
-        getEntityText(item.content).toLowerCase().includes(wikiSearch.toLowerCase());
-
-      const matchesType =
-        wikiTypeFilter === 'all' ||
-        item.type === wikiTypeFilter ||
-        (wikiTypeFilter === 'location' && item.type === 'location') ||
-        (wikiTypeFilter === 'npc' && item.type === 'npc') ||
-        (wikiTypeFilter === 'faction' && item.type === 'faction');
-
-      return matchesSearch && matchesType;
+    const q = wikiSearch.trim().toLowerCase();
+    const list = wikiEntities.filter((item) => {
+      if (wikiTypeFilter !== 'all' && item.type !== wikiTypeFilter) return false;
+      if (wikiMissionFilter !== 'all') {
+        if (wikiMissionFilter === 'none') {
+          if (item.linked_mission_id) return false;
+        } else if (item.linked_mission_id !== wikiMissionFilter) {
+          return false;
+        }
+      }
+      if (!q) return true;
+      const mTitle = item.linked_mission_id ? missionTitleById.get(item.linked_mission_id) ?? '' : '';
+      return (
+        item.name.toLowerCase().includes(q) ||
+        (item.tags && item.tags.some((t) => t.toLowerCase().includes(q))) ||
+        extractWikiEntityBody(item.content).toLowerCase().includes(q) ||
+        mTitle.toLowerCase().includes(q)
+      );
     });
-  }, [wikiEntities, wikiSearch, wikiTypeFilter]);
+
+    if (wikiTypeFilter === 'lore' || list.every((e) => e.type === 'lore')) {
+      return [...list].sort((a, b) => {
+        const sa = a.sort_order ?? 9999;
+        const sb = b.sort_order ?? 9999;
+        if (sa !== sb) return sa - sb;
+        return a.name.localeCompare(b.name, 'it');
+      });
+    }
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, 'it'));
+  }, [wikiEntities, wikiSearch, wikiTypeFilter, wikiMissionFilter, missionTitleById]);
+
+  // Maps filtered & grouped
+  const mapParentNameById = useMemo(
+    () => new Map(maps.map((m) => [m.id, m.name])),
+    [maps],
+  );
+  const childCountByMapId = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const m of maps) {
+      if (m.parent_map_id) {
+        counts.set(m.parent_map_id, (counts.get(m.parent_map_id) ?? 0) + 1);
+      }
+    }
+    return counts;
+  }, [maps]);
+
+  const filteredMaps = useMemo(() => {
+    const q = mapSearch.trim().toLowerCase();
+    return maps
+      .filter((m) => {
+        const normType = m.map_type === 'region' ? 'city' : m.map_type ?? 'city';
+        if (mapTypeFilter !== 'all') {
+          if (mapTypeFilter === 'world' && normType !== 'world') return false;
+          if (mapTypeFilter === 'city' && normType !== 'city') return false;
+          if (mapTypeFilter === 'other' && (normType === 'world' || normType === 'city')) return false;
+        }
+        if (!q) return true;
+        return (
+          m.name.toLowerCase().includes(q) ||
+          Boolean(m.description?.toLowerCase().includes(q))
+        );
+      })
+      .sort((a, b) => {
+        const aWorld = a.map_type === 'world' ? 0 : !a.parent_map_id ? 1 : 2;
+        const bWorld = b.map_type === 'world' ? 0 : !b.parent_map_id ? 1 : 2;
+        if (aWorld !== bWorld) return aWorld - bWorld;
+        return a.name.localeCompare(b.name, 'it');
+      });
+  }, [maps, mapSearch, mapTypeFilter]);
 
   // Filtered Missions
   const filteredMissions = useMemo(() => {
@@ -361,14 +514,24 @@ export const CampaignLoreScreen: React.FC = () => {
     });
   }, [missions, missionStatusFilter]);
 
+  // Filtered Companions
+  const filteredCompanions = useMemo(() => {
+    return companions.filter((c) => {
+      if (selectedPartyFilter === 'all') return true;
+      const partyId = c.assigned_to ? playerPartyMap[c.assigned_to] : undefined;
+      if (selectedPartyFilter === 'unassigned') return !partyId;
+      return partyId === selectedPartyFilter;
+    });
+  }, [companions, selectedPartyFilter, playerPartyMap]);
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['left', 'right']}>
       {/* Top Header */}
       <View style={styles.header}>
         <View style={{ flex: 1, paddingRight: 8 }}>
-          <Text style={styles.headerTitle}>LORE & BACHECA</Text>
+          <Text style={styles.headerTitle}>DIARIO & ARCHIVIO LONG</Text>
           <Text style={styles.headerSubtitle} numberOfLines={1}>
-            {activeCampaign?.name || 'Memorie del regno, taglie & compagni'}
+            {targetLongCampaign?.name || 'Wiki, mappe, bacheca missioni & party'}
           </Text>
         </View>
         <TouchableOpacity
@@ -377,79 +540,40 @@ export const CampaignLoreScreen: React.FC = () => {
           activeOpacity={0.7}
           hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
           accessibilityRole="button"
-          accessibilityLabel={`Seleziona campagna, attuale: ${activeCampaign?.name || 'Cambia'}`}
+          accessibilityLabel={`Seleziona campagna, attuale: ${targetLongCampaign?.name || 'Cambia'}`}
         >
           <Compass size={12} color={colors.brassBase} />
           <Text style={styles.campaignBadgeText} numberOfLines={1}>
-            {activeCampaign?.name || 'Cambia'}
+            {targetLongCampaign?.name || 'Cambia'}
           </Text>
         </TouchableOpacity>
       </View>
 
-      {/* 3 Navigable Tabs */}
+      {/* 4 Navigable Sub-Tabs: Wiki, Mappe, Missioni, Party */}
       <View style={styles.tabNavRow}>
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'wiki' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('wiki')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'wiki' }}
-        >
-          <BookOpen
-            size={14}
-            color={activeTab === 'wiki' ? colors.void : colors.parchmentMuted}
-          />
-          <Text
-            style={[
-              styles.tabBtnText,
-              activeTab === 'wiki' && styles.tabBtnTextActive,
-            ]}
-          >
-            Wiki Lore
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'missions' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('missions')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'missions' }}
-        >
-          <Flag
-            size={14}
-            color={activeTab === 'missions' ? colors.void : colors.parchmentMuted}
-          />
-          <Text
-            style={[
-              styles.tabBtnText,
-              activeTab === 'missions' && styles.tabBtnTextActive,
-            ]}
-          >
-            Bacheca Missioni
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.tabBtn, activeTab === 'party' && styles.tabBtnActive]}
-          onPress={() => setActiveTab('party')}
-          activeOpacity={0.8}
-          accessibilityRole="tab"
-          accessibilityState={{ selected: activeTab === 'party' }}
-        >
-          <Users
-            size={14}
-            color={activeTab === 'party' ? colors.void : colors.parchmentMuted}
-          />
-          <Text
-            style={[
-              styles.tabBtnText,
-              activeTab === 'party' && styles.tabBtnTextActive,
-            ]}
-          >
-            Compagni Party
-          </Text>
-        </TouchableOpacity>
+        {[
+          { key: 'wiki', label: 'Wiki', Icon: BookOpen },
+          { key: 'maps', label: 'Mappe', Icon: MapIcon },
+          { key: 'missions', label: 'Missioni', Icon: Flag },
+          { key: 'party', label: 'Party', Icon: Users },
+        ].map(({ key, label, Icon }) => {
+          const isSelected = activeTab === key;
+          return (
+            <TouchableOpacity
+              key={key}
+              style={[styles.tabBtn, isSelected && styles.tabBtnActive]}
+              onPress={() => setActiveTab(key as ActiveTab)}
+              activeOpacity={0.8}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isSelected }}
+            >
+              <Icon size={13} color={isSelected ? colors.void : colors.parchmentMuted} />
+              <Text style={[styles.tabBtnText, isSelected && styles.tabBtnTextActive]}>
+                {label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Main Content Area */}
@@ -469,7 +593,7 @@ export const CampaignLoreScreen: React.FC = () => {
             <BookOpen size={32} color={colors.brassBase} />
             <Text style={styles.emptyTitle}>Sezione riservata alle Campagne Long</Text>
             <Text style={styles.emptySubtitle}>
-              Per le One Shot e le Quest puoi consultare direttamente le Sessioni e la Scheda PG. Seleziona una Campagna Long per aprire Wiki, Bacheca Missioni e Party.
+              Per le One Shot e le Quest puoi consultare direttamente le Sessioni e la Scheda PG. Seleziona una Campagna Long per aprire Wiki, Mappe, Bacheca Missioni e Party.
             </Text>
             <TouchableOpacity
               style={[styles.modalActionButton, { paddingHorizontal: 18, marginTop: 10 }]}
@@ -481,13 +605,17 @@ export const CampaignLoreScreen: React.FC = () => {
         ) : !isTargetLongAccessible && targetLongCampaign ? (
           <View style={styles.emptyCard}>
             <Shield size={32} color={colors.brassBase} />
-            <Text style={styles.emptyTitle}>Iscrizione alla Campagna Long richiesta</Text>
-            <Text style={styles.emptySubtitle}>
-              {targetLongCampaign.long_registrations_open === false
-                ? 'Le iscrizioni autonome sono chiuse. Contatta il GM per essere aggiunto alla campagna.'
-                : `Iscriviti a "${targetLongCampaign.name}" per consultare Wiki, Bacheca Missioni e Compagni del Party.`}
+            <Text style={styles.emptyTitle}>
+              {isEldaria ? 'Ammissione su colloquio dal vivo' : 'Iscrizione alla Campagna Long richiesta'}
             </Text>
-            {targetLongCampaign.long_registrations_open !== false && (
+            <Text style={styles.emptySubtitle}>
+              {isEldaria
+                ? 'Dopo il colloquio dal vivo, il Game Master aggiunge il tuo account a Eldaria.'
+                : targetLongCampaign.long_registrations_open === false
+                  ? 'Le iscrizioni autonome sono chiuse. Contatta il GM per essere aggiunto alla campagna.'
+                  : `Iscriviti a "${targetLongCampaign.name}" per consultare Wiki, Mappe, Bacheca Missioni e Compagni del Party.`}
+            </Text>
+            {!isEldaria && targetLongCampaign.long_registrations_open !== false && (
               <TouchableOpacity
                 style={[styles.modalActionButton, { paddingHorizontal: 18, marginTop: 10 }, joiningLong && { opacity: 0.6 }]}
                 disabled={joiningLong}
@@ -528,85 +656,111 @@ export const CampaignLoreScreen: React.FC = () => {
         ) : (
           <>
             {/* ================================================= */}
-            {/* TAB 1: WIKI LORE (Luoghi, PNG, Fazioni)           */}
+            {/* TAB 1: WIKI LORE                                  */}
             {/* ================================================= */}
             {activeTab === 'wiki' && (
               <View style={styles.tabContent}>
-                {/* Search Bar */}
                 <View style={styles.searchBar}>
                   <Search size={16} color={colors.parchmentMuted} />
                   <TextInput
                     style={styles.searchInput}
-                    placeholder="Cerca luoghi, PNG, fazioni o parole chiave..."
+                    placeholder="Cerca PNG, luoghi, mostri, oggetti o cronaca..."
                     placeholderTextColor={colors.parchmentMuted}
                     value={wikiSearch}
                     onChangeText={setWikiSearch}
                     accessibilityLabel="Cerca nell'archivio Wiki Lore"
                   />
                   {wikiSearch.length > 0 && (
-                    <TouchableOpacity
-                      onPress={() => setWikiSearch('')}
-                      style={styles.clearBtn}
-                      hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      accessibilityRole="button"
-                      accessibilityLabel="Cancella testo di ricerca"
-                    >
+                    <TouchableOpacity onPress={() => setWikiSearch('')} style={styles.clearBtn}>
                       <X size={14} color={colors.parchmentMuted} />
                     </TouchableOpacity>
                   )}
                 </View>
 
-                {/* Filter Chips for Wiki Types */}
                 <ScrollView
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   style={{ flexGrow: 0, flexShrink: 0 }}
                   contentContainerStyle={styles.filterChipScroll}
                 >
-                  {[
-                    { key: 'all', label: 'Tutti' },
-                    { key: 'location', label: 'Luoghi' },
-                    { key: 'npc', label: 'PNG' },
-                    { key: 'faction', label: 'Fazioni' },
-                    { key: 'item', label: 'Oggetti' },
-                    { key: 'lore', label: 'Cronaca' },
-                  ].map((chip) => (
-                    <TouchableOpacity
-                      key={chip.key}
-                      style={[
-                        styles.filterChip,
-                        wikiTypeFilter === chip.key && styles.filterChipActive,
-                      ]}
-                      onPress={() => setWikiTypeFilter(chip.key)}
-                      activeOpacity={0.75}
-                      hitSlop={{ top: 4, bottom: 4, left: 2, right: 2 }}
-                      accessibilityRole="tab"
-                      accessibilityState={{ selected: wikiTypeFilter === chip.key }}
-                    >
-                      <Text
+                  {WIKI_TYPE_CHIPS.map((chip) => {
+                    const count = wikiTypeCounts[chip.key] ?? 0;
+                    return (
+                      <TouchableOpacity
+                        key={chip.key}
                         style={[
-                          styles.filterChipText,
-                          wikiTypeFilter === chip.key && styles.filterChipTextActive,
+                          styles.filterChip,
+                          wikiTypeFilter === chip.key && styles.filterChipActive,
                         ]}
+                        onPress={() => setWikiTypeFilter(chip.key)}
+                        activeOpacity={0.75}
                       >
-                        {chip.label}
-                      </Text>
-                    </TouchableOpacity>
-                  ))}
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            wikiTypeFilter === chip.key && styles.filterChipTextActive,
+                          ]}
+                        >
+                          {chip.label} ({count})
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </ScrollView>
 
-                {/* Wiki Cards List */}
+                {/* Mission filter for Wiki (mirrors Web Long campaign Wiki mission filter) */}
+                {missionsWithWiki.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ flexGrow: 0, flexShrink: 0 }}
+                    contentContainerStyle={styles.missionSubFilterScroll}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.subChip,
+                        wikiMissionFilter === 'all' && styles.subChipActive,
+                      ]}
+                      onPress={() => setWikiMissionFilter('all')}
+                    >
+                      <Text style={styles.subChipText}>Tutte le missioni</Text>
+                    </TouchableOpacity>
+                    {missionsWithWiki.map((m) => (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={[
+                          styles.subChip,
+                          wikiMissionFilter === m.id && styles.subChipActive,
+                        ]}
+                        onPress={() => setWikiMissionFilter(m.id)}
+                      >
+                        <Text style={styles.subChipText} numberOfLines={1}>
+                          ⚑ {m.title}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+
                 {filteredWiki.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Compass size={32} color={colors.stoneBorder} />
                     <Text style={styles.emptyTitle}>Nessuna voce trovata</Text>
                     <Text style={styles.emptySubtitle}>
-                      Modifica i filtri di ricerca per consultare altre voci dell’archivio.
+                      Modifica i filtri o gioca le prossime sessioni per sbloccare nuove conoscenze del mondo.
                     </Text>
                   </View>
                 ) : (
                   filteredWiki.map((entity) => {
-                    const textSnippet = getEntityText(entity.content);
+                    const snippet = extractWikiEntitySnippet(entity.content);
+                    const thumbUri = resolveTelegramOrImageUrl(entity.image_url, entity.telegram_fallback_id);
+                    const isChapter = Boolean(
+                      entity.attributes?.is_chapter || (entity.sort_order != null && entity.sort_order > 0),
+                    );
+                    const mTitle = entity.linked_mission_id
+                      ? missionTitleById.get(entity.linked_mission_id)
+                      : null;
+
                     return (
                       <TouchableOpacity
                         key={entity.id}
@@ -614,29 +768,44 @@ export const CampaignLoreScreen: React.FC = () => {
                         onPress={() => setSelectedWikiEntity(entity)}
                         activeOpacity={0.85}
                       >
-                        <View style={styles.entityTopRow}>
-                          <View style={styles.typeBadge}>
-                            <Text style={styles.typeBadgeText}>
-                              {entity.type.toUpperCase()}
-                            </Text>
+                        <View style={styles.entityCardBodyRow}>
+                          {thumbUri ? (
+                            <Image source={{ uri: thumbUri }} style={styles.entityThumb} resizeMode="cover" />
+                          ) : null}
+                          <View style={{ flex: 1 }}>
+                            <View style={styles.entityTopRow}>
+                              <View style={{ flexDirection: 'row', gap: 6, alignItems: 'center' }}>
+                                <View style={styles.typeBadge}>
+                                  <Text style={styles.typeBadgeText}>{entity.type.toUpperCase()}</Text>
+                                </View>
+                                {entity.type === 'lore' && isChapter && entity.sort_order ? (
+                                  <Text style={styles.chapterSmallLabel}>Cap. {entity.sort_order}</Text>
+                                ) : null}
+                              </View>
+                              <ChevronRight size={16} color={colors.brassBase} />
+                            </View>
+
+                            <Text style={styles.entityTitle}>{entity.name}</Text>
+
+                            {snippet ? (
+                              <Text style={styles.entitySnippet} numberOfLines={3}>
+                                {snippet}
+                              </Text>
+                            ) : null}
+
+                            {mTitle ? (
+                              <Text style={styles.linkedMissionHint} numberOfLines={1}>
+                                ⚑ {mTitle}
+                              </Text>
+                            ) : null}
                           </View>
-                          <ChevronRight size={16} color={colors.brassBase} />
                         </View>
 
-                        <Text style={styles.entityTitle}>{entity.name}</Text>
-
-                        {textSnippet ? (
-                          <Text style={styles.entitySnippet} numberOfLines={3}>
-                            {textSnippet}
-                          </Text>
-                        ) : null}
-
-                        {/* Tag Chips */}
                         {entity.tags && entity.tags.length > 0 && (
-                          <View style={styles.tagsRow}>
-                            {entity.tags.slice(0, 3).map((tag, tIdx) => (
+                          <View style={[styles.tagsRow, { marginTop: 8 }]}>
+                            {entity.tags.slice(0, 4).map((tag, tIdx) => (
                               <View key={tIdx} style={styles.tagBadge}>
-                                <Text style={styles.tagText}>{tag}</Text>
+                                <Text style={styles.tagText}>#{tag}</Text>
                               </View>
                             ))}
                           </View>
@@ -649,15 +818,169 @@ export const CampaignLoreScreen: React.FC = () => {
             )}
 
             {/* ================================================= */}
-            {/* TAB 2: BACHECA MISSIONI (Facile, Media, Letale)   */}
+            {/* TAB 2: MAPPE NARRATIVE                            */}
+            {/* ================================================= */}
+            {activeTab === 'maps' && (
+              <View style={styles.tabContent}>
+                <View style={styles.searchBar}>
+                  <Search size={16} color={colors.parchmentMuted} />
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Cerca una mappa di mondo, regione o città..."
+                    placeholderTextColor={colors.parchmentMuted}
+                    value={mapSearch}
+                    onChangeText={setMapSearch}
+                  />
+                  {mapSearch.length > 0 && (
+                    <TouchableOpacity onPress={() => setMapSearch('')} style={styles.clearBtn}>
+                      <X size={14} color={colors.parchmentMuted} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+
+                <View style={styles.missionFiltersRow}>
+                  {[
+                    { key: 'all', label: `Tutte (${maps.length})` },
+                    { key: 'world', label: 'Mondo' },
+                    { key: 'city', label: 'Città / Regioni' },
+                    { key: 'other', label: 'Luoghi' },
+                  ].map((f) => (
+                    <TouchableOpacity
+                      key={f.key}
+                      style={[
+                        styles.missionFilterBtn,
+                        mapTypeFilter === f.key && styles.missionFilterBtnActive,
+                      ]}
+                      onPress={() => setMapTypeFilter(f.key)}
+                    >
+                      <Text
+                        style={[
+                          styles.missionFilterText,
+                          mapTypeFilter === f.key && styles.missionFilterTextActive,
+                        ]}
+                      >
+                        {f.label}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {filteredMaps.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <MapIcon size={32} color={colors.stoneBorder} />
+                    <Text style={styles.emptyTitle}>Nessuna mappa visibile</Text>
+                    <Text style={styles.emptySubtitle}>
+                      Esplora il mondo al tavolo per sbloccare nuove cartine geografiche e mappe cittadine.
+                    </Text>
+                  </View>
+                ) : (
+                  filteredMaps.map((m) => {
+                    const imgUri = resolveTelegramOrImageUrl(m.image_url, null);
+                    const parentName = m.parent_map_id ? mapParentNameById.get(m.parent_map_id) : null;
+                    const childCount = childCountByMapId.get(m.id) ?? 0;
+                    const linkedWiki = m.wiki_entity_id ? wikiById.get(m.wiki_entity_id) : null;
+
+                    return (
+                      <TouchableOpacity
+                        key={m.id}
+                        style={styles.mapCard}
+                        onPress={() => setSelectedMap(m)}
+                        activeOpacity={0.85}
+                      >
+                        {imgUri ? (
+                          <Image source={{ uri: imgUri }} style={styles.mapCardImage} resizeMode="cover" />
+                        ) : (
+                          <View style={styles.mapCardPlaceholder}>
+                            <MapIcon size={32} color={colors.brassBase} />
+                          </View>
+                        )}
+                        <View style={styles.mapCardBody}>
+                          <View style={styles.entityTopRow}>
+                            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, alignItems: 'center' }}>
+                              <View style={styles.typeBadge}>
+                                <Text style={styles.typeBadgeText}>{formatMapTypeLabel(m.map_type)}</Text>
+                              </View>
+                              {parentName ? (
+                                <Text style={styles.chapterSmallLabel}>in {parentName}</Text>
+                              ) : null}
+                            </View>
+                            {childCount > 0 ? (
+                              <View style={styles.subMapsPill}>
+                                <Layers size={11} color={colors.brassLight} />
+                                <Text style={styles.subMapsPillText}>{childCount}</Text>
+                              </View>
+                            ) : null}
+                          </View>
+
+                          <Text style={styles.entityTitle}>{m.name}</Text>
+                          {m.description ? (
+                            <Text style={styles.entitySnippet} numberOfLines={2}>
+                              {m.description}
+                            </Text>
+                          ) : null}
+                          {linkedWiki ? (
+                            <Text style={styles.linkedMissionHint}>📖 Voce Wiki: {linkedWiki.name}</Text>
+                          ) : null}
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  })
+                )}
+              </View>
+            )}
+
+            {/* ================================================= */}
+            {/* TAB 3: BACHECA MISSIONI & CLASSIFICA GILDE        */}
             {/* ================================================= */}
             {activeTab === 'missions' && (
               <View style={styles.tabContent}>
+                {/* Classifica Gilde della Campagna (mirrors Web MissionBoard guilds) */}
+                {guilds.length > 0 && (
+                  <View style={styles.guildsBoardCard}>
+                    <TouchableOpacity
+                      style={styles.guildsBoardHeader}
+                      onPress={() => setShowGuildsBoard((v) => !v)}
+                      activeOpacity={0.8}
+                    >
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                        <Trophy size={16} color={colors.brassLight} />
+                        <Text style={styles.guildsBoardTitle}>
+                          CLASSIFICA GILDE & GLORIA ({guilds.length})
+                        </Text>
+                      </View>
+                      <Text style={styles.chapterSmallLabel}>
+                        {showGuildsBoard ? 'Riduci ▴' : 'Mostra ▾'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {showGuildsBoard && (
+                      <View style={styles.guildsList}>
+                        {guilds.map((g, gIdx) => (
+                          <View key={g.id} style={styles.guildRow}>
+                            <View style={styles.guildRankBadge}>
+                              <Text style={styles.guildRankBadgeText}>{g.rank ?? 'D'}</Text>
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.guildNameText}>
+                                {gIdx + 1}. {g.name}
+                              </Text>
+                              <Text style={styles.guildMetaText}>
+                                Rango {g.rank ?? 'D'} · {g.auto_rank !== false ? ' progressione automatica' : ' manuale'}
+                              </Text>
+                            </View>
+                            <Text style={styles.guildScoreText}>{g.score} Gloria</Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                )}
+
                 {/* Status Filter Chips */}
                 <View style={styles.missionFiltersRow}>
                   {[
                     { key: 'all', label: 'Tutte' },
-                    { key: 'open', label: 'Disponibili' },
+                    { key: 'open', label: 'Accettabili' },
                     { key: 'in_progress', label: 'In Corso' },
                     { key: 'completed', label: 'Compiute' },
                   ].map((f) => (
@@ -682,19 +1005,21 @@ export const CampaignLoreScreen: React.FC = () => {
                   ))}
                 </View>
 
-                {/* Missions List */}
                 {filteredMissions.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Flag size={32} color={colors.stoneBorder} />
                     <Text style={styles.emptyTitle}>Bacheca vuota</Text>
                     <Text style={styles.emptySubtitle}>
-                      Nessun avviso o contratto registrato per questo stato.
+                      Nessun bando ufficiale registrato per questo stato.
                     </Text>
                   </View>
                 ) : (
                   filteredMissions.map((m) => {
-                    const diff = getDifficultyBadge(m.grade);
+                    const rankMeta = formatMissionRankMeta(m.grade);
                     const stat = getStatusBadge(m.status);
+                    const completedGuildName = m.completed_by_guild_id
+                      ? guildNameById.get(m.completed_by_guild_id)
+                      : null;
 
                     return (
                       <TouchableOpacity
@@ -703,20 +1028,19 @@ export const CampaignLoreScreen: React.FC = () => {
                         onPress={() => setSelectedMission(m)}
                         activeOpacity={0.85}
                       >
-                        {/* Header Badges */}
                         <View style={styles.missionHeaderRow}>
                           <View
                             style={[
                               styles.diffBadge,
                               {
-                                backgroundColor: diff.bgColor,
-                                borderColor: diff.borderColor,
+                                backgroundColor: rankMeta.bgColor,
+                                borderColor: rankMeta.borderColor,
                               },
                             ]}
                           >
-                            <AlertTriangle size={11} color={diff.color} style={styles.badgeIcon} />
-                            <Text style={[styles.diffBadgeText, { color: diff.color }]}>
-                              {diff.label.toUpperCase()}
+                            <Shield size={11} color={rankMeta.color} style={styles.badgeIcon} />
+                            <Text style={[styles.diffBadgeText, { color: rankMeta.color }]}>
+                              {rankMeta.label.toUpperCase()}
                             </Text>
                           </View>
 
@@ -740,7 +1064,6 @@ export const CampaignLoreScreen: React.FC = () => {
                           {m.description}
                         </Text>
 
-                        {/* Details Grid */}
                         <View style={styles.missionMetaRow}>
                           {m.ubicazione ? (
                             <View style={styles.metaItem}>
@@ -761,12 +1084,17 @@ export const CampaignLoreScreen: React.FC = () => {
                           ) : null}
                         </View>
 
-                        {/* Rewards Box */}
+                        {completedGuildName ? (
+                          <Text style={styles.completedByText}>
+                            ✦ Compiuta dalla gilda: {completedGuildName}
+                          </Text>
+                        ) : null}
+
                         <View style={styles.rewardsBox}>
-                          <View style={styles.rewardItem}>
+                          <View style={[styles.rewardItem, { flex: 1, marginRight: 8 }]}>
                             <Coins size={14} color={colors.brassLight} />
-                            <Text style={styles.rewardValue}>
-                              {m.paga || (m.treasure_gp ? `${m.treasure_gp} MO` : 'Ricompensa Segreta')}
+                            <Text style={styles.rewardValue} numberOfLines={1}>
+                              {formatMissionTreasureLabel(m)}
                             </Text>
                           </View>
 
@@ -774,7 +1102,7 @@ export const CampaignLoreScreen: React.FC = () => {
                             <View style={styles.rewardItem}>
                               <Award size={14} color={colors.emerald} />
                               <Text style={[styles.rewardValue, { color: colors.emerald }]}>
-                                +{m.points_reward} Punti Gilda
+                                +{m.points_reward} Gloria
                               </Text>
                             </View>
                           ) : null}
@@ -787,7 +1115,7 @@ export const CampaignLoreScreen: React.FC = () => {
             )}
 
             {/* ================================================= */}
-            {/* TAB 3: COMPAGNI DEL PARTY                         */}
+            {/* TAB 4: COMPAGNI DEL PARTY & GRUPPI                */}
             {/* ================================================= */}
             {activeTab === 'party' && (
               <View style={styles.tabContent}>
@@ -798,40 +1126,142 @@ export const CampaignLoreScreen: React.FC = () => {
                   </Text>
                 </View>
 
-                {companions.length === 0 ? (
+                {parties.length > 0 && (
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    style={{ flexGrow: 0, flexShrink: 0 }}
+                    contentContainerStyle={styles.filterChipScroll}
+                  >
+                    <TouchableOpacity
+                      style={[
+                        styles.filterChip,
+                        selectedPartyFilter === 'all' && styles.filterChipActive,
+                      ]}
+                      onPress={() => setSelectedPartyFilter('all')}
+                    >
+                      <Text
+                        style={[
+                          styles.filterChipText,
+                          selectedPartyFilter === 'all' && styles.filterChipTextActive,
+                        ]}
+                      >
+                        Tutti i gruppi ({companions.length})
+                      </Text>
+                    </TouchableOpacity>
+                    {parties.map((p) => (
+                      <TouchableOpacity
+                        key={p.id}
+                        style={[
+                          styles.filterChip,
+                          selectedPartyFilter === p.id && styles.filterChipActive,
+                        ]}
+                        onPress={() => setSelectedPartyFilter(p.id)}
+                      >
+                        <Text
+                          style={[
+                            styles.filterChipText,
+                            selectedPartyFilter === p.id && styles.filterChipTextActive,
+                          ]}
+                        >
+                          {p.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+
+                {filteredCompanions.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Users size={32} color={colors.stoneBorder} />
-                    <Text style={styles.emptyTitle}>Nessun compagno registrato</Text>
+                    <Text style={styles.emptyTitle}>Nessun compagno in questo filtro</Text>
                     <Text style={styles.emptySubtitle}>
-                      Non ci sono ancora personaggi registrati per questa campagna.
+                      Non ci sono personaggi corrispondenti al gruppo selezionato.
                     </Text>
                   </View>
                 ) : (
-                  companions.map((comp) => {
-                    const resolvedImage = resolveImageUrl(comp.image_url);
+                  filteredCompanions.map((comp) => {
+                    const effective = resolveEffectiveCharacterFields(comp);
+                    const { raceLabel, subraceLabel } = resolveRaceAndSubraceLabels({
+                      raceSlug: comp.race_slug,
+                      subclassSlug: comp.subclass_slug,
+                      sheetRaceLabel: effective.sheet?.raceLabel,
+                      sheetSubraceLabel: effective.sheet?.subraceLabel,
+                    });
+                    const resolvedImage = resolveTelegramOrImageUrl(comp.image_url, null);
                     const noteValue = companionNotes[comp.id] ?? '';
+                    const partyId = comp.assigned_to ? playerPartyMap[comp.assigned_to] : undefined;
+                    const partyObj = partyId ? partyById.get(partyId) ?? null : null;
+                    const roleLine = [
+                      subraceLabel ?? raceLabel,
+                      effective.characterClass || 'Avventuriero',
+                      effective.classSubclass ? `(${effective.classSubclass})` : null,
+                      `· Lv. ${effective.level ?? comp.level ?? 1}`,
+                    ]
+                      .filter(Boolean)
+                      .join(' ');
+
                     return (
                       <View key={comp.id} style={styles.companionCard}>
+                        {/* Companion Identity Header (restored!) */}
                         <TouchableOpacity
-                          style={styles.companionImageWrap}
+                          style={styles.companionTop}
                           onPress={() => setSelectedCompanion(comp)}
-                          activeOpacity={0.85}
+                          activeOpacity={0.8}
                         >
-                          {resolvedImage ? (
+                          <View style={styles.companionAvatar}>
+                            {resolvedImage ? (
+                              <Image source={{ uri: resolvedImage }} style={styles.companionAvatarImg} />
+                            ) : (
+                              <Text style={styles.avatarInitial}>
+                                {(effective.name || comp.name || '?').charAt(0).toUpperCase()}
+                              </Text>
+                            )}
+                          </View>
+                          <View style={styles.companionInfo}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                              <Text style={styles.companionName}>{effective.name || comp.name}</Text>
+                              {partyObj ? (
+                                <View
+                                  style={[
+                                    styles.partySmallTag,
+                                    partyObj.color ? { borderColor: partyObj.color } : undefined,
+                                  ]}
+                                >
+                                  <Text
+                                    style={[
+                                      styles.partySmallTagText,
+                                      partyObj.color ? { color: partyObj.color } : undefined,
+                                    ]}
+                                  >
+                                    {partyObj.name}
+                                  </Text>
+                                </View>
+                              ) : null}
+                            </View>
+                            <Text style={styles.companionRole}>{roleLine}</Text>
+                            {comp.background?.trim() ? (
+                              <Text style={styles.companionBackground} numberOfLines={2}>
+                                {comp.background.trim()}
+                              </Text>
+                            ) : null}
+                          </View>
+                          <ChevronRight size={16} color={colors.brassBase} />
+                        </TouchableOpacity>
+
+                        {resolvedImage ? (
+                          <TouchableOpacity
+                            style={styles.companionImageWrap}
+                            onPress={() => setSelectedCompanion(comp)}
+                            activeOpacity={0.85}
+                          >
                             <Image
                               source={{ uri: resolvedImage }}
                               style={styles.companionPortraitImage}
                               resizeMode="cover"
                             />
-                          ) : (
-                            <View style={styles.companionImagePlaceholder}>
-                              <Users size={42} color={colors.brassBase} />
-                              <Text style={styles.companionNoImageText}>
-                                Nessuna immagine disponibile
-                              </Text>
-                            </View>
-                          )}
-                        </TouchableOpacity>
+                          </TouchableOpacity>
+                        ) : null}
 
                         <View style={styles.companionNotesWrap}>
                           <View style={styles.companionNotesHeader}>
@@ -844,7 +1274,9 @@ export const CampaignLoreScreen: React.FC = () => {
                             style={styles.companionNotesInput}
                             value={noteValue}
                             onChangeText={(text) => handleCompanionNoteChange(comp.id, text)}
-                            onBlur={() => { void persistCompanionNote(comp.id, noteValue); }}
+                            onBlur={() => {
+                              void persistCompanionNote(comp.id, noteValue);
+                            }}
                             placeholder="Scrivi liberamente le tue note su questo compagno..."
                             placeholderTextColor={colors.parchmentMuted}
                             multiline
@@ -861,81 +1293,43 @@ export const CampaignLoreScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* ================================================= */}
-      {/* MODAL DI LETTURA DETTAGLIATA WIKI LORE            */}
-      {/* ================================================= */}
-      <Modal
-        visible={selectedWikiEntity !== null}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setSelectedWikiEntity(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHeaderTitleBox}>
-                <View style={styles.modalTypeBadge}>
-                  <Text style={styles.modalTypeBadgeText}>
-                    {selectedWikiEntity?.type.toUpperCase()}
-                  </Text>
-                </View>
-                <Text style={styles.modalTitle} numberOfLines={2}>
-                  {selectedWikiEntity?.name}
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setSelectedWikiEntity(null)}
-              >
-                <X size={18} color={colors.parchmentLight} />
-              </TouchableOpacity>
-            </View>
+      {/* RICH WIKI ENTITY READER MODAL */}
+      <WikiEntityReaderModal
+        entity={selectedWikiEntity}
+        isGmOrAdmin={isGmOrAdmin}
+        linkedMissionTitle={
+          selectedWikiEntity?.linked_mission_id
+            ? missionTitleById.get(selectedWikiEntity.linked_mission_id) ?? null
+            : null
+        }
+        linkedMaps={
+          selectedWikiEntity
+            ? maps.filter((m) => m.wiki_entity_id === selectedWikiEntity.id)
+            : []
+        }
+        onOpenLinkedMap={(mapItem) => {
+          setSelectedWikiEntity(null);
+          setSelectedMap(mapItem);
+        }}
+        onClose={() => setSelectedWikiEntity(null)}
+      />
 
-            <ScrollView
-              style={styles.modalBody}
-              contentContainerStyle={styles.modalBodyContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {selectedWikiEntity?.image_url && (
-                <Image
-                  source={{ uri: selectedWikiEntity.image_url }}
-                  style={styles.modalImage}
-                  resizeMode="cover"
-                />
-              )}
+      {/* INTERACTIVE ZOOMABLE MAP VIEWER MODAL */}
+      <MapViewerModal
+        map={selectedMap}
+        allMaps={maps}
+        linkedWikiEntity={
+          selectedMap?.wiki_entity_id ? wikiById.get(selectedMap.wiki_entity_id) ?? null : null
+        }
+        onSelectMap={(nextMap) => setSelectedMap(nextMap)}
+        onOpenWikiEntity={(entity) => {
+          setSelectedMap(null);
+          setSelectedWikiEntity(entity);
+        }}
+        onClose={() => setSelectedMap(null)}
+      />
 
-              <Text style={styles.modalContentText}>
-                {selectedWikiEntity ? getEntityText(selectedWikiEntity.content) : ''}
-              </Text>
-
-              {/* Tags */}
-              {selectedWikiEntity?.tags && selectedWikiEntity.tags.length > 0 && (
-                <View style={styles.modalTagsRow}>
-                  {selectedWikiEntity.tags.map((t, idx) => (
-                    <View key={idx} style={styles.modalTag}>
-                      <Text style={styles.modalTagText}>#{t}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalActionButton}
-                onPress={() => setSelectedWikiEntity(null)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalActionText}>Chiudi Archivio</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* ================================================= */}
-      {/* MODAL DETTAGLI MISSIONE                           */}
-      {/* ================================================= */}
+      {/* MISSION DETAILS MODAL */}
       <Modal
         visible={selectedMission !== null}
         animationType="fade"
@@ -963,87 +1357,124 @@ export const CampaignLoreScreen: React.FC = () => {
               contentContainerStyle={styles.modalBodyContent}
               showsVerticalScrollIndicator={false}
             >
-              {selectedMission && (
-                <>
-                  <View style={styles.missionModalBadgesRow}>
-                    <View
-                      style={[
-                        styles.diffBadge,
-                        {
-                          backgroundColor: getDifficultyBadge(selectedMission.grade).bgColor,
-                          borderColor: getDifficultyBadge(selectedMission.grade).borderColor,
-                        },
-                      ]}
-                    >
-                      <Text
+              {selectedMission && (() => {
+                const rankMeta = formatMissionRankMeta(selectedMission.grade);
+                const stat = getStatusBadge(selectedMission.status);
+                const completedGuild = selectedMission.completed_by_guild_id
+                  ? guildNameById.get(selectedMission.completed_by_guild_id)
+                  : null;
+                const linkedWikiList = wikiEntities.filter(
+                  (w) => w.linked_mission_id === selectedMission.id,
+                );
+
+                return (
+                  <>
+                    <View style={styles.missionModalBadgesRow}>
+                      <View
                         style={[
-                          styles.diffBadgeText,
-                          { color: getDifficultyBadge(selectedMission.grade).color },
+                          styles.diffBadge,
+                          {
+                            backgroundColor: rankMeta.bgColor,
+                            borderColor: rankMeta.borderColor,
+                          },
                         ]}
                       >
-                        DIFFICOLTÀ: {getDifficultyBadge(selectedMission.grade).label.toUpperCase()}
-                      </Text>
-                    </View>
+                        <Text style={[styles.diffBadgeText, { color: rankMeta.color }]}>
+                          {rankMeta.label.toUpperCase()}
+                        </Text>
+                      </View>
 
-                    <View
-                      style={[
-                        styles.statusBadge,
-                        {
-                          backgroundColor: getStatusBadge(selectedMission.status).bgColor,
-                          borderColor: getStatusBadge(selectedMission.status).borderColor,
-                        },
-                      ]}
-                    >
-                      <Text
+                      <View
                         style={[
-                          styles.statusBadgeText,
-                          { color: getStatusBadge(selectedMission.status).color },
+                          styles.statusBadge,
+                          {
+                            backgroundColor: stat.bgColor,
+                            borderColor: stat.borderColor,
+                          },
                         ]}
                       >
-                        {getStatusBadge(selectedMission.status).label}
-                      </Text>
-                    </View>
-                  </View>
-
-                  <View style={styles.missionDetailBox}>
-                    <View style={styles.missionDetailItem}>
-                      <Text style={styles.detailLabel}>Committente:</Text>
-                      <Text style={styles.detailValue}>
-                        {selectedMission.committente || 'Gilda dei Barbieri'}
-                      </Text>
+                        <Text style={[styles.statusBadgeText, { color: stat.color }]}>
+                          {stat.label}
+                        </Text>
+                      </View>
                     </View>
 
-                    <View style={styles.missionDetailItem}>
-                      <Text style={styles.detailLabel}>Ubicazione:</Text>
-                      <Text style={styles.detailValue}>
-                        {selectedMission.ubicazione || 'Sconosciuta'}
-                      </Text>
+                    <View style={styles.missionDetailBox}>
+                      <View style={styles.missionDetailItem}>
+                        <Text style={styles.detailLabel}>Committente:</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedMission.committente || 'Gilda'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.missionDetailItem}>
+                        <Text style={styles.detailLabel}>Ubicazione:</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedMission.ubicazione || 'Non specificata'}
+                        </Text>
+                      </View>
+
+                      <View style={styles.missionDetailItem}>
+                        <Text style={styles.detailLabel}>Urgenza:</Text>
+                        <Text style={styles.detailValue}>
+                          {selectedMission.urgenza || 'Standard'}
+                        </Text>
+                      </View>
+
+                      {(selectedMission.points_reward ?? 0) > 0 && (
+                        <View style={styles.missionDetailItem}>
+                          <Text style={styles.detailLabel}>Gloria Gilda:</Text>
+                          <Text style={[styles.detailValue, { color: colors.emerald }]}>
+                            +{selectedMission.points_reward} punti
+                          </Text>
+                        </View>
+                      )}
+
+                      {completedGuild ? (
+                        <View style={styles.missionDetailItem}>
+                          <Text style={styles.detailLabel}>Compiuta da:</Text>
+                          <Text style={[styles.detailValue, { color: colors.brassLight }]}>
+                            {completedGuild}
+                          </Text>
+                        </View>
+                      ) : null}
                     </View>
 
-                    <View style={styles.missionDetailItem}>
-                      <Text style={styles.detailLabel}>Urgenza:</Text>
-                      <Text style={styles.detailValue}>
-                        {selectedMission.urgenza || 'Standard'}
-                      </Text>
-                    </View>
-                  </View>
+                    <Text style={styles.detailSectionTitle}>DESCRIZIONE BANDO</Text>
+                    <RichMarkdownView markdown={selectedMission.description || ''} />
 
-                  <Text style={styles.detailSectionTitle}>DESCRIZIONE MISSIONE</Text>
-                  <Text style={styles.modalContentText}>
-                    {selectedMission.description}
-                  </Text>
-
-                  <View style={styles.rewardsModalBox}>
-                    <Coins size={16} color={colors.brassLight} />
-                    <View style={styles.rewardsModalTexts}>
-                      <Text style={styles.rewardModalTitle}>Paga Pattuita:</Text>
-                      <Text style={styles.rewardModalAmount}>
-                        {selectedMission.paga || `${selectedMission.treasure_gp ?? 0} Monete d’Oro`}
-                      </Text>
+                    <View style={styles.rewardsModalBox}>
+                      <Coins size={16} color={colors.brassLight} />
+                      <View style={styles.rewardsModalTexts}>
+                        <Text style={styles.rewardModalTitle}>Ricompensa Pattuita:</Text>
+                        <Text style={styles.rewardModalAmount}>
+                          {formatMissionTreasureLabel(selectedMission)}
+                        </Text>
+                      </View>
                     </View>
-                  </View>
-                </>
-              )}
+
+                    {linkedWikiList.length > 0 && (
+                      <View style={{ gap: 6, marginTop: 4 }}>
+                        <Text style={styles.detailSectionTitle}>VOCI WIKI COLLEGATE</Text>
+                        {linkedWikiList.map((w) => (
+                          <TouchableOpacity
+                            key={w.id}
+                            style={styles.linkedWikiRowBtn}
+                            onPress={() => {
+                              setSelectedMission(null);
+                              setSelectedWikiEntity(w);
+                            }}
+                          >
+                            <BookOpen size={13} color={colors.brassLight} />
+                            <Text style={styles.linkedWikiRowText}>{w.name}</Text>
+                            <ChevronRight size={14} color={colors.brassBase} />
+                          </TouchableOpacity>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                );
+              })()}
             </ScrollView>
 
             <View style={styles.modalFooter}>
@@ -1052,102 +1483,35 @@ export const CampaignLoreScreen: React.FC = () => {
                 onPress={() => setSelectedMission(null)}
                 activeOpacity={0.8}
               >
-                <Text style={styles.modalActionText}>Chiudi Bacheca</Text>
+                <Text style={styles.modalActionText}>Chiudi Bando</Text>
               </TouchableOpacity>
             </View>
           </View>
         </View>
       </Modal>
 
-      {/* ================================================= */}
-      {/* MODAL DETTAGLI COMPAGNO DEL PARTY                 */}
-      {/* ================================================= */}
-      <Modal
-        visible={selectedCompanion !== null}
-        animationType="fade"
-        transparent
-        onRequestClose={() => setSelectedCompanion(null)}
-      >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <View style={styles.modalHeaderTitleBox}>
-                <Text style={styles.modalTitle} numberOfLines={1}>
-                  Compagno di Party
-                </Text>
-              </View>
-              <TouchableOpacity
-                style={styles.modalCloseBtn}
-                onPress={() => setSelectedCompanion(null)}
-              >
-                <X size={18} color={colors.parchmentLight} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              style={styles.modalBody}
-              contentContainerStyle={styles.modalBodyContent}
-              showsVerticalScrollIndicator={false}
-            >
-              {selectedCompanion && (
-                <>
-                  {resolveImageUrl(selectedCompanion.image_url) ? (
-                    <Image
-                      source={{ uri: resolveImageUrl(selectedCompanion.image_url)! }}
-                      style={styles.modalCompanionPortrait}
-                      resizeMode="contain"
-                    />
-                  ) : (
-                    <View style={styles.companionImagePlaceholder}>
-                      <Users size={48} color={colors.brassBase} />
-                      <Text style={styles.companionNoImageText}>
-                        Nessuna immagine disponibile
-                      </Text>
-                    </View>
-                  )}
-
-                  <Text style={styles.detailSectionTitle}>LE TUE NOTE</Text>
-                  <TextInput
-                    style={[styles.companionNotesInput, { minHeight: 110 }]}
-                    value={companionNotes[selectedCompanion.id] ?? ''}
-                    onChangeText={(text) =>
-                      handleCompanionNoteChange(selectedCompanion.id, text)
-                    }
-                    onBlur={() => {
-                      void persistCompanionNote(
-                        selectedCompanion.id,
-                        companionNotes[selectedCompanion.id] ?? ''
-                      );
-                    }}
-                    placeholder="Scrivi liberamente le tue note su questo compagno..."
-                    placeholderTextColor={colors.parchmentMuted}
-                    multiline
-                    textAlignVertical="top"
-                  />
-                </>
-              )}
-            </ScrollView>
-
-            <View style={styles.modalFooter}>
-              <TouchableOpacity
-                style={styles.modalActionButton}
-                onPress={() => {
-                  if (selectedCompanion) {
-                    void persistCompanionNote(
-                      selectedCompanion.id,
-                      companionNotes[selectedCompanion.id] ?? ''
-                    );
-                  }
-                  setSelectedCompanion(null);
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.modalActionText}>Salva e Chiudi</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* COMPANION DOSSIER MODAL */}
+      <CompanionDossierModal
+        companion={selectedCompanion}
+        partyBadge={
+          selectedCompanion?.assigned_to && playerPartyMap[selectedCompanion.assigned_to]
+            ? partyById.get(playerPartyMap[selectedCompanion.assigned_to]) ?? null
+            : null
+        }
+        noteValue={selectedCompanion ? companionNotes[selectedCompanion.id] ?? '' : ''}
+        onChangeNote={(text) => {
+          if (selectedCompanion) handleCompanionNoteChange(selectedCompanion.id, text);
+        }}
+        onPersistNote={() => {
+          if (selectedCompanion) {
+            void persistCompanionNote(
+              selectedCompanion.id,
+              companionNotes[selectedCompanion.id] ?? '',
+            );
+          }
+        }}
+        onClose={() => setSelectedCompanion(null)}
+      />
 
       {/* Campaign Selector Modal */}
       <CampaignSelectorModal
@@ -1181,7 +1545,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 10,
     paddingVertical: 6,
-    maxWidth: 150,
+    maxWidth: 155,
   },
   campaignBadgeText: {
     fontSize: 11,
@@ -1189,7 +1553,7 @@ const styles = StyleSheet.create({
     color: colors.brassLight,
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '800',
     color: colors.parchmentLight,
     letterSpacing: 0.8,
@@ -1201,9 +1565,9 @@ const styles = StyleSheet.create({
   },
   tabNavRow: {
     flexDirection: 'row',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    gap: 8,
+    gap: 6,
     backgroundColor: colors.stone,
     borderBottomWidth: 1,
     borderBottomColor: colors.stoneBorder,
@@ -1213,8 +1577,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 9,
+    gap: 4,
+    paddingVertical: 8,
+    paddingHorizontal: 4,
     borderRadius: 8,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
@@ -1225,7 +1590,7 @@ const styles = StyleSheet.create({
     borderColor: colors.brassLight,
   },
   tabBtnText: {
-    fontSize: 11,
+    fontSize: 10.5,
     fontWeight: '700',
     color: colors.parchmentMuted,
   },
@@ -1272,17 +1637,17 @@ const styles = StyleSheet.create({
   },
   filterChipScroll: {
     gap: 8,
-    paddingVertical: 6,
-    paddingRight: 24,
+    paddingVertical: 4,
+    paddingRight: 20,
     alignItems: 'center',
   },
   filterChip: {
-    minHeight: 36,
+    minHeight: 34,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    paddingHorizontal: 14,
-    paddingVertical: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
@@ -1292,7 +1657,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.stone,
   },
   filterChipText: {
-    fontSize: 12,
+    fontSize: 11.5,
     fontWeight: '600',
     color: colors.parchmentMuted,
   },
@@ -1300,18 +1665,53 @@ const styles = StyleSheet.create({
     color: colors.brassLight,
     fontWeight: '700',
   },
+  missionSubFilterScroll: {
+    gap: 6,
+    paddingBottom: 2,
+  },
+  subChip: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    maxWidth: 190,
+  },
+  subChipActive: {
+    borderColor: colors.brassBase,
+    backgroundColor: 'rgba(200, 157, 73, 0.14)',
+  },
+  subChipText: {
+    fontSize: 11,
+    color: colors.brassLight,
+    fontWeight: '600',
+  },
   entityCard: {
     backgroundColor: colors.stoneSurface,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: colors.stoneBorder,
-    padding: 14,
+    padding: 13,
+  },
+  entityCardBodyRow: {
+    flexDirection: 'row',
+    gap: 12,
+    alignItems: 'flex-start',
+  },
+  entityThumb: {
+    width: 64,
+    height: 76,
+    borderRadius: 8,
+    backgroundColor: colors.void,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
   },
   entityTopRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: 5,
   },
   typeBadge: {
     backgroundColor: colors.stone,
@@ -1322,22 +1722,32 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   typeBadgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     color: colors.brassLight,
-    letterSpacing: 0.5,
+    letterSpacing: 0.4,
+  },
+  chapterSmallLabel: {
+    fontSize: 10.5,
+    fontWeight: '700',
+    color: colors.brassBase,
   },
   entityTitle: {
     fontSize: 15,
     fontWeight: '700',
     color: colors.parchmentLight,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   entitySnippet: {
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17.5,
     color: colors.parchmentMuted,
-    marginBottom: 8,
+  },
+  linkedMissionHint: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+    marginTop: 5,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -1354,15 +1764,118 @@ const styles = StyleSheet.create({
     fontSize: 10.5,
     color: colors.parchmentMuted,
   },
+  mapCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    overflow: 'hidden',
+  },
+  mapCardImage: {
+    width: '100%',
+    height: 150,
+    backgroundColor: colors.void,
+  },
+  mapCardPlaceholder: {
+    width: '100%',
+    height: 110,
+    backgroundColor: colors.stone,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mapCardBody: {
+    padding: 12,
+  },
+  subMapsPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    borderRadius: 10,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  subMapsPillText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  guildsBoardCard: {
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: colors.brassDark,
+    padding: 12,
+    gap: 10,
+  },
+  guildsBoardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  guildsBoardTitle: {
+    fontSize: 11.5,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+    color: colors.brassLight,
+  },
+  guildsList: {
+    gap: 6,
+    borderTopWidth: 1,
+    borderTopColor: colors.stoneBorder,
+    paddingTop: 8,
+  },
+  guildRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.stone,
+    borderRadius: 8,
+    padding: 8,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+  },
+  guildRankBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: 'rgba(200, 157, 73, 0.16)',
+    borderWidth: 1,
+    borderColor: colors.brassBase,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  guildRankBadgeText: {
+    fontSize: 14,
+    fontWeight: '900',
+    color: colors.brassLight,
+  },
+  guildNameText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+  },
+  guildMetaText: {
+    fontSize: 10.5,
+    color: colors.parchmentMuted,
+  },
+  guildScoreText: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.emerald,
+  },
   missionFiltersRow: {
     flexDirection: 'row',
     gap: 6,
-    marginBottom: 4,
+    marginBottom: 2,
   },
   missionFilterBtn: {
     flex: 1,
     minHeight: 36,
-    paddingVertical: 8,
+    paddingVertical: 7,
+    paddingHorizontal: 4,
     borderRadius: 6,
     backgroundColor: colors.stoneSurface,
     borderWidth: 1,
@@ -1375,9 +1888,10 @@ const styles = StyleSheet.create({
     borderColor: colors.brassBase,
   },
   missionFilterText: {
-    fontSize: 11.5,
+    fontSize: 11,
     fontWeight: '700',
     color: colors.parchmentMuted,
+    textAlign: 'center',
   },
   missionFilterTextActive: {
     color: colors.brassLight,
@@ -1394,6 +1908,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+    gap: 6,
   },
   diffBadge: {
     flexDirection: 'row',
@@ -1407,7 +1922,7 @@ const styles = StyleSheet.create({
     marginRight: 4,
   },
   diffBadgeText: {
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '800',
     letterSpacing: 0.4,
   },
@@ -1436,7 +1951,7 @@ const styles = StyleSheet.create({
   missionMetaRow: {
     flexDirection: 'row',
     gap: 14,
-    marginBottom: 10,
+    marginBottom: 8,
   },
   metaItem: {
     flexDirection: 'row',
@@ -1449,6 +1964,12 @@ const styles = StyleSheet.create({
     color: colors.parchmentMuted,
     flex: 1,
   },
+  completedByText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+    marginBottom: 8,
+  },
   rewardsBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -1457,7 +1978,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.stoneBorder,
     paddingTop: 8,
-    marginTop: 2,
+    paddingHorizontal: 8,
+    paddingBottom: 6,
+    borderRadius: 6,
   },
   rewardItem: {
     flexDirection: 'row',
@@ -1479,7 +2002,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    marginBottom: 4,
   },
   partyBannerText: {
     fontSize: 10.5,
@@ -1498,17 +2020,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    marginBottom: 12,
+    marginBottom: 10,
   },
   companionAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: colors.stone,
     borderWidth: 1.5,
     borderColor: colors.brassBase,
     alignItems: 'center',
     justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  companionAvatarImg: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
   },
   avatarInitial: {
     fontSize: 18,
@@ -1520,254 +2048,37 @@ const styles = StyleSheet.create({
   },
   companionName: {
     fontSize: 15,
-    fontWeight: '700',
+    fontWeight: '800',
     color: colors.parchmentLight,
+  },
+  partySmallTag: {
+    borderWidth: 1,
+    borderColor: colors.brassBase,
+    backgroundColor: 'rgba(200, 157, 73, 0.12)',
+    borderRadius: 4,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+  },
+  partySmallTagText: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: colors.brassLight,
   },
   companionRole: {
     fontSize: 12,
+    fontWeight: '600',
     color: colors.brassLight,
-    marginTop: 1,
+    marginTop: 2,
   },
   companionBackground: {
-    fontSize: 11,
+    fontSize: 11.5,
     color: colors.parchmentMuted,
-    marginTop: 2,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    backgroundColor: colors.stone,
-    padding: 8,
-    borderRadius: 8,
-  },
-  statPill: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-  },
-  statPillLabel: {
-    fontSize: 10.5,
-    color: colors.parchmentMuted,
-  },
-  statPillValue: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.parchmentLight,
-  },
-  emptyCard: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 50,
-    paddingHorizontal: 20,
-    gap: 8,
-  },
-  emptyTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.parchmentLight,
-  },
-  emptySubtitle: {
-    fontSize: 12,
-    color: colors.parchmentMuted,
-    textAlign: 'center',
-  },
-  modalBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(11, 13, 16, 0.88)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-  },
-  modalCard: {
-    width: '100%',
-    maxHeight: '85%',
-    backgroundColor: colors.stoneSurface,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    overflow: 'hidden',
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 14,
-    backgroundColor: colors.stone,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.stoneBorder,
-  },
-  modalHeaderTitleBox: {
-    flex: 1,
-    marginRight: 10,
-  },
-  modalTypeBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.stoneSurface,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  modalTypeBadgeText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.brassLight,
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-  },
-  modalCompanionSub: {
-    fontSize: 12,
-    color: colors.brassLight,
-    marginTop: 2,
-  },
-  modalCloseBtn: {
-    minWidth: 40,
-    minHeight: 40,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  modalBody: {
-    maxHeight: 400,
-  },
-  modalBodyContent: {
-    padding: 16,
-    gap: 12,
-  },
-  modalImage: {
-    width: '100%',
-    height: 180,
-    borderRadius: 8,
-    marginBottom: 8,
-  },
-  modalContentText: {
-    fontSize: 13.5,
-    lineHeight: 20,
-    color: colors.parchmentLight,
-  },
-  modalTagsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-    marginTop: 8,
-  },
-  modalTag: {
-    backgroundColor: colors.stone,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-  },
-  modalTagText: {
-    fontSize: 11,
-    color: colors.brassLight,
-  },
-  modalFooter: {
-    padding: 12,
-    backgroundColor: colors.stone,
-    borderTopWidth: 1,
-    borderTopColor: colors.stoneBorder,
-  },
-  modalActionButton: {
-    backgroundColor: colors.brassBase,
-    paddingVertical: 10,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  modalActionText: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: colors.void,
-  },
-  missionModalBadgesRow: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  missionDetailBox: {
-    backgroundColor: colors.stone,
-    borderRadius: 8,
-    padding: 12,
-    gap: 6,
-    marginVertical: 4,
-  },
-  missionDetailItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  detailLabel: {
-    fontSize: 11,
-    color: colors.parchmentMuted,
-  },
-  detailValue: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: colors.parchmentLight,
-  },
-  detailSectionTitle: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.brassLight,
-    letterSpacing: 0.6,
-    marginTop: 8,
-  },
-  rewardsModalBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 6,
-  },
-  rewardsModalTexts: {
-    flex: 1,
-  },
-  rewardModalTitle: {
-    fontSize: 11,
-    color: colors.parchmentMuted,
-  },
-  rewardModalAmount: {
-    fontSize: 14,
-    fontWeight: '800',
-    color: colors.brassLight,
-  },
-  statsModalGrid: {
-    flexDirection: 'row',
-    gap: 8,
-    marginBottom: 8,
-  },
-  statGridCard: {
-    flex: 1,
-    backgroundColor: colors.stone,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-    borderRadius: 8,
-    padding: 10,
-    alignItems: 'center',
-    gap: 4,
-  },
-  statGridVal: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: colors.parchmentLight,
-  },
-  statGridLabel: {
-    fontSize: 10.5,
-    color: colors.parchmentMuted,
-    textAlign: 'center',
+    marginTop: 3,
+    lineHeight: 16,
   },
   companionImageWrap: {
     width: '100%',
-    height: 220,
+    height: 200,
     borderRadius: 10,
     overflow: 'hidden',
     backgroundColor: colors.void,
@@ -1777,21 +2088,6 @@ const styles = StyleSheet.create({
   companionPortraitImage: {
     width: '100%',
     height: '100%',
-  },
-  companionImagePlaceholder: {
-    width: '100%',
-    height: 180,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: colors.void,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: colors.stoneBorder,
-  },
-  companionNoImageText: {
-    fontSize: 12,
-    color: colors.parchmentMuted,
   },
   companionNotesWrap: {
     marginTop: 10,
@@ -1822,13 +2118,165 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     color: colors.parchmentLight,
     fontSize: 13,
-    minHeight: 74,
+    minHeight: 72,
   },
-  modalCompanionPortrait: {
+  emptyCard: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 46,
+    paddingHorizontal: 20,
+    gap: 8,
+  },
+  emptyTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 12,
+    color: colors.parchmentMuted,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  modalBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(11, 13, 16, 0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 16,
+  },
+  modalCard: {
     width: '100%',
-    height: 280,
-    borderRadius: 10,
-    backgroundColor: colors.void,
+    maxHeight: '85%',
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    overflow: 'hidden',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 14,
+    backgroundColor: colors.stone,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.stoneBorder,
+  },
+  modalHeaderTitleBox: {
+    flex: 1,
+    marginRight: 10,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: colors.parchmentLight,
+  },
+  modalCloseBtn: {
+    minWidth: 40,
+    minHeight: 40,
+    padding: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalBody: {
+    maxHeight: 430,
+  },
+  modalBodyContent: {
+    padding: 16,
+    gap: 12,
+  },
+  modalFooter: {
+    padding: 12,
+    backgroundColor: colors.stone,
+    borderTopWidth: 1,
+    borderTopColor: colors.stoneBorder,
+  },
+  modalActionButton: {
+    backgroundColor: colors.brassBase,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalActionText: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.void,
+  },
+  missionModalBadgesRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  missionDetailBox: {
+    backgroundColor: colors.stone,
+    borderRadius: 8,
+    padding: 12,
+    gap: 6,
+  },
+  missionDetailItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
+  detailLabel: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+  },
+  detailValue: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.parchmentLight,
+    textAlign: 'right',
+    flex: 1,
+  },
+  detailSectionTitle: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.brassLight,
+    letterSpacing: 0.6,
+    marginTop: 4,
+  },
+  rewardsModalBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    borderRadius: 8,
+    padding: 12,
+  },
+  rewardsModalTexts: {
+    flex: 1,
+  },
+  rewardModalTitle: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+  },
+  rewardModalAmount: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: colors.brassLight,
+    marginTop: 1,
+  },
+  linkedWikiRowBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
+    borderRadius: 8,
+    padding: 10,
+  },
+  linkedWikiRowText: {
+    flex: 1,
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: colors.parchmentLight,
   },
 });
 

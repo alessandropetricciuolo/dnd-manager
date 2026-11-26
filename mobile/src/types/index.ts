@@ -41,6 +41,12 @@ export interface Campaign {
   is_public: boolean;
   type: CampaignType | null;
   image_url: string | null;
+  is_long_campaign?: boolean;
+  player_primer?: string | null;
+  primer_typography?: {
+    fontSize?: 'small' | 'medium' | 'large';
+    fontFamily?: 'serif' | 'sans';
+  } | null;
   image_style_prompt?: string | null;
   ai_image_style_key?: string | null;
   ai_context?: Record<string, unknown> | null;
@@ -64,6 +70,8 @@ export interface Session {
   notes: string | null;
   location: string | null;
   dm_id: string | null;
+  party_id?: string | null;
+  chapter_title?: string | null;
   session_summary: string | null;
   gm_private_notes: string | null;
   is_pre_closed?: boolean;
@@ -93,6 +101,9 @@ export interface Character {
   rules_snapshot?: Record<string, unknown> | null;
   assigned_to: string | null;
   time_offset_hours?: number;
+  calendar_anchor_date?: Record<string, unknown> | null;
+  calendar_anchor_hours?: number | null;
+  calendar_current_date?: Record<string, unknown> | null;
   pos_x_grid?: number;
   pos_y_grid?: number;
   coins_gp?: number;
@@ -339,6 +350,15 @@ export interface UpdateSessionInput {
   gm_private_notes?: string | null;
 }
 
+export interface SessionFeedbackEntry {
+  session_id: string;
+  campaign_id: string;
+  session_rating: number;
+  campaign_rating: number;
+  comment: string | null;
+  updated_at: string;
+}
+
 export interface PlayerSession extends Session {
   campaigns?: {
     id?: string;
@@ -347,6 +367,10 @@ export interface PlayerSession extends Session {
     type?: CampaignType | null;
     description?: string | null;
   } | null;
+  campaign_parties?:
+    | { name: string; color?: string | null }
+    | Array<{ name: string; color?: string | null }>
+    | null;
   session_signups?: SessionSignup[];
   mySignup?: SessionSignup | null;
   confirmedCount?: number;
@@ -443,6 +467,10 @@ export interface WikiEntity {
   name: string;
   content: any;
   image_url: string | null;
+  telegram_fallback_id?: string | null;
+  attributes?: Record<string, any> | null;
+  sort_order?: number | null;
+  linked_mission_id?: string | null;
   tags?: string[];
   admin_only?: boolean;
   is_secret?: boolean;
@@ -451,6 +479,36 @@ export interface WikiEntity {
   archived_at?: string | null;
   created_at?: string;
   updated_at?: string;
+}
+
+export interface CampaignMap {
+  id: string;
+  campaign_id: string;
+  name: string;
+  image_url: string;
+  description?: string | null;
+  map_type?: string | null;
+  visibility?: 'public' | 'secret' | 'selective' | string;
+  parent_map_id?: string | null;
+  wiki_entity_id?: string | null;
+  admin_only?: boolean;
+  created_at?: string;
+}
+
+export interface CampaignGuild {
+  id: string;
+  campaign_id: string;
+  name: string;
+  rank?: string;
+  score: number;
+  auto_rank?: boolean;
+}
+
+export interface CampaignParty {
+  id: string;
+  campaign_id: string;
+  name: string;
+  color?: string | null;
 }
 
 export type MissionStatus = 'open' | 'in_progress' | 'completed' | string;
@@ -467,7 +525,10 @@ export interface CampaignMission {
   urgenza: string;
   description: string;
   status: MissionStatus;
+  mission_kind?: 'organization' | 'personal' | string;
   points_reward?: number;
+  completed_at?: string | null;
+  completed_by_guild_id?: string | null;
   treasure_gp?: number;
   treasure_sp?: number;
   treasure_cp?: number;

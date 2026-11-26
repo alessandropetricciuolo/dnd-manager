@@ -66,50 +66,116 @@ export function projectMobileCharacter(item: any): PlayerCharacter {
       damageType: weapon.type,
     };
   });
-  const mappedSpells = sheet?.spells?.map((spell, index) => ({
-    id: `sheet-spell-${index}`,
-    level: spell.level,
-    name: spell.name,
-    summary: spell.summary,
-    prepared: spell.prepared,
-    description: spell.fullTextMd ?? undefined,
-    components: spell.verbal !== undefined && spell.somatic !== undefined && spell.material !== undefined
-      ? [spell.verbal && 'V', spell.somatic && 'S', spell.material && 'M'].filter(Boolean).join(', ')
-      : undefined,
-    castingTime: '',
-    range: '',
-    duration: '',
-    ritual: spell.ritual,
-    concentration: spell.concentration,
-  }));
-  const sheetFeatures = sheet ? [
-    ['raceTraitsMd', 'race'],
-    ['subraceTraitsMd', 'race'],
-    ['classFeaturesMd', 'class'],
-    ['subclassFeaturesMd', 'subclass'],
-    ['backgroundMd', 'background'],
-  ].flatMap(([field, source]) => {
-    const markdown = sheet[field as keyof CharacterSheetV1];
-    if (typeof markdown !== 'string' || !markdown.trim()) return [];
-    const blocks = markdown.split(/(?=^#{1,4}\s)/m).map((block) => block.trim()).filter(Boolean);
+  const mappedSpells = sheet?.spells?.map((spell, index) => {
+    const hasAnyComponentFlag =
+      spell.verbal !== undefined || spell.somatic !== undefined || spell.material !== undefined;
+    return {
+      id: `sheet-spell-${index}`,
+      level: spell.level,
+      name: spell.name,
+      summary: spell.summary,
+      prepared: spell.prepared,
+      description: spell.fullTextMd ?? undefined,
+      components: hasAnyComponentFlag
+        ? [spell.verbal && 'V', spell.somatic && 'S', spell.material && 'M'].filter(Boolean).join(', ')
+        : undefined,
+      castingTime: '',
+      range: '',
+      duration: '',
+      ritual: spell.ritual,
+      concentration: spell.concentration,
+    };
+  });
+
+  const nonEmptyStr = (v: unknown): string | undefined =>
+    typeof v === 'string' && v.trim() ? v.trim() : undefined;
+
+  // Read D&D 5e rules markdown from character_sheet with fallback to top-level CharacterRulesSnapshotV1
+  const raceTraitsMd = nonEmptyStr(sheet?.raceTraitsMd) ?? nonEmptyStr(snapshot.raceTraitsMd);
+  const subraceTraitsMd = nonEmptyStr(sheet?.subraceTraitsMd) ?? nonEmptyStr(snapshot.subraceTraitsMd);
+  const classFeaturesMd = nonEmptyStr(sheet?.classFeaturesMd) ?? nonEmptyStr(snapshot.classPrivilegesMd);
+  const subclassFeaturesMd = nonEmptyStr(sheet?.subclassFeaturesMd) ?? nonEmptyStr(snapshot.classSubclassMd);
+  const backgroundRulesMd = nonEmptyStr(sheet?.backgroundMd) ?? nonEmptyStr(snapshot.backgroundRulesMd);
+  const spellcastingMd = nonEmptyStr(snapshot.spellcastingMd);
+  const spellsListMd = nonEmptyStr(snapshot.spellsListMd);
+  const spellsDetailsMd =
+    snapshot.spellsDetailsMd && typeof snapshot.spellsDetailsMd === 'object' && !Array.isArray(snapshot.spellsDetailsMd)
+      ? (snapshot.spellsDetailsMd as Record<string, string>)
+      : null;
+
+  const markdownFeatureBlocks: Array<[string | undefined, 'race' | 'class' | 'subclass' | 'background', string]> = [
+    [raceTraitsMd, 'race', 'Tratti razziali'],
+    [subraceTraitsMd, 'race', 'Tratti di sottorazza'],
+    [classFeaturesMd, 'class', 'Privilegi di classe'],
+    [subclassFeaturesMd, 'subclass', 'Privilegi di sottoclasse'],
+    [backgroundRulesMd, 'background', 'Privilegio di background'],
+  ];
+
+  const derivedFeatures = markdownFeatureBlocks.flatMap(([markdown, source, defaultTitle], groupIdx) => {
+    if (!markdown) return [];
+    const blocks = markdown
+      .split(/(?=^#{1,4}\s)/m)
+      .map((block) => block.trim())
+      .filter(Boolean);
     return blocks.map((block, index) => {
       const [firstLine, ...rest] = block.split('\n');
+      const heading = firstLine.match(/^#{1,4}\s+(.+)$/)?.[1]?.trim();
       return {
-        id: `sheet-${source}-${index}`,
-        name: firstLine.match(/^#{1,4}\s+(.+)$/)?.[1]?.trim() || ({
-          race: 'Tratti razziali',
-          class: 'Privilegi di classe',
-          subclass: 'Privilegi di sottoclasse',
-          background: 'Background',
-        } as Record<string, string>)[String(source)],
+        id: `sheet-${source}-${groupIdx}-${index}`,
+        name: heading || defaultTitle,
         source,
-        description: rest.join('\n').trim() || block,
+        description: heading ? rest.join('\n').trim() || block : block,
       };
     });
-  }) : [];
+  });
+
+  const mergedFeatures = Array.from(
+    new Map(
+      [
+        ...(Array.isArray(snapshot.features) ? snapshot.features : []),
+        ...derivedFeatures,
+      ].map((feature: any) => [
+        feature?.id ?? `${feature?.name ?? 'feature'}-${feature?.source ?? ''}`,
+        feature,
+      ]),
+    ).values(),
+  );
+
+  const derivedSpellAbility =
+    sheet?.spellcastingAbility ??
+    (snapshot.spellcasting && typeof snapshot.spellcasting === 'object'
+      ? (snapshot.spellcasting as Record<string, unknown>).ability
+      : undefined) ??
+    (typeof snapshot.spellcastingAbility === 'string' ? snapshot.spellcastingAbility : undefined);
+
+  const derivedCantripsKnown =
+    sheet?.cantripsKnown ??
+    (typeof snapshot.cantripsKnown === 'number' && Number.isFinite(snapshot.cantripsKnown)
+      ? snapshot.cantripsKnown
+      : undefined);
 
   const projectedSnapshot: Record<string, any> = {
     ...snapshot,
+    derived_rules: {
+      raceTraitsMd: raceTraitsMd ?? null,
+      subraceTraitsMd: subraceTraitsMd ?? null,
+      classPrivilegesMd: classFeaturesMd ?? null,
+      classSubclassMd: subclassFeaturesMd ?? null,
+      backgroundRulesMd: backgroundRulesMd ?? null,
+      spellcastingMd: spellcastingMd ?? null,
+      spellsListMd: spellsListMd ?? null,
+      spellsDetailsMd,
+      warnings: Array.isArray(snapshot.warnings) ? snapshot.warnings.filter((w): w is string => typeof w === 'string') : [],
+    },
+    ...(derivedCantripsKnown !== undefined ? { cantrips_known: derivedCantripsKnown } : {}),
+    ...(sheet?.spellsPrepared !== undefined ? { spells_prepared: sheet.spellsPrepared } : {}),
+    spellcasting: {
+      ...(snapshot.spellcasting && typeof snapshot.spellcasting === 'object' ? snapshot.spellcasting : {}),
+      ...(derivedSpellAbility ? { ability: derivedSpellAbility } : {}),
+      ...(sheet?.spellSaveDc !== undefined && sheet?.spellSaveDc !== null ? { saveDc: sheet.spellSaveDc } : {}),
+      ...(sheet?.spellAttackBonus !== undefined && sheet?.spellAttackBonus !== null ? { attackBonus: sheet.spellAttackBonus } : {}),
+    },
+    ...(mergedFeatures.length > 0 || sheet ? { features: mergedFeatures } : {}),
     ...(sheet ? {
       abilities,
       proficiency_bonus: sheet.proficiencyBonus ?? snapshot.proficiency_bonus,
@@ -118,12 +184,6 @@ export function projectMobileCharacter(item: any): PlayerCharacter {
       initiative: sheet.initiative ?? snapshot.initiative,
       ...(sheet.personality ? { personality: sheet.personality } : {}),
       ...(sheet.playerNotes !== undefined ? { playerNotes: sheet.playerNotes } : {}),
-      spellcasting: {
-        ...(snapshot.spellcasting && typeof snapshot.spellcasting === 'object' ? snapshot.spellcasting : {}),
-        ...(sheet.spellcastingAbility ? { ability: sheet.spellcastingAbility } : {}),
-        ...(sheet.spellSaveDc !== undefined && sheet.spellSaveDc !== null ? { saveDc: sheet.spellSaveDc } : {}),
-        ...(sheet.spellAttackBonus !== undefined && sheet.spellAttackBonus !== null ? { attackBonus: sheet.spellAttackBonus } : {}),
-      },
       ...(mappedWeapons !== undefined ? { weapons: mappedWeapons } : { weapons: [] }),
       ...(sheet.inventory !== undefined
         ? { inventory: sheet.inventory.map((name, index) => ({ id: `sheet-item-${index}`, name })) }
@@ -136,10 +196,6 @@ export function projectMobileCharacter(item: any): PlayerCharacter {
         ...(sheet.toolProficiencies !== undefined ? { tools: sheet.toolProficiencies } : {}),
         ...(sheet.languages !== undefined ? { languages: sheet.languages } : {}),
       },
-      features: Array.from(new Map([
-        ...(Array.isArray(snapshot.features) ? snapshot.features : []),
-        ...sheetFeatures,
-      ].map((feature: any) => [feature?.id ?? `${feature?.name ?? 'feature'}-${feature?.source ?? ''}`, feature])).values()),
     } : {}),
     ...(hasExplicitSlots ? { spellSlots: resolvedSlots } : {}),
     ...(hitDice ? { hit_dice: hitDice } : {}),

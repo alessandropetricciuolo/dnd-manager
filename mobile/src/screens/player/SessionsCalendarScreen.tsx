@@ -18,16 +18,23 @@ import {
   CheckCircle2,
   CalendarCheck,
   AlertTriangle,
-  RotateCcw,
   Sparkles,
   Users,
   Swords,
   Compass,
+  Star,
+  BookOpen,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { useCampaign } from '../../contexts/CampaignContext';
 import { usePlayerSessions } from '../../hooks/usePlayerSessions';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
+import { PlayerSessionDetailModal } from '../../components/player/PlayerSessionDetailModal';
+import { SessionFeedbackModal } from '../../components/player/SessionFeedbackModal';
+import { RichMarkdownView } from '../../components/common/RichMarkdownView';
+import { normalizeSessionPartyBadge } from '../../lib/session-booking';
 import { PlayerSession } from '../../types';
 
 type FilterType = 'all' | 'mine' | 'available' | 'completed';
@@ -35,10 +42,12 @@ type FilterType = 'all' | 'mine' | 'available' | 'completed';
 export const SessionsCalendarScreen: React.FC = () => {
   const route = useRoute<any>();
   const notificationSessionId: string | undefined = route?.params?.notificationSessionId;
-  const { activeCampaign } = useCampaign();
+  const { activeCampaign, gmNamesByCampaignId, sessionDirectoryMeta } = useCampaign();
   const {
     sessions,
     allSessions,
+    feedbackBySessionId,
+    pendingFeedbackSessions,
     filterByCampaign,
     setFilterByCampaign,
     loading,
@@ -46,6 +55,7 @@ export const SessionsCalendarScreen: React.FC = () => {
     refresh,
     signUpForSession,
     cancelSignUp,
+    submitFeedback,
   } = usePlayerSessions();
 
   const [filter, setFilter] = useState<FilterType>('all');
@@ -53,6 +63,9 @@ export const SessionsCalendarScreen: React.FC = () => {
   const [actionInProgressId, setActionInProgressId] = useState<string | null>(null);
   const [highlightedSessionId, setHighlightedSessionId] = useState<string | null>(null);
   const [notificationUnavailable, setNotificationUnavailable] = useState<boolean>(false);
+  const [expandedSummaryIds, setExpandedSummaryIds] = useState<Record<string, boolean>>({});
+  const [detailSession, setDetailSession] = useState<PlayerSession | null>(null);
+  const [feedbackSession, setFeedbackSession] = useState<PlayerSession | null>(null);
 
   useEffect(() => {
     if (!notificationSessionId || loading) return;
@@ -69,6 +82,10 @@ export const SessionsCalendarScreen: React.FC = () => {
       setNotificationUnavailable(true);
     }
   }, [notificationSessionId, loading, allSessions, activeCampaign?.id, setFilterByCampaign]);
+
+  const toggleSummary = (sessionId: string) => {
+    setExpandedSummaryIds((prev) => ({ ...prev, [sessionId]: !prev[sessionId] }));
+  };
 
   // Format date and time in Italian
   const formatSessionDateTime = (dateStr: string) => {
@@ -125,7 +142,7 @@ export const SessionsCalendarScreen: React.FC = () => {
     }
   };
 
-  // Filtered session list (bring highlighted notification session to top if present)
+  // Filtered session list (sort completed descending by date, scheduled ascending)
   const filteredSessions = useMemo(() => {
     const list = sessions.filter((s) => {
       if (filter === 'mine') {
@@ -140,11 +157,40 @@ export const SessionsCalendarScreen: React.FC = () => {
       return true;
     });
 
+    if (filter === 'completed') {
+      list.sort(
+        (a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime()
+      );
+    }
+
     if (!highlightedSessionId) return list;
     const idx = list.findIndex((s) => s.id === highlightedSessionId);
     if (idx <= 0) return list;
     return [list[idx], ...list.slice(0, idx), ...list.slice(idx + 1)];
   }, [sessions, filter, highlightedSessionId]);
+
+  const completedCount = useMemo(
+    () => sessions.filter((s) => s.status === 'completed').length,
+    [sessions]
+  );
+
+  // Direct signup from detail modal
+  const handleDirectSignUp = async (session: PlayerSession) => {
+    setActionInProgressId(session.id);
+    const res = await signUpForSession(session.id);
+    setActionInProgressId(null);
+
+    if (res.success) {
+      Alert.alert(
+        'Iscrizione Registrata!',
+        res.status === 'waitlist'
+          ? 'Sei in lista d’attesa. Ti informeremo se un compagno rinuncia.'
+          : 'La tua presenza al tavolo è confermata. Prepara dadi e scheda!'
+      );
+    } else {
+      Alert.alert('Attenzione', res.error || 'Impossibile completare l’iscrizione');
+    }
+  };
 
   // Handle Signup Confirmation
   const handleSignUpPrompt = (session: PlayerSession) => {
@@ -158,21 +204,8 @@ export const SessionsCalendarScreen: React.FC = () => {
       { text: 'Annulla', style: 'cancel' },
       {
         text: isFull ? 'Entra in Attesa' : 'Conferma Presenza',
-        onPress: async () => {
-          setActionInProgressId(session.id);
-          const res = await signUpForSession(session.id);
-          setActionInProgressId(null);
-
-          if (res.success) {
-            Alert.alert(
-              'Iscrizione Registrata!',
-              res.status === 'waitlist'
-                ? 'Sei in lista d’attesa. Ti informeremo se un compagno rinuncia.'
-                : 'La tua presenza al tavolo è confermata. Prepara dadi e scheda!'
-            );
-          } else {
-            Alert.alert('Attenzione', res.error || 'Impossibile completare l’iscrizione');
-          }
+        onPress: () => {
+          void handleDirectSignUp(session);
         },
       },
     ]);
@@ -225,7 +258,7 @@ export const SessionsCalendarScreen: React.FC = () => {
         <View style={styles.header}>
           <Text style={styles.title}>CALENDARIO TAVOLI</Text>
           <Text style={styles.subtitle}>
-            Appuntamenti, campagne e disponibilità al tavolo da gioco della taverna.
+            Appuntamenti, cronaca sessioni e disponibilità al tavolo della taverna.
           </Text>
         </View>
 
@@ -284,6 +317,28 @@ export const SessionsCalendarScreen: React.FC = () => {
             <Text style={styles.changeCampaignIconBtnText}>Cambia ▾</Text>
           </TouchableOpacity>
         </View>
+
+        {/* Pending Post-Session Feedback Banner */}
+        {pendingFeedbackSessions.length > 0 && (
+          <TouchableOpacity
+            style={styles.feedbackPromptCard}
+            onPress={() => setFeedbackSession(pendingFeedbackSessions[0])}
+            activeOpacity={0.85}
+          >
+            <Star size={18} color={colors.brassLight} fill={colors.brassBase} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.feedbackPromptTitle}>
+                {pendingFeedbackSessions.length === 1
+                  ? '1 sessione giocata attende il tuo feedback'
+                  : `${pendingFeedbackSessions.length} sessioni giocate attendono il tuo feedback`}
+              </Text>
+              <Text style={styles.feedbackPromptSub} numberOfLines={1}>
+                Tocca per valutare «{pendingFeedbackSessions[0].title || 'Sessione'}»
+              </Text>
+            </View>
+            <Text style={styles.feedbackPromptCta}>Valuta ›</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Filter Pills */}
         <ScrollView
@@ -358,7 +413,7 @@ export const SessionsCalendarScreen: React.FC = () => {
                 filter === 'completed' && styles.filterTextActive,
               ]}
             >
-              Concluse
+              Concluse ({completedCount})
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -409,17 +464,24 @@ export const SessionsCalendarScreen: React.FC = () => {
         {filteredSessions.map((session) => {
           const isScheduled = session.status === 'scheduled';
           const isCompleted = session.status === 'completed';
+          const isAttended = session.mySignup?.status === 'attended';
           const { dateLabel, timeLabel } = formatSessionDateTime(session.scheduled_at);
           const isBusy = actionInProgressId === session.id;
 
           const campaignName =
             session.campaigns?.name || 'Campagna Barber & Dragons';
-          const dmName = session.dm_id?.startsWith('dm-')
-            ? session.dm_id.replace('dm-', '').toUpperCase()
-            : 'Guglielmo Il Barbiere';
+          const partyBadge = normalizeSessionPartyBadge(session.campaign_parties);
+          const directoryEntry = sessionDirectoryMeta[session.id];
+          const dmName =
+            directoryEntry?.dmName ||
+            (session.campaign_id ? gmNamesByCampaignId[session.campaign_id] : null) ||
+            'Master di Gilda';
+          const participantNames = directoryEntry?.participants ?? [];
 
           const confirmed = session.confirmedCount ?? 0;
           const maxPlayers = session.max_players ?? 6;
+          const existingFeedback = feedbackBySessionId[session.id] ?? null;
+          const isSummaryExpanded = Boolean(expandedSummaryIds[session.id]);
 
           return (
             <View
@@ -432,21 +494,38 @@ export const SessionsCalendarScreen: React.FC = () => {
                 },
               ]}
             >
-              {/* Card Top: Campaign Badge & Signup Status */}
+              {/* Card Top: Campaign / Party Badges & Signup Status */}
               <View style={styles.cardHeader}>
-                <View style={styles.campaignBadge}>
-                  <Text style={styles.campaignBadgeText}>{campaignName}</Text>
+                <View style={styles.headerLeftBadges}>
+                  <View style={styles.campaignBadge}>
+                    <Text style={styles.campaignBadgeText} numberOfLines={1}>
+                      {campaignName}
+                    </Text>
+                  </View>
+
+                  {partyBadge && (
+                    <View
+                      style={[
+                        styles.partyBadge,
+                        { borderColor: partyBadge.color },
+                      ]}
+                    >
+                      <Text style={[styles.partyBadgeText, { color: partyBadge.color }]}>
+                        {partyBadge.name}
+                      </Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Status Badges */}
-                {session.isConfirmed && (
+                {isScheduled && session.isConfirmed && (
                   <View style={styles.statusBadgeConfirmed}>
                     <CheckCircle2 size={12} color={colors.void} />
                     <Text style={styles.statusTextConfirmed}>SEI ISCRITTO</Text>
                   </View>
                 )}
 
-                {session.isWaitlist && (
+                {isScheduled && session.isWaitlist && (
                   <View style={styles.statusBadgeWaitlist}>
                     <Clock size={12} color={colors.brassLight} />
                     <Text style={styles.statusTextWaitlist}>IN ATTESA</Text>
@@ -485,15 +564,60 @@ export const SessionsCalendarScreen: React.FC = () => {
                 )}
               </View>
 
-              {/* Session Title */}
-              <Text style={styles.sessionTitle}>{session.title}</Text>
-
-              {/* Notes or Summary */}
-              {(session.notes || session.session_summary) && (
-                <Text style={styles.sessionNotes} numberOfLines={2}>
-                  {session.notes || session.session_summary}
+              {/* Tappable Title & Chapter */}
+              <TouchableOpacity
+                onPress={() => setDetailSession(session)}
+                activeOpacity={0.75}
+              >
+                {session.chapter_title ? (
+                  <View style={styles.chapterRow}>
+                    <BookOpen size={12} color={colors.brassBase} />
+                    <Text style={styles.chapterText}>{session.chapter_title}</Text>
+                  </View>
+                ) : null}
+                <Text style={styles.sessionTitle}>
+                  {session.title || 'Sessione Ufficiale'}
                 </Text>
-              )}
+              </TouchableOpacity>
+
+              {/* Scheduled Notes */}
+              {!isCompleted && session.notes ? (
+                <Text style={styles.sessionNotes} numberOfLines={2}>
+                  {session.notes}
+                </Text>
+              ) : null}
+
+              {/* Completed Expandable Summary */}
+              {isCompleted && session.session_summary ? (
+                <View style={styles.summaryBox}>
+                  <TouchableOpacity
+                    style={styles.summaryToggleRow}
+                    onPress={() => toggleSummary(session.id)}
+                    activeOpacity={0.75}
+                  >
+                    <Text style={styles.summaryToggleLabel}>RIASSUNTO DELLA CRONACA</Text>
+                    <View style={styles.summaryToggleAction}>
+                      <Text style={styles.summaryToggleCta}>
+                        {isSummaryExpanded ? 'Riduci' : 'Leggi tutto'}
+                      </Text>
+                      {isSummaryExpanded ? (
+                        <ChevronUp size={14} color={colors.brassLight} />
+                      ) : (
+                        <ChevronDown size={14} color={colors.brassLight} />
+                      )}
+                    </View>
+                  </TouchableOpacity>
+                  {isSummaryExpanded ? (
+                    <View style={{ marginTop: 8 }}>
+                      <RichMarkdownView markdown={session.session_summary} />
+                    </View>
+                  ) : (
+                    <Text style={styles.summaryPreviewText} numberOfLines={3}>
+                      {session.session_summary.replace(/^#{1,6}\s+/gm, '').trim()}
+                    </Text>
+                  )}
+                </View>
+              ) : null}
 
               {/* Details Grid */}
               <View style={styles.detailsGrid}>
@@ -510,7 +634,7 @@ export const SessionsCalendarScreen: React.FC = () => {
                 <View style={styles.detailItem}>
                   <MapPin size={14} color={colors.brassLight} />
                   <Text style={styles.detailText}>
-                    {session.location || 'Taverna Barber & Dragons - Tavolo Est'}
+                    {session.location || 'Taverna Barber & Dragons'}
                   </Text>
                 </View>
 
@@ -518,21 +642,34 @@ export const SessionsCalendarScreen: React.FC = () => {
                   <User size={14} color={colors.parchmentMuted} />
                   <Text style={styles.detailText}>DM: {dmName}</Text>
                 </View>
+
+                {isScheduled && participantNames.length > 0 && (
+                  <View style={styles.detailItem}>
+                    <Users size={14} color={colors.brassLight} />
+                    <Text style={styles.detailParticipantsText} numberOfLines={2}>
+                      Al tavolo: {participantNames.join(', ')}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Card Footer: Player Capacity & Actions */}
               <View style={styles.cardFooter}>
                 {isScheduled && (
                   <View style={styles.actionContainer}>
-                    <View style={styles.playersInfo}>
+                    <TouchableOpacity
+                      style={styles.playersInfo}
+                      onPress={() => setDetailSession(session)}
+                      activeOpacity={0.7}
+                    >
                       <Users size={14} color={colors.parchmentMuted} />
                       <Text style={styles.playersCount}>
                         {confirmed}/{maxPlayers} Avventurieri
                       </Text>
                       {confirmed >= maxPlayers && (
-                        <Text style={styles.fullNoticeText}>(Tavolo Pieno)</Text>
+                        <Text style={styles.fullNoticeText}>(Pieno)</Text>
                       )}
-                    </View>
+                    </TouchableOpacity>
 
                     {/* Action Buttons based on status */}
                     {session.isConfirmed ? (
@@ -594,12 +731,50 @@ export const SessionsCalendarScreen: React.FC = () => {
 
                 {isCompleted && (
                   <View style={styles.completedInfo}>
-                    <Text style={styles.xpGained}>
-                      Ricompensa della Serata: +450 XP
-                    </Text>
                     <View style={styles.attendedBadge}>
-                      <Text style={styles.attendedText}>Presenza Registrata</Text>
+                      <Text
+                        style={[
+                          styles.attendedText,
+                          !isAttended && { color: colors.parchmentMuted },
+                        ]}
+                      >
+                        {isAttended ? 'Presenza Registrata' : 'Archivio Campagna'}
+                      </Text>
                     </View>
+
+                    {isAttended ? (
+                      <TouchableOpacity
+                        style={[
+                          styles.feedbackActionBtn,
+                          existingFeedback && styles.feedbackActionBtnSaved,
+                        ]}
+                        onPress={() => setFeedbackSession(session)}
+                        activeOpacity={0.8}
+                      >
+                        <Star
+                          size={12}
+                          color={existingFeedback ? colors.brassLight : colors.void}
+                          fill={existingFeedback ? colors.brassBase : colors.void}
+                        />
+                        <Text
+                          style={[
+                            styles.feedbackActionBtnText,
+                            existingFeedback && styles.feedbackActionBtnTextSaved,
+                          ]}
+                        >
+                          {existingFeedback
+                            ? `Feedback ★ ${existingFeedback.session_rating}/5`
+                            : 'Valuta Sessione'}
+                        </Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.detailLinkBtn}
+                        onPress={() => setDetailSession(session)}
+                      >
+                        <Text style={styles.detailLinkBtnText}>Dettagli ›</Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
                 )}
               </View>
@@ -607,6 +782,26 @@ export const SessionsCalendarScreen: React.FC = () => {
           );
         })}
       </ScrollView>
+
+      {/* Session Detail Modal */}
+      <PlayerSessionDetailModal
+        visible={Boolean(detailSession)}
+        session={detailSession}
+        existingFeedback={detailSession ? feedbackBySessionId[detailSession.id] ?? null : null}
+        onClose={() => setDetailSession(null)}
+        onSignUp={handleDirectSignUp}
+        onCancelSignUp={handleCancelPrompt}
+        onOpenFeedback={(sess) => setFeedbackSession(sess)}
+      />
+
+      {/* Post-Session Feedback Modal */}
+      <SessionFeedbackModal
+        visible={Boolean(feedbackSession)}
+        session={feedbackSession}
+        existingFeedback={feedbackSession ? feedbackBySessionId[feedbackSession.id] ?? null : null}
+        onClose={() => setFeedbackSession(null)}
+        onSubmit={submitFeedback}
+      />
 
       {/* Campaign Selector Modal */}
       <CampaignSelectorModal
@@ -669,6 +864,33 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '800',
     color: colors.brassLight,
+  },
+  feedbackPromptCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: 'rgba(212, 175, 55, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.45)',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  feedbackPromptTitle: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  feedbackPromptSub: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+    marginTop: 1,
+  },
+  feedbackPromptCta: {
+    fontSize: 12,
+    fontWeight: '800',
+    color: colors.brassBase,
   },
   header: {
     marginBottom: 16,
@@ -757,8 +979,15 @@ const styles = StyleSheet.create({
   cardHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    gap: 8,
     marginBottom: 10,
+  },
+  headerLeftBadges: {
+    flex: 1,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   campaignBadge: {
     backgroundColor: colors.stone,
@@ -767,12 +996,23 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 3,
     borderRadius: 4,
-    maxWidth: '60%',
+    maxWidth: '100%',
   },
   campaignBadgeText: {
     fontSize: 10,
     fontWeight: '700',
     color: colors.brassLight,
+  },
+  partyBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.04)',
+    borderWidth: 1,
+    paddingHorizontal: 7,
+    paddingVertical: 3,
+    borderRadius: 4,
+  },
+  partyBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   statusBadgeConfirmed: {
     flexDirection: 'row',
@@ -853,17 +1093,63 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.emerald,
   },
+  chapterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    marginBottom: 3,
+  },
+  chapterText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassBase,
+  },
   sessionTitle: {
     fontSize: 16,
     fontWeight: '800',
     color: colors.parchmentLight,
-    marginBottom: 6,
+    marginBottom: 8,
   },
   sessionNotes: {
     fontSize: 12,
     color: colors.parchmentMuted,
     marginBottom: 10,
     lineHeight: 16,
+  },
+  summaryBox: {
+    backgroundColor: colors.stone,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 175, 55, 0.25)',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 12,
+  },
+  summaryToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  summaryToggleLabel: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.brassBase,
+    letterSpacing: 0.6,
+  },
+  summaryToggleAction: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  summaryToggleCta: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
+  },
+  summaryPreviewText: {
+    fontSize: 12,
+    color: colors.parchmentMuted,
+    lineHeight: 17,
+    marginTop: 6,
   },
   detailsGrid: {
     gap: 8,
@@ -877,6 +1163,12 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 12,
     color: colors.parchmentLight,
+  },
+  detailParticipantsText: {
+    flex: 1,
+    fontSize: 12,
+    color: colors.brassLight,
+    fontWeight: '600',
   },
   cardFooter: {
     borderTopWidth: 1,
@@ -954,22 +1246,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-  },
-  xpGained: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: colors.brassLight,
+    gap: 8,
   },
   attendedBadge: {
     backgroundColor: colors.stone,
     paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingVertical: 4,
     borderRadius: 4,
+    borderWidth: 1,
+    borderColor: colors.stoneBorder,
   },
   attendedText: {
     fontSize: 10,
     color: colors.emerald,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+  feedbackActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: colors.brassBase,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: colors.brassLight,
+  },
+  feedbackActionBtnSaved: {
+    backgroundColor: colors.stone,
+    borderColor: 'rgba(212, 175, 55, 0.45)',
+  },
+  feedbackActionBtnText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: colors.void,
+  },
+  feedbackActionBtnTextSaved: {
+    color: colors.brassLight,
+  },
+  detailLinkBtn: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  detailLinkBtnText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: colors.brassLight,
   },
 });
 

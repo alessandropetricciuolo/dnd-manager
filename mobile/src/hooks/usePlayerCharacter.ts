@@ -191,6 +191,7 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
   }, [activeCharacter]);
 
   const updateHp = useCallback((hitPoints: number, tempHp?: number) => saveOperation({ type: 'hp', hitPoints: Math.max(0, Math.round(hitPoints)), ...(tempHp === undefined ? {} : { tempHp: Math.max(0, Math.round(tempHp)) }) }), [saveOperation]);
+  const toggleInspiration = useCallback(() => saveOperation({ type: 'toggleInspiration' }), [saveOperation]);
   const spendHitDie = useCallback((count = 1) => saveOperation({ type: 'spendHitDie', count }), [saveOperation]);
   const useFeature = useCallback((featureId: string) => saveOperation({ type: 'useFeature', featureId }), [saveOperation]);
   const restoreFeature = useCallback((featureId: string) => saveOperation({ type: 'restoreFeature', featureId }), [saveOperation]);
@@ -243,6 +244,7 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
     isSaving: pendingSaves > 0,
     refresh: fetchCharacters,
     updateHp,
+    toggleInspiration,
     spendHitDie,
     useFeature,
     restoreFeature,

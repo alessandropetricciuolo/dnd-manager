@@ -18,10 +18,13 @@ import {
   Calendar,
   Sparkles,
   Compass,
+  BookOpen,
+  User,
 } from 'lucide-react-native';
 import { colors } from '../../theme/colors';
 import { CAMPAIGN_TYPE_BADGES, CAMPAIGN_TYPE_LABELS } from '../../contexts/CampaignContext';
-import { Campaign, CampaignType, Session } from '../../types';
+import { ELDARIA_CAMPAIGN_ID } from '../../lib/long-campaign-helpers';
+import { Campaign, CampaignType, PlayerCharacter, Session } from '../../types';
 import { resolveImageUrl } from '../../utils/imageUrl';
 
 if (
@@ -38,6 +41,10 @@ interface ExpandableCampaignCardProps {
   isGmView?: boolean;
   onNavigateRegia?: (campaign: Campaign) => void;
   upcomingSession?: Session | null;
+  gmName?: string | null;
+  isMember?: boolean;
+  assignedCharacter?: PlayerCharacter | null;
+  onOpenGuide?: (campaign: Campaign) => void;
 }
 
 const ExpandableCampaignCardComponent: React.FC<ExpandableCampaignCardProps> = ({
@@ -47,6 +54,10 @@ const ExpandableCampaignCardComponent: React.FC<ExpandableCampaignCardProps> = (
   isGmView = false,
   onNavigateRegia,
   upcomingSession,
+  gmName,
+  isMember = false,
+  assignedCharacter,
+  onOpenGuide,
 }) => {
   const [isExpanded, setIsExpanded] = useState<boolean>(false);
   const [imageError, setImageError] = useState<boolean>(false);
@@ -200,6 +211,40 @@ const ExpandableCampaignCardComponent: React.FC<ExpandableCampaignCardProps> = (
             <Text style={styles.metaValue}>{CAMPAIGN_TYPE_LABELS[cType] || cType}</Text>
           </View>
 
+          {gmName ? (
+            <View style={styles.metaRow}>
+              <Crown size={15} color={colors.brassBase} />
+              <Text style={styles.metaLabel}>MASTER:</Text>
+              <Text style={styles.metaValue}>{gmName}</Text>
+            </View>
+          ) : null}
+
+          {cType === 'long' && !isGmView && (
+            <View style={styles.metaRow}>
+              <Shield size={15} color={isMember ? colors.emerald : colors.brassLight} />
+              <Text style={styles.metaLabel}>STATO:</Text>
+              <Text style={[styles.metaValue, isMember && { color: colors.emerald, fontWeight: '700' }]}>
+                {isMember
+                  ? 'Iscritto alla campagna Long'
+                  : campaign.id === ELDARIA_CAMPAIGN_ID
+                    ? 'Ammissione dopo colloquio dal vivo'
+                    : campaign.long_registrations_open === false
+                      ? 'Iscrizioni chiuse · contatta il GM'
+                      : 'Iscrizioni aperte'}
+              </Text>
+            </View>
+          )}
+
+          {!isGmView && assignedCharacter ? (
+            <View style={styles.metaRow}>
+              <User size={15} color={colors.emerald} />
+              <Text style={styles.metaLabel}>EROE:</Text>
+              <Text style={[styles.metaValue, { color: colors.emerald, fontWeight: '700', flex: 1 }]} numberOfLines={1}>
+                {assignedCharacter.name} (Lv. {assignedCharacter.level ?? 1} {assignedCharacter.character_class ?? ''})
+              </Text>
+            </View>
+          ) : null}
+
           {upcomingSession && (
             <View style={styles.upcomingRow}>
               <Calendar size={15} color={colors.emerald} />
@@ -215,6 +260,25 @@ const ExpandableCampaignCardComponent: React.FC<ExpandableCampaignCardProps> = (
             </View>
           )}
         </View>
+
+        {/* Player Primer / Eldaria Guide Button */}
+        {cType === 'long' &&
+          Boolean(campaign.player_primer?.trim()) &&
+          onOpenGuide &&
+          (campaign.id !== ELDARIA_CAMPAIGN_ID || isMember || isGmView) && (
+            <TouchableOpacity
+              style={styles.guideBtn}
+              onPress={() => onOpenGuide(campaign)}
+              activeOpacity={0.85}
+            >
+              <BookOpen size={15} color={colors.brassLight} />
+              <Text style={styles.guideBtnText}>
+                {campaign.id === ELDARIA_CAMPAIGN_ID
+                  ? 'Inizia qui · Guida di Eldaria'
+                  : 'Leggi la Guida del Giocatore'}
+              </Text>
+            </TouchableOpacity>
+          )}
 
         {/* Action Row */}
         <View style={styles.actionRow}>
@@ -534,6 +598,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
+  },
+  guideBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: 'rgba(200, 157, 73, 0.14)',
+    borderWidth: 1,
+    borderColor: colors.brassBase,
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 12,
+  },
+  guideBtnText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: colors.brassLight,
   },
   selectBtn: {
     flex: 1,

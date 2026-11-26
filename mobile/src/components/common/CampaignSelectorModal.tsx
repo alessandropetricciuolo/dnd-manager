@@ -24,6 +24,7 @@ import {
 import { colors } from '../../theme/colors';
 import { useCampaign, CAMPAIGN_TYPE_BADGES } from '../../contexts/CampaignContext';
 import { useAuth } from '../../contexts/AuthContext';
+import { ELDARIA_CAMPAIGN_ID } from '../../lib/long-campaign-helpers';
 import { Campaign, CampaignType } from '../../types';
 
 interface CampaignSelectorModalProps {
@@ -43,6 +44,8 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
     activeCampaignId,
     selectCampaign,
     assignedCharactersMap,
+    gmNamesByCampaignId,
+    joinedCampaignIds,
   } = useCampaign();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -230,6 +233,10 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
                 const isGmOfThis = camp.gm_id === user?.id || role === 'admin';
                 const assignedChars = assignedCharactersMap[camp.id] || [];
                 const firstChar = assignedChars[0] || null;
+                const gmName = gmNamesByCampaignId[camp.id] || null;
+                const isMemberLong =
+                  camp.type === 'long' &&
+                  (role === 'gm' || role === 'admin' || joinedCampaignIds.includes(camp.id));
                 const badgeInfo = camp.type
                   ? CAMPAIGN_TYPE_BADGES[camp.type]
                   : CAMPAIGN_TYPE_BADGES.quest;
@@ -243,18 +250,37 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
                   >
                     {/* Top Row: Type Badge + Active Indicator */}
                     <View style={styles.cardHeaderRow}>
-                      <View
-                        style={[
-                          styles.typeBadge,
-                          {
-                            backgroundColor: badgeInfo.bg,
-                            borderColor: badgeInfo.border,
-                          },
-                        ]}
-                      >
-                        <Text style={[styles.typeBadgeText, { color: badgeInfo.text }]}>
-                          {badgeInfo.label}
-                        </Text>
+                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                        <View
+                          style={[
+                            styles.typeBadge,
+                            {
+                              backgroundColor: badgeInfo.bg,
+                              borderColor: badgeInfo.border,
+                            },
+                          ]}
+                        >
+                          <Text style={[styles.typeBadgeText, { color: badgeInfo.text }]}>
+                            {badgeInfo.label}
+                          </Text>
+                        </View>
+                        {camp.type === 'long' && (
+                          <Text
+                            style={{
+                              fontSize: 9.5,
+                              fontWeight: '700',
+                              color: isMemberLong ? colors.emerald : colors.parchmentMuted,
+                            }}
+                          >
+                            {isMemberLong
+                              ? '✓ Iscritto'
+                              : camp.id === ELDARIA_CAMPAIGN_ID
+                                ? 'Colloquio'
+                                : camp.long_registrations_open === false
+                                  ? 'Chiusa'
+                                  : 'Aperta'}
+                          </Text>
+                        )}
                       </View>
 
                       {isActive && (
@@ -265,10 +291,16 @@ export const CampaignSelectorModal: React.FC<CampaignSelectorModalProps> = ({
                       )}
                     </View>
 
-                    {/* Campaign Name & Description */}
+                    {/* Campaign Name & Master */}
                     <Text style={styles.cardTitle} numberOfLines={2}>
                       {camp.name}
                     </Text>
+
+                    {gmName ? (
+                      <Text style={{ fontSize: 11, color: colors.brassLight, fontWeight: '600', marginTop: 2 }}>
+                        Master · {gmName}
+                      </Text>
+                    ) : null}
 
                     {camp.description ? (
                       <Text style={styles.cardDesc} numberOfLines={2}>

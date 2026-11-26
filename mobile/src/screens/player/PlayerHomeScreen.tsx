@@ -45,6 +45,8 @@ import { GridCalendar } from '../../components/common/GridCalendar';
 import { ExpandableCampaignCard } from '../../components/common/ExpandableCampaignCard';
 import { RoleModeSwitcher } from '../../components/common/RoleModeSwitcher';
 import { PlayerSessionDetailModal } from '../../components/player/PlayerSessionDetailModal';
+import { CampaignGuideModal } from '../../components/player/CampaignGuideModal';
+import { ELDARIA_CAMPAIGN_ID } from '../../lib/long-campaign-helpers';
 import { Campaign, CampaignType, PlayerSession, Session } from '../../types';
 
 type SessionFilter = 'all' | 'mine' | 'available';
@@ -106,7 +108,7 @@ function formatSessionDate(dateStr: string) {
 
 export const PlayerHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { profile, user } = useAuth();
+  const { profile, user, role } = useAuth();
 
   const {
     campaigns,
@@ -114,6 +116,12 @@ export const PlayerHomeScreen: React.FC = () => {
     activeCampaignId,
     selectCampaign,
     refreshCampaigns,
+    assignedCharactersMap,
+    gmNamesByCampaignId,
+    sessionDirectoryMeta,
+    confirmedGuideCampaignIds,
+    confirmCampaignGuide,
+    joinedCampaignIds,
     isLongCampaignActive,
     isMemberOfActiveCampaign,
     hasJoinedLongCampaign,
@@ -121,6 +129,7 @@ export const PlayerHomeScreen: React.FC = () => {
     joinLongCampaign,
   } = useCampaign();
   const [joiningLong, setJoiningLong] = useState(false);
+  const [guideCampaign, setGuideCampaign] = useState<Campaign | null>(null);
 
   const {
     safeCharacter,
@@ -395,16 +404,78 @@ export const PlayerHomeScreen: React.FC = () => {
           <RoleModeSwitcher />
         </View>
 
+        {/* Promemoria Eldaria «Inizia qui» (come sul sito: si chiude dopo conferma lettura) */}
+        {activeCampaign?.id === ELDARIA_CAMPAIGN_ID &&
+          isMemberOfActiveCampaign &&
+          Boolean(activeCampaign.player_primer?.trim()) &&
+          !confirmedGuideCampaignIds.includes(ELDARIA_CAMPAIGN_ID) && (
+            <View style={styles.guideReminderBanner}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                <BookOpen size={18} color={colors.brassLight} />
+                <Text style={styles.guideReminderTitle}>Benvenuto in Eldaria · Inizia qui</Text>
+              </View>
+              <Text style={styles.guideReminderSub}>
+                Prima della tua prima serata al tavolo, leggi la presentazione del mondo, le 3 voci Wiki base e il regolamento, poi conferma la lettura.
+              </Text>
+              <TouchableOpacity
+                style={styles.browseSessionsBtn}
+                onPress={() => setGuideCampaign(activeCampaign)}
+                activeOpacity={0.85}
+              >
+                <BookOpen size={14} color={colors.void} />
+                <Text style={styles.browseSessionsBtnText}>Apri «Inizia qui»</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+
+        {/* Accesso rapido Guida del Giocatore per la campagna Long attiva */}
+        {isLongCampaignActive &&
+          activeCampaign &&
+          Boolean(activeCampaign.player_primer?.trim()) &&
+          (activeCampaign.id !== ELDARIA_CAMPAIGN_ID ||
+            isMemberOfActiveCampaign ||
+            role === 'gm' ||
+            role === 'admin') &&
+          (activeCampaign.id !== ELDARIA_CAMPAIGN_ID ||
+            confirmedGuideCampaignIds.includes(ELDARIA_CAMPAIGN_ID)) && (
+            <TouchableOpacity
+              style={styles.activePrimerStrip}
+              onPress={() => setGuideCampaign(activeCampaign)}
+              activeOpacity={0.85}
+            >
+              <BookOpen size={16} color={colors.brassLight} />
+              <View style={{ flex: 1 }}>
+                <Text style={styles.activePrimerTitle}>
+                  {activeCampaign.id === ELDARIA_CAMPAIGN_ID
+                    ? 'Inizia qui · Guida di Eldaria'
+                    : `Guida del Giocatore · ${activeCampaign.name}`}
+                </Text>
+                <Text style={styles.activePrimerSub}>
+                  {activeCampaign.gm_id && gmNamesByCampaignId[activeCampaign.id]
+                    ? `Master · ${gmNamesByCampaignId[activeCampaign.id]}`
+                    : 'Consulta ambientazione, regole di casa e preparazione'}
+                </Text>
+              </View>
+              <ChevronRight size={16} color={colors.brassBase} />
+            </TouchableOpacity>
+          )}
+
         {/* Banner Iscrizione Campagna Long (quando il giocatore non è ancora membro) */}
         {isLongCampaignActive && !isMemberOfActiveCampaign && activeCampaign && (
           <View style={styles.noSessionCard}>
-            <Text style={styles.noSessionTitle}>Campagna Long: Iscrizione Richiesta</Text>
-            <Text style={styles.noSessionSubtitle}>
-              {activeCampaign.long_registrations_open === false
-                ? `Le iscrizioni autonome per "${activeCampaign.name}" sono chiuse. Contatta il GM per essere aggiunto.`
-                : `Per prenotare le sessioni e accedere a Diario, Wiki e Missioni di "${activeCampaign.name}", iscriviti prima alla campagna.`}
+            <Text style={styles.noSessionTitle}>
+              {activeCampaign.id === ELDARIA_CAMPAIGN_ID
+                ? 'Eldaria: Ammissione dal Vivo'
+                : 'Campagna Long: Iscrizione Richiesta'}
             </Text>
-            {activeCampaign.long_registrations_open !== false && (
+            <Text style={styles.noSessionSubtitle}>
+              {activeCampaign.id === ELDARIA_CAMPAIGN_ID
+                ? 'Dopo il colloquio dal vivo, il GM aggiunge il tuo account a Eldaria.'
+                : activeCampaign.long_registrations_open === false
+                  ? `Le iscrizioni autonome per "${activeCampaign.name}" sono chiuse. Contatta il GM per essere aggiunto.`
+                  : `Per prenotare le sessioni e accedere a Diario, Wiki, Mappe e Missioni di "${activeCampaign.name}", iscriviti prima alla campagna.`}
+            </Text>
+            {activeCampaign.id !== ELDARIA_CAMPAIGN_ID && activeCampaign.long_registrations_open !== false && (
               <TouchableOpacity
                 style={[styles.browseSessionsBtn, joiningLong && { opacity: 0.6 }]}
                 onPress={handleJoinLongCampaign}
@@ -488,9 +559,11 @@ export const PlayerHomeScreen: React.FC = () => {
               <Text style={styles.dmLabel}>
                 Game Master:{' '}
                 <Text style={styles.dmName}>
-                  {targetSession.dm_id?.startsWith('dm-')
-                    ? targetSession.dm_id.replace('dm-', '').toUpperCase()
-                    : 'Master di Gilda'}
+                  {sessionDirectoryMeta[targetSession.id]?.dmName ||
+                    (targetSession.campaign_id ? gmNamesByCampaignId[targetSession.campaign_id] : null) ||
+                    (targetSession.dm_id?.startsWith('dm-')
+                      ? targetSession.dm_id.replace('dm-', '').toUpperCase()
+                      : 'Master di Gilda')}
                 </Text>
               </Text>
               <TouchableOpacity
@@ -617,6 +690,12 @@ export const PlayerHomeScreen: React.FC = () => {
               isActive={camp.id === activeCampaignId}
               onSelect={handleSelectCampaign}
               upcomingSession={upcomingSessionByCampaignId.get(camp.id) ?? null}
+              gmName={gmNamesByCampaignId[camp.id] ?? null}
+              isMember={
+                role === 'gm' || role === 'admin' || joinedCampaignIds.includes(camp.id)
+              }
+              assignedCharacter={(assignedCharactersMap[camp.id] ?? [])[0] ?? null}
+              onOpenGuide={(c) => setGuideCampaign(c)}
             />
           ))}
         </View>
@@ -740,6 +819,23 @@ export const PlayerHomeScreen: React.FC = () => {
         onSignUp={handleSignUp}
         onCancelSignUp={handleCancelSignUp}
       />
+
+      {/* Native Player Primer / Eldaria «Inizia qui» Modal */}
+      <CampaignGuideModal
+        visible={guideCampaign !== null}
+        campaign={guideCampaign}
+        canConfirmRead={
+          Boolean(guideCampaign) &&
+          role !== 'gm' &&
+          role !== 'admin' &&
+          joinedCampaignIds.includes(guideCampaign!.id)
+        }
+        isConfirmedRead={
+          Boolean(guideCampaign) && confirmedGuideCampaignIds.includes(guideCampaign!.id)
+        }
+        onConfirmRead={confirmCampaignGuide}
+        onClose={() => setGuideCampaign(null)}
+      />
     </SafeAreaView>
   );
 };
@@ -761,6 +857,45 @@ const styles = StyleSheet.create({
     borderColor: colors.brassDark,
     padding: 16,
     gap: 10,
+  },
+  guideReminderBanner: {
+    backgroundColor: 'rgba(200, 157, 73, 0.14)',
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.brassBase,
+    padding: 14,
+    gap: 8,
+  },
+  guideReminderTitle: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  guideReminderSub: {
+    fontSize: 12,
+    lineHeight: 18,
+    color: colors.parchmentLight,
+  },
+  activePrimerStrip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.stoneSurface,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: colors.brassDark,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  activePrimerTitle: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: colors.brassLight,
+  },
+  activePrimerSub: {
+    fontSize: 11,
+    color: colors.parchmentMuted,
+    marginTop: 1,
   },
   badgeRow: {
     flexDirection: 'row',

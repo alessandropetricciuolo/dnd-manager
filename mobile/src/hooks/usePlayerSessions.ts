@@ -2,16 +2,24 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../api/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { useCampaign } from '../contexts/CampaignContext';
-import { PlayerSession, SessionSignupStatus } from '../types';
-import { enrichPlayerSession, resolveSignupTargetStatus } from '../lib/session-booking';
+import { PlayerSession, SessionFeedbackEntry, SessionSignupStatus } from '../types';
+import {
+  canPlayerSeeCompletedSession,
+  enrichPlayerSession,
+  resolveSignupTargetStatus,
+  validateSessionFeedbackPayload,
+} from '../lib/session-booking';
 
 export function usePlayerSessions(overrideCampaignId?: string | null) {
   const { user, role } = useAuth();
   const { activeCampaignId } = useCampaign();
 
   const currentCampaignId = overrideCampaignId !== undefined ? overrideCampaignId : activeCampaignId;
+  const isGmOrAdmin = role === 'gm' || role === 'admin';
 
-  const [allSessions, setAllSessions] = useState<PlayerSession[]>([]);
+  const [rawAllSessions, setRawAllSessions] = useState<PlayerSession[]>([]);
+  const [memberPartyByCampaignId, setMemberPartyByCampaignId] = useState<Record<string, string | null>>({});
+  const [feedbackBySessionId, setFeedbackBySessionId] = useState<Record<string, SessionFeedbackEntry>>({});
   const [filterByCampaign, setFilterByCampaign] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,7 +31,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     [user?.id]
   );
 
-  // Fetch sessions from Supabase (no demo fallback on empty data)
+  // Fetch sessions, party membership, and feedback from Supabase
   const fetchSessions = useCallback(
     async (options?: { silent?: boolean }) => {
       try {
@@ -32,26 +40,84 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         }
         setError(null);
 
-        const { data, error: fetchErr } = await supabase
+        const sessionsPromise = supabase
           .from('sessions')
-          .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
+          .select(
+            '*, campaigns(id, name, image_url, type), campaign_parties(name, color), session_signups(id, player_id, status)'
+          )
           .order('scheduled_at', { ascending: true });
+
+        const memberPromise = user?.id
+          ? supabase
+              .from('campaign_members')
+              .select('campaign_id, party_id')
+              .eq('player_id', user.id)
+          : Promise.resolve({ data: [] as any[], error: null });
+
+        const feedbackPromise = user?.id
+          ? supabase
+              .from('session_feedback')
+              .select('session_id, campaign_id, session_rating, campaign_rating, comment, updated_at')
+              .eq('player_id', user.id)
+          : Promise.resolve({ data: [] as any[], error: null });
+
+        const [sessionsRes, memberRes, feedbackRes] = await Promise.all([
+          sessionsPromise,
+          memberPromise,
+          feedbackPromise,
+        ]);
+
+        let sessionRows = sessionsRes.data;
+        let fetchErr = sessionsRes.error;
+
+        // Fallback if campaign_parties relationship is unavailable in local cache
+        if (fetchErr) {
+          const fallbackRes = await supabase
+            .from('sessions')
+            .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
+            .order('scheduled_at', { ascending: true });
+          sessionRows = fallbackRes.data;
+          fetchErr = fallbackRes.error;
+        }
 
         if (fetchErr) {
           console.warn('[usePlayerSessions] Errore caricamento sessioni:', fetchErr.message);
           setError('Impossibile caricare le sessioni dal server. Verifica la connessione e riprova.');
           if (!options?.silent) {
-            setAllSessions([]);
+            setRawAllSessions([]);
           }
           return;
         }
 
-        setAllSessions(data && data.length > 0 ? enrichSessions(data) : []);
+        const partyMap: Record<string, string | null> = {};
+        for (const m of (memberRes.data ?? []) as any[]) {
+          if (m.campaign_id) {
+            partyMap[String(m.campaign_id)] = m.party_id ? String(m.party_id) : null;
+          }
+        }
+        setMemberPartyByCampaignId(partyMap);
+
+        const fbMap: Record<string, SessionFeedbackEntry> = {};
+        for (const f of (feedbackRes.data ?? []) as any[]) {
+          if (f.session_id) {
+            fbMap[String(f.session_id)] = {
+              session_id: String(f.session_id),
+              campaign_id: String(f.campaign_id ?? ''),
+              session_rating: Number(f.session_rating ?? 0),
+              campaign_rating: Number(f.campaign_rating ?? 0),
+              comment: typeof f.comment === 'string' ? f.comment : null,
+              updated_at: String(f.updated_at ?? ''),
+            };
+          }
+        }
+        setFeedbackBySessionId(fbMap);
+
+        setRawAllSessions(sessionRows && sessionRows.length > 0 ? enrichSessions(sessionRows) : []);
       } catch (err: any) {
         console.warn('[usePlayerSessions] Eccezione:', err);
         setError(err?.message ?? 'Errore nel caricamento delle sessioni.');
         if (!options?.silent) {
-          setAllSessions([]);
+          setRawAllSessions([]);
         }
       } finally {
         if (!options?.silent) {
@@ -59,12 +125,22 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         }
       }
     },
-    [enrichSessions]
+    [enrichSessions, user?.id]
   );
 
   useEffect(() => {
     void fetchSessions();
   }, [fetchSessions]);
+
+  // Apply Long campaign party visibility rules for completed sessions (parity with Web getCompletedSessionsForCurrentUser)
+  const allSessions = useMemo<PlayerSession[]>(() => {
+    return rawAllSessions.filter((s) =>
+      canPlayerSeeCompletedSession(s, {
+        isGmOrAdmin,
+        memberPartyByCampaignId,
+      })
+    );
+  }, [rawAllSessions, isGmOrAdmin, memberPartyByCampaignId]);
 
   // Sessions filtered by currently selected campaign
   const campaignSessions = useMemo<PlayerSession[]>(() => {
@@ -80,6 +156,21 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     return allSessions;
   }, [filterByCampaign, currentCampaignId, campaignSessions, allSessions]);
 
+  // Completed attended sessions awaiting feedback in current scope
+  const pendingFeedbackSessions = useMemo<PlayerSession[]>(() => {
+    return sessions
+      .filter(
+        (s) =>
+          s.status === 'completed' &&
+          s.mySignup?.status === 'attended' &&
+          Boolean(s.campaign_id) &&
+          !feedbackBySessionId[s.id]
+      )
+      .sort(
+        (a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime()
+      );
+  }, [sessions, feedbackBySessionId]);
+
   // Sign up for session: verify live capacity, persist first, then refresh confirmed state
   const signUpForSession = useCallback(
     async (sessionId: string): Promise<{ success: boolean; status?: SessionSignupStatus; error?: string }> => {
@@ -91,7 +182,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         return { success: false, error: 'Operazione già in corso per questa sessione.' };
       }
 
-      const targetSession = allSessions.find((s) => s.id === sessionId);
+      const targetSession = rawAllSessions.find((s) => s.id === sessionId);
       if (!targetSession) {
         return { success: false, error: 'Sessione non trovata.' };
       }
@@ -195,7 +286,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         inFlightSessionIdsRef.current.delete(sessionId);
       }
     },
-    [allSessions, user?.id, role, fetchSessions]
+    [rawAllSessions, user?.id, role, fetchSessions]
   );
 
   // Cancel sign up: persist first, then refresh confirmed state
@@ -236,6 +327,66 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     [user?.id, fetchSessions]
   );
 
+  // Submit or update post-session feedback (session_feedback upsert)
+  const submitFeedback = useCallback(
+    async (
+      sessionId: string,
+      campaignId: string,
+      payload: { sessionRating: number; campaignRating: number; comment?: string | null }
+    ): Promise<{ success: boolean; error?: string }> => {
+      if (!user?.id) {
+        return { success: false, error: 'Devi essere autenticato per inviare il feedback.' };
+      }
+      if (!campaignId) {
+        return { success: false, error: 'Campagna non associata alla sessione.' };
+      }
+
+      const validated = validateSessionFeedbackPayload(payload);
+      if (!validated.valid) {
+        return { success: false, error: validated.error };
+      }
+
+      try {
+        const { error: upsertErr } = await supabase.from('session_feedback').upsert(
+          {
+            session_id: sessionId,
+            campaign_id: campaignId,
+            player_id: user.id,
+            session_rating: validated.sessionRating,
+            campaign_rating: validated.campaignRating,
+            comment: validated.comment,
+          },
+          { onConflict: 'session_id,player_id' }
+        );
+
+        if (upsertErr) {
+          console.warn('[submitFeedback] Errore upsert:', upsertErr.message);
+          return {
+            success: false,
+            error: upsertErr.message || 'Impossibile salvare il feedback. Verifica di aver partecipato alla sessione.',
+          };
+        }
+
+        setFeedbackBySessionId((prev) => ({
+          ...prev,
+          [sessionId]: {
+            session_id: sessionId,
+            campaign_id: campaignId,
+            session_rating: validated.sessionRating,
+            campaign_rating: validated.campaignRating,
+            comment: validated.comment,
+            updated_at: new Date().toISOString(),
+          },
+        }));
+        return { success: true };
+      } catch (err: any) {
+        console.warn('[submitFeedback] Eccezione:', err);
+        return { success: false, error: err?.message || 'Errore imprevisto durante il salvataggio.' };
+      }
+    },
+    [user?.id]
+  );
+
   // Upcoming confirmed session for the player
   const nextConfirmedSession = useMemo<PlayerSession | null>(() => {
     const now = new Date();
@@ -271,6 +422,8 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     sessions,
     allSessions,
     campaignSessions,
+    feedbackBySessionId,
+    pendingFeedbackSessions,
     filterByCampaign,
     setFilterByCampaign,
     nextConfirmedSession,
@@ -279,6 +432,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
     refresh: () => fetchSessions(),
     signUpForSession,
     cancelSignUp,
+    submitFeedback,
   };
 }
 

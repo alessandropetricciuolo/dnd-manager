@@ -11,6 +11,7 @@ import { supabase } from '../api/supabase';
 import { useAuth } from './AuthContext';
 import { Campaign, CampaignType, PlayerCharacter } from '../types';
 import { projectMobileCharacter } from '../lib/character-projection';
+import { ELDARIA_CAMPAIGN_ID } from '../lib/long-campaign-helpers';
 
 export const CAMPAIGN_TYPE_LABELS: Record<CampaignType, string> = {
   oneshot: 'One Shot',
@@ -51,6 +52,11 @@ export const CAMPAIGN_TYPE_BADGES: Record<
 
 
 
+export interface CampaignSessionDirectoryMeta {
+  dmName: string | null;
+  participants: string[];
+}
+
 export interface CampaignContextType {
   campaigns: Campaign[];
   activeCampaign: Campaign | null;
@@ -61,6 +67,10 @@ export interface CampaignContextType {
   refreshCampaigns: () => Promise<void>;
   assignedCharactersMap: Record<string, PlayerCharacter[]>;
   activeCampaignCharacter: PlayerCharacter | null;
+  gmNamesByCampaignId: Record<string, string>;
+  sessionDirectoryMeta: Record<string, CampaignSessionDirectoryMeta>;
+  confirmedGuideCampaignIds: string[];
+  confirmCampaignGuide: (campaignId: string) => Promise<boolean>;
   isGmOfActiveCampaign: boolean;
   userRoleInActiveCampaign: 'gm' | 'player';
   joinedCampaignIds: string[];
@@ -83,6 +93,9 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
   const [assignedCharactersMap, setAssignedCharactersMap] = useState<Record<string, PlayerCharacter[]>>({});
+  const [gmNamesByCampaignId, setGmNamesByCampaignId] = useState<Record<string, string>>({});
+  const [sessionDirectoryMeta, setSessionDirectoryMeta] = useState<Record<string, CampaignSessionDirectoryMeta>>({});
+  const [confirmedGuideCampaignIds, setConfirmedGuideCampaignIds] = useState<string[]>([]);
   const [joinedCampaignIds, setJoinedCampaignIds] = useState<string[]>([]);
   const [upcomingSignupCampaignIds, setUpcomingSignupCampaignIds] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -293,6 +306,64 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       setAssignedCharactersMap(mapping);
       setCampaigns(campaignList);
 
+      // Load guide read confirmations & resolve GM/DM/participant labels (with graceful public-profile fallback)
+      if (user?.id) {
+        const gmIds = Array.from(new Set(campaignList.map((c) => c.gm_id).filter(Boolean)));
+        const [guideReadsRes, publicGmProfilesRes, sessionData] = await Promise.all([
+          supabase
+            .from('campaign_guide_reads')
+            .select('campaign_id')
+            .eq('player_id', user.id),
+          gmIds.length > 0
+            ? supabase
+                .from('profiles')
+                .select('id, first_name, last_name, display_name, nickname')
+                .in('id', gmIds)
+            : Promise.resolve({ data: [] as any[] }),
+          supabase.auth.getSession(),
+        ]);
+
+        setConfirmedGuideCampaignIds(
+          (guideReadsRes.data ?? []).map((r: any) => String(r.campaign_id)).filter(Boolean),
+        );
+
+        const fallbackGmNames: Record<string, string> = {};
+        const profNameMap = new Map<string, string>();
+        for (const p of (publicGmProfilesRes.data ?? []) as any[]) {
+          const full = [p.first_name, p.last_name].filter(Boolean).join(' ').trim();
+          const label = full || p.display_name?.trim() || p.nickname?.trim();
+          if (p.id && label) profNameMap.set(p.id, label);
+        }
+        for (const camp of campaignList) {
+          if (camp.gm_id && profNameMap.has(camp.gm_id)) {
+            fallbackGmNames[camp.id] = profNameMap.get(camp.gm_id)!;
+          }
+        }
+
+        const token = sessionData.data.session?.access_token;
+        if (token) {
+          try {
+            const baseUrl = (process.env.EXPO_PUBLIC_WEB_APP_URL || 'https://barberanddragons.com').replace(/\/$/, '');
+            const dirRes = await fetch(`${baseUrl}/api/mobile/directory`, {
+              headers: { Authorization: `Bearer ${token}` },
+            });
+            if (dirRes.ok) {
+              const dirJson = await dirRes.json();
+              setGmNamesByCampaignId({ ...fallbackGmNames, ...(dirJson.gmNames ?? {}) });
+              setSessionDirectoryMeta(dirJson.sessionMeta ?? {});
+            } else {
+              setGmNamesByCampaignId(fallbackGmNames);
+            }
+          } catch {
+            setGmNamesByCampaignId(fallbackGmNames);
+          }
+        } else {
+          setGmNamesByCampaignId(fallbackGmNames);
+        }
+      } else {
+        setConfirmedGuideCampaignIds([]);
+      }
+
       setActiveCampaignId((prev) => {
         if (prev && campaignList.some((c) => c.id === prev)) {
           return prev;
@@ -350,6 +421,12 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       if (target.type !== 'long') {
         return { success: false, message: "L'iscrizione alla campagna è richiesta solo per le campagne Long." };
       }
+      if (target.id === ELDARIA_CAMPAIGN_ID) {
+        return {
+          success: false,
+          message: 'Dopo il colloquio dal vivo, il GM aggiunge il tuo account a Eldaria.',
+        };
+      }
       if (!target.is_public) {
         return { success: false, message: 'Campagna privata: chiedi al GM di aggiungerti manualmente.' };
       }
@@ -377,6 +454,24 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
     [user?.id, role, campaigns, loadCampaigns]
   );
 
+  const confirmCampaignGuide = useCallback(
+    async (campaignId: string): Promise<boolean> => {
+      if (!user?.id) return false;
+      const { error } = await supabase
+        .from('campaign_guide_reads')
+        .insert({ campaign_id: campaignId, player_id: user.id });
+      if (error && error.code !== '23505') {
+        console.warn('[CampaignContext] confirmCampaignGuide error:', error.message);
+        return false;
+      }
+      setConfirmedGuideCampaignIds((prev) =>
+        prev.includes(campaignId) ? prev : [...prev, campaignId],
+      );
+      return true;
+    },
+    [user?.id],
+  );
+
   const value = useMemo<CampaignContextType>(
     () => ({
       campaigns,
@@ -388,6 +483,10 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       refreshCampaigns,
       assignedCharactersMap,
       activeCampaignCharacter,
+      gmNamesByCampaignId,
+      sessionDirectoryMeta,
+      confirmedGuideCampaignIds,
+      confirmCampaignGuide,
       isGmOfActiveCampaign,
       userRoleInActiveCampaign,
       joinedCampaignIds,
@@ -411,6 +510,10 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       refreshCampaigns,
       assignedCharactersMap,
       activeCampaignCharacter,
+      gmNamesByCampaignId,
+      sessionDirectoryMeta,
+      confirmedGuideCampaignIds,
+      confirmCampaignGuide,
       isGmOfActiveCampaign,
       userRoleInActiveCampaign,
       joinedCampaignIds,
