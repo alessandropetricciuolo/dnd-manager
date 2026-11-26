@@ -130,7 +130,7 @@ export function CompressedImageUpload({
           variant="outline"
           onClick={triggerInput}
           disabled={disabled || isCompressing}
-          className="flex-1 justify-center gap-2 border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
+          className="h-auto min-h-10 flex-1 justify-center gap-2 whitespace-normal border-barber-gold/40 text-barber-paper hover:bg-barber-gold/10 hover:text-barber-gold"
         >
           <Upload className="h-4 w-4" />
           {isCompressing ? "Compressione in corso..." : "Scegli immagine (verrà compressa)"}

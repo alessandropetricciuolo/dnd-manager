@@ -335,7 +335,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
           Nuovo personaggio
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-[90vh] overflow-y-auto border-barber-gold/40 bg-barber-dark text-barber-paper">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-2xl border-barber-gold/40 bg-barber-dark text-barber-paper">
         <DialogHeader>
           <DialogTitle>Nuovo personaggio</DialogTitle>
           <DialogDescription className="text-barber-paper/70">
@@ -346,7 +346,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
           ref={formRef}
           key={formMountSignature}
           onSubmit={handleSubmit}
-          className="space-y-4"
+          className="relative min-w-0 space-y-4"
         >
           <NameGeneratorField
             id="char-name"
@@ -583,7 +583,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
             />
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:flex-wrap sm:space-x-0">
             {!isLongCampaign ? (
               <>
                 <Button
@@ -591,7 +591,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
                   variant="outline"
                   onClick={() => openSheetGeneratorPreview("legacy")}
                   disabled={isLoading}
-                  className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                  className="h-auto min-h-10 whitespace-normal border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
                 >
                   <FileText className="mr-1.5 h-4 w-4" />
                   Genera scheda classica
@@ -601,7 +601,7 @@ export function CreateCharacterDialog({ campaignId, initialOpen = false, isLongC
                   variant="outline"
                   onClick={() => openSheetGeneratorPreview("v2")}
                   disabled={isLoading}
-                  className="border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
+                  className="h-auto min-h-10 whitespace-normal border-barber-gold/40 text-barber-gold hover:bg-barber-gold/10"
                 >
                   <Sparkles className="mr-1.5 h-4 w-4" />
                   Genera scheda V2 (in prova)
