@@ -6,7 +6,10 @@ const user = { id: '00000000-0000-4000-8000-000000000099', aud: 'authenticated',
 const enc = (v) => Buffer.from(JSON.stringify(v)).toString('base64url');
 const token = `${enc({ alg: 'HS256', typ: 'JWT' })}.${enc({ sub: user.id, aud: 'authenticated', role: 'authenticated', exp: Math.floor(Date.now()/1000)+3600, iat: Math.floor(Date.now()/1000) })}.local-test-signature`;
 const session = { access_token: token, refresh_token: 'local-refresh-token', expires_in: 3600, expires_at: Math.floor(Date.now()/1000)+3600, token_type: 'bearer', user };
-const server = http.createServer((req, res) => {
+const saveCampaignId = '00000000-0000-4000-8000-000000000101';
+const saveCharacterId = '00000000-0000-4000-8000-000000000102';
+const saveFixture = { pdfSignature: null, update: null };
+const server = http.createServer(async (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3119');
   res.setHeader('Access-Control-Allow-Headers', 'authorization, apikey, content-type, x-client-info, x-supabase-api-version');
@@ -23,6 +26,36 @@ const server = http.createServer((req, res) => {
   if(url.pathname==='/rest/v1/profiles'){
     const profile={id:user.id,role:'gm',first_name:'Bardo',last_name:'Test',nickname:'Bardo Test',avatar_url:null};
     res.end(JSON.stringify(String(req.headers.accept).includes('object')?profile:[profile]));return;
+  }
+  if (url.pathname === '/__test/saved-sheet') {
+    res.end(JSON.stringify(saveFixture));
+    return;
+  }
+  if (url.pathname === '/rest/v1/campaigns' && url.searchParams.get('id') === `eq.${saveCampaignId}`) {
+    const campaign = { type: 'oneshot', ai_context: null };
+    res.end(JSON.stringify(String(req.headers.accept).includes('object') ? campaign : [campaign]));
+    return;
+  }
+  if (url.pathname === '/rest/v1/campaign_characters' && url.searchParams.get('id') === `eq.${saveCharacterId}`) {
+    if (req.method === 'PATCH') {
+      const chunks = [];
+      for await (const chunk of req) chunks.push(chunk);
+      saveFixture.update = JSON.parse(Buffer.concat(chunks).toString());
+      res.end(JSON.stringify([{ id: saveCharacterId }]));
+      return;
+    }
+    res.end(JSON.stringify({
+      id: saveCharacterId, campaign_id: saveCampaignId, level: 5, sheet_file_path: null,
+      rules_snapshot: null, updated_at: '2026-01-01T00:00:00Z',
+    }));
+    return;
+  }
+  if (req.method === 'POST' && url.pathname.startsWith(`/storage/v1/object/character_sheets/${saveCampaignId}/`)) {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    saveFixture.pdfSignature = Buffer.concat(chunks).subarray(0, 5).toString();
+    res.end(JSON.stringify({ Key: url.pathname.slice('/storage/v1/object/'.length) }));
+    return;
   }
   if(url.pathname==='/auth/v1/logout'){res.end('{}');return;}
   res.end('[]');

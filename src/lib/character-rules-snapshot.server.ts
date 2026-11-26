@@ -1077,8 +1077,9 @@ export async function recomputeCharacterRulesSnapshot(input: {
     if (matched) {
       await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, await resolveRequestOriginForPhb());
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
+      const stopHeadings = [...subclassStops, ...(matched.sectionStopHeadings ?? [])];
       const fromMd =
-        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops, classDef.label) ||
+        extractSubclassSectionMarkdown(md, matched.sectionHeadings, stopHeadings, classDef.label) ||
         extractSectionByHeadingsMarkdown(md, matched.sectionHeadings);
       if (fromMd.trim()) rawSubclass = fromMd;
     } else {

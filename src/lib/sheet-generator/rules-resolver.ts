@@ -1219,8 +1219,9 @@ export async function resolveGeneratorRules(
     if (matched) {
       await preloadManualMarkdownFile(matched.supplementRulesSource.markdownFile, requestOrigin);
       const md = getManualMarkdownByFileName(matched.supplementRulesSource.markdownFile);
+      const stopHeadings = [...subclassStops, ...(matched.sectionStopHeadings ?? [])];
       subclassFeaturesMd =
-        extractSubclassSectionMarkdown(md, matched.sectionHeadings, subclassStops, input.classLabel) ||
+        extractSubclassSectionMarkdown(md, matched.sectionHeadings, stopHeadings, input.classLabel) ||
         extractSectionByHeadingsMarkdown(md, matched.sectionHeadings) ||
         null;
       if (!subclassFeaturesMd?.trim() && matched.contentIlikeFallback) {

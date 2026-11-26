@@ -5,7 +5,11 @@ export type CharacterSkillKey =
   | "insight" | "intimidation" | "investigation" | "medicine" | "nature" | "perception"
   | "performance" | "persuasion" | "religion" | "sleight_of_hand" | "stealth" | "survival";
 
-export type CharacterSheetWeapon = { name: string; toHit: string; damage: string; type: string };
+export type CharacterSheetWeapon = { name: string; toHit: string; damage: string; type: string; itemId?: string };
+
+const SPELL_ORIGINS = ["class", "subclass", "race", "feat", "item", "pact", "arcanum"] as const;
+export type CharacterSheetSpellOrigin = (typeof SPELL_ORIGINS)[number];
+
 export type CharacterSheetSpell = {
   level: number;
   name: string;
@@ -16,7 +20,21 @@ export type CharacterSheetSpell = {
   verbal?: boolean;
   somatic?: boolean;
   material?: boolean;
+  /** Testo completo dal manuale per consultazione e stampa. */
   fullTextMd?: string | null;
+  origin?: CharacterSheetSpellOrigin;
+  /** Fonte leggibile, per esempio "Elfo alto" o "Dominio della Vita". */
+  sourceLabel?: string;
+  ability?: CharacterAbilityKey;
+  /** Non conta nel limite di incantesimi preparati giornalieri. */
+  alwaysPrepared?: boolean;
+  /** Limite indipendente dagli slot, per esempio "1/riposo lungo". */
+  usesPerRest?: string;
+  requiresSlot?: boolean;
+  /** Livello effettivo di lancio se fissato dalla fonte. */
+  castAtLevel?: number;
+  castingTimeOverride?: string;
+  rangeOverride?: string;
 };
 export type CharacterSheetCheck = {
   value: number;
@@ -103,6 +121,14 @@ export type CharacterRulesSnapshot = Record<string, unknown> & {
   character_sheet?: CharacterSheetV1;
 };
 
+const SPELL_FLAG_FIELDS = [
+  "prepared", "ritual", "concentration", "verbal", "somatic", "material", "alwaysPrepared", "requiresSlot",
+] as const;
+const SPELL_TEXT_FIELDS = ["sourceLabel", "usesPerRest", "castingTimeOverride", "rangeOverride"] as const;
+const SPELL_FIELDS = new Set<string>([
+  "level", "name", "summary", "fullTextMd", "origin", "ability", "castAtLevel", ...SPELL_FLAG_FIELDS, ...SPELL_TEXT_FIELDS,
+]);
+
 export function createCharacterSheetV1(
   source: CharacterSheetV1["source"],
   fields: Omit<CharacterSheetV1, "version" | "source">,
@@ -174,16 +200,23 @@ export function isCharacterSheetV1(value: unknown): value is CharacterSheetV1 {
   if (sheet.weaponRows !== undefined && (!Array.isArray(sheet.weaponRows) || (sheet.weaponRows as unknown[]).length > 100 || !(sheet.weaponRows as unknown[]).every((row) => {
     if (!row || typeof row !== "object") return false;
     const item = row as Record<string, unknown>;
-    return ["name", "toHit", "damage", "type"].every((key) => typeof item[key] === "string" && (item[key] as string).length <= 1000) && Object.keys(item).every((key) => ["name", "toHit", "damage", "type"].includes(key));
+    const requiredFields = ["name", "toHit", "damage", "type"];
+    return requiredFields.every((key) => typeof item[key] === "string" && (item[key] as string).length <= 1000) &&
+      (item.itemId === undefined || (typeof item.itemId === "string" && item.itemId.length <= 1000)) &&
+      Object.keys(item).every((key) => requiredFields.includes(key) || key === "itemId");
   }))) return false;
   if (sheet.spells !== undefined && (!Array.isArray(sheet.spells) || (sheet.spells as unknown[]).length > 500 || !(sheet.spells as unknown[]).every((spell) => {
     if (!spell || typeof spell !== "object") return false;
     const item = spell as Record<string, unknown>;
     return Number.isInteger(item.level) && Number(item.level) >= 0 && Number(item.level) <= 9 &&
       typeof item.name === "string" && item.name.length <= 300 && typeof item.summary === "string" && item.summary.length <= 5000 &&
-      ["prepared", "ritual", "concentration", "verbal", "somatic", "material"].every((key) => item[key] === undefined || typeof item[key] === "boolean") &&
+      SPELL_FLAG_FIELDS.every((key) => item[key] === undefined || typeof item[key] === "boolean") &&
+      SPELL_TEXT_FIELDS.every((key) => item[key] === undefined || (typeof item[key] === "string" && item[key].length <= 1000)) &&
+      (item.origin === undefined || SPELL_ORIGINS.some((origin) => origin === item.origin)) &&
+      (item.ability === undefined || abilityKeys.some((ability) => ability === item.ability)) &&
+      (item.castAtLevel === undefined || (Number.isInteger(item.castAtLevel) && Number(item.castAtLevel) >= 0 && Number(item.castAtLevel) <= 9)) &&
       (item.fullTextMd === undefined || item.fullTextMd === null || (typeof item.fullTextMd === "string" && item.fullTextMd.length <= 40_000)) &&
-      Object.keys(item).every((key) => ["level", "name", "summary", "prepared", "ritual", "concentration", "verbal", "somatic", "material", "fullTextMd"].includes(key));
+      Object.keys(item).every((key) => SPELL_FIELDS.has(key));
   }))) return false;
   if (sheet.spellSlots !== undefined) {
     const slots = sheet.spellSlots;

@@ -1,6 +1,66 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { createCharacterSheetV1, isCharacterSheetV1 } from "@/lib/character-sheet";
+import { buildGeneratedCharacterSheet } from "@/lib/sheet-generator/build-engine";
 import { parseStoredGeneratedSheet } from "../generated-sheet-storage";
+
+test("a generated Life Cleric passes save validation and survives the creation handoff", async () => {
+  const { sheet } = await buildGeneratedCharacterSheet({
+    characterName: "Aerion",
+    raceSlug: "tiefling",
+    subraceSlug: null,
+    classLabel: "Chierico",
+    classSubclass: "Dominio della Vita",
+    backgroundSlug: "accolito",
+    level: 5,
+    alignment: null,
+    age: null,
+    height: null,
+    weight: null,
+    sex: null,
+  });
+  assert.ok(sheet.weaponRows.some((weapon) => weapon.itemId));
+  assert.ok(sheet.spells.some((spell) => spell.origin === "class"));
+  assert.ok(sheet.spells.some((spell) => spell.origin === "race"));
+
+  const persisted = createCharacterSheetV1("generator", sheet);
+  assert.equal(isCharacterSheetV1(persisted), true);
+  const handoff = parseStoredGeneratedSheet(JSON.stringify({
+    pdfBase64: "JVBERi0x",
+    fileName: "Aerion-v2.pdf",
+    armorClass: sheet.armorClass,
+    hitPoints: sheet.hpMax,
+    sheet,
+    isV2: true,
+  }));
+  assert.deepEqual(handoff?.sheet, JSON.parse(JSON.stringify(sheet)));
+});
+
+test("generated subclass excerpts stop before unrelated manual sections and can be saved", async () => {
+  const cases = [
+    { classLabel: "Bardo", classSubclass: "Collegio degli Spiriti", lastFeature: /CONNESSIONE MISTICA/i, nextSection: /WARLOCK: IL NON MORTO/i },
+    { classLabel: "Warlock", classSubclass: "L'Insondabile", lastFeature: /IMMERSIONE INSONDABILE/i, nextSection: /## TALENTI/i },
+  ];
+  for (const { classLabel, classSubclass, lastFeature, nextSection } of cases) {
+    const { sheet } = await buildGeneratedCharacterSheet({
+      characterName: "Verifica",
+      raceSlug: "umano",
+      subraceSlug: null,
+      classLabel,
+      classSubclass,
+      backgroundSlug: "accolito",
+      level: 20,
+      alignment: null,
+      age: null,
+      height: null,
+      weight: null,
+      sex: null,
+    });
+    assert.match(sheet.subclassFeaturesMd ?? "", lastFeature);
+    assert.doesNotMatch(sheet.subclassFeaturesMd ?? "", nextSection);
+    assert.equal(isCharacterSheetV1(createCharacterSheetV1("generator", sheet)), true, classSubclass);
+  }
+});
 
 test("generator localStorage handoff restores the full sheet into character creation", () => {
   const sheet = {

@@ -57,4 +57,10 @@ test("server contract rejects oversized or malformed nested data", () => {
   assert.equal(isCharacterSheetV1({ version: 1, source: "manual", weaponRows: [{ name: "A" }] }), false);
   assert.equal(isCharacterSheetV1({ version: 1, source: "manual", spells: [{ level: 1, name: "X", summary: "", verbal: "yes" }] }), false);
   assert.equal(isCharacterSheetV1({ version: 1, source: "manual", classFeaturesMd: "x".repeat(512_001) }), false);
+  const generated = { version: 1, source: "generator" };
+  const weapon = { name: "Mazza", toHit: "+4", damage: "1d6", type: "contundente" };
+  const spell = { level: 1, name: "Scudo", summary: "Reazione" };
+  assert.equal(isCharacterSheetV1({ ...generated, weaponRows: [{ ...weapon, itemId: 42 }] }), false);
+  assert.equal(isCharacterSheetV1({ ...generated, spells: [{ ...spell, origin: "unknown" }] }), false);
+  assert.equal(isCharacterSheetV1({ ...generated, spells: [{ ...spell, castAtLevel: 10 }] }), false);
 });

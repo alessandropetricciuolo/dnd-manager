@@ -104,6 +104,37 @@ test.describe('Generatore V2', () => {
     await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth)).toBeTruthy();
   });
 
+  test('Chierico della Vita: salva il PDF V2 e i dati della scheda nel personaggio', async ({ page, request }) => {
+    test.skip(!process.env.SHEET_V2_ISOLATED_TEST, 'Richiede il personaggio fittizio del backend locale');
+    test.setTimeout(60_000);
+    const campaignId = '00000000-0000-4000-8000-000000000101';
+    const characterId = '00000000-0000-4000-8000-000000000102';
+    await page.goto(`/generator-v2?classLabel=Chierico&campaignId=${campaignId}&characterId=${characterId}`);
+    await page.locator('#characterName').fill('Aerion');
+    await page.locator('#raceSlug').selectOption('tiefling');
+    await page.locator('#backgroundSlug').selectOption('accolito');
+    const lifeDomain = page.locator('#classSubclass option').filter({ hasText: 'Dominio della Vita' });
+    await page.locator('#classSubclass').selectOption((await lifeDomain.getAttribute('value'))!);
+    await page.locator('#level').fill('5');
+    await page.getByRole('button', { name: 'Genera Scheda', exact: true }).click();
+    await page.getByRole('button', { name: 'Conferma e genera PDF' }).click();
+    await page.getByRole('button', { name: 'Salva scheda V2 nel personaggio' }).click();
+    await expect(page.getByText('Scheda V2 salvata nella scheda del personaggio.', { exact: true }).first()).toBeVisible();
+
+    const response = await request.get('http://127.0.0.1:54449/__test/saved-sheet');
+    const { pdfSignature, update } = await response.json();
+    expect(pdfSignature).toBe('%PDF-');
+    expect(update.sheet_file_path).toMatch(/Aerion-v2\.pdf$/);
+    expect(update.rules_snapshot.character_sheet).toMatchObject({
+      source: 'generator', classLabel: 'Chierico', classSubclass: 'Dominio della Vita', level: 5,
+      weaponRows: expect.arrayContaining([expect.objectContaining({ itemId: expect.any(String) })]),
+      spells: expect.arrayContaining([
+        expect.objectContaining({ origin: 'class' }),
+        expect.objectContaining({ origin: 'race' }),
+      ]),
+    });
+  });
+
   test('Druido: scelta del Circolo della Terra, ambiente, trucchetto e PDF V2',async({page})=>{
     test.setTimeout(180_000);
     await page.goto('/generator-v2?classLabel=Druido');

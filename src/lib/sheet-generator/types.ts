@@ -1,3 +1,9 @@
+import type {
+  CharacterSheetSpell,
+  CharacterSheetSpellOrigin,
+  CharacterSheetWeapon,
+} from "@/lib/character-sheet";
+
 export type AbilityKey = "str" | "dex" | "con" | "int" | "wis" | "cha";
 
 export type SkillKey =
@@ -45,37 +51,14 @@ export type CharacterGeneratorInput = {
   buildOverrides?: import("@/lib/sheet-generator/build-choices-types").CharacterBuildOverrides;
 };
 
-export type SpellOrigin = "class" | "subclass" | "race" | "feat" | "item" | "pact" | "arcanum";
+export type SpellOrigin = CharacterSheetSpellOrigin;
 
-export type GeneratedSpell = {
-  level: number;
-  name: string;
-  summary: string;
+export type GeneratedSpell = CharacterSheetSpell & {
   ritual: boolean;
   concentration: boolean;
   verbal: boolean;
   somatic: boolean;
   material: boolean;
-  /** Testo completo dal manuale (per Manuale rapido torneo e consultazione sito). */
-  fullTextMd?: string | null;
-  /** Provenienza strutturata dell'incantesimo. */
-  origin?: SpellOrigin;
-  /** Etichetta leggibile della fonte specifica (es. "Elfo alto", "Dominio della Vita", "Arcanum Mistico"). */
-  sourceLabel?: string;
-  /** Caratteristica da incantatore specifica di questa provenienza. */
-  ability?: AbilityKey;
-  /** Sempre preparato (non conta nel limite di incantesimi preparati giornalieri). */
-  alwaysPrepared?: boolean;
-  /** Limite di utilizzi indipendente dagli slot (es. "1/riposo lungo", "A volontà", "Solo rituale"). */
-  usesPerRest?: string;
-  /** Se false, il lancio concesso da questa fonte non consuma uno slot ordinario. */
-  requiresSlot?: boolean;
-  /** Livello effettivo di lancio se fisso e superiore al livello base (es. Intimorire Infernale al 2° liv). */
-  castAtLevel?: number;
-  /** Sovrascrittura specifica del tempo di lancio (es. Cerchio di Mortalità: 1 azione bonus). */
-  castingTimeOverride?: string;
-  /** Sovrascrittura specifica della gittata (es. Cerchio di Mortalità: 9 m, Sussurri Guida: 18 m). */
-  rangeOverride?: string;
 };
 
 export type GeneratedCharacterSheet = {
@@ -112,7 +95,7 @@ export type GeneratedCharacterSheet = {
   hitDie: string;
   hitDiceTotal: number;
 
-  weaponRows: Array<{ name: string; toHit: string; damage: string; type: string; itemId?: string }>;
+  weaponRows: CharacterSheetWeapon[];
   inventory: string[];
   languages: string[];
   proficiencies: string[];

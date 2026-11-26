@@ -15,6 +15,8 @@ export type SubclassCatalogEntry = {
   label: string;
   /** `metadata.section_heading` probabile (maiuscolo, come in snapshot). Ordine di prova. */
   sectionHeadings: string[];
+  /** Titoli che chiudono l'estratto quando la gerarchia del Markdown non basta. */
+  sectionStopHeadings?: string[];
   supplementRulesSource: ClassSupplementRulesSource;
   /** Se gli heading non bastano (OCR senza #), ricerca contenuto nel manuale indicato */
   contentIlikeFallback?: string;
@@ -756,6 +758,7 @@ const XGE_TCE_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
     parentClassLabel: "Warlock",
     label: "L'Insondabile",
     sectionHeadings: H("L'INSONDABILE", "INSONDABILE"),
+    sectionStopHeadings: H("TALENTI"),
     supplementRulesSource: TCE,
   },
 ];
@@ -767,6 +770,7 @@ export const SUPPLEMENT_SUBCLASS_OPTIONS: SubclassCatalogEntry[] = [
   {
     slug: "vrgr-bardo-spiriti", parentClassLabel: "Bardo", label: "Collegio degli Spiriti",
     sectionHeadings: H("BARDO: COLLEGIO DEGLI SPIRITI"),
+    sectionStopHeadings: H("WARLOCK: IL NON MORTO"),
     supplementRulesSource: { markdownFile: VAN_RICHTEN_MD_FILE, manualBookKey: VAN_RICHTEN_BOOK_KEY },
   },
 ];
