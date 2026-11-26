@@ -403,6 +403,7 @@ function LongWorkspace({
                   <div className="min-h-0 overflow-hidden rounded-2xl border border-amber-600/20 bg-zinc-950/60">
                     <InitiativeTracker
                       campaignId={campaignId}
+                      liveContextId={isSessionReady ? selectedSessionId : null}
                       campaignType="long"
                       availableCharacters={sessionCharacters}
                       value={initiativeState}

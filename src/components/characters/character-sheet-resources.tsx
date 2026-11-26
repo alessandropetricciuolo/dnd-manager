@@ -10,7 +10,9 @@ import {
   resolveCharacterSpellSlots,
   type CharacterSheetV1,
 } from "@/lib/character-sheet";
-import type { MobileCharacterOperation } from "@/lib/mobile-character-state";
+import { operationTouchesSessionLiveResources, type MobileCharacterOperation } from "@/lib/mobile-character-state";
+import { SESSION_LIVE_RESOURCES_LOCKED } from "../../../mobile/src/lib/session-live";
+import { useSessionLiveCharacter } from "./use-session-live-character";
 import { createSupabaseBrowserClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +64,7 @@ export function CharacterSheetResources({
   isLongCampaign?: boolean;
 }) {
   const router = useRouter();
+  const { resources: live, stale } = useSessionLiveCharacter(character.id, () => router.refresh());
   const [state, setState] = useState(() => toRecord(character));
   const [damage, setDamage] = useState("");
   const [healing, setHealing] = useState("");
@@ -81,15 +84,15 @@ export function CharacterSheetResources({
 
   const snapshot = state.rules_snapshot;
   const maxHp = resolveCharacterMaxHp(snapshot);
-  const currentHp = state.hit_points;
-  const tempHp = intValue(snapshot.temp_hp) ?? 0;
+  const currentHp = live?.hitPoints ?? state.hit_points;
+  const tempHp = live?.tempHp ?? intValue(snapshot.temp_hp) ?? 0;
   useEffect(() => setTempHpDraft(String(tempHp)), [tempHp]);
 
   const hitDice = resolveCharacterHitDice(snapshot);
   const conScore = sheet?.abilities?.con ?? intValue((snapshot.abilities as Record<string, unknown> | undefined)?.con);
   const conMod = sheet?.abilityMods?.con ?? (typeof conScore === "number" ? Math.floor((conScore - 10) / 2) : 0);
 
-  const deathSavesRaw = getSnapshot(snapshot.death_saves);
+  const deathSavesRaw = live?.deathSaves ?? getSnapshot(snapshot.death_saves);
   const deathSuccesses = intValue(deathSavesRaw.successes) ?? 0;
   const deathFailures = intValue(deathSavesRaw.failures) ?? 0;
   const exhaustion = intValue(snapshot.exhaustion) ?? 0;
@@ -109,13 +112,16 @@ export function CharacterSheetResources({
     ];
   });
 
-  const usedSpellSlots = getSnapshot(snapshot.usedSpellSlots);
+  const usedSpellSlots = live?.usedSpellSlots ?? getSnapshot(snapshot.usedSpellSlots);
   const slots = resolveCharacterSpellSlots(snapshot);
   const canTrackHp = currentHp !== null && maxHp !== null && maxHp >= 0;
   const inspiration = Boolean(snapshot.inspiration);
 
+  const touchesLive = (operation: MobileCharacterOperation) =>
+    operationTouchesSessionLiveResources({ ...state, character_class: character.character_class }, operation);
+
   async function save(operation: MobileCharacterOperation, toastMsg = "Risorse aggiornate.") {
-    if (busy) return;
+    if (busy || (live && touchesLive(operation))) return;
     setBusy(true);
     try {
       const supabase = createSupabaseBrowserClient();
@@ -125,10 +131,20 @@ export function CharacterSheetResources({
         toast.error("Accedi di nuovo per aggiornare le risorse.");
         return;
       }
+      let expectedUpdatedAt = state.updated_at;
+      if (live) {
+        const { data: revision, error: revisionError } = await supabase.from("campaign_characters")
+          .select("updated_at").eq("id", character.id).maybeSingle();
+        if (revisionError || !revision?.updated_at) {
+          toast.error("Impossibile leggere la revisione della scheda.");
+          return;
+        }
+        expectedUpdatedAt = revision.updated_at;
+      }
       const response = await fetch(`/api/mobile/characters/${encodeURIComponent(character.id)}/state`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify({ expectedUpdatedAt: state.updated_at, operation }),
+        body: JSON.stringify({ expectedUpdatedAt, operation }),
       });
       const result = (await response.json().catch(() => ({}))) as {
         error?: string;
@@ -137,6 +153,10 @@ export function CharacterSheetResources({
       if (response.status === 409) {
         toast.error("La scheda è cambiata su un altro dispositivo. Ho ricaricato i dati: riprova.");
         router.refresh();
+        return;
+      }
+      if (result.error === SESSION_LIVE_RESOURCES_LOCKED) {
+        toast.info("Sessione live · Risorse gestite dal GM.");
         return;
       }
       if (!response.ok || !result.character) {
@@ -231,7 +251,7 @@ export function CharacterSheetResources({
             type="button"
             size="sm"
             variant="outline"
-            disabled={busy}
+            disabled={busy || Boolean(live && touchesLive({ type: "shortRest" }))}
             onClick={() => void save({ type: "shortRest" }, "Riposo Breve completato.")}
           >
             Riposo Breve
@@ -240,13 +260,21 @@ export function CharacterSheetResources({
             type="button"
             size="sm"
             variant="outline"
-            disabled={busy || maxHp === null}
+            disabled={busy || Boolean(live) || maxHp === null}
             onClick={() => void save({ type: "longRest" }, "Riposo Lungo completato: PF, slot e risorse ripristinati.")}
           >
             Riposo Lungo
           </Button>
         </div>
       </div>
+
+      {live && (
+        <div className="rounded border border-emerald-700/40 px-3 py-2 text-sm text-emerald-200" role="status">
+          <p className="font-medium">Sessione live · Gestita dal GM</p>
+          {stale && <p className="text-xs">Ultimo aggiornamento ricevuto. I dati potrebbero essere superati.</p>}
+          {live.conditions.length > 0 && <p className="text-xs">Condizioni · {live.conditions.join(" · ")}</p>}
+        </div>
+      )}
 
       <div className="grid gap-3 sm:grid-cols-2">
         {/* PUNTI FERITA + DADI VITA + TS MORTE */}
@@ -257,7 +285,7 @@ export function CharacterSheetResources({
               {currentHp === null ? "Non disponibili" : `${currentHp} / ${maxHp ?? "—"}${tempHp > 0 ? ` (+${tempHp} temp)` : ""}`}
             </span>
           </div>
-          {canTrackHp ? (
+          {canTrackHp && !live ? (
             <>
               <div className="grid grid-cols-[1fr_auto] gap-2">
                 <Input
@@ -317,11 +345,11 @@ export function CharacterSheetResources({
                 </div>
               </div>
             </>
-          ) : (
+          ) : !canTrackHp ? (
             <p className="text-xs text-barber-paper/60">
               Il massimo dei PF o i PF correnti non sono stati ancora salvati.
             </p>
-          )}
+          ) : null}
 
           {/* Dadi Vita */}
           <div className="border-t border-barber-gold/15 pt-2.5 text-sm">
@@ -336,7 +364,7 @@ export function CharacterSheetResources({
                     type="button"
                     size="sm"
                     variant="outline"
-                    disabled={busy || hitDice.current <= 0 || !canTrackHp}
+                    disabled={busy || Boolean(live) || hitDice.current <= 0 || !canTrackHp}
                     onClick={spendHitDieAndHeal}
                   >
                     Tira e cura
@@ -359,7 +387,7 @@ export function CharacterSheetResources({
           <div className="border-t border-barber-gold/15 pt-2.5 text-xs">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <span className="font-medium text-barber-paper/85">TS contro Morte</span>
-              <Button type="button" size="sm" variant="outline" disabled={busy} onClick={rollDeathSaveWeb} className="h-7 text-xs">
+              <Button type="button" size="sm" variant="outline" disabled={busy || Boolean(live)} onClick={rollDeathSaveWeb} className="h-7 text-xs">
                 Tira d20
               </Button>
             </div>
@@ -370,7 +398,7 @@ export function CharacterSheetResources({
                   <button
                     key={`ds-s-${n}`}
                     type="button"
-                    disabled={busy}
+                    disabled={busy || Boolean(live)}
                     onClick={() => void save({ type: "deathSaves", successes: deathSuccesses >= n ? n - 1 : n, failures: deathFailures })}
                     className={`h-5 w-5 rounded-full border ${deathSuccesses >= n ? "border-emerald-400 bg-emerald-500" : "border-barber-gold/40 bg-black/40"}`}
                     aria-label={`Successi morte ${n}`}
@@ -383,7 +411,7 @@ export function CharacterSheetResources({
                   <button
                     key={`ds-f-${n}`}
                     type="button"
-                    disabled={busy}
+                    disabled={busy || Boolean(live)}
                     onClick={() => void save({ type: "deathSaves", successes: deathSuccesses, failures: deathFailures >= n ? n - 1 : n })}
                     className={`h-5 w-5 rounded-full border ${deathFailures >= n ? "border-red-400 bg-red-600" : "border-barber-gold/40 bg-black/40"}`}
                     aria-label={`Fallimenti morte ${n}`}
@@ -444,7 +472,7 @@ export function CharacterSheetResources({
                           type="button"
                           size="sm"
                           variant="outline"
-                          disabled={busy || used >= count}
+                          disabled={busy || Boolean(live) || used >= count}
                           onClick={() => void save({ type: "spellSlot", level, usedCount: used + 1 })}
                         >
                           Usa
@@ -453,7 +481,7 @@ export function CharacterSheetResources({
                           type="button"
                           size="sm"
                           variant="ghost"
-                          disabled={busy || used <= 0}
+                          disabled={busy || Boolean(live) || used <= 0}
                           onClick={() => void save({ type: "spellSlot", level, usedCount: used - 1 })}
                         >
                           +1

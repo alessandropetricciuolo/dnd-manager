@@ -147,9 +147,15 @@ export function Torneo2CombatTracker({
       const amount = Math.trunc(Number(raw));
       if (!Number.isFinite(amount) || amount === 0) return;
       // Positivo = danno (riduce HP, aumenta danni subiti); negativo = cura.
-      const nextHp = clampHp(c.hp - amount, c.maxHp);
+      const absorbed = Math.min(c.tempHp ?? 0, Math.max(0, amount));
+      const nextHp = clampHp(c.hp - (amount - absorbed), c.maxHp);
       const nextTaken = amount > 0 ? c.damageTaken + amount : c.damageTaken;
-      updateCombatant(c.id, { hp: nextHp, damageTaken: Math.max(0, nextTaken) });
+      updateCombatant(c.id, {
+        hp: nextHp,
+        tempHp: (c.tempHp ?? 0) - absorbed,
+        damageTaken: Math.max(0, nextTaken),
+        ...(nextHp > 0 ? { deathSaves: { success: 0, fail: 0, stable: false }, isDead: false } : {}),
+      });
       setDamageInputs((prev) => ({ ...prev, [c.id]: "" }));
     },
     [updateCombatant]
@@ -290,6 +296,17 @@ export function Torneo2CombatTracker({
                         <span className="text-[10px] text-zinc-500">/{c.maxHp}</span>
                         <Input
                           type="number"
+                          aria-label={`PF temporanei di ${c.name}`}
+                          title="PF temporanei"
+                          min={0}
+                          value={c.tempHp ?? 0}
+                          onChange={(event) => updateCombatant(c.id, {
+                            tempHp: Math.max(0, Math.trunc(Number(event.target.value) || 0)),
+                          })}
+                          className="h-7 w-14 px-1 text-center text-xs"
+                        />
+                        <Input
+                          type="number"
                           value={damageInput}
                           placeholder="dmg"
                           onChange={(e) => setDamageInputs((p) => ({ ...p, [c.id]: e.target.value }))}
@@ -311,7 +328,7 @@ export function Torneo2CombatTracker({
                       </>
                     ) : (
                       <span className="text-xs font-semibold text-zinc-200">
-                        {c.hp}/{c.maxHp}
+                        {c.hp}/{c.maxHp}{c.tempHp ? ` +${c.tempHp} temp` : ""}
                       </span>
                     )}
                   </div>

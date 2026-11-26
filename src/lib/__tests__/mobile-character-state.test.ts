@@ -149,3 +149,38 @@ test("PATCH route enforces HTTP body limits and returns mocked persisted readbac
   assert.equal(response.status, 200);
   assert.deepEqual((await response.json()).character, expected);
 });
+
+test("live blocks direct resource edits and rests that would change shared values", async () => {
+  let writes = 0;
+  const lock = deps({
+    getCharacter: async () => ({ ...serverCharacter, character_class: "Warlock" }),
+    isSessionLive: async () => true,
+    compareAndSwap: async () => { writes++; return serverCharacter; },
+  });
+  const operations = [
+    { type: "hp", hitPoints: 6 },
+    { type: "deathSaves", successes: 1, failures: 0 },
+    { type: "spellSlot", level: 1, usedCount: 1 },
+    { type: "shortRestHitDie", hitPoints: 9 },
+    { type: "shortRest" },
+    { type: "longRest" },
+  ];
+  for (const operation of operations) {
+    const result = await saveMobileCharacterState(serverCharacter.id, "valid", { ...patchBody, operation }, lock);
+    assert.deepEqual(result, { status: 423, body: { error: "session_live_resources_managed_by_gm" } });
+  }
+  assert.equal(writes, 0);
+
+  const coins = { type: "coins", gp: 1, sp: 2, cp: 3 };
+  assert.equal((await saveMobileCharacterState(serverCharacter.id, "valid", { ...patchBody, operation: coins }, lock)).status, 200);
+  assert.equal(writes, 1);
+});
+
+test("a live session starting between the legacy API read and write returns the same lock response", async () => {
+  const d = deps({
+    isSessionLive: async () => false,
+    compareAndSwap: async () => { throw new Error("session_live_resources_managed_by_gm"); },
+  });
+  const result = await saveMobileCharacterState(serverCharacter.id, "valid", patchBody, d);
+  assert.deepEqual(result, { status: 423, body: { error: "session_live_resources_managed_by_gm" } });
+});

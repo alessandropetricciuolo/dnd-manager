@@ -5,6 +5,7 @@ import { ExternalLink, Monitor, Pause, Play, Power, RotateCcw, Square } from "lu
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { Torneo2CombatTracker } from "./torneo2-combat-tracker";
+import { SessionLiveControls, slotsWithSpent } from "../session-live-controls";
 import { playTimerExpiredBeep } from "@/lib/torneo2/beep";
 import {
   computeTorneo2TimerView,
@@ -57,6 +58,8 @@ export function Torneo2MatchStation({
   timerUrl,
   tableUrl,
 }: Props) {
+  const [livePending, setLivePending] = useState(false);
+  const [liveEditVersion, setLiveEditVersion] = useState(0);
   const now = useNow(timer.timer_running);
   const view = computeTorneo2TimerView(
     {
@@ -188,11 +191,46 @@ export function Torneo2MatchStation({
         ) : null}
       </header>
 
+      {isActive && liveEnabled && (
+        <div className="px-3 pt-2">
+          <SessionLiveControls
+            scope="torneo2"
+            contextId={match?.id}
+            onPendingChange={setLivePending}
+            localEditVersion={liveEditVersion}
+            combatants={combat.combatants.flatMap((c) => c.characterId ? [{ ...c, characterId: c.characterId }] : [])}
+            applyConfirmed={(characters) => {
+              const byId = new Map(characters.map((character) => [character.characterId, character]));
+              onCombatChange({
+                ...combat,
+                combatants: combat.combatants.map((c) => {
+                  const confirmed = c.characterId ? byId.get(c.characterId) : null;
+                  return confirmed ? {
+                    ...c,
+                    hp: confirmed.hitPoints,
+                    tempHp: confirmed.tempHp,
+                    deathSaves: {
+                      ...c.deathSaves,
+                      success: confirmed.deathSaves.successes,
+                      fail: confirmed.deathSaves.failures,
+                    },
+                    spellSlots: slotsWithSpent(c.spellSlots, confirmed.usedSpellSlots),
+                  } : c;
+                }),
+              });
+            }}
+          />
+        </div>
+      )}
       <div className="min-h-0 flex-1 p-2">
         <Torneo2CombatTracker
           state={combat}
-          onChange={onCombatChange}
-          readOnly={!match || !liveEnabled}
+          onChange={(next) => {
+            if (livePending) return;
+            setLiveEditVersion((version) => version + 1);
+            onCombatChange(next);
+          }}
+          readOnly={!match || !liveEnabled || livePending}
           teamAName={teamAName}
           teamBName={teamBName}
           className="h-full"

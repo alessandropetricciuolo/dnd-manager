@@ -75,6 +75,7 @@ import type { Json } from "@/types/database.types";
 import { formatTimerMmSs } from "@/lib/torneo/match-timer";
 import { TacticalInitiativeCards } from "./screen-tactical/tactical-initiative-cards";
 import { useGmScreenViewActive } from "./gm-screen-view";
+import { SessionLiveControls, slotsWithSpent, type LiveScope } from "./session-live-controls";
 import { publishFightProjection } from "@/lib/fight-mode/broadcast";
 import { openProjectionWindow as openPopoutProjection } from "@/lib/browser/projection-window";
 import type {
@@ -434,6 +435,9 @@ type MonsterForInitiative = {
 
 type InitiativeTrackerProps = {
   campaignId: string;
+  liveContextId?: string | null;
+  liveScope?: LiveScope;
+  beforeLiveStart?: () => Promise<boolean>;
   campaignType?: "oneshot" | "quest" | "long" | "torneo" | null;
   availableCharacters?: Array<{
     id: string;
@@ -520,6 +524,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   function InitiativeTracker(
     {
       campaignId,
+      liveContextId,
+      liveScope = "session",
+      beforeLiveStart,
       campaignType,
       availableCharacters,
       value,
@@ -542,6 +549,13 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   const storageKey = storageKeyOverride ?? `${STORAGE_KEY_PREFIX}${campaignId}`;
   const isLongCampaign = campaignType === "long";
   const isControlled = typeof onChange === "function" && value != null;
+  const [livePending, setLivePending] = useState(false);
+  const [liveEditVersion, setLiveEditVersion] = useState(0);
+  const livePendingRef = useRef(false);
+  const handleLivePending = useCallback((pending: boolean) => {
+    livePendingRef.current = pending;
+    setLivePending(pending);
+  }, []);
 
   const [entries, setEntries] = useState<InitiativeEntry[]>([]);
   const [pendingConcentrationChecks, setPendingConcentrationChecks] = useState<
@@ -655,7 +669,9 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
   );
 
   const applyTransition = useCallback(
-    (updater: (prev: InitiativeTrackerState) => InitiativeTrackerState): InitiativeTrackerState => {
+    (updater: (prev: InitiativeTrackerState) => InitiativeTrackerState, confirmed = false): InitiativeTrackerState => {
+      if (livePendingRef.current && !confirmed) return trackerRef.current;
+      if (!confirmed && liveScope === "torneo") setLiveEditVersion((version) => version + 1);
       const next = updater(trackerRef.current);
       trackerRef.current = next;
       setEntries(next.entries);
@@ -668,7 +684,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
       setLastCommandUndoSnapshot(next.lastCommandUndoSnapshot ?? null);
       return next;
     },
-    []
+    [liveScope]
   );
 
   useEffect(() => {
@@ -2009,6 +2025,35 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
 
   return (
     <div className="flex h-full w-full flex-col p-3 text-zinc-100">
+      <SessionLiveControls
+          scope={liveScope}
+          contextId={viewActive ? liveContextId : null}
+          onPendingChange={handleLivePending}
+          localEditVersion={liveScope === "torneo" ? liveEditVersion : undefined}
+          beforeStart={beforeLiveStart}
+          combatants={entries.flatMap((entry) => entry.type === "pc" && entry.playerId ? [{
+            ...entry,
+            characterId: entry.playerId,
+            conditions: (entry.conditions ?? []).map((condition) => getCombatStatusDefinition(condition)?.label ?? condition),
+          }] : [])}
+          applyConfirmed={(characters) => {
+            const byId = new Map(characters.map((character) => [character.characterId, character]));
+            applyTransition((current) => ({
+              ...current,
+              entries: current.entries.map((entry) => {
+                const confirmed = entry.type === "pc" && entry.playerId ? byId.get(entry.playerId) : null;
+                return confirmed ? {
+                  ...entry,
+                  hp: confirmed.hitPoints,
+                  tempHp: confirmed.tempHp,
+                  deathSaves: { success: confirmed.deathSaves.successes, fail: confirmed.deathSaves.failures },
+                  spellSlots: slotsWithSpent(entry.spellSlots, confirmed.usedSpellSlots),
+                } : entry;
+              }),
+            }), true);
+          }}
+        />
+      <fieldset className="contents" disabled={livePending}>
       <header className="mb-2 space-y-2 border-b border-amber-600/30 pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-sm font-bold tracking-tight text-amber-400">
@@ -3598,6 +3643,7 @@ export const InitiativeTracker = forwardRef<InitiativeTrackerHandle, InitiativeT
           </div>
         </DialogContent>
       </Dialog>
+      </fieldset>
     </div>
   );
 });

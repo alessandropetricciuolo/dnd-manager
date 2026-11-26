@@ -43,6 +43,7 @@ export type Torneo2Combatant = {
   characterClass: string | null;
   armorClass: number;
   hp: number;
+  tempHp?: number;
   maxHp: number;
   initiative: number;
   damageDealt: number;
@@ -117,6 +118,7 @@ export function sanitizeTorneo2Combatant(raw: unknown): Torneo2Combatant | null 
     characterClass: obj.characterClass ? toCleanString(obj.characterClass) : null,
     armorClass: Math.max(0, toFiniteInt(obj.armorClass, 10)),
     hp,
+    tempHp: Math.max(0, toFiniteInt(obj.tempHp)),
     maxHp,
     initiative: toFiniteInt(obj.initiative, 0),
     damageDealt: Math.max(0, toFiniteInt(obj.damageDealt, 0)),
@@ -155,6 +157,7 @@ export function torneo2CombatSignature(state: Torneo2CombatState): string {
     c: state.combatants.map((c) => [
       c.id,
       c.hp,
+      c.tempHp ?? 0,
       c.maxHp,
       c.armorClass,
       c.initiative,

@@ -68,15 +68,16 @@ export function normalizeCombatSpellSlots(
     .sort((a, b) => a.level - b.level);
   if (!max.length) return undefined;
 
+  const recordedRemaining = Array.isArray(slots.remaining);
   const remainingByLevel = new Map<number, number>();
   for (const e of slots.remaining ?? []) {
-    if (e.level < 1 || e.level > 9 || e.count <= 0) continue;
+    if (e.level < 1 || e.level > 9 || !Number.isFinite(e.count)) continue;
     remainingByLevel.set(e.level, Math.max(0, Math.trunc(e.count)));
   }
 
   const remaining = max.map((m) => ({
     level: m.level,
-    count: Math.min(m.count, remainingByLevel.get(m.level) ?? m.count),
+    count: Math.min(m.count, remainingByLevel.get(m.level) ?? (recordedRemaining ? 0 : m.count)),
   }));
 
   return { max, remaining };

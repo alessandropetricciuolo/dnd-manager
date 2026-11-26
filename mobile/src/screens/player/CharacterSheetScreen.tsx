@@ -46,6 +46,7 @@ import { useCampaign, CAMPAIGN_TYPE_LABELS } from '../../contexts/CampaignContex
 import { usePlayerCharacter } from '../../hooks/usePlayerCharacter';
 import { CharacterSheetV1, CharacterSheetWeapon } from '../../lib/character-sheet';
 import { computeQuickHpOutcome } from '../../lib/character-hp';
+import { operationTouchesSessionLiveResources } from '../../lib/character-state';
 import { parseWeaponDamage } from '../../lib/weapon-damage';
 import {
   calculateMobileLevelProgress,
@@ -177,7 +178,9 @@ export const CharacterSheetScreen: React.FC = () => {
     refresh,
     saveError,
     isSaving,
-  } = usePlayerCharacter(selectedSheetCampaignId);
+    liveResources,
+    liveStale,
+  } = usePlayerCharacter(selectedSheetCampaignId, true);
 
   useEffect(() => {
     if (!saveError) return;
@@ -255,6 +258,9 @@ export const CharacterSheetScreen: React.FC = () => {
     traits?: string; ideals?: string; bonds?: string; flaws?: string;
   } | undefined;
   const sheet = safeCharacter.rules_snapshot?.character_sheet as CharacterSheetV1 | undefined;
+  const liveManaged = Boolean(liveResources);
+  const liveBlocksShortRest = liveManaged &&
+    operationTouchesSessionLiveResources(safeCharacter, { type: 'shortRest' });
   const exhaustion = typeof safeCharacter.rules_snapshot?.exhaustion === 'number'
     ? safeCharacter.rules_snapshot.exhaustion
     : 0;
@@ -553,7 +559,7 @@ export const CharacterSheetScreen: React.FC = () => {
       'Recuperi le capacità con ricarica a riposo breve (come Secondo Fiato e Azione Impetuosa). Vuoi anche spendere Dadi Vita per curarti?',
       [
         { text: 'Annulla', style: 'cancel' },
-        { text: 'Spendi 1 Dado Vita', onPress: handleSpendHitDie },
+        ...(liveManaged ? [] : [{ text: 'Spendi 1 Dado Vita', onPress: handleSpendHitDie }]),
         { text: 'Solo Ricarica Capacità', onPress: shortRest },
       ]
     );
@@ -833,6 +839,18 @@ export const CharacterSheetScreen: React.FC = () => {
           )}
         </ScrollView>
 
+        {liveResources && (
+          <View style={styles.chronicleBanner} accessibilityLiveRegion="polite">
+            <View style={{ flex: 1 }}>
+              <Text style={styles.chronicleMainText}>Sessione live · Gestita dal GM</Text>
+              {liveStale && <Text style={styles.chronicleEyebrow}>Ultimo aggiornamento ricevuto. I dati potrebbero essere superati.</Text>}
+              {liveResources.conditions.length > 0 && (
+                <Text style={styles.chronicleEyebrow}>Condizioni · {liveResources.conditions.join(' · ')}</Text>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Rest, Inspiration & XP Progress Bar */}
         <View style={styles.quickRestRow}>
           {isSaving && <Text style={styles.restPillText}>Salvataggio…</Text>}
@@ -850,12 +868,12 @@ export const CharacterSheetScreen: React.FC = () => {
             </Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.restPill} onPress={confirmShortRest} disabled={isSaving} activeOpacity={0.7}>
+          <TouchableOpacity style={styles.restPill} onPress={confirmShortRest} disabled={isSaving || liveBlocksShortRest} activeOpacity={0.7}>
             <RotateCcw size={12} color={colors.parchmentLight} />
             <Text style={styles.restPillText}>Riposo Breve</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.restPill, styles.restPillLong]} onPress={confirmLongRest} disabled={isSaving || maxHp === undefined} activeOpacity={0.7}>
+          <TouchableOpacity style={[styles.restPill, styles.restPillLong]} onPress={confirmLongRest} disabled={isSaving || liveManaged || maxHp === undefined} activeOpacity={0.7}>
             <Sparkles size={12} color={colors.brassLight} />
             <Text style={styles.restPillTextLong}>Riposo Lungo</Text>
           </TouchableOpacity>
@@ -999,7 +1017,7 @@ export const CharacterSheetScreen: React.FC = () => {
               </View>
 
               {/* Quick Health Buttons */}
-              <View style={styles.hpControlsRow}>
+              {!liveManaged && <View style={styles.hpControlsRow}>
                 <TouchableOpacity
                   style={styles.hpDeltaBtn}
                   onPress={() => handleQuickHp(-5)}
@@ -1069,7 +1087,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 >
                   <Text style={styles.tempHpBtnText}>Temp</Text>
                 </TouchableOpacity>
-              </View>
+              </View>}
 
               {/* Hit Dice Bar */}
               <View style={styles.hitDiceRow}>
@@ -1092,7 +1110,7 @@ export const CharacterSheetScreen: React.FC = () => {
                       <Text style={styles.inlineActionChipText}>-1 dado</Text>
                     </TouchableOpacity>
                   )}
-                  <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving || !hitDice || hitDice.current <= 0 || maxHp === undefined} activeOpacity={0.75}>
+                  <TouchableOpacity style={styles.spendHitDieBtn} onPress={handleSpendHitDie} disabled={isSaving || liveManaged || !hitDice || hitDice.current <= 0 || maxHp === undefined} activeOpacity={0.75}>
                     <Text style={styles.spendHitDieBtnText}>Tira e cura</Text>
                   </TouchableOpacity>
                 </View>
@@ -1107,7 +1125,7 @@ export const CharacterSheetScreen: React.FC = () => {
                       TIRI SALVEZZA CONTRO LA MORTE (0 PF)
                     </Text>
                   </View>
-                  <TouchableOpacity style={styles.rollDeathSaveBtn} onPress={rollDeathSave} disabled={isSaving}>
+                  <TouchableOpacity style={styles.rollDeathSaveBtn} onPress={rollDeathSave} disabled={isSaving || liveManaged}>
                     <Text style={styles.rollDeathSaveText}>Tira TS Morte (d20)</Text>
                   </TouchableOpacity>
                 </View>
@@ -1123,7 +1141,7 @@ export const CharacterSheetScreen: React.FC = () => {
                           <TouchableOpacity
                             key={`succ-${idx}`}
                             style={[styles.deathDot, isFilled && styles.deathDotSuccess]}
-                            disabled={isSaving}
+                            disabled={isSaving || liveManaged}
                             hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                             accessibilityRole="button"
                             accessibilityLabel={`Tiro salvezza contro morte riuscito ${idx} di 3`}
@@ -1147,7 +1165,7 @@ export const CharacterSheetScreen: React.FC = () => {
                           <TouchableOpacity
                             key={`fail-${idx}`}
                             style={[styles.deathDot, isFilled && styles.deathDotFailure]}
-                            disabled={isSaving}
+                            disabled={isSaving || liveManaged}
                             hitSlop={{ top: 8, bottom: 8, left: 6, right: 6 }}
                             accessibilityRole="button"
                             accessibilityLabel={`Tiro salvezza contro morte fallito ${idx} di 3`}
@@ -1481,7 +1499,7 @@ export const CharacterSheetScreen: React.FC = () => {
                 <View style={styles.spellSlotsGrid}>
                   {usedSpellSlots === undefined && <Text style={styles.emptyNotice}>Gli slot massimi sono compilati, ma i consumi attuali non risultano salvati. Verificali col Master.</Text>}
                   {spellSlots.map((slot) => {
-                    const used = usedSpellSlots?.[slot.level] ?? 0;
+                    const used = Math.min(slot.count, usedSpellSlots?.[slot.level] ?? 0);
                     return (
                       <View key={`slot-${slot.level}`} style={styles.slotLevelCard}>
                         <Text style={styles.slotLevelTitle}>Livello {slot.level}°</Text>
@@ -1500,7 +1518,7 @@ export const CharacterSheetScreen: React.FC = () => {
                                 accessibilityLabel={`Slot incantesimo livello ${slot.level} numero ${idx + 1}, ${isSlotUsed ? 'consumato' : 'disponibile'}`}
                                 accessibilityState={{ selected: !isSlotUsed }}
                                 onPress={() => updateSpellSlot(slot.level, isSlotUsed ? used - 1 : used + 1)}
-                                disabled={isSaving}
+                                disabled={isSaving || liveManaged}
                               />
                             );
                           })}
@@ -1865,7 +1883,7 @@ export const CharacterSheetScreen: React.FC = () => {
                   customHpAction === 'heal' ? styles.btnHeal : styles.btnDamage,
                 ]}
                 onPress={handleCustomHpSubmit}
-                disabled={isSaving}
+                disabled={isSaving || liveManaged}
                 accessibilityRole="button"
               >
                 <Text style={styles.modalConfirmText}>Applica</Text>
@@ -1895,7 +1913,7 @@ export const CharacterSheetScreen: React.FC = () => {
               <TouchableOpacity style={styles.modalCancelBtn} onPress={() => setIsTempHpModalOpen(false)} accessibilityRole="button">
                 <Text style={styles.modalCancelText}>Annulla</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleTempHpSubmit} disabled={isSaving} accessibilityRole="button">
+              <TouchableOpacity style={[styles.modalConfirmBtn, styles.btnGold]} onPress={handleTempHpSubmit} disabled={isSaving || liveManaged} accessibilityRole="button">
                 <Text style={styles.modalConfirmTextDark}>Imposta Temp HP</Text>
               </TouchableOpacity>
             </View>

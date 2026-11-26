@@ -27,7 +27,7 @@ export function GmTacticalScreen({
   campaignId,
   currentUserId: _currentUserId,
   campaignType = null,
-  selectedSessionId: _selectedSessionId,
+  selectedSessionId,
   className,
 }: GmTacticalScreenProps) {
   const long = useGmScreenLongStateOptional();
@@ -63,6 +63,7 @@ export function GmTacticalScreen({
             <InitiativeTracker
               ref={initiativeRef}
               campaignId={long.campaignId}
+              liveContextId={long.isSessionReady ? selectedSessionId : null}
               campaignType={campaignType ?? "long"}
               availableCharacters={long.sessionCharacters}
               value={long.initiativeState}
@@ -75,6 +76,7 @@ export function GmTacticalScreen({
             <InitiativeTracker
               ref={initiativeRef}
               campaignId={campaignId}
+              liveContextId={selectedSessionId}
               campaignType={campaignType}
               defaultDisplay="table"
               onActiveCombatantChange={handleActiveCombatantChange}

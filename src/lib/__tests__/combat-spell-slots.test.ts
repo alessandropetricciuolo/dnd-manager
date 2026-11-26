@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createCombatSpellSlots,
+  normalizeCombatSpellSlots,
   resolveMaxSpellSlotsForCharacter,
   restoreCombatSpellSlot,
   spendCombatSpellSlot,
@@ -37,4 +38,14 @@ test("resetCombatSpellSlots ripristina il massimo", () => {
   assert.equal(slots.remaining.find((e) => e.level === 1)?.count, undefined);
   const reset = resetCombatSpellSlots(slots);
   assert.deepEqual(reset.remaining, reset.max);
+});
+
+test("normalizing a tracker snapshot preserves a fully spent spell slot level", () => {
+  const slots = createCombatSpellSlots([{ level: 1, count: 1 }, { level: 2, count: 2 }])!;
+  const spent = spendCombatSpellSlot(slots, 1)!;
+  const reloaded = normalizeCombatSpellSlots(spent)!;
+
+  assert.deepEqual(reloaded.remaining, [{ level: 1, count: 0 }, { level: 2, count: 2 }]);
+  assert.equal(spendCombatSpellSlot(reloaded, 1), null);
+  assert.equal(restoreCombatSpellSlot(reloaded, 1)?.remaining[0].count, 1);
 });

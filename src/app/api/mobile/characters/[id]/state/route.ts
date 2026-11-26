@@ -35,6 +35,12 @@ export const PATCH = createMobileCharacterStatePatchHandler((body) => {
       if (error) throw error;
       return data?.type ?? null;
     },
+    isSessionLive: async (id: string) => {
+      const { data, error } = await admin.from("session_live_characters")
+        .select("character_id").eq("character_id", id).eq("active", true).maybeSingle();
+      if (error) throw error;
+      return Boolean(data);
+    },
     compareAndSwap: async (id: string, expectedUpdatedAt: string, next: any) => {
       const touchesHitPoints =
         operationType === "hp" || operationType === "shortRestHitDie" || operationType === "longRest";
@@ -56,7 +62,7 @@ export const PATCH = createMobileCharacterStatePatchHandler((body) => {
         .eq("updated_at", expectedUpdatedAt)
         .select("id,campaign_id,name,image_url,sheet_file_path,current_xp,level,character_class,class_subclass,armor_class,hit_points,background,race_slug,subclass_slug,background_slug,rules_snapshot,assigned_to,coins_gp,coins_sp,coins_cp,created_at,updated_at")
         .maybeSingle();
-      if (error) throw error;
+      if (error) throw new Error(error.message);
       return data;
     },
   };

@@ -48,6 +48,25 @@ export function GmScreenLegacyLayout({
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sessions, setSessions] = useState<CampaignSessionOption[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(initialSessionId ?? null);
+  const sessionSelectionKey = `gm-screen-selected:${currentUserId}:${campaignId}`;
+  useEffect(() => {
+    if (initialSessionId) return;
+    try {
+      setSelectedSessionId(localStorage.getItem(sessionSelectionKey));
+    } catch {
+      // The current screen still works when local storage is unavailable.
+    }
+  }, [initialSessionId, sessionSelectionKey]);
+
+  function selectSession(sessionId: string | null) {
+    setSelectedSessionId(sessionId);
+    try {
+      if (sessionId) localStorage.setItem(sessionSelectionKey, sessionId);
+      else localStorage.removeItem(sessionSelectionKey);
+    } catch {
+      // Keep the selection for the current screen.
+    }
+  }
   const [debriefOpen, setDebriefOpen] = useState(Boolean(initialSessionId && autoOpenDebrief));
   const [whispersOpen, setWhispersOpen] = useState(false);
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -142,7 +161,7 @@ export function GmScreenLegacyLayout({
         {sidebarOpen && (
           <div className="flex h-full min-w-0 flex-1 flex-col p-3">
             <div className="min-h-0 flex-1 overflow-hidden">
-              <InitiativeTracker campaignId={campaignId} campaignType={campaignType} />
+              <InitiativeTracker campaignId={campaignId} campaignType={campaignType} liveContextId={selectedSessionId} />
             </div>
           </div>
         )}
@@ -153,7 +172,7 @@ export function GmScreenLegacyLayout({
           <Calendar className="h-4 w-4 text-amber-400/80" />
           <Select
             value={selectedSessionId ?? "none"}
-            onValueChange={(value) => setSelectedSessionId(value === "none" ? null : value)}
+            onValueChange={(value) => selectSession(value === "none" ? null : value)}
           >
             <SelectTrigger className="max-w-xs border-amber-600/30 bg-zinc-900 text-zinc-200">
               <SelectValue placeholder="Sessione corrente" />

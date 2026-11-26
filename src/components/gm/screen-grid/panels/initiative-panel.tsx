@@ -20,6 +20,7 @@ export function InitiativePanel() {
       <div className="h-full min-h-0">
         <InitiativeTracker
           campaignId={long.campaignId}
+          liveContextId={long.isSessionReady ? long.selectedSessionId : null}
           campaignType={board.campaignType ?? "long"}
           availableCharacters={long.sessionCharacters}
           value={long.initiativeState}
@@ -35,6 +36,7 @@ export function InitiativePanel() {
     <div className="h-full min-h-0">
       <InitiativeTracker
         campaignId={board.campaignId}
+        liveContextId={board.selectedSessionId}
         campaignType={board.campaignType ?? null}
         onOpenMonsterStat={onOpenMonsterStat}
       />

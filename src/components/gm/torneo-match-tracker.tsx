@@ -393,6 +393,9 @@ export function TorneoMatchTracker({
           {...(initiativeHandleRef ? { ref: initiativeHandleRef } : {})}
           campaignId={campaignId}
           campaignType="torneo"
+          liveScope="torneo"
+          liveContextId={liveSyncEnabled ? match.id : null}
+          beforeLiveStart={async () => (await saveTorneoMatchInitiativeAction(campaignId, match.id, state)).success}
           value={state}
           onChange={handleChange}
           storageKeyOverride={

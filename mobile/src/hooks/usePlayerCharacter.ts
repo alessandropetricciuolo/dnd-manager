@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { supabase } from '../api/supabase';
-import { MobileCharacterOperation } from '../lib/character-state';
+import { operationTouchesSessionLiveResources, type MobileCharacterOperation } from '../lib/character-state';
+import { SESSION_LIVE_RESOURCES_LOCKED } from '../lib/session-live';
+import { useSessionLiveCharacter } from './useSessionLiveCharacter';
 import type {
   CharacterSheetPersonality,
   CharacterSheetSpell,
@@ -35,13 +37,20 @@ export const EMPTY_CHARACTER_FALLBACK: PlayerCharacter = {
 };
 export const DEFAULT_FALLBACK_CHARACTER = EMPTY_CHARACTER_FALLBACK;
 
-export function usePlayerCharacter(overrideCampaignId?: string | null) {
+export function usePlayerCharacter(overrideCampaignId?: string | null, enableSessionLive = false) {
   const { user, role } = useAuth();
   const { activeCampaignId } = useCampaign();
 
   const campaignId = overrideCampaignId !== undefined ? overrideCampaignId : activeCampaignId;
 
-  const [characters, setCharacters] = useState<PlayerCharacter[]>([]);
+  const scope = `${campaignId ?? ''}:${user?.id ?? ''}:${role ?? ''}`;
+  const scopeRef = useRef(scope);
+  scopeRef.current = scope;
+  const fetchRevision = useRef(0);
+  const [loaded, setLoaded] = useState<{ scope: string; characters: PlayerCharacter[] }>();
+  const loadedScopeRef = useRef(loaded?.scope);
+  loadedScopeRef.current = loaded?.scope;
+  const characters = useMemo(() => loaded?.scope === scope ? loaded.characters : [], [loaded, scope]);
   const [selectedCharacterId, setSelectedCharacterId] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,18 +61,22 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
   useEffect(() => { charactersRef.current = characters; }, [characters]);
 
   // Fetch characters for the current user in this specific campaign
-  const fetchCharacters = useCallback(async () => {
-    if (!campaignId) {
-      setCharacters([]);
+  const fetchCharacters = useCallback(async (quiet = false) => {
+    const revision = ++fetchRevision.current;
+    const current = () => scopeRef.current === scope && fetchRevision.current === revision;
+    if (!campaignId || !user?.id) {
+      setLoaded({ scope, characters: [] });
       setSelectedCharacterId(null);
       setLoading(false);
       return;
     }
 
     try {
-      setLoading(true);
-      setError(null);
-      setSaveError(null);
+      if (!quiet) {
+        setLoading(true);
+        setError(null);
+        setSaveError(null);
+      }
 
       let charRows: any[] = [];
 
@@ -76,7 +89,8 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
           .eq('assigned_to', user.id)
           .order('created_at', { ascending: false });
 
-        if (!userErr && userChars && userChars.length > 0) {
+        if (userErr) throw userErr;
+        if (userChars && userChars.length > 0) {
           charRows = userChars;
         }
       }
@@ -89,15 +103,17 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
           .eq('campaign_id', campaignId)
           .order('name', { ascending: true });
 
-        if (!campErr && allCampChars && allCampChars.length > 0) {
+        if (campErr) throw campErr;
+        if (allCampChars && allCampChars.length > 0) {
           charRows = allCampChars;
         }
       }
 
+      if (!current()) return;
       if (charRows.length > 0) {
-      const normalized: PlayerCharacter[] = charRows.map(projectCharacter);
+        const normalized: PlayerCharacter[] = charRows.map(projectCharacter);
 
-        setCharacters(normalized);
+        setLoaded({ scope, characters: normalized });
         setSelectedCharacterId((prev) => {
           if (prev && normalized.some((c) => c.id === prev)) {
             return prev;
@@ -106,26 +122,28 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
         });
       } else {
         // No character assigned yet for this campaign
-        setCharacters([]);
+        setLoaded({ scope, characters: [] });
         setSelectedCharacterId(null);
       }
     } catch (err: any) {
       console.warn('[usePlayerCharacter] Eccezione:', err);
-      setError(err?.message ?? 'Errore nel caricamento del personaggio');
-      setCharacters([]);
-      setSelectedCharacterId(null);
+      if (!quiet && current()) {
+        setError(err?.message ?? 'Errore nel caricamento del personaggio');
+        setLoaded({ scope, characters: [] });
+        setSelectedCharacterId(null);
+      }
     } finally {
-      setLoading(false);
+      if (current()) setLoading(false);
     }
-  }, [campaignId, user?.id, role]);
+  }, [campaignId, user?.id, role, scope]);
 
   useFocusEffect(useCallback(() => {
-    void fetchCharacters();
+    void fetchCharacters(loadedScopeRef.current === scope);
     const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') void fetchCharacters();
+      if (state === 'active') void fetchCharacters(true);
     });
     return () => subscription.remove();
-  }, [fetchCharacters]));
+  }, [fetchCharacters, scope]));
 
   // Active character currently viewed/edited
   const activeCharacter = useMemo<PlayerCharacter | null>(() => {
@@ -136,10 +154,25 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
     return found ?? characters[0] ?? null;
   }, [characters, selectedCharacterId]);
 
-  // Fallback safe character to prevent crashes when accessing properties
+  const refreshAfterLive = useCallback(() => { void fetchCharacters(true); }, [fetchCharacters]);
+  const liveState = useSessionLiveCharacter(enableSessionLive ? activeCharacter?.id : undefined, user?.id, refreshAfterLive);
+  const liveResources = liveState?.row?.resources;
+
+  // Overlay shared match/session resources for display. Mutations still use the base sheet revision.
   const safeCharacter = useMemo<PlayerCharacter>(() => {
-    return activeCharacter || DEFAULT_FALLBACK_CHARACTER;
-  }, [activeCharacter]);
+    if (!activeCharacter) return DEFAULT_FALLBACK_CHARACTER;
+    if (!liveResources) return activeCharacter;
+    return {
+      ...activeCharacter,
+      hit_points: liveResources.hitPoints,
+      rules_snapshot: {
+        ...activeCharacter.rules_snapshot,
+        temp_hp: liveResources.tempHp,
+        death_saves: liveResources.deathSaves,
+        usedSpellSlots: liveResources.usedSpellSlots,
+      },
+    };
+  }, [activeCharacter, liveResources]);
 
   const hasAssignedCharacter = Boolean(activeCharacter);
 
@@ -153,42 +186,53 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
 
   const saveOperation = useCallback((operation: MobileCharacterOperation) => {
     if (!activeCharacter) return Promise.resolve(false);
+    if (liveResources && operationTouchesSessionLiveResources(activeCharacter, operation)) return Promise.resolve(false);
     const charId = activeCharacter.id;
     setSaveError(null);
     setPendingSaves((count) => count + 1);
     const save = async () => {
+      if (scopeRef.current !== scope) return false;
       const current = charactersRef.current.find((character) => character.id === charId);
       if (!current?.updated_at) throw new Error('La scheda non ha una revisione salvabile. Aggiorna la schermata.');
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
       if (!token) throw new Error('Sessione scaduta. Accedi di nuovo.');
+      let expectedUpdatedAt = current.updated_at;
+      if (liveResources) {
+        const { data: revision, error: revisionError } = await supabase.from('campaign_characters')
+          .select('updated_at').eq('id', charId).maybeSingle();
+        if (revisionError || !revision?.updated_at) throw new Error('Impossibile leggere la revisione della scheda.');
+        expectedUpdatedAt = revision.updated_at;
+      }
       const baseUrl = (process.env.EXPO_PUBLIC_WEB_APP_URL || 'https://barberanddragons.com').replace(/\/$/, '');
       const response = await fetch(`${baseUrl}/api/mobile/characters/${encodeURIComponent(charId)}/state`, {
         method: 'PATCH',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ expectedUpdatedAt: current.updated_at, operation }),
+        body: JSON.stringify({ expectedUpdatedAt, operation }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok || !payload.character) {
         if (response.status === 409) throw new Error('La scheda è cambiata su un altro dispositivo. Aggiorna la scheda per ricaricare i dati aggiornati.');
+        if (payload.error === SESSION_LIVE_RESOURCES_LOCKED) throw new Error('Sessione live · Risorse gestite dal GM.');
         if (payload.error === 'max_hp_unavailable') throw new Error('Impossibile salvare i PF: il massimo PF non è presente nella scheda. Chiedi al GM di correggerla.');
         if (payload.error === 'hit_dice_unavailable') throw new Error('Non risultano Dadi Vita disponibili nella scheda.');
         if (payload.error === 'long_campaign_only') throw new Error('Questa modifica è disponibile solo per le campagne Long.');
         throw new Error(payload.error === 'forbidden' ? 'Non hai i permessi per salvare questa scheda.' : 'Salvataggio non riuscito. Riprova.');
       }
+      if (scopeRef.current !== scope) return false;
       const saved = projectCharacter(payload.character);
       const next = charactersRef.current.map((character) => character.id === charId ? saved : character);
       charactersRef.current = next;
-      setCharacters(next);
+      setLoaded({ scope, characters: next });
       return true;
     };
     const result = saveQueueRef.current.catch(() => undefined).then(save);
     saveQueueRef.current = result.then(() => undefined, () => undefined);
     return result.catch((error: unknown) => {
-      setSaveError(error instanceof Error ? error.message : 'Salvataggio non riuscito.');
+      if (scopeRef.current === scope) setSaveError(error instanceof Error ? error.message : 'Salvataggio non riuscito.');
       return false;
     }).finally(() => setPendingSaves((count) => Math.max(0, count - 1)));
-  }, [activeCharacter]);
+  }, [activeCharacter, liveResources, scope]);
 
   const updateHp = useCallback((hitPoints: number, tempHp?: number) => saveOperation({ type: 'hp', hitPoints: Math.max(0, Math.round(hitPoints)), ...(tempHp === undefined ? {} : { tempHp: Math.max(0, Math.round(tempHp)) }) }), [saveOperation]);
   const toggleInspiration = useCallback(() => saveOperation({ type: 'toggleInspiration' }), [saveOperation]);
@@ -226,10 +270,14 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
     [saveOperation],
   );
 
+  const refresh = useCallback(() => fetchCharacters(), [fetchCharacters]);
+
   return {
     characters,
     activeCharacter,
     safeCharacter,
+    liveResources,
+    liveStale: Boolean(liveState?.stale),
     hasAssignedCharacter,
     selectedCharacterId,
     selectCharacter: setSelectedCharacterId,
@@ -242,7 +290,7 @@ export function usePlayerCharacter(overrideCampaignId?: string | null) {
     error,
     saveError,
     isSaving: pendingSaves > 0,
-    refresh: fetchCharacters,
+    refresh,
     updateHp,
     toggleInspiration,
     spendHitDie,

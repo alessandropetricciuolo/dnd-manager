@@ -8,6 +8,7 @@ import {
   type CharacterSheetWeapon,
 } from "./character-sheet";
 import { isShortRestPactCaster } from "./character-rules-calc";
+import { SESSION_LIVE_RESOURCES_LOCKED } from "./session-live";
 
 export type MobileCharacterOperation =
   | { type: "hp"; hitPoints: number; tempHp?: number }
@@ -128,12 +129,21 @@ function ensureEditableSheet(snapshot: Snapshot): CharacterSheetV1 {
   return createCharacterSheetV1("manual", {});
 }
 
-function shouldResetSpellSlotsOnShortRest(row: MobileCharacterState, snapshot: Snapshot): boolean {
+function shouldResetSpellSlotsOnShortRest(row: { character_class?: string | null }, snapshot: Snapshot): boolean {
   const sheet = isCharacterSheetV1(snapshot.character_sheet) ? snapshot.character_sheet : null;
   return isShortRestPactCaster(
     row.character_class ?? sheet?.classLabel ?? snapshot.classLabel,
     sheet?.spellcastingClass,
   );
+}
+
+export function operationTouchesSessionLiveResources(
+  row: { character_class?: string | null; rules_snapshot?: Snapshot | null },
+  operation: MobileCharacterOperation,
+): boolean {
+  return operation.type === "hp" || operation.type === "shortRestHitDie" ||
+    operation.type === "spellSlot" || operation.type === "deathSaves" || operation.type === "longRest" ||
+    (operation.type === "shortRest" && shouldResetSpellSlotsOnShortRest(row, row.rules_snapshot ?? {}));
 }
 
 export function applyMobileCharacterOperation(
@@ -549,6 +559,7 @@ export type MobileCharacterStateDependencies = {
   getProfileRole(userId: string): Promise<string | null>;
   getCampaignGmId(campaignId: string): Promise<string | null>;
   getCampaignType?(campaignId: string): Promise<string | null>;
+  isSessionLive?(id: string): Promise<boolean>;
   compareAndSwap(id: string, expectedUpdatedAt: string, patch: MobileCharacterState): Promise<MobileCharacterRecord | null>;
 };
 
@@ -592,6 +603,9 @@ export async function saveMobileCharacterState(
         return { status: 403, body: { error: "long_campaign_only" } };
       }
     }
+    if (operationTouchesSessionLiveResources(row, input.operation) && await deps.isSessionLive?.(id)) {
+      return { status: 423, body: { error: SESSION_LIVE_RESOURCES_LOCKED } };
+    }
     const expectedUpdatedAt = input.expectedUpdatedAt;
     if (!hasExpectedCharacterRevision(expectedUpdatedAt, row.updated_at)) {
       return { status: 409, body: { error: "revision_conflict", updatedAt: row.updated_at } };
@@ -607,7 +621,10 @@ export async function saveMobileCharacterState(
     const character = await deps.compareAndSwap(id, expectedUpdatedAt, next);
     if (!character) return { status: 409, body: { error: "revision_conflict" } };
     return { status: 200, body: { character } };
-  } catch {
+  } catch (error) {
+    if (error instanceof Error && error.message === SESSION_LIVE_RESOURCES_LOCKED) {
+      return { status: 423, body: { error: SESSION_LIVE_RESOURCES_LOCKED } };
+    }
     return { status: 500, body: { error: "save_failed" } };
   }
 }
