@@ -43,6 +43,7 @@ import { DiceRollerModal } from '../../components/player/DiceRollerModal';
 import { CampaignSelectorModal } from '../../components/common/CampaignSelectorModal';
 import { GridCalendar } from '../../components/common/GridCalendar';
 import { ExpandableCampaignCard } from '../../components/common/ExpandableCampaignCard';
+import { RoleModeSwitcher } from '../../components/common/RoleModeSwitcher';
 import { PlayerSessionDetailModal } from '../../components/player/PlayerSessionDetailModal';
 import { Campaign, CampaignType, PlayerSession, Session } from '../../types';
 
@@ -105,8 +106,7 @@ function formatSessionDate(dateStr: string) {
 
 export const PlayerHomeScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { profile, user, role, switchMode } = useAuth();
-  const canAccessGm = role === 'admin' || role === 'gm';
+  const { profile, user } = useAuth();
 
   const {
     campaigns,
@@ -391,6 +391,8 @@ export const PlayerHomeScreen: React.FC = () => {
               <Text style={styles.profileStatLabel}>Grado Eroe</Text>
             </View>
           </View>
+
+          <RoleModeSwitcher />
         </View>
 
         {/* Banner Iscrizione Campagna Long (quando il giocatore non è ancora membro) */}
@@ -751,41 +753,6 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
     gap: 14,
-  },
-  gmNoticeBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: 'rgba(197, 155, 39, 0.15)',
-    borderWidth: 1,
-    borderColor: colors.brassDark,
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  gmNoticeLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  gmNoticeText: {
-    fontSize: 12,
-    color: colors.parchmentLight,
-  },
-  boldText: {
-    fontWeight: '800',
-    color: colors.brassLight,
-  },
-  gmSwitchButton: {
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  gmSwitchButtonText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: colors.void,
   },
   headerCard: {
     backgroundColor: colors.stoneSurface,

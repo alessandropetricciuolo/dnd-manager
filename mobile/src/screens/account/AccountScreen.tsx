@@ -17,7 +17,6 @@ import {
   Bell,
   Crown,
   Award,
-  Repeat,
   ChevronRight,
   LogOut,
 } from 'lucide-react-native';
@@ -30,12 +29,13 @@ import { supabase } from '../../api/supabase';
 import { listBlockedWhisperUsers, unblockWhisperUser } from '../../api/whisperSafety';
 import { colors } from '../../theme/colors';
 import { linkAppleIdentity, useAppleSignInAvailability } from '../../auth/apple';
+import { RoleModeSwitcher } from '../../components/common/RoleModeSwitcher';
 
 const SITE = 'https://barberanddragons.com';
 
 export const AccountScreen: React.FC = () => {
   const navigation = useNavigation<any>();
-  const { user, profile, role, activeMode, switchMode, signOut } = useAuth();
+  const { user, profile, role, activeMode, signOut } = useAuth();
   const appleAvailable = useAppleSignInAvailability();
   const [appleLinkBusy, setAppleLinkBusy] = useState(false);
   const isGmOrAdmin = role === 'gm' || role === 'admin';
@@ -222,21 +222,8 @@ export const AccountScreen: React.FC = () => {
           </View>
         </View>
 
-        {/* Switcher GM/Admin tra GM e Player */}
-        {isGmOrAdmin && (
-          <TouchableOpacity
-            style={styles.adminSwitchBtn}
-            onPress={() => switchMode(activeMode === 'gm' ? 'player' : 'gm')}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel={`Passa a vista ${activeMode === 'gm' ? 'Giocatore' : 'Regia GM'}`}
-          >
-            <Repeat size={14} color={colors.void} />
-            <Text style={styles.adminSwitchBtnText}>
-              Passa a vista {activeMode === 'gm' ? 'Giocatore' : 'Regia GM'}
-            </Text>
-          </TouchableOpacity>
-        )}
+        {/* Switcher GM/Admin tra Giocatore e Regia GM */}
+        <RoleModeSwitcher />
 
         <TouchableOpacity
           style={styles.linkRow}
@@ -528,21 +515,6 @@ const styles = StyleSheet.create({
     width: 1,
     height: 24,
     backgroundColor: colors.stoneBorder,
-  },
-  adminSwitchBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    backgroundColor: colors.brassBase,
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 2,
-  },
-  adminSwitchBtnText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.void,
   },
   toolActionRow: {
     flexDirection: 'row',

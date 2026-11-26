@@ -27,6 +27,7 @@ import { useGmCampaigns } from '../../hooks/useGmCampaigns';
 import { CAMPAIGN_TYPE_BADGES } from '../../contexts/CampaignContext';
 import { GridCalendar } from '../../components/common/GridCalendar';
 import { ExpandableCampaignCard } from '../../components/common/ExpandableCampaignCard';
+import { RoleModeSwitcher } from '../../components/common/RoleModeSwitcher';
 import { GmCreateSessionModal } from '../../components/gm/GmCreateSessionModal';
 import { GmSessionSignupsModal } from '../../components/gm/GmSessionSignupsModal';
 import { GmSessionsManagerModal } from '../../components/gm/GmSessionsManagerModal';
@@ -185,6 +186,8 @@ export const GmHomeScreen: React.FC = () => {
               <Text style={styles.statDesc}>Concluse</Text>
             </View>
           </View>
+
+          <RoleModeSwitcher style={styles.modeSwitcher} />
         </View>
 
         {/* Quick Link to Dedicated Regia Page */}
@@ -363,55 +366,16 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  switcherBanner: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: colors.stoneSurface,
-    borderWidth: 1.5,
-    borderColor: colors.brassDark,
-    borderRadius: 10,
-    padding: 12,
-    marginBottom: 16,
-  },
-  switchBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  switchBannerTitle: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.brassLight,
-    letterSpacing: 0.8,
-  },
-  switchBannerSub: {
-    fontSize: 10,
-    color: colors.parchmentMuted,
-    marginTop: 1,
-  },
-  switchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 6,
-  },
-  switchButtonText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: colors.void,
-  },
   headerCard: {
     backgroundColor: colors.stoneSurface,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1.5,
-    borderColor: colors.stoneBorder,
+    borderColor: colors.brassDark,
     padding: 16,
     marginBottom: 14,
+  },
+  modeSwitcher: {
+    marginTop: 10,
   },
   badgeRow: {
     flexDirection: 'row',

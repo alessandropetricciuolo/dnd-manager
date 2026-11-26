@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -8,7 +8,6 @@ import {
   Shield,
   BookOpen,
   MessageSquare,
-  Crown,
   LogOut,
   User,
   Flame,
@@ -45,9 +44,8 @@ const Stack = createNativeStackNavigator<PlayerStackParamList>();
 const PlayerTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
-  const { role, switchMode, signOut } = useAuth();
+  const { signOut } = useAuth();
   const { hasJoinedLongCampaign, canAccessCharacterSheet } = useCampaign();
-  const canAccessGm = role === 'admin' || role === 'gm';
 
   return (
     <Tab.Navigator
@@ -67,19 +65,6 @@ const PlayerTabs: React.FC = () => {
         headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
-            {canAccessGm && (
-              <TouchableOpacity
-                style={styles.gmSwitchButton}
-                onPress={() => switchMode('gm')}
-                activeOpacity={0.8}
-                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                accessibilityRole="button"
-                accessibilityLabel="Passa alla Regia Game Master"
-              >
-                <Crown size={14} color={colors.void} />
-                <Text style={styles.gmSwitchButtonText}>Regia</Text>
-              </TouchableOpacity>
-            )}
             <TouchableOpacity
               style={styles.signOutButton}
               onPress={() => {
@@ -236,24 +221,7 @@ const styles = StyleSheet.create({
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginRight: 12,
-  },
-  gmSwitchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 38,
-    borderRadius: 8,
-  },
-  gmSwitchButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.void,
+    marginRight: 8,
   },
   signOutButton: {
     minWidth: 40,

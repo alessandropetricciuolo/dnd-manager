@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,11 +7,8 @@ import {
   Compass,
   Crown,
   Swords,
-  Radio,
   MessageSquare,
-  Repeat,
   LogOut,
-  Sparkles,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,7 +47,7 @@ const Stack = createNativeStackNavigator<GmStackParamList>();
 const GmTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
-  const { role, switchMode, signOut } = useAuth();
+  const { signOut } = useAuth();
 
   return (
     <Tab.Navigator
@@ -71,20 +68,6 @@ const GmTabs: React.FC = () => {
         headerTitleStyle: styles.headerTitle,
         headerRight: () => (
           <View style={styles.headerRightContainer}>
-            {(role === 'admin' || role === 'gm') && (
-              <TouchableOpacity
-                style={styles.playerSwitchButton}
-                onPress={() => switchMode('player')}
-                activeOpacity={0.8}
-                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
-                accessibilityRole="button"
-                accessibilityLabel="Passa alla vista Giocatore"
-              >
-                <Repeat size={13} color={colors.void} />
-                <Text style={styles.playerSwitchButtonText}>Vista Player</Text>
-              </TouchableOpacity>
-            )}
-
             <TouchableOpacity
               style={styles.signOutButton}
               onPress={() => {
@@ -257,24 +240,7 @@ const styles = StyleSheet.create({
   headerRightContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
-    marginRight: 12,
-  },
-  playerSwitchButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 5,
-    backgroundColor: colors.brassBase,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    minHeight: 38,
-    borderRadius: 8,
-  },
-  playerSwitchButtonText: {
-    fontSize: 12,
-    fontWeight: '800',
-    color: colors.void,
+    marginRight: 8,
   },
   signOutButton: {
     minWidth: 40,
