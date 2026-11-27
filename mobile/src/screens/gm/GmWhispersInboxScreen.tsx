@@ -33,6 +33,8 @@ import { useRealtimeWhispers } from '../../hooks/useRealtimeWhispers';
 import { Character, WhisperMessage } from '../../types';
 import { blockWhisperUser, reportWhisper } from '../../api/whisperSafety';
 import { showWhisperRules } from '../../lib/whisper-rules-prompt';
+import { useRoute, type RouteProp } from '@react-navigation/native';
+import type { GmTabParamList } from '../../navigation/GmTabNavigator';
 
 interface PlayerTarget {
   id: string;
@@ -54,6 +56,7 @@ const GM_QUICK_PRESETS = [
 ];
 
 export const GmWhispersInboxScreen: React.FC = () => {
+  const route = useRoute<RouteProp<GmTabParamList, 'GmWhispers'>>();
   const { user } = useAuth();
   const { activeCampaign, characters } = useGmCampaigns();
   const currentGmId = user?.id || '';
@@ -118,6 +121,14 @@ export const GmWhispersInboxScreen: React.FC = () => {
       setSelectedTargetId(playerTargets[0].id);
     }
   }, [playerTargets, selectedTargetId]);
+
+  // Honor direct player selection from Regia Party Dossier
+  useEffect(() => {
+    const incomingId = route.params?.targetPlayerId;
+    if (incomingId && playerTargets.some((p) => p.id === incomingId)) {
+      setSelectedTargetId(incomingId);
+    }
+  }, [route.params?.targetPlayerId, playerTargets]);
 
   // Mark as read when active target changes
   useEffect(() => {

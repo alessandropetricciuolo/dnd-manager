@@ -481,6 +481,80 @@ export interface WikiEntity {
   updated_at?: string;
 }
 
+export interface MobileWikiIndexItem {
+  id: string;
+  campaign_id: string;
+  name: string;
+  type: WikiEntityType | string;
+  snippet: string;
+  image_url: string | null;
+  telegram_fallback_id: string | null;
+  sort_order: number | null;
+  is_chapter: boolean;
+  linked_mission_id: string | null;
+  tags: string[];
+  updated_at: string | null;
+  visibility?: 'public' | 'selective' | 'secret';
+  archived_at?: string | null;
+  is_campaign_document?: boolean;
+  admin_only?: boolean;
+  monster_combat_preview?: {
+    hp?: string;
+    ac?: string;
+    cr?: string;
+  } | null;
+}
+
+export interface MobileWikiResolvedRelation {
+  id: string;
+  direction: 'outgoing' | 'incoming';
+  label: string;
+  targetKind: 'wiki' | 'map';
+  targetId: string;
+  targetName: string;
+  targetType: string;
+  targetVisibility?: 'public' | 'selective' | 'secret';
+  targetAdminOnly?: boolean;
+}
+
+export interface MobileWikiEntityDetail {
+  id: string;
+  campaign_id: string;
+  name: string;
+  type: WikiEntityType | string;
+  description: string;
+  body: string;
+  attributes: Record<string, any>;
+  image_url: string | null;
+  telegram_fallback_id: string | null;
+  sort_order: number | null;
+  is_chapter: boolean;
+  linked_mission_id: string | null;
+  tags: string[];
+  updated_at: string | null;
+  visibility?: 'public' | 'selective' | 'secret';
+  archived_at?: string | null;
+  is_campaign_document?: boolean;
+  admin_only?: boolean;
+  relations: MobileWikiResolvedRelation[];
+  linked_map_ids: string[];
+}
+
+export interface MobileWikiIndexPayload {
+  campaign: {
+    id: string;
+    name: string;
+    type: CampaignType | string | null;
+  };
+  viewer: {
+    canReadGmContent: boolean;
+    isAdmin: boolean;
+  };
+  entities: MobileWikiIndexItem[];
+  maps: CampaignMap[];
+  documents?: MobileWikiIndexItem[];
+}
+
 export interface CampaignMap {
   id: string;
   campaign_id: string;

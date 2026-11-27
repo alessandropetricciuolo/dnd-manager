@@ -40,21 +40,23 @@ import {
   CompanionDossierModal,
   formatMapTypeLabel,
   MapViewerModal,
-  WikiEntityReaderModal,
 } from '../../components/player/LoreScreenModals';
+import { WikiCodexReaderModal } from '../../components/wiki/WikiCodexReaderModal';
+import {
+  clearMobileWikiCache,
+  fetchMobileCampaignWikiIndex,
+} from '../../api/wiki';
 import { supabase } from '../../api/supabase';
 import { resolveEffectiveCharacterFields } from '../../lib/character-sheet';
 import {
   ELDARIA_CAMPAIGN_ID,
-  extractWikiEntityBody,
-  extractWikiEntitySnippet,
   formatMissionRankMeta,
   formatMissionTreasureLabel,
   resolveRaceAndSubraceLabels,
   resolveTelegramOrImageUrl,
 } from '../../lib/long-campaign-helpers';
 import {
-  WikiEntity,
+  MobileWikiIndexItem,
   CampaignMission,
   CampaignMap,
   CampaignGuild,
@@ -73,6 +75,7 @@ const WIKI_TYPE_CHIPS = [
   { key: 'location', label: 'Luoghi' },
   { key: 'monster', label: 'Mostri' },
   { key: 'item', label: 'Oggetti' },
+  { key: 'faction', label: 'Fazioni' },
   { key: 'lore', label: 'Cronaca' },
 ] as const;
 
@@ -110,7 +113,7 @@ export const CampaignLoreScreen: React.FC = () => {
   const [activeTab, setActiveTab] = useState<ActiveTab>('wiki');
 
   // Data states
-  const [wikiEntities, setWikiEntities] = useState<WikiEntity[]>([]);
+  const [wikiEntities, setWikiEntities] = useState<MobileWikiIndexItem[]>([]);
   const [maps, setMaps] = useState<CampaignMap[]>([]);
   const [missions, setMissions] = useState<CampaignMission[]>([]);
   const [guilds, setGuilds] = useState<CampaignGuild[]>([]);
@@ -127,7 +130,7 @@ export const CampaignLoreScreen: React.FC = () => {
   const [wikiSearch, setWikiSearch] = useState<string>('');
   const [wikiTypeFilter, setWikiTypeFilter] = useState<string>('all');
   const [wikiMissionFilter, setWikiMissionFilter] = useState<string>('all');
-  const [selectedWikiEntity, setSelectedWikiEntity] = useState<WikiEntity | null>(null);
+  const [selectedWikiEntity, setSelectedWikiEntity] = useState<MobileWikiIndexItem | null>(null);
 
   // Maps tab filters
   const [mapSearch, setMapSearch] = useState<string>('');
@@ -167,7 +170,7 @@ export const CampaignLoreScreen: React.FC = () => {
     [user?.id, targetLongCampaignId],
   );
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (forceRefresh = false) => {
     if (!targetLongCampaignId || !isTargetLongAccessible) {
       setWikiEntities([]);
       setMaps([]);
@@ -186,23 +189,6 @@ export const CampaignLoreScreen: React.FC = () => {
     try {
       setIsLoading(true);
       setLoadError(null);
-
-      // Build queries in parallel
-      let wikiQuery = supabase
-        .from('wiki_entities')
-        .select('*')
-        .eq('campaign_id', targetLongCampaignId)
-        .eq('is_campaign_document', false)
-        .is('archived_at', null)
-        .order('name', { ascending: true });
-      if (!isAdmin) wikiQuery = wikiQuery.eq('admin_only', false);
-
-      let mapsQuery = supabase
-        .from('maps')
-        .select('*')
-        .eq('campaign_id', targetLongCampaignId)
-        .order('created_at', { ascending: false });
-      if (!isAdmin) mapsQuery = mapsQuery.eq('admin_only', false);
 
       const missionsQuery = supabase
         .from('campaign_missions')
@@ -235,16 +221,19 @@ export const CampaignLoreScreen: React.FC = () => {
         .order('name', { ascending: true });
 
       const [
-        wikiRes,
-        mapsRes,
+        wikiIndexRes,
         missionRes,
         guildsRes,
         partiesRes,
         membersRes,
         compRes,
       ] = await Promise.all([
-        wikiQuery,
-        mapsQuery,
+        fetchMobileCampaignWikiIndex(targetLongCampaignId, {
+          forceRefresh,
+        }).catch((err) => {
+          console.warn('[CampaignLoreScreen] wiki-index error:', err);
+          return null;
+        }),
         missionsQuery,
         guildsQuery,
         partiesQuery,
@@ -252,68 +241,12 @@ export const CampaignLoreScreen: React.FC = () => {
         companionsQuery,
       ]);
 
-      // Resolve selective permissions & secret explorations for players (both Wiki & Maps)
-      let permittedWikiIds = new Set<string>();
-      let permittedMapIds = new Set<string>();
-      let unlockedWikiIds = new Set<string>();
-      let unlockedMapIds = new Set<string>();
-
-      if (!isGmOrAdmin && user?.id) {
-        const [permsRes, explorationsRes] = await Promise.all([
-          supabase
-            .from('entity_permissions')
-            .select('entity_id, entity_type')
-            .eq('campaign_id', targetLongCampaignId)
-            .eq('user_id', user.id),
-          supabase
-            .from('explorations')
-            .select('entity_id, map_id')
-            .eq('player_id', user.id),
-        ]);
-
-        for (const p of (permsRes.data ?? []) as Array<{ entity_id?: string; entity_type?: string }>) {
-          if (!p.entity_id) continue;
-          if (p.entity_type === 'wiki') permittedWikiIds.add(p.entity_id);
-          if (p.entity_type === 'map') permittedMapIds.add(p.entity_id);
-        }
-        for (const e of (explorationsRes.data ?? []) as Array<{ entity_id?: string | null; map_id?: string | null }>) {
-          if (e.entity_id) unlockedWikiIds.add(e.entity_id);
-          if (e.map_id) unlockedMapIds.add(e.map_id);
-        }
-      }
-
-      // 1. Wiki
-      if (!wikiRes.error && wikiRes.data) {
-        const rawWiki = wikiRes.data as WikiEntity[];
-        const visibleWiki = isGmOrAdmin
-          ? rawWiki
-          : rawWiki.filter((e) => {
-              if (e.archived_at) return false;
-              const vis = e.visibility ?? (e.is_secret ? 'secret' : 'public');
-              if (vis === 'public') return true;
-              if (vis === 'selective') return permittedWikiIds.has(e.id);
-              if (vis === 'secret') return unlockedWikiIds.has(e.id);
-              return false;
-            });
-        setWikiEntities(visibleWiki);
+      // 1 & 2. Paginated, server-sanitized Wiki & Maps
+      if (wikiIndexRes) {
+        setWikiEntities(wikiIndexRes.entities ?? []);
+        setMaps(wikiIndexRes.maps ?? []);
       } else {
         setWikiEntities([]);
-      }
-
-      // 2. Maps (exact Web MapGallery visibility parity)
-      if (!mapsRes.error && mapsRes.data) {
-        const rawMaps = mapsRes.data as CampaignMap[];
-        const visibleMaps = isGmOrAdmin
-          ? rawMaps
-          : rawMaps.filter((m) => {
-              const vis = m.visibility ?? 'public';
-              if (vis === 'public') return true;
-              if (vis === 'selective') return permittedMapIds.has(m.id);
-              if (vis === 'secret') return unlockedMapIds.has(m.id);
-              return false;
-            });
-        setMaps(visibleMaps);
-      } else {
         setMaps([]);
       }
 
@@ -354,7 +287,7 @@ export const CampaignLoreScreen: React.FC = () => {
         setCompanionNotes({});
       }
 
-      if (wikiRes.error && mapsRes.error && missionRes.error && compRes.error) {
+      if (!wikiIndexRes && missionRes.error && compRes.error) {
         setLoadError('Impossibile sincronizzare i tomi di gilda. Verifica la connessione e riprova.');
       }
     } catch (err) {
@@ -364,16 +297,17 @@ export const CampaignLoreScreen: React.FC = () => {
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [targetLongCampaignId, isTargetLongAccessible, isGmOrAdmin, isAdmin, user?.id]);
+  }, [targetLongCampaignId, isTargetLongAccessible, user?.id]);
 
   useEffect(() => {
-    void loadData();
+    void loadData(false);
   }, [loadData]);
 
   const onRefresh = useCallback(() => {
+    if (targetLongCampaignId) clearMobileWikiCache(targetLongCampaignId);
     setIsRefreshing(true);
-    void loadData();
-  }, [loadData]);
+    void loadData(true);
+  }, [loadData, targetLongCampaignId]);
 
   const getStatusBadge = (status: string) => {
     const s = (status || '').toLowerCase();
@@ -448,7 +382,7 @@ export const CampaignLoreScreen: React.FC = () => {
       return (
         item.name.toLowerCase().includes(q) ||
         (item.tags && item.tags.some((t) => t.toLowerCase().includes(q))) ||
-        extractWikiEntityBody(item.content).toLowerCase().includes(q) ||
+        (item.snippet || '').toLowerCase().includes(q) ||
         mTitle.toLowerCase().includes(q)
       );
     });
@@ -752,10 +686,10 @@ export const CampaignLoreScreen: React.FC = () => {
                   </View>
                 ) : (
                   filteredWiki.map((entity) => {
-                    const snippet = extractWikiEntitySnippet(entity.content);
+                    const snippet = entity.snippet;
                     const thumbUri = resolveTelegramOrImageUrl(entity.image_url, entity.telegram_fallback_id);
                     const isChapter = Boolean(
-                      entity.attributes?.is_chapter || (entity.sort_order != null && entity.sort_order > 0),
+                      entity.is_chapter || (entity.sort_order != null && entity.sort_order > 0),
                     );
                     const mTitle = entity.linked_mission_id
                       ? missionTitleById.get(entity.linked_mission_id)
@@ -1293,21 +1227,16 @@ export const CampaignLoreScreen: React.FC = () => {
         )}
       </ScrollView>
 
-      {/* RICH WIKI ENTITY READER MODAL */}
-      <WikiEntityReaderModal
-        entity={selectedWikiEntity}
-        isGmOrAdmin={isGmOrAdmin}
-        linkedMissionTitle={
-          selectedWikiEntity?.linked_mission_id
-            ? missionTitleById.get(selectedWikiEntity.linked_mission_id) ?? null
-            : null
-        }
-        linkedMaps={
-          selectedWikiEntity
-            ? maps.filter((m) => m.wiki_entity_id === selectedWikiEntity.id)
-            : []
-        }
-        onOpenLinkedMap={(mapItem) => {
+      {/* FULL-SCREEN WIKI CODEX READER MODAL */}
+      <WikiCodexReaderModal
+        visible={selectedWikiEntity !== null}
+        campaignId={targetLongCampaignId}
+        initialEntityId={selectedWikiEntity?.id ?? null}
+        initialUpdatedAt={selectedWikiEntity?.updated_at}
+        canReadGmContent={isGmOrAdmin}
+        allMaps={maps}
+        missionTitleById={missionTitleById}
+        onOpenMap={(mapItem) => {
           setSelectedWikiEntity(null);
           setSelectedMap(mapItem);
         }}
@@ -1319,12 +1248,30 @@ export const CampaignLoreScreen: React.FC = () => {
         map={selectedMap}
         allMaps={maps}
         linkedWikiEntity={
-          selectedMap?.wiki_entity_id ? wikiById.get(selectedMap.wiki_entity_id) ?? null : null
+          selectedMap?.wiki_entity_id
+            ? (wikiById.get(selectedMap.wiki_entity_id) as any) ?? null
+            : null
         }
         onSelectMap={(nextMap) => setSelectedMap(nextMap)}
         onOpenWikiEntity={(entity) => {
           setSelectedMap(null);
-          setSelectedWikiEntity(entity);
+          const idxItem = wikiById.get(entity.id);
+          setSelectedWikiEntity(
+            idxItem ?? {
+              id: entity.id,
+              campaign_id: entity.campaign_id,
+              name: entity.name,
+              type: entity.type,
+              snippet: '',
+              image_url: entity.image_url,
+              telegram_fallback_id: null,
+              sort_order: null,
+              is_chapter: false,
+              linked_mission_id: null,
+              tags: [],
+              updated_at: null,
+            },
+          );
         }}
         onClose={() => setSelectedMap(null)}
       />

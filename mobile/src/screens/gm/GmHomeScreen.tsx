@@ -203,9 +203,9 @@ export const GmHomeScreen: React.FC = () => {
             <View style={styles.regiaBadgeRow}>
               <Text style={styles.regiaBadgeText}>PLANCIA LIVE DEDICATA</Text>
             </View>
-            <Text style={styles.regiaBannerTitle}>Regia Live del Master</Text>
+            <Text style={styles.regiaBannerTitle}>Console di Regia Live</Text>
             <Text style={styles.regiaBannerSub}>
-              Sessione e party in sola lettura, più combattimento e audio collegati al GM Screen
+              Iniziativa, comandi vocali/IA, pad SFX, vitali party e sessione in un’unica vista
             </Text>
           </View>
           <ChevronRight size={18} color={colors.brassLight} />

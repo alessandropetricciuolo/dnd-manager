@@ -1,20 +1,18 @@
 import React from 'react';
-import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  Compass,
-  Shield,
   BookOpen,
-  MessageSquare,
-  LogOut,
-  User,
+  Compass,
   Flame,
+  MessageSquare,
+  Shield,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
-import { useAuth } from '../contexts/AuthContext';
 import { useCampaign } from '../contexts/CampaignContext';
+import { HeaderProfileButton } from '../components/common/HeaderProfileButton';
 import { PlayerHomeScreen } from '../screens/player/PlayerHomeScreen';
 import { CharacterSheetScreen } from '../screens/player/CharacterSheetScreen';
 import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen';
@@ -35,6 +33,7 @@ export type PlayerTabParamList = {
 
 export type PlayerStackParamList = {
   PlayerTabs: undefined;
+  Account: undefined;
   Sessions: undefined;
 };
 
@@ -44,7 +43,6 @@ const Stack = createNativeStackNavigator<PlayerStackParamList>();
 const PlayerTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
-  const { signOut } = useAuth();
   const { hasJoinedLongCampaign, canAccessCharacterSheet } = useCampaign();
 
   return (
@@ -62,37 +60,9 @@ const PlayerTabs: React.FC = () => {
         ],
         tabBarLabelStyle: styles.tabBarLabel,
         headerStyle: styles.header,
+        headerShadowVisible: false,
         headerTitleStyle: styles.headerTitle,
-        headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={() => {
-                Alert.alert(
-                  'Esci dall’account',
-                  'Vuoi davvero disconnettere la sessione corrente?',
-                  [
-                    { text: 'Annulla', style: 'cancel' },
-                    {
-                      text: 'Esci',
-                      style: 'destructive',
-                      onPress: async () => {
-                        const result = await signOut();
-                        if (result.error) Alert.alert('Impossibile uscire', result.error);
-                      },
-                    },
-                  ]
-                );
-              }}
-              activeOpacity={0.7}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              accessibilityRole="button"
-              accessibilityLabel="Esci dall’account"
-            >
-              <LogOut size={16} color={colors.parchmentMuted} />
-            </TouchableOpacity>
-          </View>
-        ),
+        headerRight: () => <HeaderProfileButton />,
       }}
     >
       {/* 1. HOME - Calendario Sessioni + Panoramica Campagne + Vitals Eroe */}
@@ -107,7 +77,7 @@ const PlayerTabs: React.FC = () => {
         }}
       />
 
-      {/* 2. SCHEDA PERSONAGGIO (Iscritto a Campagna Long o a Oneshot/Quest in programma) */}
+      {/* 2. SCHEDA PERSONAGGIO */}
       {canAccessCharacterSheet && (
         <Tab.Screen
           name="CharacterSheet"
@@ -121,7 +91,7 @@ const PlayerTabs: React.FC = () => {
         />
       )}
 
-      {/* 3. LORE & MISSIONI (Solo se iscritto a una Campagna Long) */}
+      {/* 3. DIARIO & LORE (Solo Campagna Long) */}
       {hasJoinedLongCampaign && (
         <Tab.Screen
           name="LoreMissions"
@@ -135,7 +105,7 @@ const PlayerTabs: React.FC = () => {
         />
       )}
 
-      {/* 4. TAVERNA / TAMAGOTCHI PG (Esclusiva Mobile · Solo se iscritto a una Campagna Long) */}
+      {/* 4. TAVERNA / TAMAGOTCHI PG (Solo Campagna Long) */}
       {hasJoinedLongCampaign && (
         <Tab.Screen
           name="CharacterTamagotchi"
@@ -149,7 +119,7 @@ const PlayerTabs: React.FC = () => {
         />
       )}
 
-      {/* 4. SUSSURRI SEGRETI */}
+      {/* 5. SUSSURRI SEGRETI (Massimo 5 tab totali in Long) */}
       <Tab.Screen
         name="PlayerWhisper"
         component={PlayerWhisperScreen}
@@ -158,18 +128,6 @@ const PlayerTabs: React.FC = () => {
           tabBarLabel: 'Whisper',
           headerTitle: 'Sussurri Segreti',
           tabBarIcon: ({ color, size }) => <MessageSquare size={size ?? 22} color={color} />,
-        }}
-      />
-
-      {/* 5. PROFILO GIOCATORE / ACCOUNT */}
-      <Tab.Screen
-        name="Account"
-        component={AccountScreen}
-        options={{
-          title: 'Profilo',
-          tabBarLabel: 'Profilo',
-          headerTitle: 'Profilo Giocatore',
-          tabBarIcon: ({ color, size }) => <User size={size ?? 22} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -181,6 +139,17 @@ export const PlayerTabNavigator: React.FC = () => {
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="PlayerTabs" component={PlayerTabs} />
       <Stack.Screen
+        name="Account"
+        component={AccountScreen}
+        options={{
+          headerShown: true,
+          title: 'Profilo Giocatore',
+          headerStyle: styles.header,
+          headerTintColor: colors.parchmentLight,
+          headerTitleStyle: styles.headerTitle,
+        }}
+      />
+      <Stack.Screen
         name="Sessions"
         component={SessionsCalendarScreen}
         options={{
@@ -188,7 +157,7 @@ export const PlayerTabNavigator: React.FC = () => {
           title: 'Tavoli di Gioco',
           headerStyle: styles.header,
           headerTintColor: colors.parchmentLight,
-          headerTitleStyle: { color: colors.parchmentLight, fontWeight: '700' },
+          headerTitleStyle: styles.headerTitle,
         }}
       />
     </Stack.Navigator>
@@ -203,9 +172,9 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   tabBarLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   header: {
     backgroundColor: colors.stone,
@@ -217,18 +186,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
     letterSpacing: 0.3,
-  },
-  headerRightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  signOutButton: {
-    minWidth: 40,
-    minHeight: 40,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

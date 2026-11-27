@@ -1,22 +1,21 @@
 import React from 'react';
-import { Alert, StyleSheet, View, TouchableOpacity } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
+  BookOpen,
   Compass,
-  Crown,
-  Swords,
   MessageSquare,
-  LogOut,
+  Swords,
 } from 'lucide-react-native';
 import { colors } from '../theme/colors';
-import { useAuth } from '../contexts/AuthContext';
 import { GmCampaignProvider } from '../contexts/GmCampaignContext';
 import { GmLiveProvider } from '../contexts/GmLiveContext';
+import { HeaderProfileButton } from '../components/common/HeaderProfileButton';
 import { GmHomeScreen } from '../screens/gm/GmHomeScreen';
 import { GmRegiaScreen } from '../screens/gm/GmRegiaScreen';
-import { GmCombatTrackerScreen } from '../screens/gm/GmCombatTrackerScreen';
+import { GmWikiScreen } from '../screens/gm/GmWikiScreen';
 import { GmAudioRemoteScreen } from '../screens/gm/GmAudioRemoteScreen';
 import { GmWhispersInboxScreen } from '../screens/gm/GmWhispersInboxScreen';
 import { AccountScreen } from '../screens/account/AccountScreen';
@@ -26,8 +25,8 @@ import { SessionsCalendarScreen } from '../screens/player/SessionsCalendarScreen
 export type GmTabParamList = {
   GmHome: undefined;
   GmRegia: undefined;
-  GmCombat: undefined;
-  GmWhispers: undefined;
+  GmWiki: { initialQuery?: string } | undefined;
+  GmWhispers: { targetPlayerId?: string } | undefined;
   Account: undefined;
   GmAudioRemote: undefined;
   GmXpAttendance: { notificationSessionId?: string } | undefined;
@@ -36,6 +35,7 @@ export type GmTabParamList = {
 
 export type GmStackParamList = {
   GmTabs: undefined;
+  Account: undefined;
   GmAudioRemote: undefined;
   GmXpAttendance: { notificationSessionId?: string } | undefined;
   Sessions: undefined;
@@ -47,7 +47,6 @@ const Stack = createNativeStackNavigator<GmStackParamList>();
 const GmTabs: React.FC = () => {
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, 10);
-  const { signOut } = useAuth();
 
   return (
     <Tab.Navigator
@@ -66,39 +65,10 @@ const GmTabs: React.FC = () => {
         headerStyle: styles.header,
         headerShadowVisible: false,
         headerTitleStyle: styles.headerTitle,
-        headerRight: () => (
-          <View style={styles.headerRightContainer}>
-            <TouchableOpacity
-              style={styles.signOutButton}
-              onPress={() => {
-                Alert.alert(
-                  'Esci dall’account',
-                  'Vuoi davvero disconnettere la sessione corrente?',
-                  [
-                    { text: 'Annulla', style: 'cancel' },
-                    {
-                      text: 'Esci',
-                      style: 'destructive',
-                      onPress: async () => {
-                        const result = await signOut();
-                        if (result.error) Alert.alert('Impossibile uscire', result.error);
-                      },
-                    },
-                  ]
-                );
-              }}
-              activeOpacity={0.7}
-              hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
-              accessibilityRole="button"
-              accessibilityLabel="Esci dall’account"
-            >
-              <LogOut size={16} color={colors.parchmentMuted} />
-            </TouchableOpacity>
-          </View>
-        ),
+        headerRight: () => <HeaderProfileButton />,
       }}
     >
-      {/* 1. HOME - Calendario a Griglia di tutte le sessioni + Panoramica Campagne */}
+      {/* 1. HOME - Calendario a Griglia + Panoramica Campagne */}
       <Tab.Screen
         name="GmHome"
         component={GmHomeScreen}
@@ -112,30 +82,30 @@ const GmTabs: React.FC = () => {
         }}
       />
 
-      {/* 2. REGIA - Plancia Live Master (Vitali Party, Controlli Sessione, Scorciatoie) */}
+      {/* 2. REGIA UNIFICATA - Iniziativa Live + Tavolo & Vitali Party + Dock Voce/Audio */}
       <Tab.Screen
         name="GmRegia"
         component={GmRegiaScreen}
         options={{
           title: 'Regia',
           tabBarLabel: 'Regia',
-          headerTitle: 'Plancia di Regia Master',
+          headerTitle: 'Console di Regia Live',
           tabBarIcon: ({ color, size }) => (
-            <Crown size={size ?? 22} color={color} />
+            <Swords size={size ?? 22} color={color} />
           ),
         }}
       />
 
-      {/* 3. INIZIATIVA - Combat Tracker */}
+      {/* 3. WIKI & ATLANTE MULTI-CAMPAGNA */}
       <Tab.Screen
-        name="GmCombat"
-        component={GmCombatTrackerScreen}
+        name="GmWiki"
+        component={GmWikiScreen}
         options={{
-          title: 'Iniziativa',
-          tabBarLabel: 'Iniziativa',
-          headerTitle: 'Tracker di Combattimento',
+          title: 'Wiki',
+          tabBarLabel: 'Wiki',
+          headerTitle: 'Wiki & Atlante Master',
           tabBarIcon: ({ color, size }) => (
-            <Swords size={size ?? 22} color={color} />
+            <BookOpen size={size ?? 22} color={color} />
           ),
         }}
       />
@@ -147,22 +117,10 @@ const GmTabs: React.FC = () => {
         options={{
           title: 'Whispers',
           tabBarLabel: 'Whispers',
-          headerTitle: 'Inbox Sussurri Segreti',
+          headerTitle: 'Sussurri Segreti',
           tabBarIcon: ({ color, size }) => (
             <MessageSquare size={size ?? 22} color={color} />
           ),
-        }}
-      />
-
-      {/* 5. PROFILO GM - Profilo Master & Registro Presenze/XP */}
-      <Tab.Screen
-        name="Account"
-        component={AccountScreen}
-        options={{
-          title: 'Profilo GM',
-          tabBarLabel: 'Profilo GM',
-          headerTitle: 'Profilo Game Master',
-          tabBarIcon: ({ color, size }) => <Crown size={size ?? 22} color={color} />,
         }}
       />
     </Tab.Navigator>
@@ -173,42 +131,53 @@ export const GmTabNavigator: React.FC = () => {
   return (
     <GmCampaignProvider>
       <GmLiveProvider>
-      <Stack.Navigator screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="GmTabs" component={GmTabs} />
-        <Stack.Screen
-          name="GmAudioRemote"
-          component={GmAudioRemoteScreen}
-          options={{
-            headerShown: true,
-            title: 'Telecomando Sonoro',
-            headerStyle: styles.header,
-            headerTintColor: colors.parchmentLight,
-            headerTitleStyle: styles.headerTitle,
-          }}
-        />
-        <Stack.Screen
-          name="GmXpAttendance"
-          component={GmXpAttendanceScreen}
-          options={{
-            headerShown: true,
-            title: 'Registro Sessione & XP',
-            headerStyle: styles.header,
-            headerTintColor: colors.parchmentLight,
-            headerTitleStyle: styles.headerTitle,
-          }}
-        />
-        <Stack.Screen
-          name="Sessions"
-          component={SessionsCalendarScreen}
-          options={{
-            headerShown: true,
-            title: 'Tavoli di Gioco',
-            headerStyle: styles.header,
-            headerTintColor: colors.parchmentLight,
-            headerTitleStyle: styles.headerTitle,
-          }}
-        />
-      </Stack.Navigator>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="GmTabs" component={GmTabs} />
+          <Stack.Screen
+            name="Account"
+            component={AccountScreen}
+            options={{
+              headerShown: true,
+              title: 'Profilo Game Master',
+              headerStyle: styles.header,
+              headerTintColor: colors.parchmentLight,
+              headerTitleStyle: styles.headerTitle,
+            }}
+          />
+          <Stack.Screen
+            name="GmAudioRemote"
+            component={GmAudioRemoteScreen}
+            options={{
+              headerShown: true,
+              title: 'Telecomando Sonoro',
+              headerStyle: styles.header,
+              headerTintColor: colors.parchmentLight,
+              headerTitleStyle: styles.headerTitle,
+            }}
+          />
+          <Stack.Screen
+            name="GmXpAttendance"
+            component={GmXpAttendanceScreen}
+            options={{
+              headerShown: true,
+              title: 'Registro Sessione & XP',
+              headerStyle: styles.header,
+              headerTintColor: colors.parchmentLight,
+              headerTitleStyle: styles.headerTitle,
+            }}
+          />
+          <Stack.Screen
+            name="Sessions"
+            component={SessionsCalendarScreen}
+            options={{
+              headerShown: true,
+              title: 'Tavoli di Gioco',
+              headerStyle: styles.header,
+              headerTintColor: colors.parchmentLight,
+              headerTitleStyle: styles.headerTitle,
+            }}
+          />
+        </Stack.Navigator>
       </GmLiveProvider>
     </GmCampaignProvider>
   );
@@ -222,9 +191,9 @@ const styles = StyleSheet.create({
     paddingTop: 6,
   },
   tabBarLabel: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
+    letterSpacing: 0.2,
   },
   header: {
     backgroundColor: colors.stone,
@@ -236,18 +205,6 @@ const styles = StyleSheet.create({
     fontWeight: '800',
     fontSize: 15,
     letterSpacing: 0.3,
-  },
-  headerRightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 8,
-  },
-  signOutButton: {
-    minWidth: 40,
-    minHeight: 40,
-    padding: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
 });
 

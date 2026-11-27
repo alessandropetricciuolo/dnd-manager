@@ -28,6 +28,20 @@ export const colors = {
   crimsonLight: '#EF4444',
   emerald: '#10B981',
 
+  // Wiki & Content Visibility Tokens (WCAG AA/AAA on #1C1815 / #0B0908)
+  visibilityPublic: '#34D399',
+  visibilityPublicBg: 'rgba(16, 185, 129, 0.14)',
+  visibilityPublicBorder: 'rgba(52, 211, 153, 0.45)',
+  visibilitySelective: '#F1D899',
+  visibilitySelectiveBg: 'rgba(200, 157, 73, 0.16)',
+  visibilitySelectiveBorder: '#C89D49',
+  visibilitySecret: '#FCA5A5',
+  visibilitySecretBg: 'rgba(239, 68, 68, 0.15)',
+  visibilitySecretBorder: '#EF4444',
+  visibilityAdminOnly: '#DDD6FE',
+  visibilityAdminOnlyBg: 'rgba(139, 92, 246, 0.18)',
+  visibilityAdminOnlyBorder: 'rgba(167, 139, 250, 0.52)',
+
   // Semantic aliases for high ergonomics
   background: '#0B0908',
   surface: '#141210',
