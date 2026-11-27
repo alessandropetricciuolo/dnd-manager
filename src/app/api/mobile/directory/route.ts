@@ -1,3 +1,4 @@
+import { getReviewCampaignId } from "../../../../../mobile/src/auth/access";
 import { NextRequest, NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/utils/supabase/admin";
 import { getRequestAuthContext } from "@/utils/supabase/request-auth-context";
@@ -29,12 +30,19 @@ export async function GET(req: NextRequest) {
   const bearer = req.headers.get("authorization")?.match(/^Bearer\s+(.+)$/i)?.[1] ?? null;
 
   let userId: string | null = null;
+  let reviewCampaignId: string | null = null;
   if (bearer) {
     const { data, error } = await admin.auth.getUser(bearer);
-    if (!error && data.user) userId = data.user.id;
+    if (!error && data.user) {
+      userId = data.user.id;
+      reviewCampaignId = getReviewCampaignId(data.user.app_metadata);
+    }
   } else {
     const { user } = await getRequestAuthContext();
-    if (user) userId = user.id;
+    if (user) {
+      userId = user.id;
+      reviewCampaignId = getReviewCampaignId(user.app_metadata);
+    }
   }
 
   if (!userId) {
@@ -52,7 +60,15 @@ export async function GET(req: NextRequest) {
     const isGmOrAdmin = callerProfile?.role === "gm" || callerProfile?.role === "admin";
 
     let visibleCampaigns: Array<{ id: string; gm_id: string | null }> = [];
-    if (isGmOrAdmin) {
+    if (reviewCampaignId && callerProfile?.role === "player") {
+      const { data, error } = await admin.from("campaigns")
+        .select("id, gm_id")
+        .eq("id", reviewCampaignId)
+        .eq("gm_id", userId)
+        .eq("is_public", false);
+      if (error) throw error;
+      visibleCampaigns = (data ?? []) as Array<{ id: string; gm_id: string | null }>;
+    } else if (isGmOrAdmin) {
       const { data } = await admin.from("campaigns").select("id, gm_id");
       visibleCampaigns = (data ?? []) as Array<{ id: string; gm_id: string | null }>;
     } else {

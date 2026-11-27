@@ -27,9 +27,12 @@ async function fixture(): Promise<PGlite> {
       CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$
         SELECT nullif(current_setting('test.uid', true), '')::uuid
       $$;
+      CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$
+        SELECT coalesce(nullif(current_setting('test.jwt', true), '')::jsonb, '{}'::jsonb)
+      $$;
       GRANT USAGE ON SCHEMA auth TO authenticated, service_role;
       CREATE TABLE public.profiles (id uuid PRIMARY KEY, role text NOT NULL);
-      CREATE TABLE public.campaigns (id uuid PRIMARY KEY, type text NOT NULL, gm_id uuid REFERENCES public.profiles);
+      CREATE TABLE public.campaigns (id uuid PRIMARY KEY, type text NOT NULL, gm_id uuid REFERENCES public.profiles, is_public boolean NOT NULL DEFAULT false);
       CREATE TABLE public.sessions (id uuid PRIMARY KEY, campaign_id uuid REFERENCES public.campaigns, dm_id uuid, status text);
       CREATE TABLE public.session_signups (session_id uuid REFERENCES public.sessions, player_id uuid REFERENCES public.profiles, status text);
       CREATE TABLE public.campaign_characters (
@@ -74,6 +77,9 @@ async function fixture(): Promise<PGlite> {
     const migration = (await readdir(directory)).find((entry) => /session_live.*\.sql$/.test(entry));
     assert.ok(migration, "session live migration exists");
     await db.exec(await readFile(`${directory}/${migration}`, "utf8"));
+    await db.exec(await readFile(new URL(
+      "../migrations/20261127111046_extend_live_to_mobile_review_gm.sql", import.meta.url,
+    ), "utf8"));
     return db;
   } catch (error) {
     await db.close();
@@ -106,7 +112,7 @@ async function command(
 }
 
 async function addCampaign(db: PGlite, type: string): Promise<void> {
-  await db.query("INSERT INTO public.campaigns VALUES ($1, $2, $3)", [campaign, type, gm]);
+  await db.query("INSERT INTO public.campaigns (id, type, gm_id) VALUES ($1, $2, $3)", [campaign, type, gm]);
   await db.query(
     `INSERT INTO public.campaign_characters(id,campaign_id,assigned_to,hit_points,rules_snapshot)
      VALUES ($1,$2,$3,20,$4::jsonb), ($5,$2,$6,20,$4::jsonb)`,
@@ -300,6 +306,39 @@ test("sharing a condition does not fill missing resources on a partial campaign 
       "SELECT hit_points,rules_snapshot FROM public.campaign_characters WHERE id = $1", [character],
     );
     assert.deepEqual(result.rows, [{ hit_points: null, rules_snapshot: null }]);
+  } finally {
+    await db.close();
+  }
+});
+
+test("a review GM can share live resources only for the authorized demo session", async () => {
+  const db = await fixture();
+  const demoCampaign = uuid(140);
+  const anotherCampaign = uuid(141);
+  const demoSession = uuid(142);
+  const anotherSession = uuid(143);
+  const demoCharacter = uuid(144);
+  try {
+    await db.exec(`
+      INSERT INTO campaigns (id, type, gm_id) VALUES ('${demoCampaign}', 'long', '${player}'),
+        ('${anotherCampaign}', 'long', '${player}');
+      INSERT INTO sessions VALUES ('${demoSession}', '${demoCampaign}', '${player}', 'scheduled'),
+        ('${anotherSession}', '${anotherCampaign}', '${player}', 'scheduled');
+      INSERT INTO campaign_characters (id, campaign_id, assigned_to, hit_points, rules_snapshot)
+        VALUES ('${demoCharacter}', '${demoCampaign}', '${opponent}', 10, '{"max_hp":10}');
+      INSERT INTO session_signups VALUES ('${demoSession}', '${opponent}', 'confirmed');
+    `);
+    await actAs(db, player);
+    await db.query("SELECT set_config('test.jwt', $1, false)", [
+      JSON.stringify({ app_metadata: { review_gm_campaign_id: demoCampaign } }),
+    ]);
+    await assert.rejects(command(db, "session", anotherSession, 145, "start"), /session_live_not_authorized/);
+    const { state } = await command(db, "session", demoSession, 146, "start", {
+      characterIds: [demoCharacter],
+    }) as { state: { active: boolean; ownsLive: boolean } };
+    assert.equal(state.active, true);
+    assert.equal(state.ownsLive, true);
+    await command(db, "session", demoSession, 147, "stop");
   } finally {
     await db.close();
   }

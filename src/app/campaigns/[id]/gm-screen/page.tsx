@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { getReviewCampaignId, isReviewCampaignOwner } from "../../../../../mobile/src/auth/access";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { GmScreenLayout } from "@/components/gm/gm-screen-layout";
 import { CAMPAIGN_TYPE_VALUES, type CampaignType } from "@/lib/campaign-type";
@@ -27,11 +28,20 @@ export default async function GmScreenPage({ params, searchParams }: PageProps) 
 
   const { data: campaign } = await supabase
     .from("campaigns")
-    .select("id, type")
+    .select("id, type, gm_id, is_public")
     .eq("id", campaignId)
     .single();
 
-  if (!campaign || !isGmOrAdmin) notFound();
+  if (!campaign) notFound();
+  if (!isGmOrAdmin) {
+    const reviewCampaignId = getReviewCampaignId(user.app_metadata);
+    if (!isReviewCampaignOwner(profile?.role, user.id, reviewCampaignId, campaign)) notFound();
+    if (sessionId) {
+      const { data: session } = await supabase.from("sessions")
+        .select("id").eq("campaign_id", campaignId).eq("id", sessionId).maybeSingle();
+      if (!session) notFound();
+    }
+  }
 
   const campaignType =
     campaign?.type && (CAMPAIGN_TYPE_VALUES as readonly string[]).includes(campaign.type)

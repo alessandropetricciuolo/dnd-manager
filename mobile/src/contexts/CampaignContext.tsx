@@ -88,7 +88,7 @@ export interface CampaignContextType {
 const CampaignContext = createContext<CampaignContextType | undefined>(undefined);
 
 export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const { user, profile, role, activeMode } = useAuth();
+  const { user, profile, role, activeMode, reviewCampaignId } = useAuth();
 
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [activeCampaignId, setActiveCampaignId] = useState<string | null>(null);
@@ -202,11 +202,9 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       let campaignList: Campaign[] = [];
 
       if (isGmOrAdmin) {
-        // GM and Admin see all guild campaigns directly from Supabase
-        const { data, error } = await supabase
-          .from('campaigns')
-          .select('*')
-          .order('created_at', { ascending: false });
+        const query = supabase.from('campaigns').select('*').order('created_at', { ascending: false });
+        if (reviewCampaignId) query.eq('id', reviewCampaignId).eq('gm_id', user.id).eq('is_public', false);
+        const { data, error } = await query;
 
         if (error) {
           console.warn('[CampaignContext] GM/Admin fetch error:', error.message);
@@ -387,7 +385,7 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
       setIsLoading(false);
       setIsRefreshing(false);
     }
-  }, [user?.id, role, activeMode]);
+  }, [user?.id, role, activeMode, reviewCampaignId]);
 
   useEffect(() => {
     void loadCampaigns();
@@ -395,8 +393,8 @@ export const CampaignProvider: React.FC<{ children: ReactNode }> = ({ children }
 
   // Select campaign handler
   const selectCampaign = useCallback(async (campaignId: string) => {
-    setActiveCampaignId(campaignId);
-  }, []);
+    if (!reviewCampaignId || campaignId === reviewCampaignId) setActiveCampaignId(campaignId);
+  }, [reviewCampaignId]);
 
   // Refresh campaigns
   const refreshCampaigns = useCallback(async () => {

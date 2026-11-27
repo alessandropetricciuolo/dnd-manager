@@ -44,7 +44,7 @@ export interface GmCampaignContextType {
 const GmCampaignContext = createContext<GmCampaignContextType | undefined>(undefined);
 
 export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user } = useAuth();
+  const { user, reviewCampaignId } = useAuth();
   const {
     campaigns,
     activeCampaign,
@@ -64,10 +64,11 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   // Load ALL guild sessions across all campaigns (for calendar & overview)
   const loadAllGuildSessions = useCallback(async () => {
     try {
-      const { data, error: err } = await supabase
-        .from('sessions')
+      const query = supabase.from('sessions')
         .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
         .order('scheduled_at', { ascending: true });
+      if (reviewCampaignId) query.eq('campaign_id', reviewCampaignId);
+      const { data, error: err } = await query;
 
       if (err) {
         console.warn('[GmCampaignContext] allGuildSessions error:', err.message);
@@ -77,7 +78,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (e) {
       console.warn('[GmCampaignContext] loadAllGuildSessions catch:', e);
     }
-  }, []);
+  }, [reviewCampaignId]);
 
   useEffect(() => {
     void loadAllGuildSessions();
@@ -85,6 +86,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
 
   // Load Sessions and Characters for the active campaign
   const loadCampaignDetails = useCallback(async (campaignId: string) => {
+    if (reviewCampaignId && campaignId !== reviewCampaignId) return;
     try {
       if (campaignId.startsWith('demo-')) {
         setSessions([]);
@@ -130,7 +132,7 @@ export const GmCampaignProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     } catch (err: any) {
       console.warn('[GmCampaignContext] loadCampaignDetails catch:', err);
     }
-  }, []);
+  }, [reviewCampaignId]);
 
   // When activeCampaign changes, reload sessions and characters
   useEffect(() => {

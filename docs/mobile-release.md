@@ -83,6 +83,13 @@ La build di sviluppo iOS è per simulatore. La preview Android produce APK; la p
 
 Prima del beta chiudere la matrice su almeno un dispositivo fisico per piattaforma. Verificare dati dopo riapertura, azioni autorizzate per ruolo e comportamento con sessione scaduta. Expo Go non sostituisce una build nativa quando si verificano notifiche e permessi di sistema.
 
+## Account per la review
+
+- Il revisore Giocatore usa una campagna Long privata con un PG assegnato e una sessione fittizia.
+- Il revisore GM usa un account separato. In Supabase il profilo resta `player`. Dopo aver applicato le migrazioni `restrict_mobile_review_gm` e `extend_live_to_mobile_review_gm`, il gestore di Supabase imposta `app_metadata.review_gm_campaign_id` con l’ID della campagna privata di cui quell’account è il GM assegnato. L’account non deve avere ruoli di staff in altre campagne o organizzazioni.
+- Distribuire il backend e una build mobile che supportano il perimetro di review. Prima di inserire le credenziali negli store, verificare con lo stesso account che Regia GM mostri solo la campagna demo, che la modifica dei vitali e la gestione delle sessioni demo funzionino e che il GM Screen generi un QR valido per la demo. Provare anche l’accesso diretto a dati di un’altra campagna di test: letture e scritture devono essere rifiutate.
+- Per verificare «Sessione live», confermare l’iscrizione del Giocatore demo alla sessione, avviare la condivisione dal GM Screen e controllare la scheda PG su un secondo dispositivo.
+
 ## Checklist store
 
 - [ ] Account Apple Developer e Google Play Console del titolare; identificativi di team e package verificati.

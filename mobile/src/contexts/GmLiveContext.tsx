@@ -9,6 +9,7 @@ import React, {
 } from 'react';
 import { AppState } from 'react-native';
 import { ExpoSecureStoreAdapter } from '../api/supabase';
+import { useAuth } from './AuthContext';
 import { useGmCampaigns } from '../hooks/useGmCampaigns';
 import { ParsedGmRemoteQr } from '../utils/qrParser';
 
@@ -115,6 +116,8 @@ function parseSnapshot(value: unknown): GmLiveSnapshot | null {
 
 export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { activeCampaign } = useGmCampaigns();
+  const { reviewCampaignId } = useAuth();
+  const pairingStorageKey = reviewCampaignId ? `${STORAGE_KEY_PAIRING}_${reviewCampaignId}` : STORAGE_KEY_PAIRING;
   const [pairing, setPairing] = useState<Pairing | null>(null);
   const [status, setStatus] = useState<GmLiveStatus>('unpaired');
   const [snapshot, setSnapshot] = useState<GmLiveSnapshot | null>(null);
@@ -206,7 +209,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         return false;
       }
       if (persist) {
-        await enqueueStorageWrite(() => ExpoSecureStoreAdapter.setItem(STORAGE_KEY_PAIRING, JSON.stringify(value)));
+        await enqueueStorageWrite(() => ExpoSecureStoreAdapter.setItem(pairingStorageKey, JSON.stringify(value)));
         if (
           requestId !== validationSequence.current ||
           campaignRef.current !== requestedCampaignId ||
@@ -235,7 +238,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     } finally {
       if (requestId === validationSequence.current) setIsValidating(false);
     }
-  }, [activeCampaign?.id, applyResponse, enqueueStorageWrite]);
+  }, [activeCampaign?.id, applyResponse, enqueueStorageWrite, pairingStorageKey]);
 
   const validateRef = useRef(validate);
   validateRef.current = validate;
@@ -245,7 +248,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     const hydrationSequence = validationSequence.current;
     void (async () => {
       try {
-        const raw = await ExpoSecureStoreAdapter.getItem(STORAGE_KEY_PAIRING);
+        const raw = await ExpoSecureStoreAdapter.getItem(pairingStorageKey);
         if (!active || validationSequence.current !== hydrationSequence) return;
         if (!raw) { setStatus('unpaired'); return; }
         const saved = JSON.parse(raw) as Partial<Pairing>;
@@ -259,7 +262,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       }
     })();
     return () => { active = false; };
-  }, []);
+  }, [pairingStorageKey]);
 
   useEffect(() => {
     if (pairing) void validate(pairing, false, true);
@@ -289,7 +292,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const disconnect = useCallback(async () => {
     const disconnectSequence = ++validationSequence.current;
     pairingRef.current = null;
-    await enqueueStorageWrite(() => ExpoSecureStoreAdapter.removeItem(STORAGE_KEY_PAIRING));
+    await enqueueStorageWrite(() => ExpoSecureStoreAdapter.removeItem(pairingStorageKey));
     if (validationSequence.current !== disconnectSequence || pairingRef.current !== null) return;
     setPairing(null);
     setStatus('unpaired');
@@ -298,7 +301,7 @@ export const GmLiveProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setCampaignId(null);
     setExpiresAt(null);
     setError(null);
-  }, [enqueueStorageWrite]);
+  }, [enqueueStorageWrite, pairingStorageKey]);
 
   const setSnapshotConsumer = useCallback((consumer: string, active: boolean) => {
     setConsumers((previous) => ({ ...previous, [consumer]: active }));

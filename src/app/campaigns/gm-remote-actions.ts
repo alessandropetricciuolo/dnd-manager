@@ -1,5 +1,6 @@
 "use server";
 
+import { getReviewCampaignId, isReviewCampaignOwner } from "../../../mobile/src/auth/access";
 import { createSupabaseServerClient } from "@/utils/supabase/server";
 import { generateGmRemotePlainToken, hashGmRemoteToken } from "@/lib/gm-remote/hash-token";
 import {
@@ -15,7 +16,12 @@ type GmResult<T = void> = { success: true; data?: T } | { success: false; error:
 
 const SESSION_TTL_HOURS = 6;
 
-async function ensureGmOrAdmin(): Promise<GmResult<Awaited<ReturnType<typeof createSupabaseServerClient>>>> {
+type RemoteAccess = {
+  supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  userId: string;
+};
+
+async function ensureGmRemoteAccess(campaignId: string): Promise<GmResult<RemoteAccess>> {
   const supabase = await createSupabaseServerClient();
   const {
     data: { user },
@@ -25,10 +31,19 @@ async function ensureGmOrAdmin(): Promise<GmResult<Awaited<ReturnType<typeof cre
     return { success: false, error: "Non autenticato." };
   }
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "gm" && profile?.role !== "admin") {
+  if (profile?.role === "gm" || profile?.role === "admin") {
+    return { success: true, data: { supabase, userId: user.id } };
+  }
+  const reviewCampaignId = getReviewCampaignId(user.app_metadata);
+  if (profile?.role !== "player" || campaignId !== reviewCampaignId) {
     return { success: false, error: "Non autorizzato." };
   }
-  return { success: true, data: supabase };
+  const { data: campaign } = await supabase.from("campaigns")
+    .select("id, gm_id, is_public").eq("id", campaignId).maybeSingle();
+  if (!isReviewCampaignOwner(profile.role, user.id, reviewCampaignId, campaign)) {
+    return { success: false, error: "Non autorizzato." };
+  }
+  return { success: true, data: { supabase, userId: user.id } };
 }
 
 export type GmRemoteSessionCreated = {
@@ -41,14 +56,9 @@ export type GmRemoteSessionCreated = {
  * Crea sessione pairing: il token in chiaro va mostrato una sola volta (QR / link con #fragment).
  */
 export async function createGmRemoteSession(campaignId: string): Promise<GmResult<GmRemoteSessionCreated>> {
-  const check = await ensureGmOrAdmin();
+  const check = await ensureGmRemoteAccess(campaignId);
   if (!check.success) return check;
-  const supabase = check.data!;
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { success: false, error: "Sessione non valida." };
+  const { supabase, userId } = check.data!;
 
   const plainToken = generateGmRemotePlainToken();
   const tokenHash = hashGmRemoteToken(plainToken);
@@ -60,7 +70,7 @@ export async function createGmRemoteSession(campaignId: string): Promise<GmResul
       campaign_id: campaignId,
       token_hash: tokenHash,
       expires_at: expiresAt,
-      created_by: user.id,
+      created_by: userId,
     })
     .select("public_id, expires_at")
     .single();
@@ -80,9 +90,9 @@ export async function createGmRemoteSession(campaignId: string): Promise<GmResul
 }
 
 export async function revokeGmRemoteSession(campaignId: string, publicId: string): Promise<GmResult> {
-  const check = await ensureGmOrAdmin();
+  const check = await ensureGmRemoteAccess(campaignId);
   if (!check.success) return check;
-  const supabase = check.data!;
+  const { supabase } = check.data!;
 
   const { error } = await supabase
     .from("gm_remote_sessions")
@@ -102,9 +112,9 @@ export async function publishGmRemoteInitiativeSnapshot(
   publicId: string,
   snapshot: InitiativeRemoteSnapshot
 ): Promise<GmResult> {
-  const check = await ensureGmOrAdmin();
+  const check = await ensureGmRemoteAccess(campaignId);
   if (!check.success) return check;
-  const supabase = check.data!;
+  const { supabase } = check.data!;
 
   const parsed = parseInitiativeRemoteSnapshot(snapshot);
   if (!parsed) {
@@ -130,9 +140,9 @@ export async function publishGmRemoteSfxPadSnapshot(
   publicId: string,
   snapshot: SfxPadRemoteSnapshot
 ): Promise<GmResult> {
-  const check = await ensureGmOrAdmin();
+  const check = await ensureGmRemoteAccess(campaignId);
   if (!check.success) return check;
-  const supabase = check.data!;
+  const { supabase } = check.data!;
 
   const parsed = parseSfxPadRemoteSnapshot(snapshot);
   if (!parsed) {

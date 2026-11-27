@@ -16,7 +16,7 @@
       "usesAppleSignIn": true,
       "userInterfaceStyle": "dark",
       "bundleIdentifier": "com.barberanddragons.mobile",
-      "buildNumber": "6",
+      "buildNumber": "8",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSPhotoLibraryUsageDescription": "Barber & Dragons non consulta la libreria foto. Per leggere i codici QR del Telecomando GM usa la fotocamera."
@@ -31,7 +31,7 @@
       "userInterfaceStyle": "dark",
       "softwareKeyboardLayoutMode": "resize",
       "package": "com.barberanddragons.mobile",
-      "versionCode": 10,
+      "versionCode": 12,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO"

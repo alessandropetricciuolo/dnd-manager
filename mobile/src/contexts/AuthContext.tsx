@@ -13,12 +13,15 @@ import { User } from '@supabase/supabase-js';
 import { supabase } from '../api/supabase';
 import { unregisterCurrentPushDevice } from '../notifications/deviceRegistration';
 import { Profile, UserRole } from '../types';
-import { prepareLoginCredentials, resolveTrustedProfileRole } from '../auth/access';
+import { getReviewCampaignId, isReviewCampaignOwner, prepareLoginCredentials, resolveTrustedProfileRole } from '../auth/access';
+
+type LoadedProfile = Profile & { reviewCampaignId?: string };
 
 export interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   role: UserRole | null;
+  reviewCampaignId: string | null;
   activeMode: 'player' | 'gm';
   switchMode: (mode: 'player' | 'gm') => void;
   signIn: (email: string, password: string) => Promise<{ error?: string }>;
@@ -35,17 +38,18 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profile, setProfile] = useState<LoadedProfile | null>(null);
   const [activeMode, setActiveMode] = useState<'player' | 'gm'>('player');
   const [loading, setLoading] = useState<boolean>(true);
   const currentUserId = useRef<string | null>(null);
   const userSelectedMode = useRef<'player' | 'gm' | null>(null);
 
-  // Authorization comes only from the trusted profiles row. Missing or invalid
-  // profile data leaves the account without an app role.
-  const role = resolveTrustedProfileRole(profile?.role);
+  const requestedReviewCampaignId = getReviewCampaignId(user?.app_metadata);
+  const reviewCampaignId = profile?.reviewCampaignId ?? null;
+  // The review flag changes mobile navigation only. The backend still sees a player.
+  const role = reviewCampaignId ? 'gm' : resolveTrustedProfileRole(profile?.role);
 
-  const loadProfile = useCallback(async (userId: string): Promise<Profile | null> => {
+  const loadProfile = useCallback(async (userId: string, requestedCampaignId: string | null): Promise<LoadedProfile | null> => {
     if (userId.startsWith('demo-')) {
       const isGm = userId.includes('gm');
       return {
@@ -75,13 +79,27 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return null;
       }
 
+      let reviewCampaignId: string | undefined;
+      if (trustedRole === 'player' && requestedCampaignId) {
+        const { data: campaign, error: campaignError } = await supabase
+          .from('campaigns')
+          .select('id, gm_id, is_public')
+          .eq('id', requestedCampaignId)
+          .eq('gm_id', userId)
+          .maybeSingle();
+        if (campaignError) return null;
+        if (isReviewCampaignOwner(trustedRole, userId, requestedCampaignId, campaign)) {
+          reviewCampaignId = requestedCampaignId;
+        }
+      }
+
       const computedName =
         data.display_name ||
         [data.first_name, data.last_name].filter(Boolean).join(' ') ||
         data.nickname ||
         data.username ||
         (trustedRole === 'admin' ? 'Master Stegosandro' : 'Avventuriero');
-      return { ...data, role: trustedRole, display_name: computedName } as Profile;
+      return { ...data, role: trustedRole, display_name: computedName, reviewCampaignId } as LoadedProfile;
     } catch (err) {
       console.warn('[AuthContext] Eccezione caricamento profilo:', err);
       return null;
@@ -104,12 +122,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       return;
     }
     if (!profile?.role) setLoading(true);
-    const prof = await loadProfile(currentUser.id);
+    const prof = await loadProfile(currentUser.id, requestedReviewCampaignId);
     if (currentUserId.current !== currentUser.id) return;
     setProfile(prof);
-    if (prof?.role !== profile?.role) syncActiveMode(prof?.role ?? null);
+    const nextRole = prof?.reviewCampaignId ? 'gm' : prof?.role ?? null;
+    if (nextRole !== role) syncActiveMode(nextRole);
     setLoading(false);
-  }, [user, profile?.role, loadProfile, syncActiveMode]);
+  }, [user, profile?.role, requestedReviewCampaignId, role, loadProfile, syncActiveMode]);
 
   // Auth callbacks only update React state. Profile I/O happens in the effect
   // below, outside Supabase's auth event lock.
@@ -160,14 +179,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     setLoading(true);
-    void loadProfile(user.id).then((prof) => {
+    void loadProfile(user.id, requestedReviewCampaignId).then((prof) => {
       if (!isCurrent || currentUserId.current !== user.id) return;
       setProfile(prof);
-      syncActiveMode(prof?.role ?? null);
+      syncActiveMode(prof?.reviewCampaignId ? 'gm' : prof?.role ?? null);
       setLoading(false);
     });
     return () => { isCurrent = false; };
-  }, [user?.id, loadProfile, syncActiveMode]);
+  }, [user?.id, requestedReviewCampaignId, loadProfile, syncActiveMode]);
 
   // Resume token refresh and reload trusted authorization data after the app
   // returns from the background.
@@ -271,8 +290,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const value = useMemo<AuthContextType>(() => ({
-    user, profile, role, activeMode, switchMode, signIn, signOut, loading, refreshProfile,
-  }), [user, profile, role, activeMode, switchMode, signIn, signOut, loading, refreshProfile]);
+    user, profile, role, reviewCampaignId, activeMode, switchMode, signIn, signOut, loading, refreshProfile,
+  }), [user, profile, role, reviewCampaignId, activeMode, switchMode, signIn, signOut, loading, refreshProfile]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };

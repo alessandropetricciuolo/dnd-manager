@@ -10,7 +10,7 @@ import { GmTabNavigator } from './GmTabNavigator';
 import { PushNotificationRouter } from '../notifications/PushNotificationRouter';
 
 export const RootNavigator: React.FC = () => {
-  const { user, loading, activeMode, role, refreshProfile, signOut } = useAuth();
+  const { user, loading, activeMode, role, reviewCampaignId, refreshProfile, signOut } = useAuth();
 
   // Splash / Loading Screen while checking Supabase session
   if (loading) {
@@ -60,7 +60,7 @@ export const RootNavigator: React.FC = () => {
 
   // Authenticated: Wrap with CampaignProvider and route according to effective mode
   return (
-    <CampaignProvider>
+    <CampaignProvider key={reviewCampaignId ?? user.id}>
       <PushNotificationRouter />
       {effectiveMode === 'gm' ? <GmTabNavigator /> : <PlayerTabNavigator />}
     </CampaignProvider>

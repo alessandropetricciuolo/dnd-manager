@@ -11,7 +11,7 @@ import {
 } from '../lib/session-booking';
 
 export function usePlayerSessions(overrideCampaignId?: string | null) {
-  const { user, role } = useAuth();
+  const { user, role, reviewCampaignId } = useAuth();
   const { activeCampaignId } = useCampaign();
 
   const currentCampaignId = overrideCampaignId !== undefined ? overrideCampaignId : activeCampaignId;
@@ -40,12 +40,13 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         }
         setError(null);
 
-        const sessionsPromise = supabase
+        const sessionsQuery = supabase
           .from('sessions')
           .select(
             '*, campaigns(id, name, image_url, type), campaign_parties(name, color), session_signups(id, player_id, status)'
           )
           .order('scheduled_at', { ascending: true });
+        if (reviewCampaignId) sessionsQuery.eq('campaign_id', reviewCampaignId);
 
         const memberPromise = user?.id
           ? supabase
@@ -62,7 +63,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
           : Promise.resolve({ data: [] as any[], error: null });
 
         const [sessionsRes, memberRes, feedbackRes] = await Promise.all([
-          sessionsPromise,
+          sessionsQuery,
           memberPromise,
           feedbackPromise,
         ]);
@@ -72,10 +73,12 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
 
         // Fallback if campaign_parties relationship is unavailable in local cache
         if (fetchErr) {
-          const fallbackRes = await supabase
+          const fallbackQuery = supabase
             .from('sessions')
             .select('*, campaigns(id, name, image_url, type), session_signups(id, player_id, status)')
             .order('scheduled_at', { ascending: true });
+          if (reviewCampaignId) fallbackQuery.eq('campaign_id', reviewCampaignId);
+          const fallbackRes = await fallbackQuery;
           sessionRows = fallbackRes.data;
           fetchErr = fallbackRes.error;
         }
@@ -125,7 +128,7 @@ export function usePlayerSessions(overrideCampaignId?: string | null) {
         }
       }
     },
-    [enrichSessions, user?.id]
+    [enrichSessions, user?.id, reviewCampaignId]
   );
 
   useEffect(() => {
